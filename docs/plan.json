@@ -25,7 +25,7 @@
       "number": 1,
       "title": "زیرساخت و اسکلت اجرایی",
       "depends_on": [],
-      "status": "not_started",
+      "status": "done",
       "source_sections": [
         1,
         2,
@@ -46,7 +46,7 @@
           "title": "ساختار پروژه و محیط‌ها",
           "deliverables": "Python، Django، تنظیمات development/staging/production، وابستگی‌های قفل‌شده، env.example و gitignore بدون اسرار.",
           "acceptance": "نصب از محیط تمیز و اجرای دستورهای مستند بدون اطلاعات خصوصی.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S01-W02",
@@ -54,7 +54,7 @@
           "title": "PostgreSQL و Redis",
           "deliverables": "اتصال پایگاه داده و کش، تنظیمات timezone=UTC، سلامت سرویس‌ها و migration اولیه؛ SQLite جایگزین تست همزمانی نیست.",
           "acceptance": "migration روی PostgreSQL و بررسی اتصال Redis و رفتار قطع سرویس.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S01-W03",
@@ -62,7 +62,7 @@
           "title": "بستر Worker از ابتدا",
           "deliverables": "Celery، task آزمایشی، Celery Beat، جداسازی اولیه صف‌های orders و reports و ثبت correlation ID.",
           "acceptance": "اجرای task در process مستقل و اثبات وابسته‌نبودن آن به مرورگر.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S01-W04",
@@ -70,7 +70,7 @@
           "title": "پوسته وب و ورود پایه",
           "deliverables": "Django Templates، HTMX، Alpine.js، CSS واکنش‌گرا، ورود/خروج پایه و پوسته روشن موبایل و دسکتاپ.",
           "acceptance": "بازشدن صفحه ورود و صفحه محافظت‌شده در موبایل و دسکتاپ.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S01-W05",
@@ -78,7 +78,7 @@
           "title": "CI و راه‌اندازی تکرارپذیر",
           "deliverables": "بررسی ساختار، lint، آزمون smoke، health endpoints و راهنمای اجرا؛ Docker صرفاً گزینه توسعه است.",
           "acceptance": "CI قابل اجرا و ثبت خروجی واقعی health و smoke در گزارش استیج.",
-          "status": "not_started"
+          "status": "done"
         }
       ]
     },

@@ -1,17 +1,43 @@
 {
   "schema_version": "cryptosniper.progress.v1",
   "plan_version": "1.0.0",
-  "completed_stages": [],
-  "current_stage": "S01",
-  "next_stage": "S01",
-  "last_completed_work": null,
+  "completed_stages": [
+    "S01"
+  ],
+  "current_stage": null,
+  "next_stage": "S02",
+  "last_completed_work": "S01-W05",
   "implementation_started": true,
   "stage_results": {
     "S01": {
-      "status": "in_progress",
-      "completed_works": [],
-      "checks": [],
-      "commit_shas": [],
+      "status": "done",
+      "completed_works": [
+        "S01-W01",
+        "S01-W02",
+        "S01-W03",
+        "S01-W04",
+        "S01-W05"
+      ],
+      "checks": [
+        {
+          "name": "GitHub Actions real PostgreSQL/Redis/Worker/Beat/browser",
+          "status": "passed",
+          "run_id": 37490252174,
+          "url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/37490252174",
+          "tested_commit": "75523d1214b9c7de7fcdd9c4b652a08f5cc0b929",
+          "pytest_passed": 16,
+          "artifact_id": 11424494177
+        }
+      ],
+      "commit_shas": [
+        "036b597feb259ad8116cb680c3722a0c2e164e5a",
+        "8d5febf38cd1785d54b07fbbe4d82bfd9623411c",
+        "a116391cdb227c58351226d634e1c311f2c63cbd",
+        "6acaec21cadfa295460f2b1c95bf6261db4cd414",
+        "6ab95a135caf139d5c37ef8350b00663727bf9ee",
+        "172f7dc4f13d6b7019117cd7fc82aaa1978c826b",
+        "75523d1214b9c7de7fcdd9c4b652a08f5cc0b929"
+      ],
       "blockers": []
     },
     "S02": {

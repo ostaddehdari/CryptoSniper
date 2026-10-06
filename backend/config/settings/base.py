@@ -1,4 +1,5 @@
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import environ
 from django.core.exceptions import ImproperlyConfigured
@@ -81,3 +82,24 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 TRADING_MODE = "paper"
 LIVE_TRADING_ENABLED = False
 ENABLED_MARKET_TYPES = ("spot", "margin")
+
+DATABASES = {"default": env.db("DATABASE_URL")}
+if DATABASES["default"]["ENGINE"] != "django.db.backends.postgresql":
+    raise ImproperlyConfigured("CryptoSniper requires PostgreSQL; SQLite is not supported.")
+DATABASES["default"]["CONN_MAX_AGE"] = 60
+DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
+DATABASES["default"].setdefault("OPTIONS", {}).update(
+    {"connect_timeout": 3, "application_name": "cryptosniper"}
+)
+REDIS_CACHE_URL = env("REDIS_CACHE_URL")
+if urlsplit(REDIS_CACHE_URL).scheme not in {"redis", "rediss"}:
+    raise ImproperlyConfigured("REDIS_CACHE_URL must use redis:// or rediss://.")
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": REDIS_CACHE_URL,
+        "KEY_PREFIX": "cryptosniper",
+        "TIMEOUT": 300,
+        "OPTIONS": {"socket_connect_timeout": 1, "socket_timeout": 1},
+    }
+}

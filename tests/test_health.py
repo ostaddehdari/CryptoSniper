@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 from apps.core.health import dependency_status
-from django.db import OperationalError, connection
+from django.db import OperationalError, connection, connections
 from redis import Redis
 from redis.exceptions import ConnectionError as RedisConnectionError
 
@@ -38,7 +38,7 @@ def test_postgres_schema_is_utc_and_custom_user_exists(django_user_model):
 @pytest.mark.django_db
 def test_database_failure_is_bounded_and_sanitized():
     with patch.object(
-        connection.__class__, "cursor", side_effect=OperationalError("private-secret")
+        connections["default"], "cursor", side_effect=OperationalError("private-secret")
     ):
         assert dependency_status()["postgresql"] is False
 

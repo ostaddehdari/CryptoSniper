@@ -46,7 +46,14 @@ jobs:
           version: '0.12.19'
           enable-cache: true
       - name: Generate private transient test secret
-        run: python -c "import secrets; import os; f=open(os.environ['GITHUB_ENV'],'a'); f.write('DJANGO_SECRET_KEY='+secrets.token_urlsafe(64)+'\n'); f.close()"
+        run: |
+          python - <<'PY'
+          import os, secrets
+          value = secrets.token_urlsafe(64)
+          print('::add-mask::' + value)
+          with open(os.environ['GITHUB_ENV'], 'a') as output:
+              output.write('DJANGO_SECRET_KEY=' + value + '\n')
+          PY
       - name: Install locked dependencies
         run: uv sync --frozen
       - name: Lint and format
@@ -70,5 +77,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: stage-01-evidence
-          path: .runtime/
+          path: |
+            .runtime/pytest.xml
+            .runtime/screenshots/*.png
+          include-hidden-files: true
+          if-no-files-found: error
           retention-days: 7

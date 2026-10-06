@@ -1,0 +1,35 @@
+[project]
+name = "cryptosniper"
+version = "0.1.0"
+description = "Python trading management platform — Stage 01 foundation"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+  "Django>=5.2.18,<5.3",
+  "celery[redis]>=5.6.3,<5.7",
+  "django-environ>=0.12,<0.14",
+  "psycopg[binary]>=3.2,<4",
+  "redis>=5.2,<7",
+  "whitenoise>=6.9,<7",
+  "gunicorn>=23,<24",
+  "uvicorn>=0.34,<0.42",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.3,<10", "pytest-django>=4.11,<5", "ruff>=0.11,<1", "httpx>=0.28,<0.29"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+pythonpath = ["backend"]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = ["integration: requires actual PostgreSQL, Redis and Celery processes"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "DJ"]
+
+[tool.ruff.lint.per-file-ignores]
+"backend/config/settings/*.py" = ["F403", "F405"]

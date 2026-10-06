@@ -1,0 +1,2279 @@
+در ادامه نسخه جامع پروپوزال را بر اساس تمام تصمیم‌های تثبیت‌شده CryptoSniper و با فرض **استقرار روی هاست پایتونی** تنظیم کرده‌ام. این متن می‌تواند مستقیماً مبنای قرارداد توسعه، طراحی دیتابیس و تبدیل به Stage/Work اجرایی قرار بگیرد. 
+
+
+# پروپوزال جامع اجرایی سامانه CryptoSniper
+
+## 1. عنوان پروژه
+
+**CryptoSniper – سامانه هوشمند دریافت، پردازش، اجرا و مدیریت سیگنال‌های معاملات رمزارز**
+
+نوع محصول: Web Application / PWA با رویکرد Mobile-First  
+Backend اصلی: Python  
+معماری پیشنهادی: Modular Monolith + Background Workers  
+پایگاه داده اصلی: PostgreSQL  
+سیستم Queue و Cache: Redis + Celery  
+محیط استقرار: Python Hosting با پشتیبانی از پردازش‌های Background و ترجیحاً ASGI
+
+---
+
+# 2. تعریف پروژه
+
+CryptoSniper یک سامانه حرفه‌ای برای دریافت، تحلیل، ثبت و اجرای سیگنال‌های معاملات ارز دیجیتال است.
+
+هدف سیستم این است که کاربر بتواند سیگنال را از سه مسیر اصلی وارد سامانه کند:
+
+1. **Manual Entry**
+2. **Smart Paste**
+3. **Automatic Signal Source – Telegram**
+
+سپس سیستم، با توجه به تنظیمات کاربر، صرافی متصل، موجودی، وضعیت بازار، Entry، حد ضرر، اهداف سود، Trailing و سایر قوانین مدیریت سرمایه، معامله را ایجاد و مدیریت کند.
+
+سامانه صرفاً «ثبت‌کننده سیگنال» نیست؛ بلکه یک **Trading Management Platform** خواهد بود که از زمان دریافت سیگنال تا بسته‌شدن معامله، گزارش عملکرد و اعلان‌های مرتبط، چرخه معامله را مدیریت می‌کند.
+
+---
+
+# 3. اهداف اصلی
+
+اهداف پروژه عبارت‌اند از:
+
+- اتصال امن حساب‌های صرافی
+- دریافت سیگنال دستی
+- استخراج هوشمند سیگنال از متن
+- دریافت اتوماتیک سیگنال از Telegram
+- نمایش صرافی‌های قابل معامله برای هر Coin
+- نمایش موجودی حساب هر صرافی
+- نمایش قیمت لحظه‌ای
+- اجرای معامله
+- مدیریت Entry
+- مدیریت Take Profit
+- مدیریت Stop Loss
+- مدیریت Trailing
+- مدیریت Percentage Trailing
+- مدیریت معاملات Spot و Margin
+- ثبت تاریخچه کامل تغییرات معامله
+- ارائه Dashboard مدیریتی
+- ارائه Reports
+- Price Alert
+- Trade Alert
+- طراحی مستقل و حرفه‌ای Mobile
+- فراهم‌کردن زیرساخت توسعه Futures/Perpetual در آینده
+- ایجاد معماری امن و قابل توسعه
+
+---
+
+# 4. محدوده نسخه نخست
+
+نسخه نخست CryptoSniper روی دو بازار تمرکز دارد:
+
+**Spot**
+
+و
+
+**Margin**
+
+پشتیبانی مستقیم از Futures و Perpetual در هسته معماری پیش‌بینی می‌شود، اما فعال‌سازی آنها جزو نسخه اولیه نیست و بعداً از بخش Settings قابل توسعه خواهد بود.
+
+بنابراین Schema دیتابیس و Exchange Adapterها نباید به گونه‌ای طراحی شوند که اضافه‌کردن Futures در آینده نیازمند بازنویسی هسته سیستم باشد.
+
+---
+
+# 5. روش‌های ورود سیگنال
+
+## 5.1 Manual Entry
+
+کاربر فرم کامل ساخت معامله را مشاهده می‌کند.
+
+فرم شامل موارد زیر خواهد بود:
+
+- Coin / Trading Pair
+- Signal Source
+- Exchange
+- Market Type
+- Direction
+- Entry
+- TP1
+- TP2
+- TP3
+- Stop Loss
+- Amount
+- Leverage در بازارهایی که قابل استفاده باشد
+- Trailing SL/TP
+- Percentage Trailing
+- تنظیمات اجرای معامله
+
+با انتخاب Coin، سیستم باید صرافی‌های متصل کاربر را بررسی کند و فقط صرافی‌هایی را نشان دهد که Pair موردنظر در آنها قابل معامله باشد.
+
+در کنار هر صرافی اطلاعاتی مانند موجودی قابل استفاده، وضعیت API و در صورت وجود، حداکثر Leverage قابل استفاده نمایش داده می‌شود.
+
+---
+
+# 6. Smart Paste
+
+کاربر می‌تواند متن کامل یک سیگنال را بدون پاک‌کردن توضیحات اضافی Paste کند.
+
+برای مثال متن ممکن است شامل مواردی مانند:
+
+Coin  
+LONG  
+ENTRY  
+TARGET  
+STOPLOSS  
+Leverage  
+توضیحات کانال  
+هشدار مدیریت سرمایه  
+Emoji  
+متن تبلیغاتی
+
+باشد.
+
+Parser باید قسمت‌های مفید را استخراج کند.
+
+خروجی استاندارد Smart Paste:
+
+- یک Entry
+- حداکثر سه Take Profit
+- یک Stop Loss
+- Coin/Pair
+- Direction در صورت تشخیص
+- Leverage در صورت وجود
+- Source در صورت مشخص‌بودن
+
+اگر بیش از سه TP در متن وجود داشته باشد، **فقط سه TP اول** برای اجرای معامله استفاده می‌شوند.
+
+متن اصلی سیگنال نیز بدون حذف در دیتابیس ذخیره می‌شود تا امکان Audit و بررسی خطای Parser وجود داشته باشد.
+
+---
+
+# 7. Automatic Signal Source
+
+منبع خودکار نسخه نخست:
+
+**Telegram**
+
+سیستم باید امکان تعریف Telegram Signal Source را داشته باشد.
+
+هر Source دارای تنظیمات مستقلی خواهد بود.
+
+برای هر منبع سه Mode اجرایی در نظر گرفته می‌شود:
+
+### Manual
+
+سیگنال دریافت و تحلیل می‌شود اما معامله به‌صورت خودکار ایجاد نمی‌شود.
+
+### Semi-Auto
+
+سیگنال دریافت و Parse شده و فرم آماده معامله برای تأیید کاربر نمایش داده می‌شود.
+
+### Full-Auto
+
+سیگنال دریافت، Parse، اعتبارسنجی و در صورت عبور از Ruleهای امنیتی و معاملاتی، معامله به‌صورت خودکار اجرا می‌شود.
+
+---
+
+# 8. Quick Signal و Quick Paste
+
+Quick Signal و Quick Paste **روش مستقل دریافت سیگنال نیستند**.
+
+این دو فقط Shortcut رابط کاربری برای دسترسی سریع به:
+
+Manual Entry
+
+و
+
+Smart Paste
+
+خواهند بود.
+
+این تفکیک باید هم در Backend و هم در Analytics رعایت شود.
+
+---
+
+# 9. Watchlist
+
+Watchlist صرفاً برای مشاهده بازار و دسترسی سریع استفاده می‌شود.
+
+هر Coin موجود در Watchlist می‌تواند شامل موارد زیر باشد:
+
+- قیمت لحظه‌ای
+- درصد تغییر
+- Exchange
+- وضعیت Alert
+- Shortcut به Manual Entry
+- Shortcut به Smart Paste
+
+Watchlist منبع Signal محسوب نمی‌شود.
+
+---
+
+# 10. منطق Entry
+
+پیش‌فرض معامله دارای **یک Entry** خواهد بود.
+
+کاربر نباید مجبور به ساخت چند Entry برای یک معامله باشد.
+
+در صورت دریافت Entry Range از یک منبع خارجی، متن اصلی Range حفظ می‌شود و Parser آن را مطابق Rule تعریف‌شده به ساختار استاندارد داخلی تبدیل می‌کند.
+
+ساختار دیتابیس باید امکان توسعه Multi-Entry را در آینده داشته باشد، ولی UI نسخه نخست بر Single Entry استوار است.
+
+---
+
+# 11. Take Profit
+
+حداکثر سه Take Profit فعال در نسخه اصلی:
+
+**TP1  
+TP2  
+TP3**
+
+توزیع پیش‌فرض حجم:
+
+| Target | سهم خروج |
+|---|---:|
+| TP1 | 10% |
+| TP2 | 10% |
+| TP3 | 80% |
+
+کاربر می‌تواند در تنظیمات معامله یا تنظیمات پیش‌فرض، درصدها را تغییر دهد.
+
+سیستم باید مجموع درصدهای خروج را اعتبارسنجی کند.
+
+---
+
+# 12. Stop Loss
+
+هر معامله یک Stop Loss اصلی خواهد داشت.
+
+Stop Loss باید بتواند در طول معامله بر اثر Ruleهای مدیریت معامله تغییر کند.
+
+تمام تغییرات SL باید در Event History ذخیره شوند.
+
+برای مثال:
+
+Initial SL  
+Move to Entry  
+Move to TP1  
+Trailing SL Update  
+Manual SL Update
+
+---
+
+# 13. Trailing SL/TP
+
+Trailing SL/TP باید برای هر معامله قابل فعال یا غیرفعال‌سازی باشد.
+
+در Smart Paste تنظیمات Trailing به‌صورت پیش‌فرض فعال خواهند بود.
+
+سیستم باید قیمت بازار را دنبال کرده و پس از فعال‌شدن Trigger مربوط، Stop را طبق الگوریتم تعریف‌شده جابه‌جا کند.
+
+---
+
+# 14. Percentage Trailing
+
+قابلیت Percentage Trailing یکی از اجزای مهم مدیریت معامله است.
+
+تنظیمات پیش‌فرض:
+
+**Enabled = ON**
+
+Trigger پیش‌فرض:
+
+**TP1**
+
+فاصله پیش‌فرض:
+
+**1%**
+
+وقتی Percentage Trailing فعال شود:
+
+**تمام سفارش‌های فروش TP باقی‌مانده لغو می‌شوند.**
+
+از آن لحظه کل حجم باقی‌مانده Position فقط توسط Trailing مدیریت خواهد شد.
+
+برای مثال در یک معامله Long، اگر قیمت از TP3 نیز عبور کند، سیستم نباید Position را صرفاً به دلیل عبور از TP3 ببندد.
+
+تا زمانی که Trailing Trigger اتفاق نیفتاده، معامله می‌تواند به رشد ادامه دهد.
+
+---
+
+# 15. Amount Management
+
+امکان تعیین مستقیم «حجم نهایی Position» از طراحی حذف می‌شود.
+
+کاربر مقدار سرمایه‌ای را که می‌خواهد وارد معامله کند مشخص می‌کند؛ برای مثال:
+
+**50 USDT**
+
+سیستم بر اساس:
+
+- قیمت Entry
+- Market Type
+- Exchange
+- Leverage مجاز
+- Balance
+- Fees
+- Minimum Order
+- Lot Size
+
+مقدار سفارش واقعی را محاسبه می‌کند.
+
+---
+
+# 16. Leverage
+
+در Marketهایی که Leverage وجود دارد، سیستم باید:
+
+- Max Leverage قابل استفاده را از Exchange دریافت کند.
+- Leverage سیگنال را نمایش دهد.
+- مقدار انتخابی کاربر را Validate کند.
+- اجازه عبور از محدودیت Exchange را ندهد.
+
+Leverage نباید به‌صورت Hard Code در سیستم ذخیره شود.
+
+---
+
+# 17. اطلاعات لحظه‌ای فرم معامله
+
+هنگام ورود معامله باید اطلاعات لحظه‌ای نمایش داده شود:
+
+- Current Price
+- Entry
+- فاصله Current Price تا Entry
+- TP1
+- TP2
+- TP3
+- SL
+- فاصله درصدی Entry تا هر TP
+- فاصله درصدی Entry تا SL
+- Balance
+- Available Balance
+
+---
+
+# 18. Exchange Integration Layer
+
+اتصال به صرافی‌ها نباید مستقیماً داخل Business Logic انجام شود.
+
+یک لایه مستقل به نام:
+
+**Exchange Adapter Layer**
+
+ایجاد می‌شود.
+
+Interface استاندارد آن شامل عملیات زیر خواهد بود:
+
+- validate_credentials
+- fetch_balance
+- fetch_markets
+- fetch_ticker
+- fetch_orderbook
+- fetch_max_leverage
+- place_order
+- cancel_order
+- edit_order
+- fetch_order
+- fetch_open_orders
+- fetch_positions
+- fetch_trade_history
+
+هر صرافی Adapter مخصوص خود را خواهد داشت.
+
+این معماری اضافه‌کردن صرافی جدید را بدون تغییر Trading Engine ممکن می‌کند.
+
+---
+
+# 19. امنیت API صرافی
+
+API Key و Secret یکی از حساس‌ترین داده‌های پروژه هستند.
+
+قواعد امنیتی:
+
+- API Key در Frontend ذخیره نشود.
+- Secret هرگز به Frontend بازگردانده نشود.
+- Secret در Log نوشته نشود.
+- اطلاعات حساس در Database رمزنگاری شوند.
+- Encryption Key خارج از Database نگهداری شود.
+- API Key صرافی فقط مجوز لازم برای Trading داشته باشد.
+- Withdrawal Permission نباید فعال باشد.
+- امکان Test Connection هنگام افزودن Exchange وجود داشته باشد.
+- آخرین زمان استفاده از API ثبت شود.
+- امکان Disable فوری Exchange Connection فراهم باشد.
+
+---
+
+# 20. Trading Engine
+
+هسته اصلی سیستم:
+
+**Trading Engine**
+
+است.
+
+Trading Engine مسئول اجرای Ruleهای معاملاتی است و نباید وابسته به Frontend باشد.
+
+چرخه استاندارد:
+
+Signal  
+→ Parse  
+→ Validate  
+→ Risk Check  
+→ Exchange Check  
+→ Build Trade Plan  
+→ Create Order  
+→ Monitor Order  
+→ Position Open  
+→ TP / SL / Trailing Monitoring  
+→ Position Management  
+→ Position Close  
+→ Performance Calculation
+
+---
+
+# 21. State Machine معامله
+
+هر Trade دارای State مشخص خواهد بود.
+
+نمونه Stateها:
+
+DRAFT  
+READY  
+WAITING_ENTRY  
+ENTRY_SUBMITTED  
+PARTIALLY_FILLED  
+OPEN  
+TP1_REACHED  
+TP2_REACHED  
+TRAILING_ACTIVE  
+CLOSING  
+CLOSED  
+CANCELLED  
+FAILED  
+REJECTED
+
+تغییر State باید توسط State Machine کنترل شود.
+
+Frontend اجازه تغییر مستقیم Status را ندارد.
+
+---
+
+# 22. Idempotency
+
+یکی از الزامات حیاتی Trading Engine جلوگیری از اجرای دوباره سفارش است.
+
+برای عملیات مهم:
+
+- Create Trade
+- Place Entry
+- Place TP
+- Place SL
+- Close Trade
+- Telegram Signal Processing
+
+باید Idempotency Key ایجاد شود.
+
+اگر Worker یا API دوباره همان درخواست را دریافت کند، نباید سفارش جدیدی ایجاد شود.
+
+---
+
+# 23. Background Workers
+
+عملیات حساس معامله نباید توسط HTTP Request معمولی اجرا شوند.
+
+Workerهای مستقل برای موارد زیر لازم هستند:
+
+- Telegram Listener
+- Signal Parser
+- Order Executor
+- Order Status Sync
+- Price Monitor
+- Trailing Engine
+- Alert Engine
+- Exchange Reconciliation
+- Report Aggregation
+- Retry Jobs
+
+---
+
+# 24. Queue Architecture
+
+صف‌های مستقل پیشنهاد می‌شود:
+
+`signals`
+
+`orders`
+
+`market_data`
+
+`trailing`
+
+`alerts`
+
+`telegram`
+
+`reports`
+
+`maintenance`
+
+کار حساس مربوط به سفارش نباید پشت پردازش سنگین Report متوقف شود.
+
+---
+
+# 25. Reconciliation Engine
+
+CryptoSniper نباید تصور کند همیشه وضعیت داخلی خودش صحیح است.
+
+به‌صورت دوره‌ای باید وضعیت:
+
+Order  
+Position  
+Balance  
+Trade
+
+با Exchange مقایسه شود.
+
+اگر اختلاف وجود داشت، سیستم باید:
+
+- اختلاف را ثبت کند.
+- State داخلی را اصلاح کند.
+- Event بسازد.
+- در موارد حساس Alert ایجاد کند.
+
+---
+
+# 26. Price Alert
+
+دو گروه اصلی Price Alert تأیید شده است.
+
+## General Price Alert
+
+مستقل از معامله:
+
+- رسیدن قیمت به عدد مشخص
+- افزایش X درصد
+- کاهش X درصد
+
+## Trade Related Alert
+
+مرتبط با معامله باز:
+
+- رسیدن قیمت به مقدار مشخص
+- رسیدن Profit به X درصد
+- رسیدن قیمت به X درصد نسبت به Entry
+- نزدیک‌شدن به SL
+- نزدیک‌شدن به Percentage Trailing Trigger
+
+---
+
+# 27. Notification System
+
+سیستم Notification مرکزی طراحی می‌شود.
+
+Channelهای نسخه اولیه می‌توانند شامل:
+
+- In-App Notification
+- Browser Notification
+
+باشند.
+
+معماری باید امکان اضافه‌کردن Telegram، Email، Push و سایر Channelها را در آینده داشته باشد.
+
+هر Notification شامل:
+
+type  
+severity  
+title  
+message  
+entity_type  
+entity_id  
+read_at  
+created_at
+
+خواهد بود.
+
+---
+
+# 28. Dashboard
+
+Dashboard نمای کلی وضعیت کاربر است.
+
+اطلاعات مهم:
+
+- Total Balance
+- Available Balance
+- Open Trades
+- Trades Today
+- Active Signals
+- Current P/L
+- Realized P/L
+- Win Rate
+- Recent Alerts
+- Recent Signals
+- Exchange Status
+- Recent Trades
+
+---
+
+# 29. Open Trades
+
+صفحه Open Trades باید امکان مشاهده سریع معاملات فعال را فراهم کند.
+
+برای هر Trade:
+
+- Coin
+- Exchange
+- Market
+- Direction
+- Entry
+- Current Price
+- Position Size
+- Leverage
+- TP Progress
+- SL
+- Trailing Status
+- Profit/Loss
+- Duration
+- Source
+
+نمایش داده می‌شود.
+
+---
+
+# 30. Trade Details
+
+Trade Details باید Timeline کامل معامله را ارائه کند.
+
+از لحظه دریافت Signal تا بسته‌شدن Position.
+
+نمونه Timeline:
+
+Signal Received  
+Signal Parsed  
+Trade Confirmed  
+Entry Submitted  
+Entry Filled  
+TP1 Reached  
+Trailing Activated  
+Stop Updated  
+Position Closed
+
+همچنین:
+
+- Orders
+- Fillها
+- Fees
+- Realized P/L
+- Unrealized P/L
+- Raw Signal
+- Parsed Signal
+- Exchange Responses
+
+قابل مشاهده خواهد بود.
+
+---
+
+# 31. Reports
+
+Reports باید امکان تحلیل عملکرد را فراهم کند.
+
+شاخص‌ها:
+
+- Total Trades
+- Winning Trades
+- Losing Trades
+- Win Rate
+- Gross Profit
+- Gross Loss
+- Net P/L
+- Fees
+- Average Profit
+- Average Loss
+- Best Trade
+- Worst Trade
+- Average Trade Duration
+- Performance by Coin
+- Performance by Exchange
+- Performance by Signal Source
+- Performance by Day
+- Performance by Week
+- Performance by Month
+
+در آینده معیارهایی نظیر Drawdown و Profit Factor نیز قابل اضافه‌شدن خواهند بود.
+
+---
+
+# 32. صفحات Mobile
+
+نسخه Mobile یک نسخه مستقل و جدی محصول است و نباید صرفاً Desktop کوچک‌شده باشد.
+
+صفحات اصلی:
+
+Login
+
+Dashboard
+
+Watchlist
+
+Manual
+
+Smart Paste
+
+Inbox
+
+Open Trades
+
+Trade Details
+
+Reports
+
+Settings
+
+---
+
+# 33. Mobile First UI
+
+مبنای طراحی:
+
+**Mobile First**
+
+Theme اصلی:
+
+**Light Mode**
+
+Dark Mode:
+
+حالت اختیاری و ثانویه.
+
+در Mobile مهم‌ترین اطلاعات باید بدون پیمایش پیچیده قابل مشاهده باشند:
+
+Price  
+P/L  
+Entry  
+TP  
+SL  
+Trailing  
+Exchange  
+Position Status
+
+دکمه‌های اقدام مهم نیز باید برای استفاده با یک دست طراحی شوند.
+
+---
+
+# 34. Desktop UI
+
+Desktop برای Monitoring و تحلیل داده طراحی می‌شود.
+
+ساختار پیشنهادی:
+
+Left Navigation  
+Top Bar  
+Main Workspace  
+Side Context/Notification Area
+
+Desktop می‌تواند Data Density بالاتری نسبت به Mobile داشته باشد.
+
+---
+
+# 35. Navigation اصلی
+
+Navigation پیشنهادی:
+
+Dashboard  
+Watchlist  
+Manual Trade  
+Smart Paste  
+Signal Inbox  
+Open Trades  
+Trade History  
+Reports  
+Alerts  
+Exchanges  
+Signal Sources  
+Settings
+
+---
+
+# 36. Backend Architecture
+
+Backend با Python و Django طراحی می‌شود.
+
+ساختار Moduleهای اصلی:
+
+`accounts`
+
+`exchanges`
+
+`market_data`
+
+`signals`
+
+`signal_sources`
+
+`trades`
+
+`orders`
+
+`positions`
+
+`trailing`
+
+`alerts`
+
+`notifications`
+
+`reports`
+
+`audit`
+
+`telegram_integration`
+
+`system_settings`
+
+---
+
+# 37. API Architecture
+
+Frontend از طریق REST API با Backend ارتباط خواهد داشت.
+
+برای داده‌های Real-Time از:
+
+WebSocket
+
+یا
+
+Server-Sent Events
+
+استفاده می‌شود.
+
+Endpointهای نمونه:
+
+`/api/auth/`
+
+`/api/dashboard/`
+
+`/api/exchanges/`
+
+`/api/markets/`
+
+`/api/signals/`
+
+`/api/trades/`
+
+`/api/orders/`
+
+`/api/alerts/`
+
+`/api/reports/`
+
+`/api/settings/`
+
+---
+
+# 38. Frontend Technology
+
+برای آنکه پروژه به‌راحتی روی هاست پایتونی اجرا شود و وابستگی عملیاتی به Node.js در Production به حداقل برسد، معماری Frontend می‌تواند به‌صورت زیر باشد:
+
+Django Templates  
++ HTMX  
++ Alpine.js  
++ JavaScript/TypeScript Modules  
++ Bootstrap 5 یا Tailwind Build Output  
++ Chart Library
+
+فایل‌های نهایی CSS و JS به‌صورت Static Asset روی هاست قرار می‌گیرند.
+
+به این ترتیب Node.js برای اجرای Production الزامی نیست.
+
+در صورت استفاده از Tailwind یا ابزارهای Build، Node فقط در Development/Build Pipeline استفاده خواهد شد.
+
+---
+
+# 39. دلیل انتخاب معماری Frontend
+
+این پروژه به دلیل الزام Python Hosting بهتر است Backend و Frontend عملیاتی خود را بیش از حد به دو Deployment مستقل تبدیل نکند.
+
+این ساختار مزایای زیر دارد:
+
+- Deployment ساده‌تر
+- مصرف RAM کمتر
+- نگهداری آسان‌تر
+- Session/Auth یکپارچه
+- امنیت بیشتر
+- مناسب‌تر برای Python Hosting
+- کاهش وابستگی Production به Node
+- امکان Real-Time UI
+- امکان ساخت PWA
+
+---
+
+# 40. Database
+
+Database اصلی:
+
+**PostgreSQL**
+
+Redis جای Database اصلی را نمی‌گیرد.
+
+PostgreSQL محل نگهداری داده‌های دائمی و قابل Audit خواهد بود.
+
+Redis برای:
+
+- Queue
+- Cache
+- Lock
+- Rate Limit
+- Temporary State
+- Distributed Coordination
+
+استفاده می‌شود.
+
+---
+
+# 41. طراحی دیتابیس
+
+## جدول `users`
+
+- id
+- email
+- password_hash
+- display_name
+- timezone
+- base_currency
+- theme
+- is_active
+- last_login_at
+- created_at
+- updated_at
+
+---
+
+## جدول `user_settings`
+
+- id
+- user_id
+- default_market_type
+- default_trade_amount
+- default_exchange_id
+- default_tp1_percent
+- default_tp2_percent
+- default_tp3_percent
+- trailing_enabled
+- percentage_trailing_enabled
+- percentage_trailing_trigger
+- percentage_trailing_distance
+- notification_settings
+- created_at
+- updated_at
+
+---
+
+## جدول `exchanges`
+
+اطلاعات عمومی صرافی‌ها:
+
+- id
+- code
+- name
+- logo
+- website
+- spot_supported
+- margin_supported
+- futures_supported
+- enabled
+
+---
+
+## جدول `user_exchange_accounts`
+
+- id
+- user_id
+- exchange_id
+- label
+- api_key_encrypted
+- api_secret_encrypted
+- passphrase_encrypted
+- trading_enabled
+- last_verified_at
+- last_sync_at
+- status
+- created_at
+- updated_at
+
+Unique Constraint:
+
+`user_id + exchange_id + label`
+
+---
+
+## جدول `exchange_markets`
+
+- id
+- exchange_id
+- symbol
+- base_asset
+- quote_asset
+- market_type
+- min_amount
+- max_amount
+- amount_step
+- price_step
+- min_notional
+- max_leverage
+- active
+- metadata
+- synced_at
+
+---
+
+## جدول `assets`
+
+- id
+- symbol
+- name
+- icon
+- active
+
+---
+
+## جدول `signal_sources`
+
+- id
+- user_id
+- type
+- name
+- execution_mode
+- enabled
+- configuration
+- last_received_at
+- created_at
+- updated_at
+
+Type اولیه:
+
+manual  
+smart_paste  
+telegram
+
+---
+
+## جدول `telegram_sources`
+
+- id
+- signal_source_id
+- telegram_identifier
+- channel_title
+- channel_username
+- parser_profile
+- enabled
+- last_message_id
+- created_at
+- updated_at
+
+---
+
+## جدول `raw_signals`
+
+تمام اطلاعات ورودی قبل از Parse:
+
+- id
+- source_id
+- external_id
+- raw_text
+- raw_payload
+- received_at
+- parser_status
+- checksum
+- created_at
+
+برای جلوگیری از پردازش تکراری Signal، `checksum` و `external_id` اهمیت زیادی دارند.
+
+---
+
+## جدول `signals`
+
+نسخه ساختاریافته Signal:
+
+- id
+- raw_signal_id
+- user_id
+- source_id
+- symbol
+- market_type
+- direction
+- entry_price
+- stop_loss
+- leverage
+- status
+- confidence
+- parser_version
+- created_at
+- updated_at
+
+فیلد Confidence در این معماری نشان‌دهنده **اطمینان Parser به استخراج صحیح اطلاعات از متن** است و الزاماً توصیه سرمایه‌گذاری محسوب نمی‌شود.
+
+---
+
+## جدول `signal_targets`
+
+- id
+- signal_id
+- target_number
+- price
+- close_percent
+- enabled
+
+حداکثر سه Target در UI نسخه نخست فعال می‌شود.
+
+---
+
+## جدول `trades`
+
+هسته اصلی داده معاملاتی:
+
+- id
+- user_id
+- signal_id
+- exchange_account_id
+- symbol
+- market_type
+- direction
+- status
+- trade_amount
+- requested_leverage
+- actual_leverage
+- entry_price
+- average_entry_price
+- stop_loss
+- opened_at
+- closed_at
+- close_reason
+- realized_pnl
+- unrealized_pnl
+- fees
+- created_at
+- updated_at
+
+---
+
+## جدول `trade_targets`
+
+Snapshot هدف‌های معامله:
+
+- id
+- trade_id
+- target_number
+- target_price
+- allocation_percent
+- order_id
+- status
+- reached_at
+
+Targetهای Trade از Signal جدا نگهداری می‌شوند تا تغییر Signal بعداً Trade قبلی را تغییر ندهد.
+
+---
+
+## جدول `orders`
+
+- id
+- trade_id
+- exchange_account_id
+- exchange_order_id
+- client_order_id
+- order_type
+- side
+- purpose
+- price
+- stop_price
+- amount
+- filled_amount
+- average_price
+- status
+- raw_exchange_response
+- submitted_at
+- filled_at
+- cancelled_at
+- created_at
+- updated_at
+
+Purpose:
+
+ENTRY  
+TP1  
+TP2  
+TP3  
+STOP_LOSS  
+TRAILING_EXIT  
+MANUAL_CLOSE
+
+---
+
+## جدول `order_fills`
+
+- id
+- order_id
+- exchange_trade_id
+- price
+- amount
+- fee
+- fee_asset
+- executed_at
+
+---
+
+## جدول `positions`
+
+- id
+- trade_id
+- exchange_position_id
+- quantity
+- average_entry
+- mark_price
+- liquidation_price
+- unrealized_pnl
+- realized_pnl
+- status
+- last_synced_at
+
+---
+
+## جدول `trailing_rules`
+
+- id
+- trade_id
+- trailing_type
+- enabled
+- trigger_type
+- trigger_value
+- distance_percent
+- activated_at
+- highest_price
+- lowest_price
+- current_stop
+- status
+- updated_at
+
+---
+
+## جدول `trade_events`
+
+این جدول Audit Timeline معامله است.
+
+- id
+- trade_id
+- event_type
+- old_state
+- new_state
+- price
+- amount
+- metadata
+- source
+- created_at
+
+این جدول حذف یا Update نمی‌شود و ماهیت Append-Only دارد.
+
+---
+
+## جدول `price_alerts`
+
+- id
+- user_id
+- exchange_id
+- symbol
+- trade_id
+- alert_type
+- target_value
+- direction
+- enabled
+- triggered_at
+- created_at
+- updated_at
+
+---
+
+## جدول `notifications`
+
+- id
+- user_id
+- type
+- severity
+- title
+- message
+- entity_type
+- entity_id
+- read_at
+- created_at
+
+---
+
+## جدول `watchlists`
+
+- id
+- user_id
+- name
+- is_default
+- created_at
+
+---
+
+## جدول `watchlist_items`
+
+- id
+- watchlist_id
+- exchange_id
+- symbol
+- sort_order
+- created_at
+
+---
+
+## جدول `balance_snapshots`
+
+- id
+- user_exchange_account_id
+- asset
+- free_balance
+- locked_balance
+- total_balance
+- usd_value
+- captured_at
+
+---
+
+## جدول `daily_performance`
+
+برای Reports سریع:
+
+- id
+- user_id
+- date
+- trades_count
+- wins
+- losses
+- gross_profit
+- gross_loss
+- fees
+- net_pnl
+
+---
+
+## جدول `audit_logs`
+
+برای عملیات امنیتی:
+
+- id
+- user_id
+- action
+- entity_type
+- entity_id
+- ip_hash
+- metadata
+- created_at
+
+---
+
+## جدول `idempotency_keys`
+
+- id
+- user_id
+- operation
+- idempotency_key
+- request_hash
+- response_reference
+- status
+- expires_at
+- created_at
+
+Unique Index روی:
+
+`operation + idempotency_key`
+
+---
+
+# 42. روابط اصلی دیتابیس
+
+ساختار اصلی روابط:
+
+User  
+→ Exchange Accounts  
+→ Trades  
+→ Orders  
+→ Order Fills
+
+User  
+→ Signal Sources  
+→ Raw Signals  
+→ Signals  
+→ Trades
+
+Trade  
+→ Trade Targets
+
+Trade  
+→ Orders
+
+Trade  
+→ Position
+
+Trade  
+→ Trailing Rules
+
+Trade  
+→ Trade Events
+
+User  
+→ Alerts
+
+User  
+→ Notifications
+
+User  
+→ Watchlists
+
+---
+
+# 43. ایندکس‌های مهم
+
+برای عملکرد مناسب حداقل Indexهای زیر نیاز است:
+
+`trades(user_id, status)`
+
+`trades(exchange_account_id, status)`
+
+`orders(trade_id, status)`
+
+`orders(exchange_order_id)`
+
+`signals(user_id, created_at)`
+
+`signals(source_id, created_at)`
+
+`raw_signals(source_id, external_id)`
+
+`trade_events(trade_id, created_at)`
+
+`price_alerts(enabled, symbol)`
+
+`notifications(user_id, read_at)`
+
+`exchange_markets(exchange_id, symbol, market_type)`
+
+---
+
+# 44. Data Integrity
+
+از Floating Point برای محاسبات مالی استفاده نمی‌شود.
+
+تمام مقادیر مالی با:
+
+`NUMERIC / DECIMAL`
+
+ذخیره خواهند شد.
+
+برای Price، Amount، Fee و P/L Precision متناسب با Exchange حفظ می‌شود.
+
+---
+
+# 45. Transaction Management
+
+عملیات زیر باید داخل Database Transaction مناسب اجرا شوند:
+
+- ساخت Trade
+- ثبت سفارش
+- تغییر State
+- ثبت Fill
+- تغییر Balance داخلی
+- فعال‌کردن Trailing
+- بستن Trade
+
+هدف این است که سیستم در صورت Crash در حالت نیمه‌کاره باقی نماند.
+
+---
+
+# 46. Locking
+
+برای جلوگیری از اجرای همزمان عملیات روی یک Trade از:
+
+Redis Distributed Lock
+
+و در نقاط حساس از:
+
+Database Row Lock
+
+استفاده می‌شود.
+
+برای مثال دو Worker نباید بتوانند همزمان یک Position را Close کنند.
+
+---
+
+# 47. Market Data
+
+Market Data باید از Trading Data جدا باشد.
+
+اطلاعات لحظه‌ای قیمت لازم نیست برای هر Tick در PostgreSQL ذخیره شوند.
+
+آخرین قیمت‌ها می‌توانند در Redis قرار گیرند.
+
+PostgreSQL فقط داده‌هایی را ذخیره می‌کند که برای:
+
+Audit  
+Trade  
+Report  
+Alert
+
+لازم هستند.
+
+---
+
+# 48. Parser Architecture
+
+Parser باید Rule-based و قابل توسعه باشد.
+
+Pipeline:
+
+Normalize Text  
+→ Detect Pair  
+→ Detect Direction  
+→ Detect Entry  
+→ Detect Targets  
+→ Detect Stop Loss  
+→ Detect Leverage  
+→ Validate Values  
+→ Build Structured Signal
+
+Raw Text همیشه حفظ می‌شود.
+
+Parser Version نیز ذخیره خواهد شد.
+
+---
+
+# 49. Parser Confidence
+
+Confidence فقط میزان اطمینان فنی Parser به استخراج صحیح Signal است.
+
+مثلاً:
+
+Pair واضح: امتیاز بالا  
+Entry مبهم: کاهش امتیاز  
+SL پیدا نشده: کاهش امتیاز  
+اعداد متناقض: کاهش امتیاز
+
+در Full Auto می‌توان Threshold تعریف کرد.
+
+مثلاً اگر Parser Confidence کمتر از حد تعیین‌شده باشد، Signal به جای اجرای مستقیم وارد Inbox شود.
+
+---
+
+# 50. Signal Inbox
+
+Inbox محل بررسی Signalهای دریافتی است.
+
+وضعیت‌های نمونه:
+
+New  
+Parsed  
+Needs Review  
+Approved  
+Rejected  
+Executed  
+Failed
+
+کاربر می‌تواند Signal را باز کرده و Raw Text و Parsed Values را مقایسه کند.
+
+---
+
+# 51. Settings
+
+Settings شامل بخش‌های:
+
+General
+
+Trading Defaults
+
+Risk
+
+Take Profit
+
+Trailing
+
+Percentage Trailing
+
+Exchanges
+
+Telegram Sources
+
+Notifications
+
+Alerts
+
+Appearance
+
+Security
+
+خواهد بود.
+
+---
+
+# 52. احراز هویت
+
+سیستم حداقل شامل:
+
+Login  
+Logout  
+Password Reset  
+Session Management
+
+خواهد بود.
+
+برای عملیات حساس مانند افزودن API Exchange قابلیت 2FA در معماری پیش‌بینی می‌شود.
+
+---
+
+# 53. Session Security
+
+الزامات:
+
+Secure Cookie  
+HTTPOnly  
+SameSite  
+CSRF Protection  
+Rate Limiting  
+Session Expiration  
+Login Attempt Protection
+
+---
+
+# 54. Auditability
+
+هر عملیات حساس باید قابل ردیابی باشد.
+
+به‌خصوص:
+
+Exchange Added  
+Exchange Disabled  
+Trade Created  
+Order Submitted  
+Order Cancelled  
+SL Changed  
+Trailing Activated  
+Position Closed  
+Signal Auto Executed
+
+---
+
+# 55. Error Handling
+
+خطاهای Exchange باید Classification شوند:
+
+Authentication Error  
+Rate Limit  
+Insufficient Balance  
+Invalid Symbol  
+Invalid Amount  
+Order Rejected  
+Network Error  
+Exchange Maintenance  
+Timeout  
+Unknown Exchange Error
+
+هر خطا باید دارای Retry Policy مناسب باشد.
+
+---
+
+# 56. Retry Policy
+
+Retry کورکورانه برای عملیات معاملاتی ممنوع است.
+
+قبل از Retry سفارش باید مشخص شود سفارش قبلی واقعاً در Exchange ایجاد نشده است.
+
+برای همین:
+
+Client Order ID  
+Idempotency Key  
+Order Reconciliation
+
+ضروری است.
+
+---
+
+# 57. Logging
+
+Logها باید Structured باشند.
+
+اطلاعات حساس مانند:
+
+API Secret  
+Password  
+Session Token
+
+هرگز وارد Log نمی‌شوند.
+
+هر Log مهم باید دارای Correlation ID باشد تا مسیر:
+
+Signal → Trade → Order → Exchange
+
+قابل ردیابی باشد.
+
+---
+
+# 58. Monitoring
+
+سامانه باید شاخص‌هایی مانند:
+
+Worker Health  
+Queue Length  
+Telegram Listener Status  
+Exchange API Errors  
+Order Failures  
+Price Feed Status  
+Last Successful Sync
+
+را مانیتور کند.
+
+---
+
+# 59. Hosting Architecture
+
+برای اجرای کامل پروژه روی Python Hosting، سرویس میزبانی باید حداقل امکان موارد زیر را داشته باشد:
+
+Python 3.12+  
+PostgreSQL  
+Redis یا Redis خارجی  
+HTTPS  
+Environment Variables  
+Outbound HTTPS  
+Background Worker  
+Cron/Scheduler  
+Persistent Process  
+ترجیحاً ASGI/WebSocket  
+Storage برای Static Files
+
+---
+
+# 60. محدودیت هاست اشتراکی ساده
+
+اگر هاست پایتونی فقط اجرای WSGI Request/Response را فراهم کند و Background Process دائمی نداشته باشد، بخش‌های زیر نمی‌توانند به شکل حرفه‌ای روی همان Process اجرا شوند:
+
+Telegram Listener  
+Price Stream  
+Trailing Engine  
+Order Monitor  
+Celery Worker  
+Real-Time Alert Engine
+
+بنابراین خرید یا انتخاب هاست باید بر اساس این نیاز انجام شود.
+
+---
+
+# 61. معماری Deployment پیشنهادی
+
+ساختار:
+
+### Web Process
+
+Django  
+REST API  
+Authentication  
+Dashboard  
+Frontend
+
+### Worker Process
+
+Celery Worker  
+Signal Processing  
+Order Execution  
+Reports  
+Alerts
+
+### Scheduler
+
+Celery Beat یا Scheduler مشابه
+
+### Listener
+
+Telegram Listener
+
+### Database
+
+PostgreSQL
+
+### Cache/Queue
+
+Redis
+
+---
+
+# 62. ساختار Repository
+
+نمونه:
+
+`cryptosniper/`
+
+`backend/`
+
+`apps/accounts/`
+
+`apps/exchanges/`
+
+`apps/signals/`
+
+`apps/trades/`
+
+`apps/orders/`
+
+`apps/alerts/`
+
+`apps/reports/`
+
+`apps/telegram/`
+
+`apps/audit/`
+
+`services/`
+
+`exchange_adapters/`
+
+`trading_engine/`
+
+`signal_parser/`
+
+`templates/`
+
+`static/`
+
+`tests/`
+
+`config/`
+
+`scripts/`
+
+---
+
+# 63. Environment Separation
+
+محیط‌های مستقل:
+
+Development
+
+Staging
+
+Production
+
+اطلاعات Production هرگز داخل Repository Commit نمی‌شوند.
+
+---
+
+# 64. Testing Strategy
+
+پروژه بدون Test خودکار کامل محسوب نمی‌شود.
+
+انواع Test:
+
+### Unit Test
+
+Parser  
+TP Calculation  
+Trailing Calculation  
+P/L Calculation  
+Risk Rules
+
+### Integration Test
+
+Database  
+Redis  
+Exchange Adapter  
+Telegram Parser
+
+### Exchange Sandbox Test
+
+Place Order  
+Cancel Order  
+Order Status  
+Balance
+
+### End-to-End Test
+
+Signal  
+→ Trade  
+→ Order  
+→ Fill  
+→ TP/Trailing  
+→ Close
+
+---
+
+# 65. Mock Exchange
+
+یک Exchange Simulator داخلی باید ساخته شود.
+
+این Simulator امکان تست بدون پول واقعی را فراهم می‌کند.
+
+قابلیت‌ها:
+
+Price Simulation  
+Order Fill  
+Partial Fill  
+TP  
+SL  
+Trailing  
+API Error  
+Latency  
+Balance
+
+---
+
+# 66. Paper Trading
+
+پیشنهاد می‌شود قبل از فعال‌شدن Real Trading، سیستم دارای Paper Trading Mode باشد.
+
+Paper Trading دقیقاً همان Trading Engine واقعی را استفاده می‌کند ولی Adapter نهایی سفارش را به Simulator می‌فرستد.
+
+این ویژگی برای تست Full Auto اهمیت بسیار زیادی دارد.
+
+---
+
+# 67. Backup
+
+Backup روزانه Database لازم است.
+
+حداقل نگهداری:
+
+Daily Backup  
+Weekly Backup  
+Encrypted Offsite Backup
+
+همچنین Restore Test باید دوره‌ای انجام شود.
+
+---
+
+# 68. توسعه‌پذیری آینده
+
+معماری باید امکان اضافه‌شدن موارد زیر را داشته باشد:
+
+Futures  
+Perpetual  
+صرافی‌های بیشتر  
+منابع Signal بیشتر  
+Telegram Bot  
+Mobile Native App  
+AI Signal Parser  
+Advanced Risk Management  
+Portfolio Management  
+Strategy Automation  
+Copy Trading  
+Multi-user SaaS
+
+بدون بازنویسی هسته.
+
+---
+
+# 69. مراحل اجرایی کلان
+
+## Stage 01 – Foundation
+
+Repository  
+Environment  
+Django  
+PostgreSQL  
+Redis  
+Base UI  
+Authentication
+
+## Stage 02 – User & Security
+
+Account  
+Settings  
+Session Security  
+Audit
+
+## Stage 03 – Exchange Infrastructure
+
+Exchange Model  
+API Credentials  
+Encryption  
+Exchange Adapter  
+Market Sync  
+Balance
+
+## Stage 04 – Market Data
+
+Ticker  
+Live Price  
+Pair Search  
+Market Metadata  
+Watchlist
+
+## Stage 05 – Manual Trading
+
+Manual Form  
+Validation  
+Trade Plan  
+Order Preview
+
+## Stage 06 – Signal Core
+
+Signal Sources  
+Raw Signal  
+Structured Signal  
+Signal Inbox
+
+## Stage 07 – Smart Paste
+
+Parser  
+Normalization  
+TP/SL Extraction  
+Confidence  
+Parser Tests
+
+## Stage 08 – Telegram
+
+Source Management  
+Listener  
+Message Deduplication  
+Manual/Semi-Auto/Full-Auto
+
+## Stage 09 – Trading Engine
+
+Trade State Machine  
+Order Manager  
+Position Manager  
+Idempotency
+
+## Stage 10 – TP/SL
+
+TP1  
+TP2  
+TP3  
+Allocation  
+Stop Loss
+
+## Stage 11 – Trailing
+
+Trailing SL/TP  
+Percentage Trailing  
+TP Cancellation  
+Dynamic Exit
+
+## Stage 12 – Background Processing
+
+Celery  
+Redis  
+Queues  
+Scheduler  
+Retries  
+Locks
+
+## Stage 13 – Price Alerts
+
+General Alerts  
+Trade Alerts  
+Notification Engine
+
+## Stage 14 – Dashboard
+
+Balances  
+Open Trades  
+P/L  
+Recent Signals  
+Recent Alerts
+
+## Stage 15 – Trade Management UI
+
+Open Trades  
+Trade Details  
+Timeline  
+Manual Controls
+
+## Stage 16 – Reports
+
+Trade Statistics  
+P/L  
+Source Reports  
+Exchange Reports  
+Charts
+
+## Stage 17 – Mobile UX
+
+Mobile Dashboard  
+Watchlist  
+Manual  
+Smart Paste  
+Inbox  
+Open Trades  
+Trade Details  
+Reports  
+Settings
+
+## Stage 18 – Security Hardening
+
+Rate Limiting  
+Secret Protection  
+2FA Readiness  
+Audit  
+Security Tests
+
+## Stage 19 – Simulator & Paper Trading
+
+Mock Exchange  
+Paper Trading  
+Failure Simulation
+
+## Stage 20 – Production Deployment
+
+Python Host  
+PostgreSQL  
+Redis  
+Workers  
+SSL  
+Static  
+Backup  
+Monitoring
+
+## Stage 21 – Acceptance Tests
+
+Manual Signal  
+Smart Paste  
+Telegram Signal  
+Spot Trade  
+Margin Trade  
+TP  
+SL  
+Trailing  
+Alerts  
+Recovery Tests
+
+---
+
+# 70. معیار نهایی پذیرش پروژه
+
+CryptoSniper زمانی آماده نسخه Production شناخته می‌شود که حداقل سناریوی زیر بدون دخالت مستقیم Developer اجرا شود:
+
+یک Signal از Manual، Smart Paste یا Telegram وارد شود؛
+
+Signal به ساختار استاندارد تبدیل شود؛
+
+صرافی مناسب مشخص شود؛
+
+موجودی بررسی شود؛
+
+Trade ایجاد شود؛
+
+Entry Order بدون Duplicate اجرا شود؛
+
+Position شناسایی شود؛
+
+TP و SL مدیریت شوند؛
+
+Percentage Trailing در صورت فعال‌شدن TPهای باقی‌مانده را لغو کند؛
+
+Position با Rule صحیح بسته شود؛
+
+P/L و Fee ثبت شوند؛
+
+Trade History کامل ساخته شود؛
+
+Alert مناسب نمایش داده شود؛
+
+Report به‌روزرسانی شود؛
+
+و تمام مراحل در Audit Timeline قابل مشاهده باشند.
+
+---
+
+# 71. جمع‌بندی معماری نهایی
+
+معماری پیشنهادی CryptoSniper:
+
+**Frontend:**  
+Django Templates + HTMX + Alpine.js + Responsive CSS + JavaScript
+
+**Backend:**  
+Python + Django
+
+**API:**  
+Django REST Architecture
+
+**Real-Time:**  
+ASGI / WebSocket یا SSE بر اساس قابلیت Hosting
+
+**Database:**  
+PostgreSQL
+
+**Cache / Queue:**  
+Redis
+
+**Background Jobs:**  
+Celery
+
+**Scheduler:**  
+Celery Beat
+
+**Signal Source نسخه اول:**  
+Manual + Smart Paste + Telegram
+
+**Trading:**  
+Spot + Margin
+
+**Future Trading:**  
+Futures / Perpetual Ready
+
+**Hosting:**  
+Python Hosting دارای Persistent Worker
+
+**Mobile:**  
+Mobile-First، Light Mode پیش‌فرض، Dark Mode اختیاری
+
+**Security:**  
+Encrypted Exchange Credentials + No Withdrawal Permission + Audit + Idempotency + Rate Limiting
+
+---
+
+# 72. اصل معماری پروژه
+
+مهم‌ترین اصل CryptoSniper این است که:
+
+**Frontend فقط رابط کنترل و نمایش باشد و هیچ عملیات حساس معاملاتی به بازبودن مرورگر وابسته نباشد.**
+
+حتی اگر کاربر:
+
+مرورگر را ببندد،
+
+از حساب خارج شود،
+
+اینترنت دستگاه او قطع شود،
+
+یا تلفن همراه خاموش شود،
+
+پس از ثبت معتبر معامله، Monitoring و مدیریت TP، SL، Trailing و Alert باید توسط Backend و Workerهای سرور ادامه پیدا کند.
+
+این اصل باید از اولین Stage توسعه رعایت شود.
+
+---
+
+# 73. نتیجه
+
+CryptoSniper در معماری نهایی یک وب‌سایت ساده ثبت سیگنال نیست؛ بلکه یک **سامانه مدیریت چرخه کامل معامله** است.
+
+معماری پیشنهادی عمداً به گونه‌ای طراحی شده که نسخه نخست روی زیرساخت Python اجرا شود، اما در آینده بتوان بدون بازنویسی اساسی سیستم:
+
+کاربران بیشتر،
+
+صرافی‌های بیشتر،
+
+Telegram Sourceهای بیشتر،
+
+Futures،
+
+Perpetual،
+
+AI Parser،
+
+Mobile App
+
+و قابلیت‌های پیشرفته‌تر Trading را به آن اضافه کرد.
+
+مهم‌ترین تفکیک معماری نیز بین چهار بخش خواهد بود:
+
+**Signal Engine → Trading Engine → Exchange Layer → Monitoring & Reporting**
+
+و PostgreSQL به‌عنوان منبع دائمی حقیقت سیستم، Redis/Celery به‌عنوان زیرساخت پردازش Async و Django به‌عنوان هسته Application عمل خواهد کرد.
+
+
+یک نکته مهم برای شروع ساخت: **قبل از Stage 01 باید مشخصات همان هاست پایتونی را بررسی کنیم**؛ چون اگر Persistent Process، Redis یا Worker نداشته باشد، معماری Deployment را باید از ابتدا متناسب با محدودیت هاست تنظیم کنیم، بدون اینکه قابلیت‌های CryptoSniper حذف شوند.

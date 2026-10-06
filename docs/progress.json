@@ -1,0 +1,158 @@
+{
+  "schema_version": "cryptosniper.progress.v1",
+  "plan_version": "1.0.0",
+  "completed_stages": [],
+  "current_stage": null,
+  "next_stage": "S01",
+  "last_completed_work": null,
+  "implementation_started": false,
+  "stage_results": {
+    "S01": {
+      "status": "not_started",
+      "completed_works": [],
+      "checks": [],
+      "commit_shas": [],
+      "blockers": []
+    },
+    "S02": {
+      "status": "not_started",
+      "completed_works": [],
+      "checks": [],
+      "commit_shas": [],
+      "blockers": []
+    },
+    "S03": {
+      "status": "not_started",
+      "completed_works": [],
+      "checks": [],
+      "commit_shas": [],
+      "blockers": []
+    },
+    "S04": {
+      "status": "not_started",
+      "completed_works": [],
+      "checks": [],
+      "commit_shas": [],
+      "blockers": []
+    },
+    "S05": {
+      "status": "not_started",
+      "completed_works": [],
+      "checks": [],
+      "commit_shas": [],
+      "blockers": []
+    },
+    "S06": {
+      "status": "not_started",
+      "completed_works": [],
+      "checks": [],
+      "commit_shas": [],
+      "blockers": []
+    },
+    "S07": {
+      "status": "not_started",
+      "completed_works": [],
+      "checks": [],
+      "commit_shas": [],
+      "blockers": []
+    },
+    "S08": {
+      "status": "not_started",
+      "completed_works": [],
+      "checks": [],
+      "commit_shas": [],
+      "blockers": []
+    },
+    "S09": {
+      "status": "not_started",
+      "completed_works": [],
+      "checks": [],
+      "commit_shas": [],
+      "blockers": []
+    },
+    "S10": {
+      "status": "not_started",
+      "completed_works": [],
+      "checks": [],
+      "commit_shas": [],
+      "blockers": []
+    },
+    "S11": {
+      "status": "not_started",
+      "completed_works": [],
+      "checks": [],
+      "commit_shas": [],
+      "blockers": []
+    },
+    "S12": {
+      "status": "not_started",
+      "completed_works": [],
+      "checks": [],
+      "commit_shas": [],
+      "blockers": []
+    },
+    "S13": {
+      "status": "not_started",
+      "completed_works": [],
+      "checks": [],
+      "commit_shas": [],
+      "blockers": []
+    },
+    "S14": {
+      "status": "not_started",
+      "completed_works": [],
+      "checks": [],
+      "commit_shas": [],
+      "blockers": []
+    },
+    "S15": {
+      "status": "not_started",
+      "completed_works": [],
+      "checks": [],
+      "commit_shas": [],
+      "blockers": []
+    },
+    "S16": {
+      "status": "not_started",
+      "completed_works": [],
+      "checks": [],
+      "commit_shas": [],
+      "blockers": []
+    },
+    "S17": {
+      "status": "not_started",
+      "completed_works": [],
+      "checks": [],
+      "commit_shas": [],
+      "blockers": []
+    },
+    "S18": {
+      "status": "not_started",
+      "completed_works": [],
+      "checks": [],
+      "commit_shas": [],
+      "blockers": []
+    },
+    "S19": {
+      "status": "not_started",
+      "completed_works": [],
+      "checks": [],
+      "commit_shas": [],
+      "blockers": []
+    },
+    "S20": {
+      "status": "not_started",
+      "completed_works": [],
+      "checks": [],
+      "commit_shas": [],
+      "blockers": []
+    },
+    "S21": {
+      "status": "not_started",
+      "completed_works": [],
+      "checks": [],
+      "commit_shas": [],
+      "blockers": []
+    }
+  }
+}

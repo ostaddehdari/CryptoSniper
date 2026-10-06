@@ -25,6 +25,7 @@ INSTALLED_APPS = [
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "apps.core.observability.CorrelationMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -102,4 +103,54 @@ CACHES = {
         "TIMEOUT": 300,
         "OPTIONS": {"socket_connect_timeout": 1, "socket_timeout": 1},
     }
+}
+
+CELERY_BROKER_URL = env("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND")
+for url in (CELERY_BROKER_URL, CELERY_RESULT_BACKEND):
+    if urlsplit(url).scheme not in {"redis", "rediss"}:
+        raise ImproperlyConfigured("Celery requires Redis URLs.")
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "UTC"
+CELERY_ENABLE_UTC = True
+CELERY_TASK_ALWAYS_EAGER = False
+CELERY_TASK_DEFAULT_QUEUE = "maintenance"
+CELERY_TASK_CREATE_MISSING_QUEUES = False
+CELERY_TASK_QUEUES = {
+    "orders": {"exchange": "orders", "routing_key": "orders"},
+    "reports": {"exchange": "reports", "routing_key": "reports"},
+    "maintenance": {"exchange": "maintenance", "routing_key": "maintenance"},
+}
+CELERY_TASK_ROUTES = {"core.worker_heartbeat": {"queue": "maintenance"}}
+CELERY_BROKER_CONNECTION_TIMEOUT = 3
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_BROKER_CONNECTION_MAX_RETRIES = 3
+CELERY_BROKER_TRANSPORT_OPTIONS = {"visibility_timeout": 300}
+CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS = {
+    "socket_connect_timeout": 1,
+    "socket_timeout": 3,
+}
+CELERY_RESULT_EXPIRES = 3600
+CELERY_WORKER_HIJACK_ROOT_LOGGER = False
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_TASK_SOFT_TIME_LIMIT = 30
+CELERY_TASK_TIME_LIMIT = 45
+CELERY_BEAT_SCHEDULE = {
+    "infrastructure-heartbeat": {
+        "task": "core.worker_heartbeat",
+        "schedule": 30.0,
+        "options": {"queue": "maintenance", "expires": 25},
+    },
+}
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {"json": {"()": "apps.core.observability.RedactingJsonFormatter"}},
+    "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "json"}},
+    "root": {"handlers": ["console"], "level": env("LOG_LEVEL", default="INFO")},
+    "loggers": {
+        "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
+    },
 }

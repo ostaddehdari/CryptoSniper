@@ -1,0 +1,8 @@
+{% load static %}<!doctype html>
+<html lang="fa" dir="rtl" data-theme="light"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#087f73">
+<meta name="htmx-config" content='{"historyCacheSize":0,"selfRequestsOnly":true,"allowEval":false}'>
+<title>{% block title %}CryptoSniper{% endblock %}</title>
+<link rel="icon" href="{% static 'img/mark.svg' %}" type="image/svg+xml"><link rel="stylesheet" href="{% static 'css/app.css' %}">
+<script src="{% static 'vendor/htmx-2.0.8.min.js' %}" defer></script><script src="{% static 'js/app.js' %}" defer></script><script src="{% static 'vendor/alpine-3.14.9.min.js' %}" defer></script>
+</head><body x-data="workspace" :class="{ 'menu-open': menuOpen }"><a class="skip-link" href="#main">رفتن به محتوای اصلی</a>{% block body %}{% endblock %}</body></html>

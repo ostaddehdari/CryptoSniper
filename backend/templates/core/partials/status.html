@@ -1,0 +1,2 @@
+<div class="service-list">{% for label, name, ok in services %}<div class="service-row"><div><strong>{{ label }}</strong><small dir="ltr">{{ name }}</small></div><span class="service-state {% if ok %}is-ok{% else %}is-waiting{% endif %}"><i></i>{% if ok %}فعال{% else %}در دسترس نیست{% endif %}</span></div>{% endfor %}</div>
+{% if not worker_alive %}<p class="status-note">ضربان Worker هنوز دریافت نشده است؛ پردازش پس‌زمینه و زمان‌بندی سرور را بررسی کنید.</p>{% endif %}

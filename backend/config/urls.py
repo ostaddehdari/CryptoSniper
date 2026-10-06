@@ -1,4 +1,6 @@
+from apps.core import views
 from apps.core.health import dependency_status
+from django.contrib.auth.views import LogoutView
 from django.http import JsonResponse
 from django.urls import path
 
@@ -19,6 +21,14 @@ def ready(request):
 
 
 urlpatterns = [
+    path("", views.home, name="home"),
+    path("auth/login/", views.SignInView.as_view(), name="login"),
+    path("auth/logout/", LogoutView.as_view(), name="logout"),
+    path("dashboard/", views.dashboard, name="dashboard"),
+    path("system/", views.system, name="system"),
+    path("system/status/", views.system_status, name="system-status"),
+    path("system/probe/", views.create_probe, name="create-probe"),
+    path("system/probe/<uuid:probe_id>/", views.probe_status, name="probe-status"),
     path("health/live/", live, name="health-live"),
     path("health/ready/", ready, name="health-ready"),
 ]

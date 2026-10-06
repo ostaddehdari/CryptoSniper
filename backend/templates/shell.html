@@ -1,0 +1,13 @@
+{% extends 'base.html' %}{% load static %}{% block body %}
+<div class="app-layout">
+<button class="menu-scrim" x-show="menuOpen" x-cloak @click="menuOpen = false" aria-label="بستن منو"></button>
+<aside class="sidebar" aria-label="منوی اصلی"><a class="brand" href="{% url 'dashboard' %}"><img src="{% static 'img/mark.svg' %}" alt="" width="38" height="38"><span>Crypto<span class="brand-accent">Sniper</span><small>کنترل، دقت، آرامش</small></span></a>
+<div class="nav-section-label">فضای کار</div><nav class="nav-links">
+<a href="{% url 'dashboard' %}" class="nav-link {% if nav == 'dashboard' %}active{% endif %}" {% if nav == 'dashboard' %}aria-current="page"{% endif %}><span class="nav-symbol" aria-hidden="true">◈</span> نمای کلی</a>
+<a href="{% url 'system' %}" class="nav-link {% if nav == 'system' %}active{% endif %}" {% if nav == 'system' %}aria-current="page"{% endif %}><span class="nav-symbol" aria-hidden="true">⌁</span> وضعیت سرویس‌ها</a></nav>
+<div class="coming-next"><span class="eyebrow">در مسیر تکمیل</span><p>اتصال صرافی، ورود سیگنال و مدیریت معاملات در مراحل بعد آماده می‌شوند.</p></div>
+<div class="sidebar-footer"><span class="status-dot"></span> حالت پیش‌فرض: تمرین <small>اجرای واقعی معاملات غیرفعال است</small></div></aside>
+<div class="workspace"><header class="topbar"><div class="topbar-start"><button class="icon-button mobile-menu" @click="menuOpen = !menuOpen" :aria-expanded="menuOpen" aria-label="باز کردن منو">☰</button><span class="breadcrumb">فضای کار <span>/</span> {% block breadcrumb %}نمای کلی{% endblock %}</span></div>
+<div class="topbar-actions"><span class="mode-pill">PAPER</span><button class="icon-button" @click="toggleTheme()" :aria-label="theme === 'light' ? 'فعال‌کردن حالت تیره' : 'فعال‌کردن حالت روشن'" title="تغییر ظاهر"><span x-text="theme === 'light' ? '☾' : '☀'">☾</span></button>
+<div class="profile" @click.outside="profileOpen = false"><button class="profile-button" @click="profileOpen = !profileOpen" :aria-expanded="profileOpen"><span class="avatar">{{ request.user.username|slice:':1'|upper }}</span><span class="profile-name">{{ request.user.get_full_name|default:request.user.username }}</span><span aria-hidden="true">⌄</span></button><div class="profile-menu" x-show="profileOpen" x-cloak><strong>{{ request.user.username }}</strong><span>نشست کاربری فعال</span><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="text-button" type="submit">خروج از حساب</button></form></div></div></div></header>
+<main id="main" class="main-content">{% block content %}{% endblock %}</main><footer class="workspace-footer">CryptoSniper <span>نمایش شفاف؛ تصمیم آگاهانه.</span></footer></div></div>{% endblock %}

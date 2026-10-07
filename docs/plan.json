@@ -89,7 +89,7 @@
       "depends_on": [
         "S01"
       ],
-      "status": "not_started",
+      "status": "done",
       "source_sections": [
         41,
         51,
@@ -104,7 +104,7 @@
           "title": "مدل کاربر و پروفایل",
           "deliverables": "ایمیل، نام نمایشی، timezone، ارز پایه، وضعیت حساب و مالکیت تمام داده‌های کاربر.",
           "acceptance": "دو کاربر نتوانند داده‌های خصوصی یکدیگر را بخوانند یا تغییر دهند.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S02-W02",
@@ -112,7 +112,7 @@
           "title": "چرخه احراز هویت",
           "deliverables": "ورود، خروج، بازیابی رمز، مدیریت نشست‌ها و انقضای نشست.",
           "acceptance": "توکن بازیابی یک‌بارمصرف و انقضادار؛ نشست خروج‌یافته معتبر نباشد.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S02-W03",
@@ -120,7 +120,7 @@
           "title": "امنیت Session و API",
           "deliverables": "Secure/HTTPOnly/SameSite cookie، CSRF، rate limit و محدودیت تلاش ورود؛ REST با احراز هویت session.",
           "acceptance": "درخواست بدون CSRF و تلاش ورود پرتکرار رد شود؛ API خصوصی محافظت شود.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S02-W04",
@@ -128,7 +128,7 @@
           "title": "تنظیمات معاملاتی و ظاهری",
           "deliverables": "پیش‌فرض سرمایه، بازار، TP با ۱۰/۱۰/۸۰، دو trailing، trigger=TP1 و فاصله=۱٪؛ Light اصلی و Dark اختیاری.",
           "acceptance": "تنظیمات معتبر ذخیره شوند و مجموع درصد نامعتبر یا مقدار منفی رد شود.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S02-W05",
@@ -136,7 +136,7 @@
           "title": "Audit و UI تنظیمات",
           "deliverables": "audit_logs افزایشی برای اقدامات حساس و صفحه پروفایل/امنیت/پیش‌فرض‌ها با ماسک داده حساس.",
           "acceptance": "رویداد امنیتی قابل ردیابی و فاقد رمز، secret و token باشد.",
-          "status": "not_started"
+          "status": "done"
         }
       ]
     },

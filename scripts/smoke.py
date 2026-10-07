@@ -51,7 +51,12 @@ def main():
     artifacts.mkdir(parents=True, exist_ok=True)
     username = "smoke-" + secrets.token_hex(6)
     password = secrets.token_urlsafe(24)
-    user = get_user_model().objects.create_user(username=username, password=password)
+    user = get_user_model().objects.create_user(
+        username=username,
+        email=f"{username}@example.test",
+        display_name="کاربر آزمون مرورگر",
+        password=password,
+    )
     env = dict(os.environ, PYTHONPATH=str(BACKEND))
     try:
         with tempfile.TemporaryDirectory(prefix="cryptosniper-smoke-") as work:
@@ -129,6 +134,19 @@ def main():
                 page.wait_for_url("**/dashboard/")
                 page.get_by_text("ذخیره نتایج", exact=True).wait_for()
                 page.screenshot(path=str(artifacts / "dashboard-desktop.png"), full_page=True)
+                page.goto(base + "/settings/profile/")
+                page.get_by_role("heading", name="پروفایل").wait_for()
+                page.screenshot(path=str(artifacts / "profile-desktop.png"), full_page=True)
+                page.goto(base + "/settings/trading/")
+                page.get_by_role("heading", name="پیش‌فرض‌های معامله").wait_for()
+                assert page.locator('[name="tp1_percent"]').input_value() == "10.00"
+                assert page.locator('[name="tp2_percent"]').input_value() == "10.00"
+                assert page.locator('[name="tp3_percent"]').input_value() == "80.00"
+                page.screenshot(path=str(artifacts / "trading-desktop.png"), full_page=True)
+                page.goto(base + "/settings/security/audit/")
+                page.get_by_role("heading", name="گزارش امنیتی حساب").wait_for()
+                page.screenshot(path=str(artifacts / "security-desktop.png"), full_page=True)
+                page.goto(base + "/dashboard/")
                 for width in (320, 390, 768):
                     page.set_viewport_size({"width": width, "height": 844})
                     assert page.evaluate("document.documentElement.scrollWidth <= innerWidth"), (

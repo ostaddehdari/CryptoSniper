@@ -1,4 +1,4 @@
-name: Stage 01 checks
+name: Stage 02 checks
 on:
   push:
   pull_request:
@@ -76,7 +76,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: stage-01-evidence
+          name: stage-02-evidence
           path: |
             .runtime/pytest.xml
             .runtime/screenshots/*.png

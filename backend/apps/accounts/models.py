@@ -1,3 +1,4 @@
+from datetime import timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from django.conf import settings
@@ -5,6 +6,7 @@ from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models.functions import Lower
+from django.utils import timezone
 
 
 class OwnedQuerySet(models.QuerySet):
@@ -65,3 +67,43 @@ class User(AbstractUser):
     @property
     def preferred_name(self):
         return self.display_name or self.get_full_name() or self.username
+
+
+def password_reset_expiry():
+    return timezone.now() + timedelta(minutes=30)
+
+
+class PasswordResetRequest(UserOwnedModel):
+    token_digest = models.CharField(max_length=64, unique=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(default=password_reset_expiry)
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=("owner", "created_at"))]
+
+    def __str__(self):
+        return f"password reset {self.pk} for user {self.owner_id}"
+
+    @property
+    def is_usable(self):
+        return self.used_at is None and self.expires_at > timezone.now()
+
+
+class UserSession(UserOwnedModel):
+    session_key = models.CharField(max_length=40, unique=True, editable=False)
+    user_agent_label = models.CharField(max_length=120, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_seen_at = models.DateTimeField(default=timezone.now)
+    expires_at = models.DateTimeField()
+    revoked_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=("owner", "revoked_at", "last_seen_at"))]
+
+    def __str__(self):
+        return f"session {self.pk} for user {self.owner_id}"
+
+    @property
+    def is_currently_valid(self):
+        return self.revoked_at is None and self.expires_at > timezone.now()

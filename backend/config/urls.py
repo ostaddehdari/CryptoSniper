@@ -1,7 +1,6 @@
 from apps.accounts import views as account_views
 from apps.core import views
 from apps.core.health import dependency_status
-from django.contrib.auth.views import LogoutView
 from django.http import JsonResponse
 from django.urls import path
 
@@ -23,9 +22,29 @@ def ready(request):
 
 urlpatterns = [
     path("", views.home, name="home"),
-    path("auth/login/", views.SignInView.as_view(), name="login"),
-    path("auth/logout/", LogoutView.as_view(), name="logout"),
+    path("auth/login/", account_views.SignInView.as_view(), name="login"),
+    path("auth/logout/", account_views.sign_out, name="logout"),
+    path("auth/password-reset/", account_views.password_reset_request, name="password-reset"),
+    path(
+        "auth/password-reset/sent/", account_views.password_reset_sent, name="password-reset-sent"
+    ),
+    path(
+        "auth/password-reset/complete/",
+        account_views.password_reset_complete,
+        name="password-reset-complete",
+    ),
+    path(
+        "auth/password-reset/<str:token>/",
+        account_views.password_reset_confirm,
+        name="password-reset-confirm",
+    ),
     path("settings/profile/", account_views.profile, name="profile"),
+    path("settings/security/sessions/", account_views.sessions, name="sessions"),
+    path(
+        "settings/security/sessions/<int:session_id>/revoke/",
+        account_views.revoke_session,
+        name="revoke-session",
+    ),
     path("dashboard/", views.dashboard, name="dashboard"),
     path("system/", views.system, name="system"),
     path("system/status/", views.system_status, name="system-status"),

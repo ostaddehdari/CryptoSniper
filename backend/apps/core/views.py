@@ -1,31 +1,20 @@
 from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.views import LoginView
 from django.core.cache import cache
 from django.db import transaction
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
-from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_POST
 from kombu.exceptions import OperationalError
 from redis.exceptions import RedisError
 
-from apps.accounts.forms import SignInForm
-
 from .health import dependency_status
 from .models import ServiceProbe
 from .tasks import infrastructure_probe
-
-
-@method_decorator(never_cache, name="dispatch")
-class SignInView(LoginView):
-    template_name = "registration/login.html"
-    authentication_form = SignInForm
-    redirect_authenticated_user = True
 
 
 def home(request):

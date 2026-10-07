@@ -1,3 +1,4 @@
+import re
 from datetime import timedelta
 from decimal import Decimal
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -5,7 +6,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 from django.db.models.functions import Lower
 from django.utils import timezone
@@ -190,3 +191,76 @@ class TradingPreferences(UserOwnedModel):
             raise ValidationError("درصدهای برداشت سود نمی‌توانند منفی باشند.")
         if sum(values) != Decimal("100"):
             raise ValidationError("مجموع سهم‌های TP باید دقیقاً ۱۰۰ درصد باشد.")
+
+
+_SENSITIVE_AUDIT_KEY = re.compile(
+    r"password|secret|token|api.?key|credential|authorization|cookie|session.?key", re.I
+)
+_SENSITIVE_AUDIT_VALUE = re.compile(
+    r"(?i)(password|secret|token|api[_-]?key|authorization|cookie)\s*[:=]\s*[^\s,;]+"
+)
+
+
+def sanitize_audit_metadata(value, depth=0):
+    if depth > 4:
+        return "[TRUNCATED]"
+    if isinstance(value, dict):
+        return {
+            str(key)[:60]: (
+                "[REDACTED]"
+                if _SENSITIVE_AUDIT_KEY.search(str(key))
+                else sanitize_audit_metadata(item, depth + 1)
+            )
+            for key, item in list(value.items())[:30]
+        }
+    if isinstance(value, (list, tuple)):
+        return [sanitize_audit_metadata(item, depth + 1) for item in value[:30]]
+    if isinstance(value, bool) or value is None or isinstance(value, (int, float)):
+        return value
+    text = _SENSITIVE_AUDIT_VALUE.sub(r"\1=[REDACTED]", str(value))
+    return text[:240]
+
+
+class AppendOnlyAuditQuerySet(models.QuerySet):
+    def update(self, **kwargs):
+        raise ValidationError("رویدادهای Audit قابل ویرایش نیستند.")
+
+    def delete(self):
+        raise ValidationError("رویدادهای Audit قابل حذف نیستند.")
+
+
+class AuditLog(models.Model):
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.DO_NOTHING,
+        db_constraint=False,
+        related_name="audit_events",
+    )
+    event_type = models.CharField(
+        max_length=64,
+        validators=(RegexValidator(r"^[a-z0-9_.-]+$"),),
+        editable=False,
+    )
+    metadata = models.JSONField(default=dict, blank=True, editable=False)
+    ip_hash = models.CharField(max_length=64, blank=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
+    objects = AppendOnlyAuditQuerySet.as_manager()
+
+    class Meta:
+        ordering = ("-created_at", "-pk")
+        indexes = [models.Index(fields=("owner", "created_at"))]
+
+    def __str__(self):
+        return f"{self.event_type} at {self.created_at}"
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            raise ValidationError("رویدادهای Audit قابل ویرایش نیستند.")
+        self.metadata = sanitize_audit_metadata(self.metadata)
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("رویدادهای Audit قابل حذف نیستند.")

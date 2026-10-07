@@ -13,6 +13,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_http_methods
 
+from .audit import record_audit
 from .forms import (
     PasswordResetRequestForm,
     ProfileForm,
@@ -20,7 +21,7 @@ from .forms import (
     SignInForm,
     TradingPreferencesForm,
 )
-from .models import PasswordResetRequest, TradingPreferences, UserSession
+from .models import AuditLog, PasswordResetRequest, TradingPreferences, User, UserSession
 from .security import (
     clear_login_failures,
     login_attempts,
@@ -56,11 +57,22 @@ class SignInView(LoginView):
         if rate_limited or attempts >= settings.AUTH_LOGIN_MAX_ATTEMPTS:
             response.status_code = 429
             response["Retry-After"] = str(settings.AUTH_LOGIN_WINDOW_SECONDS)
+        attempted = User.objects.filter(
+            username__iexact=self.request.POST.get("username", "")
+        ).first()
+        record_audit(
+            "auth.rate_limited" if response.status_code == 429 else "auth.login_failed",
+            request=self.request,
+            user=attempted,
+            metadata={"attempts": attempts},
+        )
         return response
 
     def form_valid(self, form):
         clear_login_failures(self.request, form.cleaned_data.get("username", ""))
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        record_audit("auth.login_succeeded", request=self.request, user=form.get_user())
+        return response
 
 
 @login_required
@@ -69,7 +81,11 @@ class SignInView(LoginView):
 def profile(request):
     form = ProfileForm(request.POST or None, instance=request.user)
     if request.method == "POST" and form.is_valid():
+        changed = list(form.changed_data)
         form.save()
+        record_audit(
+            "profile.updated", request=request, user=request.user, metadata={"fields": changed}
+        )
         messages.success(request, "اطلاعات حساب شما ذخیره شد.")
         return redirect("profile")
     return render(request, "accounts/profile.html", {"form": form, "nav": "settings"})
@@ -117,6 +133,7 @@ def password_reset_confirm(request, token):
             locked.used_at = timezone.now()
             locked.save(update_fields=("used_at",))
             revoke_all_user_sessions(locked.owner)
+            record_audit("password_reset.completed", request=request, user=locked.owner)
         return redirect("password-reset-complete")
     return render(request, "registration/password_reset_confirm.html", {"form": form})
 
@@ -143,7 +160,7 @@ def sessions(request):
 def revoke_session(request, session_id):
     session = get_object_or_404(UserSession.objects.for_user(request.user), pk=session_id)
     is_current = session.session_key == request.session.session_key
-    revoke_user_session(session)
+    revoke_user_session(session, request=request)
     if is_current:
         logout(request)
         return redirect("login")
@@ -156,8 +173,9 @@ def revoke_session(request, session_id):
 def sign_out(request):
     key = request.session.session_key
     tracked = UserSession.objects.filter(owner=request.user, session_key=key).first()
+    record_audit("auth.logout", request=request, user=request.user)
     if tracked:
-        revoke_user_session(tracked)
+        revoke_user_session(tracked, request=request)
     logout(request)
     return redirect("login")
 
@@ -174,7 +192,14 @@ def trading_preferences(request):
     preferences = _preferences_for(request.user)
     form = TradingPreferencesForm(request.POST or None, instance=preferences)
     if request.method == "POST" and form.is_valid():
+        changed = list(form.changed_data)
         form.save()
+        record_audit(
+            "trading_preferences.updated",
+            request=request,
+            user=request.user,
+            metadata={"fields": changed},
+        )
         messages.success(request, "پیش‌فرض‌های معامله ذخیره شد.")
         return redirect("trading-preferences")
     return render(
@@ -218,7 +243,11 @@ def api_me(request):
         return JsonResponse(
             {"error": "validation_error", "fields": form.errors.get_json_data()}, status=400
         )
+    changed = list(form.changed_data)
     form.save()
+    record_audit(
+        "profile.updated", request=request, user=request.user, metadata={"fields": changed}
+    )
     return JsonResponse({"profile": _profile_payload(request.user)})
 
 
@@ -261,5 +290,24 @@ def api_trading_preferences(request):
         return JsonResponse(
             {"error": "validation_error", "fields": form.errors.get_json_data()}, status=400
         )
+    changed = list(form.changed_data)
     form.save()
+    record_audit(
+        "trading_preferences.updated",
+        request=request,
+        user=request.user,
+        metadata={"fields": changed},
+    )
     return JsonResponse({"trading_preferences": _trading_payload(preferences)})
+
+
+@login_required
+@never_cache
+@require_http_methods(["GET"])
+def audit_events(request):
+    events = AuditLog.objects.filter(owner=request.user)[:100]
+    return render(
+        request,
+        "accounts/audit_events.html",
+        {"events": events, "nav": "settings"},
+    )

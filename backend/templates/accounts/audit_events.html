@@ -1,0 +1,5 @@
+{% extends 'shell.html' %}{% block title %}گزارش امنیتی | CryptoSniper{% endblock %}{% block breadcrumb %}تنظیمات / گزارش امنیتی{% endblock %}{% block content %}
+<div class="page-heading"><div><span class="eyebrow">SECURITY AUDIT</span><h1>گزارش امنیتی حساب</h1><p class="muted">صد رویداد اخیر حساب؛ داده‌های حساس در این گزارش ذخیره و نمایش داده نمی‌شوند.</p></div></div>
+<div class="settings-layout"><nav class="settings-tabs"><a href="{% url 'profile' %}">پروفایل</a><a href="{% url 'sessions' %}">امنیت و نشست‌ها</a><a href="{% url 'trading-preferences' %}">پیش‌فرض‌های معامله</a><a class="active" href="{% url 'audit-events' %}">گزارش امنیتی</a></nav><section class="panel settings-panel"><div class="audit-list">
+{% for event in events %}<article class="audit-row"><div><strong>{{ event.event_type }}</strong><span>{{ event.created_at|date:'Y/m/d H:i:s' }} UTC</span></div><code>{% if event.ip_hash %}IP: {{ event.ip_hash|slice:':8' }}…{% else %}IP: —{% endif %}</code>{% if event.metadata %}<small>{{ event.metadata }}</small>{% endif %}</article>{% empty %}<p class="muted">هنوز رویدادی ثبت نشده است.</p>{% endfor %}
+</div></section></div>{% endblock %}

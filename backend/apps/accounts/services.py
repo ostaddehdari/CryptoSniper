@@ -8,6 +8,7 @@ from django.db import transaction
 from django.urls import reverse
 from django.utils import timezone
 
+from .audit import record_audit
 from .models import PasswordResetRequest, User, UserSession
 
 
@@ -37,14 +38,23 @@ def issue_password_reset(request, email):
         None,
         [user.email],
     )
+    record_audit("password_reset.requested", request=request, user=user)
 
 
-def revoke_user_session(session, *, at=None):
+def revoke_user_session(session, *, at=None, request=None):
     at = at or timezone.now()
     if session.revoked_at is None:
         session.revoked_at = at
         session.save(update_fields=("revoked_at",))
     Session.objects.filter(session_key=session.session_key).delete()
+    record_audit(
+        "session.revoked",
+        request=request,
+        user=session.owner,
+        metadata={
+            "current_session": bool(request and request.session.session_key == session.session_key)
+        },
+    )
 
 
 def revoke_all_user_sessions(user):

@@ -44,6 +44,7 @@ urlpatterns = [
         account_views.trading_preferences,
         name="trading-preferences",
     ),
+    path("settings/security/audit/", account_views.audit_events, name="audit-events"),
     path("settings/security/sessions/", account_views.sessions, name="sessions"),
     path(
         "settings/security/sessions/<int:session_id>/revoke/",

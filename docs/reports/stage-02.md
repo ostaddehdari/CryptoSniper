@@ -31,7 +31,7 @@
 
 ## شواهد و کامیت‌ها
 
-اجرای موفق کد پنج ورک و اصلاح قرارداد API: [GitHub Actions شماره 37595775313](https://github.com/ostaddehdari/CryptoSniper/actions/runs/37595775313)، commit `6c3322d5197032ed5ced7d6b2e46df6db5ebf4b1`. artifact شماره `11470308992` شامل JUnit XML و screenshotهای smoke است.
+اجرای موفق نهایی: [GitHub Actions شماره 37596850640](https://github.com/ostaddehdari/CryptoSniper/actions/runs/37596850640)، commit `2a86537fbc95a53ab32feaebe30e1ed1329efd00`. artifact شماره `11471031500` با نام `stage-02-evidence` شامل JUnit XML و screenshotهای داشبورد، پروفایل، پیش‌فرض‌های معامله، گزارش امنیتی و رابط موبایل است.
 
 | شناسه | کامیت GitHub |
 |---|---|
@@ -41,6 +41,8 @@
 | S02-W04 | `30e65bb03f13d2f2108edff99e57cf861125a080` |
 | S02-W05 | `5504094c069cb297e60a422d553f3858c97c8134` |
 | اصلاح قرارداد Decimal API | `6c3322d5197032ed5ced7d6b2e46df6db5ebf4b1` |
+| جمع‌بندی استیج | `e193c4683410854ef2c395c711c182dc7c0c8e27` |
+| اصلاح smoke عددی | `2a86537fbc95a53ab32feaebe30e1ed1329efd00` |
 
 ## محدودیت واقعی تحویل
 

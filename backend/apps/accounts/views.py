@@ -1,9 +1,12 @@
+import json
+
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView
 from django.db import transaction
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
@@ -17,6 +20,12 @@ from .forms import (
     SignInForm,
 )
 from .models import PasswordResetRequest, UserSession
+from .security import (
+    clear_login_failures,
+    login_attempts,
+    record_login_failure,
+    session_api_required,
+)
 from .services import (
     issue_password_reset,
     revoke_all_user_sessions,
@@ -29,6 +38,28 @@ class SignInView(LoginView):
     template_name = "registration/login.html"
     authentication_form = SignInForm
     redirect_authenticated_user = True
+
+    def post(self, request, *args, **kwargs):
+        username = request.POST.get("username", "")
+        if login_attempts(request, username) >= settings.AUTH_LOGIN_MAX_ATTEMPTS:
+            form = self.get_form()
+            form.add_error(None, "تلاش‌های ورود بیش از حد مجاز است. کمی بعد دوباره امتحان کنید.")
+            return self.form_invalid(form, rate_limited=True)
+        return super().post(request, *args, **kwargs)
+
+    def form_invalid(self, form, rate_limited=False):
+        attempts = settings.AUTH_LOGIN_MAX_ATTEMPTS
+        if not rate_limited:
+            attempts = record_login_failure(self.request, self.request.POST.get("username", ""))
+        response = super().form_invalid(form)
+        if rate_limited or attempts >= settings.AUTH_LOGIN_MAX_ATTEMPTS:
+            response.status_code = 429
+            response["Retry-After"] = str(settings.AUTH_LOGIN_WINDOW_SECONDS)
+        return response
+
+    def form_valid(self, form):
+        clear_login_failures(self.request, form.cleaned_data.get("username", ""))
+        return super().form_valid(form)
 
 
 @login_required
@@ -128,3 +159,39 @@ def sign_out(request):
         revoke_user_session(tracked)
     logout(request)
     return redirect("login")
+
+
+def _profile_payload(user):
+    return {
+        "username": user.username,
+        "display_name": user.display_name,
+        "email": user.email,
+        "timezone": user.timezone,
+        "base_currency": user.base_currency,
+        "theme": user.theme,
+        "account_status": user.account_status,
+    }
+
+
+@session_api_required
+@never_cache
+@require_http_methods(["GET", "PATCH"])
+def api_me(request):
+    if request.method == "GET":
+        return JsonResponse({"profile": _profile_payload(request.user)})
+    if request.content_type != "application/json":
+        return JsonResponse({"error": "json_required"}, status=415)
+    try:
+        incoming = json.loads(request.body)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({"error": "invalid_json"}, status=400)
+    allowed = {"display_name", "email", "timezone", "base_currency", "theme"}
+    if not isinstance(incoming, dict) or set(incoming) - allowed:
+        return JsonResponse({"error": "unsupported_fields"}, status=400)
+    current = _profile_payload(request.user)
+    data = {name: incoming.get(name, current[name]) for name in allowed}
+    form = ProfileForm(data, instance=request.user)
+    if not form.is_valid():
+        return JsonResponse({"error": "validation_error", "fields": form.errors}, status=400)
+    form.save()
+    return JsonResponse({"profile": _profile_payload(request.user)})

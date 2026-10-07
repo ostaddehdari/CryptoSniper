@@ -45,6 +45,7 @@ urlpatterns = [
         account_views.revoke_session,
         name="revoke-session",
     ),
+    path("api/v1/me/", account_views.api_me, name="api-me"),
     path("dashboard/", views.dashboard, name="dashboard"),
     path("system/", views.system, name="system"),
     path("system/status/", views.system_status, name="system-status"),

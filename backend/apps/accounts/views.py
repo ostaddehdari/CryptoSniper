@@ -256,14 +256,14 @@ def _trading_payload(preferences):
         "default_order_amount": str(preferences.default_order_amount),
         "default_market": preferences.default_market,
         "tp_distribution": [
-            str(preferences.tp1_percent),
-            str(preferences.tp2_percent),
-            str(preferences.tp3_percent),
+            format(preferences.tp1_percent, ".2f"),
+            format(preferences.tp2_percent, ".2f"),
+            format(preferences.tp3_percent, ".2f"),
         ],
         "trailing_sl_enabled": preferences.trailing_sl_enabled,
         "trailing_tp_enabled": preferences.trailing_tp_enabled,
         "trailing_trigger": preferences.trailing_trigger,
-        "trailing_distance_percent": str(preferences.trailing_distance_percent),
+        "trailing_distance_percent": format(preferences.trailing_distance_percent, ".3f"),
     }
 
 

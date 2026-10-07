@@ -1,4 +1,9 @@
+from zoneinfo import available_timezones
+
+from django import forms
 from django.contrib.auth.forms import AuthenticationForm
+
+from .models import User
 
 
 class SignInForm(AuthenticationForm):
@@ -21,3 +26,36 @@ class SignInForm(AuthenticationForm):
                 "class": "input",
             }
         )
+
+
+class ProfileForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ("display_name", "email", "timezone", "base_currency", "theme")
+        widgets = {
+            "display_name": forms.TextInput(attrs={"class": "input", "autocomplete": "name"}),
+            "email": forms.EmailInput(attrs={"class": "input", "autocomplete": "email"}),
+            "timezone": forms.Select(attrs={"class": "input"}),
+            "base_currency": forms.Select(
+                choices=(("USDT", "USDT"), ("USDC", "USDC"), ("BTC", "BTC")),
+                attrs={"class": "input"},
+            ),
+            "theme": forms.Select(attrs={"class": "input"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        preferred = ["Asia/Tehran", "Asia/Dubai", "Europe/London", "UTC"]
+        zones = [zone for zone in preferred if zone in available_timezones()]
+        current = self.instance.timezone
+        if current and current not in zones:
+            zones.append(current)
+        self.fields["timezone"].widget.choices = [(zone, zone) for zone in zones]
+        for field in self.fields.values():
+            field.required = True
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].strip().lower()
+        if User.objects.filter(email__iexact=email).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError("این ایمیل قبلاً ثبت شده است.")
+        return email

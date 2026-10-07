@@ -1,3 +1,4 @@
+from apps.accounts import views as account_views
 from apps.core import views
 from apps.core.health import dependency_status
 from django.contrib.auth.views import LogoutView
@@ -24,6 +25,7 @@ urlpatterns = [
     path("", views.home, name="home"),
     path("auth/login/", views.SignInView.as_view(), name="login"),
     path("auth/logout/", LogoutView.as_view(), name="logout"),
+    path("settings/profile/", account_views.profile, name="profile"),
     path("dashboard/", views.dashboard, name="dashboard"),
     path("system/", views.system, name="system"),
     path("system/status/", views.system_status, name="system-status"),

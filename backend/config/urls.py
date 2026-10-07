@@ -39,6 +39,11 @@ urlpatterns = [
         name="password-reset-confirm",
     ),
     path("settings/profile/", account_views.profile, name="profile"),
+    path(
+        "settings/trading/",
+        account_views.trading_preferences,
+        name="trading-preferences",
+    ),
     path("settings/security/sessions/", account_views.sessions, name="sessions"),
     path(
         "settings/security/sessions/<int:session_id>/revoke/",
@@ -46,6 +51,11 @@ urlpatterns = [
         name="revoke-session",
     ),
     path("api/v1/me/", account_views.api_me, name="api-me"),
+    path(
+        "api/v1/me/trading-preferences/",
+        account_views.api_trading_preferences,
+        name="api-trading-preferences",
+    ),
     path("dashboard/", views.dashboard, name="dashboard"),
     path("system/", views.system, name="system"),
     path("system/status/", views.system_status, name="system-status"),

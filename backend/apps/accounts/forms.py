@@ -4,7 +4,7 @@ from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.password_validation import validate_password
 
-from .models import User
+from .models import TradingPreferences, User
 
 
 class SignInForm(AuthenticationForm):
@@ -103,3 +103,34 @@ class SetNewPasswordForm(forms.Form):
         if password:
             validate_password(password, self.user)
         return cleaned
+
+
+class TradingPreferencesForm(forms.ModelForm):
+    class Meta:
+        model = TradingPreferences
+        fields = (
+            "default_order_amount",
+            "default_market",
+            "tp1_percent",
+            "tp2_percent",
+            "tp3_percent",
+            "trailing_sl_enabled",
+            "trailing_tp_enabled",
+            "trailing_trigger",
+            "trailing_distance_percent",
+        )
+        widgets = {
+            "default_order_amount": forms.NumberInput(
+                attrs={"class": "input", "min": "0", "step": "0.00000001"}
+            ),
+            "default_market": forms.Select(attrs={"class": "input"}),
+            "tp1_percent": forms.NumberInput(attrs={"class": "input", "min": "0", "step": "0.01"}),
+            "tp2_percent": forms.NumberInput(attrs={"class": "input", "min": "0", "step": "0.01"}),
+            "tp3_percent": forms.NumberInput(attrs={"class": "input", "min": "0", "step": "0.01"}),
+            "trailing_sl_enabled": forms.CheckboxInput(attrs={"class": "toggle-input"}),
+            "trailing_tp_enabled": forms.CheckboxInput(attrs={"class": "toggle-input"}),
+            "trailing_trigger": forms.Select(attrs={"class": "input"}),
+            "trailing_distance_percent": forms.NumberInput(
+                attrs={"class": "input", "min": "0.001", "step": "0.001"}
+            ),
+        }

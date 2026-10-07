@@ -18,8 +18,9 @@ from .forms import (
     ProfileForm,
     SetNewPasswordForm,
     SignInForm,
+    TradingPreferencesForm,
 )
-from .models import PasswordResetRequest, UserSession
+from .models import PasswordResetRequest, TradingPreferences, UserSession
 from .security import (
     clear_login_failures,
     login_attempts,
@@ -161,6 +162,28 @@ def sign_out(request):
     return redirect("login")
 
 
+def _preferences_for(user):
+    preferences, _ = TradingPreferences.objects.get_or_create(owner=user)
+    return preferences
+
+
+@login_required
+@never_cache
+@require_http_methods(["GET", "POST"])
+def trading_preferences(request):
+    preferences = _preferences_for(request.user)
+    form = TradingPreferencesForm(request.POST or None, instance=preferences)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "پیش‌فرض‌های معامله ذخیره شد.")
+        return redirect("trading-preferences")
+    return render(
+        request,
+        "accounts/trading_preferences.html",
+        {"form": form, "nav": "settings"},
+    )
+
+
 def _profile_payload(user):
     return {
         "username": user.username,
@@ -192,6 +215,51 @@ def api_me(request):
     data = {name: incoming.get(name, current[name]) for name in allowed}
     form = ProfileForm(data, instance=request.user)
     if not form.is_valid():
-        return JsonResponse({"error": "validation_error", "fields": form.errors}, status=400)
+        return JsonResponse(
+            {"error": "validation_error", "fields": form.errors.get_json_data()}, status=400
+        )
     form.save()
     return JsonResponse({"profile": _profile_payload(request.user)})
+
+
+def _trading_payload(preferences):
+    return {
+        "default_order_amount": str(preferences.default_order_amount),
+        "default_market": preferences.default_market,
+        "tp_distribution": [
+            str(preferences.tp1_percent),
+            str(preferences.tp2_percent),
+            str(preferences.tp3_percent),
+        ],
+        "trailing_sl_enabled": preferences.trailing_sl_enabled,
+        "trailing_tp_enabled": preferences.trailing_tp_enabled,
+        "trailing_trigger": preferences.trailing_trigger,
+        "trailing_distance_percent": str(preferences.trailing_distance_percent),
+    }
+
+
+@session_api_required
+@never_cache
+@require_http_methods(["GET", "PATCH"])
+def api_trading_preferences(request):
+    preferences = _preferences_for(request.user)
+    if request.method == "GET":
+        return JsonResponse({"trading_preferences": _trading_payload(preferences)})
+    if request.content_type != "application/json":
+        return JsonResponse({"error": "json_required"}, status=415)
+    try:
+        incoming = json.loads(request.body)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({"error": "invalid_json"}, status=400)
+    allowed = set(TradingPreferencesForm.Meta.fields)
+    if not isinstance(incoming, dict) or set(incoming) - allowed:
+        return JsonResponse({"error": "unsupported_fields"}, status=400)
+    current = {name: getattr(preferences, name) for name in allowed}
+    data = {name: incoming.get(name, current[name]) for name in allowed}
+    form = TradingPreferencesForm(data, instance=preferences)
+    if not form.is_valid():
+        return JsonResponse(
+            {"error": "validation_error", "fields": form.errors.get_json_data()}, status=400
+        )
+    form.save()
+    return JsonResponse({"trading_preferences": _trading_payload(preferences)})

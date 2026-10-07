@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from decimal import Decimal
 from pathlib import Path
 
 import httpx
@@ -139,9 +140,9 @@ def main():
                 page.screenshot(path=str(artifacts / "profile-desktop.png"), full_page=True)
                 page.goto(base + "/settings/trading/")
                 page.get_by_role("heading", name="پیش‌فرض‌های معامله").wait_for()
-                assert page.locator('[name="tp1_percent"]').input_value() == "10.00"
-                assert page.locator('[name="tp2_percent"]').input_value() == "10.00"
-                assert page.locator('[name="tp3_percent"]').input_value() == "80.00"
+                assert Decimal(page.locator('[name="tp1_percent"]').input_value()) == Decimal("10")
+                assert Decimal(page.locator('[name="tp2_percent"]').input_value()) == Decimal("10")
+                assert Decimal(page.locator('[name="tp3_percent"]').input_value()) == Decimal("80")
                 page.screenshot(path=str(artifacts / "trading-desktop.png"), full_page=True)
                 page.goto(base + "/settings/security/audit/")
                 page.get_by_role("heading", name="گزارش امنیتی حساب").wait_for()

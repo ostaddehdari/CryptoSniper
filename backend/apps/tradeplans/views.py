@@ -1,17 +1,13 @@
-import uuid
-
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from apps.accounts.security import session_api_required
-from apps.exchanges.models import ExchangeMarket
 
 from .forms import ManualTradeForm
 from .models import TradePlan
@@ -122,7 +118,6 @@ def api_plan(request,pk):
 @require_http_methods(["POST"])
 def api_create(request):
     try:
-        from django.http import QueryDict
         import json
         if request.content_type!="application/json":
             return JsonResponse({"error":"application/json لازم است"},status=415)
@@ -142,7 +137,6 @@ def api_create(request):
 @never_cache
 @require_http_methods(["POST"])
 def api_confirm(request,pk):
-    from django.http import QueryDict
     import json
     owned(request.user,pk)
     try:
@@ -152,3 +146,24 @@ def api_confirm(request,pk):
         return JsonResponse({"plan":_serialized(plan)})
     except (ValueError,ValidationError) as e:
         return JsonResponse({"error":str(e)},status=400)
+
+@session_api_required
+@never_cache
+@require_http_methods(["POST"])
+def api_edit(request, pk):
+    import json
+    plan = owned(request.user, pk)
+    if request.content_type != "application/json":
+        return JsonResponse({"error": "application/json لازم است"}, status=415)
+    try:
+        payload = json.loads(request.body)
+        if not isinstance(payload, dict):
+            raise ValueError("payload must be a JSON object")
+        revision = int(payload.get("revision", 0))
+        form = ManualTradeForm(request.user, payload)
+        if not form.is_valid():
+            return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
+        result = update_draft(plan, form.cleaned_data, revision)
+        return JsonResponse({"plan": _serialized(result)})
+    except (ValueError, ValidationError) as error:
+        return JsonResponse({"error": str(error)}, status=400)

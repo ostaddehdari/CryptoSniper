@@ -163,6 +163,11 @@ CELERY_BEAT_SCHEDULE["paper-outbox-scan"] = {
     "schedule": 12.0,
     "options": {"queue": "maintenance", "expires": 10},
 }
+CELERY_BEAT_SCHEDULE["paper-exit-monitor"] = {
+    "task": "trading.monitor_paper_exits",
+    "schedule": 12.0,
+    "options": {"queue": "maintenance", "expires": 10},
+}
 CELERY_BEAT_SCHEDULE["market-display-refresh"] = {
     "task": "marketdata.refresh_watchlists",
     "schedule": 30.0,

@@ -275,6 +275,7 @@ class TradeProtection(models.Model):
     effective_stop = models.DecimalField(max_digits=32, decimal_places=16)
     coverage = models.CharField(max_length=16, choices=Coverage.choices, default=Coverage.PENDING)
     step_enabled = models.BooleanField(default=False)
+    paper_scenario = models.BooleanField(default=False)
     percentage_enabled = models.BooleanField(default=False)
     percentage_active = models.BooleanField(default=False)
     trigger_price = models.DecimalField(max_digits=32, decimal_places=16)

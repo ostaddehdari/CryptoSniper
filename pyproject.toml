@@ -1,7 +1,7 @@
 [project]
 name = "cryptosniper"
-version = "0.6.0rc1"
-description = "Python trading management platform — Stage 06 source-scoped signal inbox and revision history"
+version = "0.8.0rc1"
+description = "Python trading management platform — Stages 07-08 Smart Paste and durable Paper trade execution"
 requires-python = ">=3.12,<3.15"
 dependencies = [
   "Django>=5.2.18,<5.3",

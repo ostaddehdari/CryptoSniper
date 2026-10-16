@@ -55,3 +55,5 @@ curl -fsSL --retry 3 -o /tmp/cryptosniper-diagnose-nginx.sh https://raw.githubus
 - [استیج ۵ — برنامه‌های دستی و پیش‌نمایش](docs/reports/stage-05.md): نسخه آزمایشی `0.5.0rc1`، Draft/Ready، بدون اجرای سفارش.
 
 - [Stage06 Signal Inbox](docs/reports/stage-06.md): نسخه آزمایشی v0.6.0rc1، ثبت خام و بازبینی تاریخچه‌دار، بدون Telegram/AI و سفارش واقعی.
+
+- [Stage07 Smart Paste](docs/reports/stage-07.md) و [Stage08 Paper Execution](docs/reports/stage-08.md): نسخه تجمعی آزمایشی 0.8.0rc1، فقط Paper/Simulator و بدون سفارش واقعی Binance.

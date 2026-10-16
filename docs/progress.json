@@ -5,9 +5,9 @@
     "S01",
     "S02"
   ],
-  "current_stage": "S06",
-  "next_stage": "S06",
-  "last_completed_work": "S06-W05",
+  "current_stage": "S08",
+  "next_stage": "S08",
+  "last_completed_work": "S08-W05",
   "implementation_started": true,
   "stage_results": {
     "S01": {
@@ -254,18 +254,38 @@
       "release_commit": "2718263fb39c37e615a667ead65b039c9f659a58"
     },
     "S07": {
-      "status": "not_started",
-      "completed_works": [],
+      "status": "partial",
+      "completed_works": [
+        "S07-W01",
+        "S07-W02",
+        "S07-W03",
+        "S07-W04",
+        "S07-W05"
+      ],
       "checks": [],
       "commit_shas": [],
-      "blockers": []
+      "blockers": [
+        "Prior S03-S06 formal acceptance and Binance real provider test remain pending.",
+        "Stage07/08 CI and VPS deployment not yet verified."
+      ],
+      "implementation": "Five workstreams committed, awaiting CI, integration, release and operator VPS verification."
     },
     "S08": {
-      "status": "not_started",
-      "completed_works": [],
+      "status": "partial",
+      "completed_works": [
+        "S08-W01",
+        "S08-W02",
+        "S08-W03",
+        "S08-W04",
+        "S08-W05"
+      ],
       "checks": [],
       "commit_shas": [],
-      "blockers": []
+      "blockers": [
+        "Prior S03-S06 formal acceptance and Binance real provider test remain pending.",
+        "Stage07/08 CI and VPS deployment not yet verified."
+      ],
+      "implementation": "Five workstreams committed, awaiting CI, integration, release and operator VPS verification."
     },
     "S09": {
       "status": "not_started",

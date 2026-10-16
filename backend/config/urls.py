@@ -14,7 +14,7 @@ from django.urls import path
 
 
 def live(request):
-    return JsonResponse({"status": "ok", "service": "cryptosniper", "stage": "S06"})
+    return JsonResponse({"status": "ok", "service": "cryptosniper", "stage": "S08"})
 
 
 def ready(request):

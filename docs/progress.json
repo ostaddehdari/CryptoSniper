@@ -209,14 +209,25 @@
         "S06-W04",
         "S06-W05"
       ],
-      "checks": [],
+      "checks": [
+        {
+          "name": "Stage06 PostgreSQL/Redis/Celery/Chromium CI",
+          "status": "passed",
+          "pytest_passed": 66,
+          "run_id": 38939379593,
+          "tested_commit": "2718263fb39c37e615a667ead65b039c9f659a58",
+          "evidence_artifact_id": 12062622061
+        }
+      ],
       "commit_shas": [],
       "blockers": [
-        "Stage03 Binance real-account read/permission verification still pending.",
-        "Stage04 and Stage05 acceptance gaps remain partial.",
-        "Stage06 CI migration/worker/browser tests and operator deployment not yet confirmed."
+        "S03 real Binance API permissions still not verified using authorized account credentials.",
+        "Upstream S04/S05 formal acceptance gaps remain partial.",
+        "Stage06 not yet installed and tested on operator VPS."
       ],
-      "implementation": "Five workstreams committed: sources, immutable raw revision history, structured signals, transactional inbox review workflow, private REST+UI; testing in progress."
+      "implementation": "Five workstreams coded and 66 tests, real PostgreSQL/Redis/Worker/Beat/browser smoke passed; GitHub Release published; VPS deployment pending.",
+      "release_tag": "stage06-v0.6.0rc1-deploy",
+      "release_commit": "2718263fb39c37e615a667ead65b039c9f659a58"
     },
     "S07": {
       "status": "not_started",

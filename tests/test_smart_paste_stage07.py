@@ -71,6 +71,8 @@ def test_smart_paste_review_never_auto_approves(django_user_model):
 @pytest.mark.django_db
 def test_smart_paste_review_to_approved_plan(django_user_model):
     import uuid
+    from decimal import Decimal
+
     from apps.exchanges.models import Exchange, ExchangeMarket, UserExchangeAccount
     from apps.exchanges.security import set_account_credentials
     from apps.exchanges.services import sync_exchange_account

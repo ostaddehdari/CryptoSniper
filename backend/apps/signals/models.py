@@ -81,3 +81,110 @@ class RawSignalRevision(models.Model):
 
     def __str__(self):
         return f"Raw #{self.raw_signal_id} revision {self.version}"
+
+
+class Signal(models.Model):
+    """One entry, at most three executable targets; trade execution is a later stage."""
+    class Status(models.TextChoices):
+        NEW = "new", "جدید"
+        PARSED = "parsed", "ساختارمند"
+        NEEDS_REVIEW = "needs_review", "نیازمند بررسی"
+        APPROVED = "approved", "تأییدشده"
+        REJECTED = "rejected", "ردشده"
+        EXECUTED = "executed", "اجراشده"
+        FAILED = "failed", "ناموفق"
+
+    class Side(models.TextChoices):
+        LONG = "long", "Long"
+        SHORT = "short", "Short"
+
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                              related_name="inbox_signals")
+    source = models.ForeignKey(SignalSource, on_delete=models.PROTECT,
+                               related_name="signals")
+    raw_signal = models.OneToOneField(RawSignal, on_delete=models.PROTECT,
+                                     related_name="structured_signal")
+    exchange_account = models.ForeignKey("exchanges.UserExchangeAccount",
+                                         on_delete=models.PROTECT, null=True, blank=True)
+    market = models.ForeignKey("exchanges.ExchangeMarket", on_delete=models.PROTECT,
+                               null=True, blank=True)
+    side = models.CharField(max_length=8, choices=Side.choices, blank=True)
+    entry_price = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
+    stop_loss = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
+    technical_confidence = models.PositiveSmallIntegerField(default=0)
+    parser_version = models.CharField(max_length=40, default="manual-v1")
+    parsed_payload = models.JSONField(default=dict)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.NEW)
+    review_reason = models.CharField(max_length=500, blank=True)
+    revision = models.PositiveIntegerField(default=1)
+    approved_snapshot = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        indexes = [models.Index(fields=("owner", "status", "created_at")),
+                   models.Index(fields=("owner", "source", "created_at"))]
+        constraints = [
+            models.CheckConstraint(condition=models.Q(technical_confidence__lte=100),
+                                   name="signal_confidence_lte_100"),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.source_id and self.owner_id and self.source.owner_id != self.owner_id:
+            raise ValidationError("منبع سیگنال متعلق به این کاربر نیست.")
+        if self.raw_signal_id and self.owner_id:
+            if self.raw_signal.owner_id != self.owner_id or self.raw_signal.source_id != self.source_id:
+                raise ValidationError("ورودی اصلی سیگنال با کاربر یا منبع هم‌خوان نیست.")
+        if self.market_id and self.exchange_account_id:
+            if self.market.exchange_id != self.exchange_account.exchange_id:
+                raise ValidationError("بازار متعلق به این اتصال نیست.")
+            if self.exchange_account.owner_id != self.owner_id:
+                raise ValidationError("حساب صرافی متعلق به کاربر دیگری است.")
+
+    def __str__(self):
+        return f"Signal #{self.pk} · {self.status}"
+
+
+class SignalTarget(models.Model):
+    signal = models.ForeignKey(Signal, on_delete=models.CASCADE, related_name="targets")
+    position = models.PositiveSmallIntegerField()
+    price = models.DecimalField(max_digits=32, decimal_places=16)
+    share_percent = models.DecimalField(max_digits=5, decimal_places=2)
+
+    class Meta:
+        ordering = ("position",)
+        constraints = [
+            models.UniqueConstraint(fields=("signal", "position"),
+                                    name="signal_target_position_unique"),
+            models.CheckConstraint(condition=models.Q(position__gte=1) & models.Q(position__lte=3),
+                                   name="signal_target_position_range"),
+            models.CheckConstraint(condition=models.Q(price__gt=0),
+                                   name="signal_target_positive_price"),
+            models.CheckConstraint(condition=models.Q(share_percent__gt=0) &
+                                   models.Q(share_percent__lte=100),
+                                   name="signal_target_share_range"),
+        ]
+
+    def __str__(self):
+        return f"Signal {self.signal_id} TP{self.position}"
+
+
+class SignalRevision(models.Model):
+    """Historical structured snapshots; never updated after creation."""
+    signal = models.ForeignKey(Signal, on_delete=models.CASCADE, related_name="history")
+    revision = models.PositiveIntegerField()
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                              null=True, blank=True)
+    reason = models.CharField(max_length=500)
+    snapshot = models.JSONField(default=dict)
+    recorded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("revision",)
+        constraints = [models.UniqueConstraint(fields=("signal", "revision"),
+                                               name="signal_revision_unique")]
+
+    def __str__(self):
+        return f"Signal {self.signal_id} revision {self.revision}"

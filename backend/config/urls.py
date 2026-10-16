@@ -14,7 +14,7 @@ from django.urls import path
 
 
 def live(request):
-    return JsonResponse({"status": "ok", "service": "cryptosniper", "stage": "S08"})
+    return JsonResponse({"status": "ok", "service": "cryptosniper", "stage": "S10"})
 
 
 def ready(request):
@@ -141,13 +141,13 @@ urlpatterns = [
     path("system/status/", views.system_status, name="system-status"),
     path("system/probe/", views.create_probe, name="create-probe"),
     path("system/probe/<uuid:probe_id>/", views.probe_status, name="probe-status"),
-    path("paper/<int:pk>/stop/", trading_views.move_stop, name="paper-stop"),
-    path("api/v1/paper/<int:pk>/stop/", trading_views.api_move_stop, name="api-paper-stop"),
-    path("paper/<int:pk>/scenario/", trading_views.set_paper_scenario, name="paper-scenario"),
-    path("paper/<int:pk>/tick/", trading_views.paper_price_event, name="paper-tick"),
-    path("paper/<int:pk>/trailing/", trading_views.set_trailing, name="paper-trailing"),
-    path("api/v1/paper/<int:pk>/tick/", trading_views.api_paper_tick, name="api-paper-tick"),
-    path("api/v1/paper/<int:pk>/trailing/", trading_views.api_trailing_update, name="api-paper-trailing"),
+    path("paper/<int:pk>/stop/", paper_views.move_stop, name="paper-stop"),
+    path("api/v1/paper/<int:pk>/stop/", paper_views.api_move_stop, name="api-paper-stop"),
+    path("paper/<int:pk>/scenario/", paper_views.set_paper_scenario, name="paper-scenario"),
+    path("paper/<int:pk>/tick/", paper_views.paper_price_event, name="paper-tick"),
+    path("paper/<int:pk>/trailing/", paper_views.set_trailing, name="paper-trailing"),
+    path("api/v1/paper/<int:pk>/tick/", paper_views.api_paper_tick, name="api-paper-tick"),
+    path("api/v1/paper/<int:pk>/trailing/", paper_views.api_trailing_update, name="api-paper-trailing"),
     path("health/live/", live, name="health-live"),
     path("health/ready/", ready, name="health-ready"),
 ]

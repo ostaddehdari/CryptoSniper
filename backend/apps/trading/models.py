@@ -173,3 +173,28 @@ class TradeEvent(models.Model):
 
     def __str__(self):
         return f"Trade {self.trade_id}: {self.event_type}"
+
+
+class PaperRiskPolicy(models.Model):
+    """Small operator-controlled limits. Never grants real order permissions."""
+    owner = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                                 related_name="paper_risk_policy")
+    max_active_trades = models.PositiveSmallIntegerField(default=5)
+    max_capital_per_trade = models.DecimalField(max_digits=32, decimal_places=16,
+                                                default=500)
+    max_total_allocated = models.DecimalField(max_digits=32, decimal_places=16,
+                                               default=5000)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(condition=Q(max_active_trades__gte=1) &
+                                   Q(max_active_trades__lte=20),
+                                   name="paper_risk_trade_limit_range"),
+            models.CheckConstraint(condition=Q(max_capital_per_trade__gt=0),
+                                   name="paper_risk_single_capital_positive"),
+            models.CheckConstraint(condition=Q(max_total_allocated__gt=0),
+                                   name="paper_risk_total_capital_positive"),
+        ]
+
+    def __str__(self):
+        return f"Paper risk limits for user {self.owner_id}"

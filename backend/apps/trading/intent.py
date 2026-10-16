@@ -13,7 +13,7 @@ from django.utils import timezone
 from apps.exchanges.models import BalanceSnapshot, UserExchangeAccount
 from apps.tradeplans.models import TradePlan
 
-from .models import CapitalReservation, ExecutionOutbox, Order, Trade, TradeEvent
+from .models import CapitalReservation, ExecutionOutbox, Order, PaperRiskPolicy, Trade, TradeEvent
 
 
 def _d(value):
@@ -65,11 +65,14 @@ def queue_paper_trade(owner, plan_id, *, request_key):
     entry_price = _d(snap.get("entry_price"))
     if quantity * entry_price < (market.min_notional or Decimal("1e50")):
         raise ValidationError("حداقل ارزش سفارش رعایت نشده است.")
+    policy, _ = PaperRiskPolicy.objects.get_or_create(owner=owner)
     if Trade.objects.filter(account=account, state__in=(
         Trade.State.QUEUED, Trade.State.SUBMITTING, Trade.State.PARTIAL,
         Trade.State.OPEN, Trade.State.UNCERTAIN
-    )).count() >= 5:
-        raise ValidationError("سقف پنج معامله باز برای این حساب تکمیل شده است.")
+    )).count() >= policy.max_active_trades:
+        raise ValidationError("سقف تعداد معاملات فعال Paper تکمیل شده است.")
+    if capital > policy.max_capital_per_trade:
+        raise ValidationError("مبلغ معامله از سقف سرمایه Paper بیشتر است.")
     latest = BalanceSnapshot.objects.filter(
         exchange_account=account, asset=market.quote_asset
     ).order_by("-captured_at").first()
@@ -79,6 +82,8 @@ def queue_paper_trade(owner, plan_id, *, request_key):
         account=account, quote_asset=market.quote_asset, active=True
     ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
     # Includes spent allocations until explicit paper reset; no false double spending.
+    if committed + capital > policy.max_total_allocated:
+        raise ValidationError("سقف سرمایه تخصیص‌یافته در حساب Paper تکمیل شده است.")
     if latest.free_balance - committed < capital:
         raise ValidationError("موجودی آزاد بعد از رزروهای هم‌زمان کافی نیست.")
     trade = Trade.objects.create(

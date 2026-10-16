@@ -5,14 +5,12 @@ from datetime import timedelta
 
 from asgiref.sync import sync_to_async
 from django.conf import settings
-from django.core.cache import cache
 from django.http import JsonResponse, StreamingHttpResponse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 
 from apps.accounts.security import session_api_required
-from apps.exchanges.models import ExchangeMarket
 
 from .feeds import get_quote
 from .search import eligible_markets, search_markets
@@ -75,9 +73,9 @@ def api_stream(request):
         while timezone.now() < deadline:
             quotes = await sync_to_async(_state, thread_sensitive=True)(markets)
             payload = json.dumps({"markets": quotes, "display_only": True}, ensure_ascii=False)
-            yield f"event: quotes\\ndata: {payload}\\n\\n"
+            yield f"event: quotes\ndata: {payload}\n\n"
             await asyncio.sleep(10)
-        yield "event: reconnect\\ndata: {}\\n\\n"
+        yield "event: reconnect\ndata: {}\n\n"
 
     response = StreamingHttpResponse(stream(), content_type="text/event-stream")
     response["Cache-Control"] = "no-store, no-transform"

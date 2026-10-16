@@ -155,6 +155,12 @@ CELERY_BEAT_SCHEDULE = {
         "options": {"queue": "maintenance", "expires": 25},
     },
 }
+CELERY_BEAT_SCHEDULE["market-display-refresh"] = {
+    "task": "marketdata.refresh_watchlists",
+    "schedule": 30.0,
+    "options": {"queue": "maintenance", "expires": 20},
+}
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,

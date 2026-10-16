@@ -1,9 +1,11 @@
 """User-owned watchlists with enforced exchange-account visibility."""
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.db import IntegrityError
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
@@ -13,6 +15,7 @@ from apps.exchanges.models import ExchangeMarket
 from .feeds import get_quote
 from .models import Watchlist, WatchlistItem
 from .search import eligible_markets, market_is_readable, search_markets
+from .tasks import refresh_market
 
 
 def _owned_watchlist(request, pk):
@@ -53,7 +56,7 @@ def create_watchlist(request):
     except IntegrityError:
         messages.error(request, "فهرستی با این نام از قبل وجود دارد.")
         return redirect("watchlists")
-    return redirect("watchlists") if not item else redirect(f"/watchlist/?list={item.pk}")
+    return redirect(reverse("watchlists") + f"?list={item.pk}")
 
 
 @login_required
@@ -73,7 +76,7 @@ def add_watchlist_item(request, pk):
         messages.error(request, "هر فهرست حداکثر ۱۰۰ بازار دارد.")
         return redirect("watchlists")
     WatchlistItem.objects.get_or_create(watchlist=watchlist, market=market)
-    return redirect(f"/watchlist/?list={watchlist.pk}")
+    return redirect(reverse("watchlists") + f"?list={watchlist.pk}")
 
 
 @login_required
@@ -99,3 +102,19 @@ def api_watchlist(request, pk):
                    "symbol": item.market.symbol, "exchange": item.market.exchange.code,
                    "quote": get_quote(item.market)} for item in entries],
     })
+
+@login_required
+@require_POST
+def request_market_refresh(request, pk, market_id):
+    _owned_watchlist(request, pk)
+    market = get_object_or_404(ExchangeMarket, pk=market_id)
+    if not market_is_readable(request.user, market):
+        messages.error(request, "برای این بازار اتصال مجاز ندارید.")
+        return redirect("watchlists")
+    throttle = f"marketdata:v1:manual:{request.user.pk}:{market.pk}"
+    if cache.add(throttle, "1", timeout=20):
+        refresh_market.apply_async(args=[market.pk], queue="maintenance")
+        messages.success(request, "به‌روزرسانی قیمت در صف قرار گرفت.")
+    else:
+        messages.info(request, "لطفاً برای به‌روزرسانی مجدد کمی صبر کنید.")
+    return redirect(reverse("watchlists") + f"?list={pk}")

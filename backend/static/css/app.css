@@ -14,3 +14,32 @@
 .simple-auth{min-height:100vh;display:grid;place-items:center;padding:28px;background:var(--bg)}.simple-auth .auth-card{width:min(100%,440px);background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:32px;box-shadow:var(--shadow)}.simple-auth h1{margin:8px 0}.auth-help{display:block;text-align:center;color:var(--accent);font-size:11px;margin-top:15px}.session-list{display:grid;gap:12px}.session-row{display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid var(--line);padding:12px 0}.session-row:last-child{border:0}.session-row div{display:grid}.session-row small,.session-row span{color:var(--muted);font-size:10px}.status-badge{padding:5px 9px;border-radius:8px;font-size:10px}.status-off{background:var(--error-bg);color:var(--error)}
 .settings-summary{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:20px;padding:13px;background:var(--soft);border-radius:12px}.settings-summary span{padding:4px 8px;background:var(--surface);border-radius:7px;font-size:10px}.checkbox-field{display:grid;grid-template-columns:1fr auto;align-items:center}.toggle-input{width:22px;height:22px;accent-color:var(--accent)}.trading-form .form-error{grid-column:1/-1}
 .audit-list{display:grid}.audit-row{display:grid;grid-template-columns:1fr auto;gap:5px 15px;padding:13px 0;border-bottom:1px solid var(--line)}.audit-row:last-child{border:0}.audit-row div{display:grid}.audit-row span,.audit-row small{font-size:10px;color:var(--muted)}.audit-row code{direction:ltr;font-size:10px;color:var(--accent)}.audit-row small{grid-column:1/-1;overflow-wrap:anywhere}
+
+
+/* Stage 04: mobile-first, bounded market workspace */
+.market-toolbar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:18px;margin-bottom:20px}
+.market-control{display:grid;gap:7px;min-width:220px;flex:1}.market-control label{font-size:11px;color:var(--muted)}
+.market-control input,.market-control select{min-height:44px;width:100%;padding:8px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--line);color:var(--ink)}
+.market-form-inline{display:flex;align-items:center;gap:8px;min-width:0}.market-form-inline input{min-width:0}
+.market-workspace{display:grid;grid-template-columns:minmax(0,2fr) minmax(260px,1fr);gap:20px}
+.market-workspace .panel{min-width:0}.market-table-wrap{overflow:auto}
+.market-table{width:100%;border-collapse:collapse;text-align:right;min-width:560px}
+.market-table th{font-size:11px;color:var(--muted);padding:14px 10px;border-bottom:1px solid var(--line)}
+.market-table td{padding:14px 10px;border-bottom:1px solid var(--line);font-size:12px}
+.market-table strong{display:block;font:600 13px/1.6 Arial,sans-serif}
+.market-table small{display:block;color:var(--muted);font-size:10px}
+.market-table .quote-price{text-align:right;font:600 14px Arial,sans-serif}
+.market-table .quote-status{font-size:11px;color:var(--accent)}.market-table .is-stale{color:#bd7125}
+.market-table .is-unavailable{color:var(--muted)}.market-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.market-actions .text-button{white-space:nowrap;font-size:10px}.market-actions>span{color:var(--muted);font-size:9px}
+.market-search-results{display:grid;gap:10px;margin-top:18px;max-height:540px;overflow:auto}
+.market-search-results form{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.market-search-results strong{font:600 13px Arial,sans-serif}.market-search-results small{display:block;color:var(--muted);font-size:10px;margin-top:5px}
+.market-search-results .button{min-height:36px;padding:5px 12px}
+.market-empty{text-align:center;display:grid;justify-items:center;gap:14px;padding:34px 20px;border:1px dashed var(--line);border-radius:14px}
+.market-empty p,.market-hint{font-size:11px;color:var(--muted)}.market-hint{margin-top:16px}
+@media(max-width:1020px){.market-workspace{grid-template-columns:1fr}}
+@media(max-width:620px){.market-toolbar{display:grid}.market-workspace{gap:14px}.market-control{min-width:0}
+ .market-table{min-width:0}.market-table th:nth-child(4),.market-table td:nth-child(4){min-width:125px}
+ .market-table th,.market-table td{padding:11px 5px;font-size:10px}
+ .market-table strong{font-size:11px}.market-table .quote-price{font-size:11px}}

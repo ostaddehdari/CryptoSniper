@@ -4,6 +4,7 @@
 <aside class="sidebar" aria-label="منوی اصلی"><a class="brand" href="{% url 'dashboard' %}"><img src="{% static 'img/mark.svg' %}" alt="" width="38" height="38"><span>Crypto<span class="brand-accent">Sniper</span><small>کنترل، دقت، آرامش</small></span></a>
 <div class="nav-section-label">فضای کار</div><nav class="nav-links">
 <a href="{% url 'dashboard' %}" class="nav-link {% if nav == 'dashboard' %}active{% endif %}" {% if nav == 'dashboard' %}aria-current="page"{% endif %}><span class="nav-symbol" aria-hidden="true">◈</span> نمای کلی</a>
+<a href="{% url 'watchlists' %}" class="nav-link {% if nav == 'watchlist' %}active{% endif %}"><span class="nav-symbol" aria-hidden="true">◉</span> واچ‌لیست</a>
 <a href="{% url 'exchange-center' %}" class="nav-link {% if nav == 'exchanges' %}active{% endif %}" {% if nav == 'exchanges' %}aria-current="page"{% endif %}><span class="nav-symbol" aria-hidden="true">⇄</span> صرافی‌ها</a>
 <a href="{% url 'system' %}" class="nav-link {% if nav == 'system' %}active{% endif %}" {% if nav == 'system' %}aria-current="page"{% endif %}><span class="nav-symbol" aria-hidden="true">⌁</span> وضعیت سرویس‌ها</a>
 <a href="{% url 'profile' %}" class="nav-link {% if nav == 'settings' %}active{% endif %}" {% if nav == 'settings' %}aria-current="page"{% endif %}><span class="nav-symbol" aria-hidden="true">⚙</span> تنظیمات حساب</a></nav>

@@ -9,7 +9,7 @@ RELEASE_TAG='stage03-v0.3.0rc1-deploy'
 ZIP_NAME='CryptoSniper-Stage03-v0.3.0rc1.zip'
 INSTALLER_NAME='cryptosniper-stage03-run.sh'
 ZIP_SHA256='38c96027f503f38a71cddb807e89db9d5aeaa1081b2cd7ed87a3c11158fd4f93'
-INSTALLER_SHA256='410dee25ad16a1f15a2ced7f4d9e6d5f9bc42095a73ae461294a392a407190fa'
+INSTALLER_SHA256='44d00517540754e72106598c9f1d90f858cc3d34ef37a49649e695e8049b6ea8'
 RELEASE_BASE="https://github.com/ostaddehdari/CryptoSniper/releases/download/$RELEASE_TAG"
 MODE="${1:-install}"
 if [[ "$MODE" != 'install' && "$MODE" != '--check' ]]; then

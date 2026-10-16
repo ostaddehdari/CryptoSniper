@@ -38,7 +38,7 @@ class RawSignal(models.Model):
     """Immutable original input. New versions are append-only RawSignalRevision rows."""
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
                               related_name="raw_signals")
-    source = models.ForeignKey(SignalSource, on_delete=models.PROTECT, related_name="inputs")
+    source = models.ForeignKey(SignalSource, on_delete=models.CASCADE, related_name="inputs")
     original_text = models.TextField()
     original_payload = models.JSONField(default=dict)
     checksum = models.CharField(max_length=64)
@@ -100,12 +100,12 @@ class Signal(models.Model):
 
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
                               related_name="inbox_signals")
-    source = models.ForeignKey(SignalSource, on_delete=models.PROTECT,
+    source = models.ForeignKey(SignalSource, on_delete=models.CASCADE,
                                related_name="signals")
-    raw_signal = models.OneToOneField(RawSignal, on_delete=models.PROTECT,
+    raw_signal = models.OneToOneField(RawSignal, on_delete=models.CASCADE,
                                      related_name="structured_signal")
     exchange_account = models.ForeignKey("exchanges.UserExchangeAccount",
-                                         on_delete=models.PROTECT, null=True, blank=True)
+                                         on_delete=models.CASCADE, null=True, blank=True)
     market = models.ForeignKey("exchanges.ExchangeMarket", on_delete=models.PROTECT,
                                null=True, blank=True)
     side = models.CharField(max_length=8, choices=Side.choices, blank=True)

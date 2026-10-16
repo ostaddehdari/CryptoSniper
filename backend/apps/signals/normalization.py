@@ -14,6 +14,7 @@ def normalize(raw: str) -> str:
     if not isinstance(raw, str):
         raise TypeError("Signal text must be a string")
     text = unicodedata.normalize("NFKC", raw).translate(DIGITS).translate(ARABIC)
+    text = text.replace("،", ",").replace("٬", ",").replace("٫", ".")
     text = SPACE.sub(" ", text).replace("\r\n", "\n").replace("\r", "\n")
     text = EMOJI.sub(" ", text)
     text = MULTI_SPACE.sub(" ", text)

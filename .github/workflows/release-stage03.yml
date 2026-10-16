@@ -1,0 +1,51 @@
+name: Build Stage03 installation files
+
+on:
+  push:
+    paths:
+      - .github/workflows/release-stage03.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout with commit history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate exact named deployment files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          PIN=ed499fce19142b16d10fdf2ef7d798223485aa73
+          git cat-file -e "$PIN^{commit}"
+          git archive --format=zip --prefix=CryptoSniper/ -o dist/CryptoSniper-Stage03-v0.3.0rc1.zip "$PIN"
+          cp scripts/cryptosniper-stage03-run.sh dist/cryptosniper-stage03-run.sh
+          chmod +x dist/cryptosniper-stage03-run.sh
+          bash -n dist/cryptosniper-stage03-run.sh
+          bash dist/cryptosniper-stage03-run.sh --check dist/CryptoSniper-Stage03-v0.3.0rc1.zip
+          sha256sum dist/* | tee dist/SHA256SUMS.txt
+
+      - name: Publish release with both direct-download files
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG=stage03-v0.3.0rc1-deploy
+          PIN=ed499fce19142b16d10fdf2ef7d798223485aa73
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+          else
+            gh release create "$TAG" dist/* \
+              --target "$PIN" \
+              --title "CryptoSniper Stage 03 — v0.3.0rc1 installation files" \
+              --notes "Install assets pinned to source commit $PIN. Contains complete source ZIP, an Ubuntu 24.04 installer, and checksum list. The Binance adapter remains read-only; real trading is not enabled."
+          fi
+          gh release view "$TAG" --json assets,url

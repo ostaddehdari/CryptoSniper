@@ -1,4 +1,5 @@
 """Private Paper management. Every launch requires explicit POST and UUID."""
+
 import json
 import uuid
 
@@ -22,9 +23,8 @@ from .models import Trade
 
 def _owned(user, pk):
     return get_object_or_404(
-        Trade.objects.filter(owner=user).select_related(
-            "account", "market", "plan", "signal"
-        ), pk=pk
+        Trade.objects.filter(owner=user).select_related("account", "market", "plan", "signal"),
+        pk=pk,
     )
 
 
@@ -32,15 +32,20 @@ def _serialized(trade):
     order = trade.orders.first()
     position = getattr(trade, "position", None)
     return {
-        "id": trade.pk, "state": trade.state, "mode": "paper",
-        "account_id": trade.account_id, "market_id": trade.market_id,
-        "plan_id": trade.plan_id, "signal_id": trade.signal_id,
-        "quantity": str(trade.quantity), "filled_quantity": str(trade.filled_quantity),
+        "id": trade.pk,
+        "state": trade.state,
+        "mode": "paper",
+        "account_id": trade.account_id,
+        "market_id": trade.market_id,
+        "plan_id": trade.plan_id,
+        "signal_id": trade.signal_id,
+        "quantity": str(trade.quantity),
+        "filled_quantity": str(trade.filled_quantity),
         "entry_price": str(trade.entry_price),
         "position_quantity": str(position.quantity) if position else "0",
-        "order": {
-            "id": order.pk, "state": order.state, "client_order_id": order.client_order_id
-        } if order else None,
+        "order": {"id": order.pk, "state": order.state, "client_order_id": order.client_order_id}
+        if order
+        else None,
         "execution_enabled_on_live": False,
     }
 
@@ -58,11 +63,17 @@ def list_trades(request):
 @require_GET
 def trade_detail(request, pk):
     trade = _owned(request.user, pk)
-    return render(request, "trading/detail.html", {
-        "trade": trade, "events": trade.events.all(),
-        "orders": trade.orders.all(), "nav": "paper",
-        "position": getattr(trade, "position", None),
-    })
+    return render(
+        request,
+        "trading/detail.html",
+        {
+            "trade": trade,
+            "events": trade.events.all(),
+            "orders": trade.orders.all(),
+            "nav": "paper",
+            "position": getattr(trade, "position", None),
+        },
+    )
 
 
 @login_required
@@ -71,13 +82,16 @@ def launch_trade(request, plan_id):
     get_object_or_404(TradePlan, pk=plan_id, owner=request.user, status="ready")
     try:
         request_key = uuid.UUID(request.POST.get("request_key", ""))
-        trade, created = queue_paper_trade(
-            request.user, plan_id, request_key=request_key
-        )
+        trade, created = queue_paper_trade(request.user, plan_id, request_key=request_key)
         if created:
-            record_audit("paper_trade.queued", user=request.user,
-                         metadata={"trade_id": trade.pk, "plan_id": plan_id})
-            messages.success(request, "درخواست Paper در Outbox ثبت شد؛ Worker مستقل آن را اجرا می‌کند.")
+            record_audit(
+                "paper_trade.queued",
+                user=request.user,
+                metadata={"trade_id": trade.pk, "plan_id": plan_id},
+            )
+            messages.success(
+                request, "درخواست Paper در Outbox ثبت شد؛ Worker مستقل آن را اجرا می‌کند."
+            )
         return redirect("paper-trade-detail", pk=trade.pk)
     except (ValueError, ValidationError, IntegrityError) as error:
         messages.error(request, str(error))
@@ -121,9 +135,13 @@ def api_trades(request):
         request_key = uuid.UUID(body["request_key"])
         trade, created = queue_paper_trade(request.user, plan_id, request_key=request_key)
         if created:
-            record_audit("paper_trade.queued", user=request.user,
-                         metadata={"trade_id": trade.pk, "plan_id": plan_id})
-        return JsonResponse({"trade": _serialized(trade), "created": created},
-                            status=201 if created else 200)
+            record_audit(
+                "paper_trade.queued",
+                user=request.user,
+                metadata={"trade_id": trade.pk, "plan_id": plan_id},
+            )
+        return JsonResponse(
+            {"trade": _serialized(trade), "created": created}, status=201 if created else 200
+        )
     except (KeyError, ValueError, TypeError, ValidationError, IntegrityError) as error:
         return JsonResponse({"error": str(error)}, status=400)

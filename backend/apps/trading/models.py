@@ -1,4 +1,5 @@
 """Stage 08: durable paper-only lifecycle. Production exchange orders are disabled."""
+
 import uuid
 
 from django.conf import settings
@@ -16,14 +17,15 @@ class Trade(models.Model):
         FAILED = "failed", "ناموفق"
         CANCELLED = "cancelled", "لغوشده"
 
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
-                              related_name="paper_trades")
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="paper_trades"
+    )
     account = models.ForeignKey("exchanges.UserExchangeAccount", on_delete=models.CASCADE)
     market = models.ForeignKey("exchanges.ExchangeMarket", on_delete=models.PROTECT)
-    plan = models.ForeignKey("tradeplans.TradePlan", on_delete=models.CASCADE,
-                             null=True, blank=True)
-    signal = models.ForeignKey("signals.Signal", on_delete=models.CASCADE,
-                               null=True, blank=True)
+    plan = models.ForeignKey(
+        "tradeplans.TradePlan", on_delete=models.CASCADE, null=True, blank=True
+    )
+    signal = models.ForeignKey("signals.Signal", on_delete=models.CASCADE, null=True, blank=True)
     request_key = models.UUIDField(default=uuid.uuid4)
     request_hash = models.CharField(max_length=64)
     state = models.CharField(max_length=24, choices=State.choices, default=State.QUEUED)
@@ -41,14 +43,21 @@ class Trade(models.Model):
     class Meta:
         ordering = ("-created_at",)
         constraints = [
-            models.UniqueConstraint(fields=("owner", "request_key"),
-                                    name="paper_trade_owner_request_unique"),
-            models.CheckConstraint(condition=Q(quantity__gt=0), name="paper_trade_quantity_positive"),
-            models.CheckConstraint(condition=Q(entry_price__gt=0), name="paper_trade_entry_positive"),
-            models.CheckConstraint(condition=Q(capital_reserved__gt=0),
-                                   name="paper_trade_reserved_positive"),
-            models.CheckConstraint(condition=Q(filled_quantity__gte=0),
-                                   name="paper_trade_filled_nonnegative"),
+            models.UniqueConstraint(
+                fields=("owner", "request_key"), name="paper_trade_owner_request_unique"
+            ),
+            models.CheckConstraint(
+                condition=Q(quantity__gt=0), name="paper_trade_quantity_positive"
+            ),
+            models.CheckConstraint(
+                condition=Q(entry_price__gt=0), name="paper_trade_entry_positive"
+            ),
+            models.CheckConstraint(
+                condition=Q(capital_reserved__gt=0), name="paper_trade_reserved_positive"
+            ),
+            models.CheckConstraint(
+                condition=Q(filled_quantity__gte=0), name="paper_trade_filled_nonnegative"
+            ),
         ]
 
     def __str__(self):
@@ -78,14 +87,18 @@ class Order(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=("account", "client_order_id"),
-                                    name="paper_order_account_client_unique"),
-            models.UniqueConstraint(fields=("account", "external_order_id"),
-                                    condition=~Q(external_order_id=""),
-                                    name="paper_order_account_external_unique"),
+            models.UniqueConstraint(
+                fields=("account", "client_order_id"), name="paper_order_account_client_unique"
+            ),
+            models.UniqueConstraint(
+                fields=("account", "external_order_id"),
+                condition=~Q(external_order_id=""),
+                name="paper_order_account_external_unique",
+            ),
             models.CheckConstraint(condition=Q(quantity__gt=0), name="paper_order_qty_positive"),
-            models.CheckConstraint(condition=Q(filled_quantity__gte=0),
-                                   name="paper_order_filled_nonnegative"),
+            models.CheckConstraint(
+                condition=Q(filled_quantity__gte=0), name="paper_order_filled_nonnegative"
+            ),
         ]
 
     def __str__(self):
@@ -103,8 +116,9 @@ class OrderFill(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=("account", "exchange_fill_id"),
-                                    name="paper_fill_account_provider_unique"),
+            models.UniqueConstraint(
+                fields=("account", "exchange_fill_id"), name="paper_fill_account_provider_unique"
+            ),
             models.CheckConstraint(condition=Q(quantity__gt=0), name="paper_fill_qty_positive"),
             models.CheckConstraint(condition=Q(fee__gte=0), name="paper_fill_fee_nonnegative"),
         ]
@@ -127,6 +141,7 @@ class Position(models.Model):
 
 class CapitalReservation(models.Model):
     """Paper collateral ledger persists consumed allocation after fills."""
+
     trade = models.OneToOneField(Trade, on_delete=models.CASCADE, related_name="reservation")
     account = models.ForeignKey("exchanges.UserExchangeAccount", on_delete=models.CASCADE)
     quote_asset = models.ForeignKey("exchanges.Asset", on_delete=models.PROTECT)
@@ -177,23 +192,26 @@ class TradeEvent(models.Model):
 
 class PaperRiskPolicy(models.Model):
     """Small operator-controlled limits. Never grants real order permissions."""
-    owner = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
-                                 related_name="paper_risk_policy")
+
+    owner = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="paper_risk_policy"
+    )
     max_active_trades = models.PositiveSmallIntegerField(default=5)
-    max_capital_per_trade = models.DecimalField(max_digits=32, decimal_places=16,
-                                                default=500)
-    max_total_allocated = models.DecimalField(max_digits=32, decimal_places=16,
-                                               default=5000)
+    max_capital_per_trade = models.DecimalField(max_digits=32, decimal_places=16, default=500)
+    max_total_allocated = models.DecimalField(max_digits=32, decimal_places=16, default=5000)
 
     class Meta:
         constraints = [
-            models.CheckConstraint(condition=Q(max_active_trades__gte=1) &
-                                   Q(max_active_trades__lte=20),
-                                   name="paper_risk_trade_limit_range"),
-            models.CheckConstraint(condition=Q(max_capital_per_trade__gt=0),
-                                   name="paper_risk_single_capital_positive"),
-            models.CheckConstraint(condition=Q(max_total_allocated__gt=0),
-                                   name="paper_risk_total_capital_positive"),
+            models.CheckConstraint(
+                condition=Q(max_active_trades__gte=1) & Q(max_active_trades__lte=20),
+                name="paper_risk_trade_limit_range",
+            ),
+            models.CheckConstraint(
+                condition=Q(max_capital_per_trade__gt=0), name="paper_risk_single_capital_positive"
+            ),
+            models.CheckConstraint(
+                condition=Q(max_total_allocated__gt=0), name="paper_risk_total_capital_positive"
+            ),
         ]
 
     def __str__(self):

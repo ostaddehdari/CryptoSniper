@@ -1,16 +1,16 @@
+import uuid
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
-import uuid
-
 from django.db import IntegrityError
-from apps.signals.models import Signal
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from apps.accounts.security import session_api_required
+from apps.signals.models import Signal
 
 from .forms import ManualTradeForm
 from .models import TradePlan
@@ -54,11 +54,16 @@ def new_plan(request):
         )
         initial = {
             "origin_signal": signal.pk,
-            "account": signal.exchange_account_id, "market": signal.market_id,
+            "account": signal.exchange_account_id,
+            "market": signal.market_id,
             "source": "manual",
-        "origin_signal": plan.origin_signal_id, "side": signal.side,
-            "entry_price": signal.entry_price, "stop_loss": signal.stop_loss,
-            "leverage": 1, "capital": 50, "trailing_distance": 1,
+            "origin_signal": plan.origin_signal_id,
+            "side": signal.side,
+            "entry_price": signal.entry_price,
+            "stop_loss": signal.stop_loss,
+            "leverage": 1,
+            "capital": 50,
+            "trailing_distance": 1,
             "trailing_sl": bool(signal.parsed_payload.get("trailing_sl", False)),
             "percentage_trailing": bool(signal.parsed_payload.get("percentage_trailing", False)),
         }

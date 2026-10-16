@@ -1,4 +1,5 @@
 """Stage08 atomic Paper intents. All irreversible decisions stay in PostgreSQL."""
+
 import hashlib
 import json
 import uuid
@@ -39,9 +40,11 @@ def queue_paper_trade(owner, plan_id, *, request_key):
     plan = TradePlan.objects.select_related(
         "exchange_account", "market", "market__quote_asset"
     ).get(owner=owner, pk=plan_id, status=TradePlan.Status.READY)
-    account = UserExchangeAccount.objects.select_for_update().select_related(
-        "exchange"
-    ).get(pk=plan.exchange_account_id, owner=owner)
+    account = (
+        UserExchangeAccount.objects.select_for_update()
+        .select_related("exchange")
+        .get(pk=plan.exchange_account_id, owner=owner)
+    )
     digest = _hash(plan)
     previous = Trade.objects.filter(owner=owner, request_key=request_key).first()
     if previous:
@@ -66,16 +69,27 @@ def queue_paper_trade(owner, plan_id, *, request_key):
     if quantity * entry_price < (market.min_notional or Decimal("1e50")):
         raise ValidationError("حداقل ارزش سفارش رعایت نشده است.")
     policy, _ = PaperRiskPolicy.objects.get_or_create(owner=owner)
-    if Trade.objects.filter(account=account, state__in=(
-        Trade.State.QUEUED, Trade.State.SUBMITTING, Trade.State.PARTIAL,
-        Trade.State.OPEN, Trade.State.UNCERTAIN
-    )).count() >= policy.max_active_trades:
+    if (
+        Trade.objects.filter(
+            account=account,
+            state__in=(
+                Trade.State.QUEUED,
+                Trade.State.SUBMITTING,
+                Trade.State.PARTIAL,
+                Trade.State.OPEN,
+                Trade.State.UNCERTAIN,
+            ),
+        ).count()
+        >= policy.max_active_trades
+    ):
         raise ValidationError("سقف تعداد معاملات فعال Paper تکمیل شده است.")
     if capital > policy.max_capital_per_trade:
         raise ValidationError("مبلغ معامله از سقف سرمایه Paper بیشتر است.")
-    latest = BalanceSnapshot.objects.filter(
-        exchange_account=account, asset=market.quote_asset
-    ).order_by("-captured_at").first()
+    latest = (
+        BalanceSnapshot.objects.filter(exchange_account=account, asset=market.quote_asset)
+        .order_by("-captured_at")
+        .first()
+    )
     if latest is None or latest.captured_at < timezone.now() - timedelta(minutes=15):
         raise ValidationError("موجودی جدید و معتبر لازم است.")
     committed = CapitalReservation.objects.filter(
@@ -87,20 +101,33 @@ def queue_paper_trade(owner, plan_id, *, request_key):
     if latest.free_balance - committed < capital:
         raise ValidationError("موجودی آزاد بعد از رزروهای هم‌زمان کافی نیست.")
     trade = Trade.objects.create(
-        owner=owner, account=account, market=market, plan=plan,
-        request_key=request_key, request_hash=digest,
-        quantity=quantity, entry_price=entry_price,
-        capital_reserved=capital, snapshot=dict(snap), side="buy",
+        owner=owner,
+        account=account,
+        market=market,
+        plan=plan,
+        request_key=request_key,
+        request_hash=digest,
+        quantity=quantity,
+        entry_price=entry_price,
+        capital_reserved=capital,
+        snapshot=dict(snap),
+        side="buy",
     )
     CapitalReservation.objects.create(
-        trade=trade, account=account, quote_asset=market.quote_asset,
+        trade=trade,
+        account=account,
+        quote_asset=market.quote_asset,
         amount=capital,
     )
     order = Order.objects.create(
-        trade=trade, account=account, client_order_id=f"cs-paper-{trade.pk}",
-        quantity=quantity, price=entry_price,
+        trade=trade,
+        account=account,
+        client_order_id=f"cs-paper-{trade.pk}",
+        quantity=quantity,
+        price=entry_price,
     )
     ExecutionOutbox.objects.create(order=order)
-    TradeEvent.objects.create(trade=trade, event_type="QUEUED",
-                              payload={"mode": "paper", "order_id": order.pk})
+    TradeEvent.objects.create(
+        trade=trade, event_type="QUEUED", payload={"mode": "paper", "order_id": order.pk}
+    )
     return trade, True

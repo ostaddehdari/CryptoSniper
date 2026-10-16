@@ -1,12 +1,10 @@
 """Stage08 real-PostgreSQL tests: Paper only, idempotency and fill-ledger consistency."""
+
 import json
 import uuid
 from decimal import Decimal
 
 import pytest
-from django.core.exceptions import ValidationError
-from django.urls import reverse
-
 from apps.exchanges.models import Exchange, ExchangeMarket, UserExchangeAccount
 from apps.exchanges.security import set_account_credentials
 from apps.exchanges.services import sync_exchange_account
@@ -28,6 +26,8 @@ from apps.trading.models import (
     Trade,
     TradeEvent,
 )
+from django.core.exceptions import ValidationError
+from django.urls import reverse
 
 
 def paper_account(owner):
@@ -42,10 +42,18 @@ def paper_account(owner):
 
 def ready_plan(owner, account, market, *, capital="50"):
     values = {
-        "account": str(account.pk), "market": str(market.pk),
-        "source": "manual", "side": "long", "entry_price": "65000",
-        "tp1": "70000", "tp2": "", "tp3": "", "stop_loss": "60000",
-        "capital": capital, "leverage": "1", "trailing_distance": "1",
+        "account": str(account.pk),
+        "market": str(market.pk),
+        "source": "manual",
+        "side": "long",
+        "entry_price": "65000",
+        "tp1": "70000",
+        "tp2": "",
+        "tp3": "",
+        "stop_loss": "60000",
+        "capital": capital,
+        "leverage": "1",
+        "trailing_distance": "1",
         "client_token": str(uuid.uuid4()),
     }
     form = ManualTradeForm(owner, values)
@@ -74,8 +82,13 @@ def test_paper_outbox_worker_position_and_duplicate_fill(django_user_model):
     order = Order.objects.get(trade=trade)
     initial_qty = pos.quantity
     fill = OrderFill.objects.get(order=order)
-    _, new = record_fill(order.pk, exchange_fill_id=fill.exchange_fill_id,
-                         quantity=fill.quantity, price=fill.price, fee=fill.fee)
+    _, new = record_fill(
+        order.pk,
+        exchange_fill_id=fill.exchange_fill_id,
+        quantity=fill.quantity,
+        price=fill.price,
+        fee=fill.fee,
+    )
     assert not new
     pos.refresh_from_db()
     assert pos.quantity == initial_qty
@@ -93,24 +106,37 @@ def test_partial_fills_unique_keys_and_overfill_rejection(django_user_model):
     trade, _ = queue_paper_trade(owner, plan.pk, request_key=uuid.uuid4())
     order = trade.orders.get()
     half = order.quantity / 2
-    f, new = record_fill(order.pk, exchange_fill_id="sim-fill-A",
-                         quantity=half, price=Decimal("65000"), fee=Decimal("0"))
+    f, new = record_fill(
+        order.pk,
+        exchange_fill_id="sim-fill-A",
+        quantity=half,
+        price=Decimal("65000"),
+        fee=Decimal("0"),
+    )
     assert new and f.quantity == half
     trade.refresh_from_db()
     assert trade.state == "partially_filled"
     assert Position.objects.get(trade=trade).quantity == half
     with pytest.raises(ValidationError):
-        record_fill(order.pk, exchange_fill_id="sim-fill-over",
-                    quantity=order.quantity, price=Decimal("65000"))
-    record_fill(order.pk, exchange_fill_id="sim-fill-B",
-                quantity=half, price=Decimal("66000"), fee=Decimal("0.01"))
+        record_fill(
+            order.pk,
+            exchange_fill_id="sim-fill-over",
+            quantity=order.quantity,
+            price=Decimal("65000"),
+        )
+    record_fill(
+        order.pk,
+        exchange_fill_id="sim-fill-B",
+        quantity=half,
+        price=Decimal("66000"),
+        fee=Decimal("0.01"),
+    )
     trade.refresh_from_db()
     assert trade.state == "open"
     assert Position.objects.get(trade=trade).quantity == order.quantity
     assert Position.objects.get(trade=trade).total_fees == Decimal("0.01")
     with pytest.raises(ValidationError):
-        record_fill(order.pk, exchange_fill_id="sim-fill-A",
-                    quantity=half, price=Decimal("64000"))
+        record_fill(order.pk, exchange_fill_id="sim-fill-A", quantity=half, price=Decimal("64000"))
 
 
 @pytest.mark.django_db
@@ -160,9 +186,13 @@ def test_browser_routes_are_owner_scoped_and_api_idempotent(client, django_user_
     second = client.post(endpoint, data=json.dumps(payload), content_type="application/json")
     assert second.status_code == 200 and not second.json()["created"]
     assert client.get(reverse("paper-trade-detail", args=[trade_id])).status_code == 200
-    assert client.get(reverse("api-paper-detail", args=[trade_id])).json()["trade"]["mode"] == "paper"
+    assert (
+        client.get(reverse("api-paper-detail", args=[trade_id])).json()["trade"]["mode"] == "paper"
+    )
     client.force_login(other)
     assert client.get(reverse("paper-trade-detail", args=[trade_id])).status_code == 404
     assert client.get(reverse("api-paper-detail", args=[trade_id])).status_code == 404
-    assert client.post(endpoint, data=json.dumps(payload),
-                       content_type="application/json").status_code == 404
+    assert (
+        client.post(endpoint, data=json.dumps(payload), content_type="application/json").status_code
+        == 404
+    )

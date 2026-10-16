@@ -1,4 +1,5 @@
 """Stage07 deterministic, lossless-input normalization. NEVER write output over RawSignal."""
+
 import re
 import unicodedata
 

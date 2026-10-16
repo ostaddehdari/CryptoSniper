@@ -1,14 +1,9 @@
-from decimal import Decimal
-
 import pytest
-from django.core.exceptions import ValidationError
-
 from apps.signals.normalization import normalize
 from apps.signals.parser import extract
 from apps.signals.parsing import assess, parse_for_review
 from apps.signals.services import receive_signal
 from apps.signals.sources import get_default_source
-
 
 OP = """OP/USDT LONG 📈
 Entry: ۱.۲۵
@@ -30,9 +25,7 @@ def test_op_six_targets_are_not_discarded():
     assert result["entry"] == "1.25"
     assert result["side"] == "long"
     assert result["execution_targets"] == ["1.30", "1.35", "1.40"]
-    assert result["all_targets"] == [
-        "1.30", "1.35", "1.40", "1.45", "1.50", "1.60"
-    ]
+    assert result["all_targets"] == ["1.30", "1.35", "1.40", "1.45", "1.50", "1.60"]
     assert result["extra_targets"] == ["1.45", "1.50", "1.60"]
     assert result["stop_loss"] == "1.10"
     assert result["parser_version"] == "rules-v1"

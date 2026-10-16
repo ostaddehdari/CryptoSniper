@@ -182,9 +182,9 @@ def main():
                 )
                 page.locator('[name="account_id"]').select_option(str(account.pk))
                 page.locator('[name="market_id"]').select_option(
-                    page.locator('[name="market_id"] option').filter(
-                        has_text="BTC/USDT"
-                    ).first.get_attribute("value")
+                    page.locator('[name="market_id"] option')
+                    .filter(has_text="BTC/USDT")
+                    .first.get_attribute("value")
                 )
                 page.locator('[name="entry_price"]').fill("65000")
                 page.locator('[name="stop_loss"]').fill("60000")
@@ -192,22 +192,16 @@ def main():
                 page.locator("#id_reason").fill("تأیید بعد از بررسی متن اصلی")
                 page.get_by_role("button", name="ذخیره اصلاحات و اعتبارسنجی").click()
                 page.get_by_role("button", name="تأیید دستی (بدون معامله)").click()
-                page.get_by_role(
-                    "link", name="ساخت Trade Plan از این سیگنال"
-                ).click()
+                page.get_by_role("link", name="ساخت Trade Plan از این سیگنال").click()
                 page.wait_for_url("**/manual/new/?signal=*")
                 page.get_by_role("button", name="ذخیره پیش‌نویس و نمایش محاسبات").click()
                 page.wait_for_url("**/manual/*/")
                 page.get_by_role("button", name="تأیید و تثبیت Snapshot (بدون سفارش)").click()
-                page.get_by_role(
-                    "button", name="ثبت درخواست اجرای Paper با تأیید من"
-                ).click()
+                page.get_by_role("button", name="ثبت درخواست اجرای Paper با تأیید من").click()
                 page.wait_for_url("**/paper/*/")
                 paper = Trade.objects.filter(owner=user).latest("pk")
                 wait_for(lambda: Trade.objects.get(pk=paper.pk).state == "open", seconds=45)
-                page.screenshot(
-                    path=str(artifacts / "smart-paste-to-paper.png"), full_page=True
-                )
+                page.screenshot(path=str(artifacts / "smart-paste-to-paper.png"), full_page=True)
                 page.goto(base + "/inbox/receive/")
                 page.get_by_role("heading", name="ثبت متن اصلی سیگنال").wait_for()
                 page.locator('[name="method"]').select_option("manual")
@@ -255,9 +249,7 @@ def main():
                 page.screenshot(path=str(artifacts / "manual-preview-desktop.png"), full_page=True)
                 page.get_by_role("button", name="تأیید و تثبیت Snapshot (بدون سفارش)").click()
                 page.get_by_text("تأییدشده · فقط برای بررسی").wait_for()
-                page.get_by_role(
-                    "button", name="ثبت درخواست اجرای Paper با تأیید من"
-                ).click()
+                page.get_by_role("button", name="ثبت درخواست اجرای Paper با تأیید من").click()
                 page.wait_for_url("**/paper/*/")
                 trade = Trade.objects.filter(owner=user).latest("pk")
                 wait_for(
@@ -266,9 +258,7 @@ def main():
                 )
                 page.reload()
                 page.get_by_text("Position از Fillهای ثبت‌شده").wait_for()
-                page.screenshot(
-                    path=str(artifacts / "paper-trade-desktop.png"), full_page=True
-                )
+                page.screenshot(path=str(artifacts / "paper-trade-desktop.png"), full_page=True)
                 page.set_viewport_size({"width": 390, "height": 844})
                 assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
                 page.screenshot(path=str(artifacts / "manual-preview-mobile.png"), full_page=True)

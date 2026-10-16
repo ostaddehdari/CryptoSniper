@@ -49,8 +49,9 @@ class ManualTradeForm(forms.Form):
         max_value=99,
         initial=1,
     )
-    origin_signal = forms.ModelChoiceField(queryset=Signal.objects.none(),
-                                          required=False, widget=forms.HiddenInput)
+    origin_signal = forms.ModelChoiceField(
+        queryset=Signal.objects.none(), required=False, widget=forms.HiddenInput
+    )
     client_token = forms.UUIDField(widget=forms.HiddenInput)
 
     def __init__(self, owner, *args, **kwargs):
@@ -86,8 +87,10 @@ class ManualTradeForm(forms.Form):
         if origin:
             if origin.status != Signal.Status.APPROVED:
                 self.add_error("origin_signal", "سیگنال باید ابتدا تأیید شده باشد.")
-            if account and market and (
-                origin.exchange_account_id != account.pk or origin.market_id != market.pk
+            if (
+                account
+                and market
+                and (origin.exchange_account_id != account.pk or origin.market_id != market.pk)
             ):
                 self.add_error("origin_signal", "حساب و بازار باید با سیگنال تأییدشده برابر باشند.")
         targets = (data.get("tp1"), data.get("tp2"), data.get("tp3"))

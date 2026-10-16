@@ -1,4 +1,5 @@
 """Durable Paper-only executor; never calls any Binance order endpoint."""
+
 from datetime import timedelta
 from decimal import Decimal
 
@@ -36,7 +37,10 @@ def record_fill(order_id, *, exchange_fill_id, quantity, price, fee=Decimal("0")
     ).first()
     if existing:
         if (existing.order_id, existing.quantity, existing.price, existing.fee) != (
-            order.pk, quantity, price, fee
+            order.pk,
+            quantity,
+            price,
+            fee,
         ):
             raise ValidationError("شناسه Fill با اطلاعات متفاوت قبلاً ثبت شده است.")
         return existing, False
@@ -45,8 +49,13 @@ def record_fill(order_id, *, exchange_fill_id, quantity, price, fee=Decimal("0")
     if order.filled_quantity + quantity > order.quantity:
         raise ValidationError("حجم Fill از حجم باقی‌مانده سفارش بیشتر است.")
     fill = OrderFill.objects.create(
-        order=order, account=order.account, exchange_fill_id=exchange_fill_id,
-        quantity=quantity, price=price, fee=fee, occurred_at=timezone.now(),
+        order=order,
+        account=order.account,
+        exchange_fill_id=exchange_fill_id,
+        quantity=quantity,
+        price=price,
+        fee=fee,
+        occurred_at=timezone.now(),
     )
     order.filled_quantity += quantity
     trade.filled_quantity += quantity
@@ -66,22 +75,26 @@ def record_fill(order_id, *, exchange_fill_id, quantity, price, fee=Decimal("0")
     pos.save()
     CapitalReservation.objects.filter(trade=trade).update(spent=True)
     TradeEvent.objects.create(
-        trade=trade, event_type="FILL",
-        payload={"fill_id": fill.pk, "quantity": str(quantity),
-                 "price": str(price), "total_filled": str(trade.filled_quantity)},
+        trade=trade,
+        event_type="FILL",
+        payload={
+            "fill_id": fill.pk,
+            "quantity": str(quantity),
+            "price": str(price),
+            "total_filled": str(trade.filled_quantity),
+        },
     )
     if complete:
-        TradeEvent.objects.create(trade=trade, event_type="ENTRY_FILLED",
-                                  payload={"order_id": order.pk})
+        TradeEvent.objects.create(
+            trade=trade, event_type="ENTRY_FILLED", payload={"order_id": order.pk}
+        )
     return fill, True
 
 
 @transaction.atomic
 def claim_outbox(outbox_id):
     """Never resubmit a potentially sent order; uncertain requires reconciliation."""
-    box = ExecutionOutbox.objects.select_for_update().select_related("order").get(
-        pk=outbox_id
-    )
+    box = ExecutionOutbox.objects.select_for_update().select_related("order").get(pk=outbox_id)
     if box.state != ExecutionOutbox.State.PENDING:
         return None
     order = Order.objects.select_for_update().get(pk=box.order_id)
@@ -96,8 +109,9 @@ def claim_outbox(outbox_id):
     order.save(update_fields=("state", "sent_at", "updated_at"))
     trade.state = Trade.State.SUBMITTING
     trade.save(update_fields=("state", "updated_at"))
-    TradeEvent.objects.create(trade=trade, event_type="SUBMIT_INTENT",
-                              payload={"client_order_id": order.client_order_id})
+    TradeEvent.objects.create(
+        trade=trade, event_type="SUBMIT_INTENT", payload={"client_order_id": order.client_order_id}
+    )
     return order.pk
 
 
@@ -119,8 +133,9 @@ def mark_uncertain(outbox_id, code="unknown_outcome"):
     order.save(update_fields=("state", "updated_at"))
     trade.state = Trade.State.UNCERTAIN
     trade.save(update_fields=("state", "updated_at"))
-    TradeEvent.objects.create(trade=trade, event_type="OUTCOME_UNKNOWN",
-                              payload={"reason_code": code[:50]})
+    TradeEvent.objects.create(
+        trade=trade, event_type="OUTCOME_UNKNOWN", payload={"reason_code": code[:50]}
+    )
 
 
 def dispatch_paper(outbox_id):
@@ -140,8 +155,10 @@ def dispatch_paper(outbox_id):
         adapter = get_adapter("simulator", credentials={}, environment="paper")
         receipt = adapter.place_order(
             client_order_id=order.client_order_id,
-            symbol=order.trade.market.symbol, side="buy",
-            order_type="market", amount=order.quantity,
+            symbol=order.trade.market.symbol,
+            side="buy",
+            order_type="market",
+            amount=order.quantity,
             price=order.price,
         )
         with transaction.atomic():
@@ -150,11 +167,13 @@ def dispatch_paper(outbox_id):
             locked.save(update_fields=("external_order_id", "updated_at"))
         if receipt.filled_amount > 0:
             record_fill(
-                order.pk, exchange_fill_id=f"paper:{order.client_order_id}:1",
+                order.pk,
+                exchange_fill_id=f"paper:{order.client_order_id}:1",
                 quantity=receipt.filled_amount,
                 price=receipt.average_price or order.price,
-                fee=receipt.filled_amount * (receipt.average_price or order.price) *
-                    (order.trade.market.taker_fee or Decimal("0")),
+                fee=receipt.filled_amount
+                * (receipt.average_price or order.price)
+                * (order.trade.market.taker_fee or Decimal("0")),
             )
         with transaction.atomic():
             box = ExecutionOutbox.objects.select_for_update().get(pk=outbox_id)
@@ -168,9 +187,11 @@ def dispatch_paper(outbox_id):
 
 def expire_inflight(seconds=30):
     cutoff = timezone.now() - timedelta(seconds=seconds)
-    ids = list(ExecutionOutbox.objects.filter(
-        state=ExecutionOutbox.State.INFLIGHT, updated_at__lt=cutoff
-    ).values_list("pk", flat=True)[:30])
+    ids = list(
+        ExecutionOutbox.objects.filter(
+            state=ExecutionOutbox.State.INFLIGHT, updated_at__lt=cutoff
+        ).values_list("pk", flat=True)[:30]
+    )
     for outbox_id in ids:
         mark_uncertain(outbox_id, "worker_restart_or_timeout")
     return len(ids)

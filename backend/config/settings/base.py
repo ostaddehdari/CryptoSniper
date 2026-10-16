@@ -159,7 +159,8 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 CELERY_BEAT_SCHEDULE["paper-outbox-scan"] = {
-    "task": "trading.scan_outbox", "schedule": 12.0,
+    "task": "trading.scan_outbox",
+    "schedule": 12.0,
     "options": {"queue": "maintenance", "expires": 10},
 }
 CELERY_BEAT_SCHEDULE["market-display-refresh"] = {

@@ -1,4 +1,5 @@
 """Stage07 extraction diagnostics and review-only Inbox integration."""
+
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
@@ -41,12 +42,16 @@ def assess(parsed):
     coverage += int(bool(parsed["all_targets"]))
     confidence = max(0, (coverage * 20) - (10 * int(parsed["futures_mentioned"])))
     return {
-        **parsed, "technical_confidence": confidence,
-        "warnings": warnings, "review_required": True,
+        **parsed,
+        "technical_confidence": confidence,
+        "warnings": warnings,
+        "review_required": True,
         "entry_policy": "explicit_user_review_only",
         "trailing_defaults": {
-            "trailing_sl": True, "percentage_trailing": True,
-            "percentage_trigger": "tp1", "percentage_distance": "1",
+            "trailing_sl": True,
+            "percentage_trailing": True,
+            "percentage_trigger": "tp1",
+            "percentage_distance": "1",
             "exit_policy": "percentage_trailing_only",
         },
     }
@@ -54,9 +59,11 @@ def assess(parsed):
 
 @transaction.atomic
 def parse_for_review(owner, signal_id):
-    signal = Signal.objects.select_for_update().select_related(
-        "raw_signal", "source"
-    ).get(owner=owner, pk=signal_id)
+    signal = (
+        Signal.objects.select_for_update()
+        .select_related("raw_signal", "source")
+        .get(owner=owner, pk=signal_id)
+    )
     if signal.source.method != "smart_paste":
         raise ValidationError("Parser قالبی فقط برای Smart Paste فعال است.")
     if signal.status not in {"new", "parsed", "needs_review"}:
@@ -74,9 +81,16 @@ def parse_for_review(owner, signal_id):
     signal.status = Signal.Status.NEEDS_REVIEW
     signal.review_reason = "لطفاً پیشنهادهای استخراج را با متن اصلی مقایسه و تأیید کنید."
     signal.revision += 1
-    signal.save(update_fields=(
-        "parsed_payload", "parser_version", "technical_confidence",
-        "status", "review_reason", "revision", "updated_at",
-    ))
+    signal.save(
+        update_fields=(
+            "parsed_payload",
+            "parser_version",
+            "technical_confidence",
+            "status",
+            "review_reason",
+            "revision",
+            "updated_at",
+        )
+    )
     _revision(signal, owner=owner, reason="تحلیل قالبی نیازمند تأیید انسان")
     return signal

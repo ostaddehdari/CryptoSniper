@@ -1,4 +1,5 @@
 """Deterministic Stage07 rule parser: extraction metadata, never a trade decision."""
+
 import re
 from decimal import Decimal, InvalidOperation
 
@@ -11,10 +12,16 @@ HASHTAG = re.compile(r"(?<!\w)#([A-Z]{3,15})\s*(?:USDT|USD)\b", re.I)
 SIDE_LONG = re.compile(r"\b(LONG|BUY)\b|\b(خرید|لانگ)\b", re.I)
 SIDE_SHORT = re.compile(r"\b(SHORT|SELL)\b|\b(فروش|شورت)\b", re.I)
 FUTURES = re.compile(r"\b(FUTURES?|PERPETUAL|PERP)\b|\b(فیوچرز|دائمی)\b", re.I)
-ENTRY = re.compile(r"\b(?:ENTRY(?:\s+ZONE|\s+PRICE)?|ENTER|BUY\s+ZONE)\b|(?:ورود|نقطه\s+ورود)", re.I)
+ENTRY = re.compile(
+    r"\b(?:ENTRY(?:\s+ZONE|\s+PRICE)?|ENTER|BUY\s+ZONE)\b|(?:ورود|نقطه\s+ورود)", re.I
+)
 STOP = re.compile(r"\b(?:STOP\s*LOSS|STOPLOSS|SL)\b|(?:حد\s*ضرر|استاپ)", re.I)
-TARGET = re.compile(r"\b(?:TARGETS?|TAKE\s*PROFIT|TP\s*[1-9]?)\b|(?:اهداف?|هدف\s*\d*|تارگت\s*\d*)", re.I)
-LEVERAGE = re.compile(r"(?:\bLEV(?:ERAGE)?\b|اهرم)\s*[:=]?\s*(?:X\s*)?([0-9]+(?:[.,][0-9]+)?)\s*X?", re.I)
+TARGET = re.compile(
+    r"\b(?:TARGETS?|TAKE\s*PROFIT|TP\s*[1-9]?)\b|(?:اهداف?|هدف\s*\d*|تارگت\s*\d*)", re.I
+)
+LEVERAGE = re.compile(
+    r"(?:\bLEV(?:ERAGE)?\b|اهرم)\s*[:=]?\s*(?:X\s*)?([0-9]+(?:[.,][0-9]+)?)\s*X?", re.I
+)
 ROW_NUMBERS = re.compile(r"(?<![A-Z0-9])\d+(?:[.,]\d+)?(?![A-Z0-9])")
 LABEL_NUMBER = re.compile(r"^(?:\s*(?:TP|TARGET|هدف|تارگت)\s*\d+\s*[:=.)-]\s*)(.*)$", re.I)
 
@@ -82,12 +89,18 @@ def extract(raw: str) -> dict:
     entry = entry_values[0] if len(entry_values) == 1 else None
     sl = stops[0] if len(stops) == 1 else None
     return {
-        "parser_version": PARSER_VERSION, "normalized": cleaned,
-        "pairs": pairs, "pair": pairs[0] if len(pairs) == 1 else None,
-        "side": side, "entry": entry, "entry_range": entry_range,
-        "stop_loss": sl, "all_targets": targets,
+        "parser_version": PARSER_VERSION,
+        "normalized": cleaned,
+        "pairs": pairs,
+        "pair": pairs[0] if len(pairs) == 1 else None,
+        "side": side,
+        "entry": entry,
+        "entry_range": entry_range,
+        "stop_loss": sl,
+        "all_targets": targets,
         "execution_targets": targets[:3],
         "extra_targets": targets[3:],
-        "leverage": leverage, "futures_mentioned": bool(FUTURES.search(cleaned)),
+        "leverage": leverage,
+        "futures_mentioned": bool(FUTURES.search(cleaned)),
         "source_hint": "smart_paste",
     }

@@ -189,9 +189,7 @@ def transition(owner, pk, *, expected_revision, action, reason=""):
         if signal.source.method == "smart_paste" and signal.parsed_payload.get(
             "extraction", {}
         ).get("futures_mentioned"):
-            raise ValidationError(
-                "سیگنال Futures نباید ضمنی به Spot/Margin تبدیل شود."
-            )
+            raise ValidationError("سیگنال Futures نباید ضمنی به Spot/Margin تبدیل شود.")
         if not signal.market_id or not signal.exchange_account_id:
             raise ValidationError("بازار یا حساب تأیید نشده است.")
         values = list(signal.targets.order_by("position").values("price"))

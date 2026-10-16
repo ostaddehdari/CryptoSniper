@@ -25,8 +25,9 @@ class TradePlan(models.Model):
     market = models.ForeignKey("exchanges.ExchangeMarket", on_delete=models.PROTECT)
     client_token = models.UUIDField(default=uuid.uuid4)
     source = models.CharField(max_length=24, default="manual")
-    origin_signal = models.ForeignKey("signals.Signal", on_delete=models.CASCADE,
-                                      null=True, blank=True)
+    origin_signal = models.ForeignKey(
+        "signals.Signal", on_delete=models.CASCADE, null=True, blank=True
+    )
     status = models.CharField(max_length=8, choices=Status.choices, default=Status.DRAFT)
     side = models.CharField(max_length=8, choices=Side.choices, default=Side.LONG)
     entry_price = models.DecimalField(max_digits=32, decimal_places=16)

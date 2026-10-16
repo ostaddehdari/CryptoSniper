@@ -7,8 +7,8 @@ from apps.marketdata import watchlists as watchlist_views
 from apps.signals import views as inbox_views
 from apps.tradeplans import context as trade_context
 from apps.tradeplans import views as plan_views
-from apps.trading import views as paper_views
 from apps.trading import risk as paper_risk_views
+from apps.trading import views as paper_views
 from django.http import JsonResponse
 from django.urls import path
 

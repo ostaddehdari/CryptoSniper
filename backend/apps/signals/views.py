@@ -12,8 +12,8 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 from apps.accounts.security import session_api_required
 
 from .forms import ReceiveForm, ReviewForm
-from .parsing import parse_for_review
 from .models import Signal, SignalSource
+from .parsing import parse_for_review
 from .services import receive_signal, snapshot, transition, update_parsed
 from .sources import get_default_source
 
@@ -92,9 +92,7 @@ def smart_paste(request):
     if request.method == "POST" and form.is_valid():
         source = get_default_source(request.user, SignalSource.Method.SMART_PASTE)
         try:
-            signal, _, _ = receive_signal(
-                request.user, source, text=form.cleaned_data["text"]
-            )
+            signal, _, _ = receive_signal(request.user, source, text=form.cleaned_data["text"])
             parse_for_review(request.user, signal.pk)
             messages.success(request, "تحلیل اولیه انجام شد؛ برای تأیید، بازبینی انسانی لازم است.")
             return redirect("inbox-detail", pk=signal.pk)

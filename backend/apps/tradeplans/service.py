@@ -47,7 +47,9 @@ def create_draft(owner, data):
         exchange_account=data["account"],
         market=data["market"],
         client_token=token,
-        source="smart_paste" if data.get("origin_signal") and data["origin_signal"].source.method == "smart_paste" else "manual",
+        source="smart_paste"
+        if data.get("origin_signal") and data["origin_signal"].source.method == "smart_paste"
+        else "manual",
         origin_signal=data.get("origin_signal"),
         side=data["side"],
         entry_price=data["entry_price"],

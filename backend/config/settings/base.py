@@ -131,6 +131,7 @@ CELERY_TASK_QUEUES = {
     "maintenance": {"exchange": "maintenance", "routing_key": "maintenance"},
 }
 CELERY_TASK_ROUTES = {"core.worker_heartbeat": {"queue": "maintenance"}}
+CELERY_TASK_ROUTES["exchanges.sync_account"] = {"queue": "maintenance"}
 CELERY_BROKER_CONNECTION_TIMEOUT = 3
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_BROKER_CONNECTION_MAX_RETRIES = 3

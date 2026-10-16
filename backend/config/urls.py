@@ -1,6 +1,7 @@
 from apps.accounts import views as account_views
 from apps.core import views
 from apps.core.health import dependency_status
+from apps.exchanges import views as exchange_views
 from django.http import JsonResponse
 from django.urls import path
 
@@ -52,12 +53,35 @@ urlpatterns = [
         name="revoke-session",
     ),
     path("api/v1/me/", account_views.api_me, name="api-me"),
+    path("api/v1/exchanges/", exchange_views.api_exchanges, name="api-exchanges"),
+    path(
+        "api/v1/exchange-accounts/<int:pk>/",
+        exchange_views.api_exchange_account,
+        name="api-exchange-account",
+    ),
     path(
         "api/v1/me/trading-preferences/",
         account_views.api_trading_preferences,
         name="api-trading-preferences",
     ),
     path("dashboard/", views.dashboard, name="dashboard"),
+    path("exchanges/", exchange_views.exchange_center, name="exchange-center"),
+    path("exchanges/add/", exchange_views.add_exchange_account, name="exchange-account-add"),
+    path(
+        "exchanges/<int:pk>/",
+        exchange_views.exchange_account_detail,
+        name="exchange-account-detail",
+    ),
+    path(
+        "exchanges/<int:pk>/sync/",
+        exchange_views.request_account_sync,
+        name="exchange-account-sync",
+    ),
+    path(
+        "exchanges/<int:pk>/disable/",
+        exchange_views.disable_exchange_account,
+        name="exchange-account-disable",
+    ),
     path("system/", views.system, name="system"),
     path("system/status/", views.system_status, name="system-status"),
     path("system/probe/", views.create_probe, name="create-probe"),

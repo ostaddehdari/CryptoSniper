@@ -22,6 +22,7 @@ import django  # noqa: E402
 
 django.setup()
 from apps.core.models import ServiceProbe  # noqa: E402
+from apps.exchanges.models import Exchange, UserExchangeAccount  # noqa: E402
 from django.conf import settings  # noqa: E402
 from django.contrib.auth import get_user_model  # noqa: E402
 from django.core.cache import cache  # noqa: E402
@@ -147,6 +148,22 @@ def main():
                 page.goto(base + "/settings/security/audit/")
                 page.get_by_role("heading", name="گزارش امنیتی حساب").wait_for()
                 page.screenshot(path=str(artifacts / "security-desktop.png"), full_page=True)
+                page.goto(base + "/exchanges/")
+                page.get_by_role("heading", name="اتصال‌ها و حساب‌های صرافی").wait_for()
+                page.screenshot(path=str(artifacts / "exchanges-empty-desktop.png"), full_page=True)
+                page.get_by_role("link", name="افزودن اولین اتصال").click()
+                page.get_by_label("صرافی").select_option(label="شبیه‌ساز CryptoSniper")
+                page.get_by_label("نام این اتصال").fill("حساب تمرین مرورگر")
+                page.get_by_role("button", name="ذخیره و بررسی امن اتصال").click()
+                page.wait_for_url("**/exchanges/*/")
+                page.get_by_role("heading", name="حساب تمرین مرورگر").wait_for()
+                account = UserExchangeAccount.objects.get(owner=user)
+                wait_for(
+                    lambda: UserExchangeAccount.objects.get(pk=account.pk).status == "connected"
+                )
+                page.reload()
+                page.get_by_text("BTC/USDT", exact=True).first.wait_for()
+                page.screenshot(path=str(artifacts / "exchange-detail-desktop.png"), full_page=True)
                 page.goto(base + "/dashboard/")
                 for width in (320, 390, 768):
                     page.set_viewport_size({"width": width, "height": 844})
@@ -154,6 +171,9 @@ def main():
                         width
                     )
                 page.screenshot(path=str(artifacts / "dashboard-mobile.png"), full_page=True)
+                page.goto(base + "/exchanges/")
+                assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+                page.screenshot(path=str(artifacts / "exchanges-mobile.png"), full_page=True)
                 page.set_viewport_size({"width": 390, "height": 844})
                 page.get_by_role("button", name="باز کردن منو").click()
                 page.locator(".sidebar").get_by_role("link", name="وضعیت سرویس‌ها").click()
@@ -174,6 +194,7 @@ def main():
             print("PASS desktop/mobile login, HTMX, Alpine, no overflow, no JS errors")
             print("PASS browser closed; Worker receipt persisted independently")
             user.delete()
+            Exchange.objects.filter(code__in=("simulator", "binance")).update(enabled=True)
     except Exception:
         for name, log in logs:
             log.flush()

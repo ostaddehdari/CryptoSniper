@@ -25,7 +25,18 @@ def home(request):
 @never_cache
 @require_GET
 def dashboard(request):
-    return render(request, "core/dashboard.html", {"nav": "dashboard"})
+    from apps.exchanges.models import UserExchangeAccount
+
+    exchange_accounts = UserExchangeAccount.objects.for_user(request.user)
+    return render(
+        request,
+        "core/dashboard.html",
+        {
+            "nav": "dashboard",
+            "exchange_count": exchange_accounts.exclude(status="disabled").count(),
+            "connected_exchange_count": exchange_accounts.filter(status="connected").count(),
+        },
+    )
 
 
 def system_context():

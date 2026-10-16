@@ -2,6 +2,7 @@ from apps.accounts import views as account_views
 from apps.core import views
 from apps.core.health import dependency_status
 from apps.exchanges import views as exchange_views
+from apps.marketdata import views as market_views
 from django.http import JsonResponse
 from django.urls import path
 
@@ -54,6 +55,9 @@ urlpatterns = [
     ),
     path("api/v1/me/", account_views.api_me, name="api-me"),
     path("api/v1/exchanges/", exchange_views.api_exchanges, name="api-exchanges"),
+    path("api/v1/markets/search/", market_views.api_search, name="api-market-search"),
+    path("api/v1/markets/quotes/", market_views.api_quotes, name="api-market-quotes"),
+    path("api/v1/markets/stream/", market_views.api_stream, name="api-market-stream"),
     path(
         "api/v1/exchange-accounts/<int:pk>/",
         exchange_views.api_exchange_account,

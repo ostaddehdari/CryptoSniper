@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.core",
     "apps.exchanges",
+    "apps.marketdata",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -88,6 +89,8 @@ X_FRAME_OPTIONS = "DENY"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 TRADING_MODE = "paper"
 LIVE_TRADING_ENABLED = False
+# Enable only when using an ASGI web process; Gunicorn WSGI uses bounded polling.
+MARKETDATA_SSE_ENABLED = env.bool("MARKETDATA_SSE_ENABLED", default=False)
 ENABLED_MARKET_TYPES = ("spot", "margin")
 EXCHANGE_CREDENTIAL_KEYS = env.list("EXCHANGE_CREDENTIAL_KEYS", default=[])
 

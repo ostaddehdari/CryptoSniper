@@ -93,7 +93,7 @@ def add_watchlist_item(request, pk):
 def remove_watchlist_item(request, pk, item_id):
     watchlist = _owned_watchlist(request, pk)
     get_object_or_404(WatchlistItem, watchlist=watchlist, pk=item_id).delete()
-    return redirect(f"/watchlist/?list={watchlist.pk}")
+    return redirect(reverse("watchlists") + f"?list={watchlist.pk}")
 
 
 @session_api_required

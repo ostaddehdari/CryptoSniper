@@ -4,6 +4,7 @@ from apps.core.health import dependency_status
 from apps.exchanges import views as exchange_views
 from apps.marketdata import views as market_views
 from apps.marketdata import watchlists as watchlist_views
+from apps.signals import views as inbox_views
 from apps.tradeplans import context as trade_context
 from apps.tradeplans import views as plan_views
 from django.http import JsonResponse
@@ -72,6 +73,16 @@ urlpatterns = [
         name="api-trading-preferences",
     ),
     path("dashboard/", views.dashboard, name="dashboard"),
+    path("inbox/", inbox_views.inbox, name="inbox"),
+    path("inbox/receive/", inbox_views.receive, name="inbox-receive"),
+    path("inbox/<int:pk>/", inbox_views.detail, name="inbox-detail"),
+    path("inbox/<int:pk>/edit/", inbox_views.edit, name="inbox-edit"),
+    path("inbox/<int:pk>/action/", inbox_views.action, name="inbox-action"),
+    path("api/v1/inbox/", inbox_views.api_list, name="api-inbox"),
+    path("api/v1/inbox/receive/", inbox_views.api_receive, name="api-inbox-receive"),
+    path("api/v1/inbox/<int:pk>/", inbox_views.api_detail, name="api-inbox-detail"),
+    path("api/v1/inbox/<int:pk>/edit/", inbox_views.api_edit, name="api-inbox-edit"),
+    path("api/v1/inbox/<int:pk>/action/", inbox_views.api_action, name="api-inbox-action"),
     path("api/v1/manual/context/", trade_context.manual_context, name="manual-context"),
     path("api/v1/manual/plans/", plan_views.api_create, name="api-manual-create"),
     path("api/v1/manual/plans/<int:pk>/", plan_views.api_plan, name="api-manual-detail"),

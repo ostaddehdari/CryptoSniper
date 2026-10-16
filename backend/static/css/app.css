@@ -69,3 +69,20 @@
 @media(max-width:620px){.manual-fields,.manual-preview-grid{grid-template-columns:1fr}
 .manual-targets{grid-template-columns:1fr}.manual-list-item{align-items:flex-start;flex-wrap:wrap}
 .manual-preview-actions .button{width:100%}}
+
+/* Stage 06 — human-reviewed signal Inbox */
+.inbox-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;align-items:end;gap:12px}
+.inbox-filters label{display:grid;gap:6px;font-size:11px;color:var(--muted)}
+.inbox-filters .input,.inbox-review-grid .input,.inbox-review-grid textarea,.manual-form textarea{width:100%;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px}
+.inbox-items{display:grid}.inbox-item{display:flex;align-items:center;gap:14px;min-width:0;border-bottom:1px solid var(--line);padding:15px 8px;font-size:11px}
+.inbox-item:last-child{border:0}.inbox-main{min-width:0;flex:1}.inbox-main strong{font-size:12px;display:block;overflow:hidden;text-overflow:ellipsis}
+.inbox-main small{font-size:10px;color:var(--muted)}.inbox-id{color:var(--accent);font-weight:700}
+.inbox-review-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
+.inbox-review-grid>.panel{min-width:0}.inbox-raw{white-space:pre-wrap;overflow-wrap:anywhere;padding:16px;max-height:390px;overflow:auto;background:var(--soft);border-radius:12px;font-size:12px;font-family:inherit}
+.inbox-history{display:grid;gap:9px}.inbox-history details{padding:10px 12px;border:1px solid var(--line);border-radius:10px}
+.inbox-history summary{cursor:pointer;font-size:11px}.inbox-review-grid h3{font-size:13px}.inbox-actions{display:grid;gap:12px;margin-top:18px}
+.inbox-actions form{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.inbox-timeline{margin-top:20px}
+@media(max-width:960px){.inbox-review-grid{grid-template-columns:1fr}.inbox-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.inbox-filters{grid-template-columns:1fr}.inbox-item{flex-wrap:wrap}.inbox-item>span:last-child{margin-right:auto}
+.inbox-actions .button{width:100%}}

@@ -52,3 +52,17 @@
 ## مانع باقی‌مانده
 
 کاربر باید صرافی هدف نخست را تأیید کند. اگر Binance انتخاب شد، بررسی فقط‌خواندنی با کلیدی که Withdrawal آن خاموش و ترجیحاً IP-restricted است در محیط امن سرور انجام می‌شود. اگر Provider دیگری انتخاب شود، Adapter اختصاصی همان Provider در همین S03 جایگزین/اضافه و سپس استیج done می‌شود.
+
+## شواهد استقرار روی سرور کاربر — ۲۰۲۶/۱۰/۱۶
+
+طبق خروجی نصب ارسالی کاربر از Ubuntu 24.04 سرور `5.61.27.185` (این بخش مشاهدهٔ مستقیم CI نیست):
+
+- بستهٔ منتشرشده `stage03-v0.3.0rc1-deploy` با کنترل دو SHA-256 نصب شده است.
+- Django system check: بدون مشکل؛ Migrationها از جمله `exchanges.0001_initial` از نصب قبلی اعمال شده بودند.
+- Readiness برنامه: PostgreSQL و Redis cache/broker/results همگی `true`.
+- بررسی مستقل Workerهای orders و reports و heartbeat Beat: موفق؛ سرویس‌های `cryptosniper-redis/web/orders/reports/beat` فعال.
+- پس از اصلاح کنترل Reload ناهمزمان Nginx: نخستین probe وضعیت HTTPS `404` و probe دوم `200` شد؛ مسیر HTTPS ورود هم `200` پاسخ داد.
+- خروجی نهایی نصب‌کننده: `INSTALL_OK: CryptoSniper Stage03 v0.3.0rc1` و `DEPLOY_OK`.
+- Scope تأیید: **Nginx origin روی localhost و سرویس‌های سرور**. این گزارش جای آزمون دستی مرورگر از اینترنت عمومی یا بررسی Provider واقعی را نمی‌گیرد.
+
+**باقیماندهٔ رسمی S03-W04:** انتخاب صرافی نخست و آزمون حساب مجاز (ترجیحاً API فقط‌خواندنی و IP-restricted، قطعاً بدون Withdrawal). در غیاب این شواهد، وضعیت Stage 03 همچنان `partial` است و Stage 04 هنوز آغاز نشده است. هرگز Secret را در GitHub یا گزارش‌ها قرار ندهید.

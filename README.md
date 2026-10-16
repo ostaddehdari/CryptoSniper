@@ -26,3 +26,26 @@
 پس از اتمام، همین دستور با شماره استیج بعد اجرا می‌شود. درخواست یک استیج مجوز رفتن خودکار به استیج بعد نیست. ثبت کد در GitHub به‌معنی مجوز اجرای معامله با پول واقعی یا استقرار روی سرور تعیین‌نشده نیست.
 
 اجرای کامل نیازمند هاست پایتونی با Worker دائمی، PostgreSQL، Redis، scheduler و HTTPS است. Production نیازی به runtime Node.js ندارد.
+
+
+## استقرار و به‌روزرسانی از GitHub با یک دستور
+
+از این به بعد تمام نسخه‌ها ابتدا در GitHub ثبت می‌شوند. فایل `scripts/deploy.sh` نسخهٔ منتشرشدهٔ قابل نصب را انتخاب می‌کند، ZIP و اسکریپت نصب رسمی همان release را دانلود می‌کند، SHA-256 هر دو را با مقادیر ثابت بررسی می‌کند، سپس صحت بسته را سنجیده و نصب/ارتقا را انجام می‌دهد. رمزهای خصوصی و دیتابیس موجود در ارتقای مدیریت‌شده محفوظ می‌مانند.
+
+دستور سرور Ubuntu (دسترسی sudo/root لازم است):
+
+```bash
+curl -fsSL --retry 3 -o /tmp/cryptosniper-deploy.sh https://raw.githubusercontent.com/ostaddehdari/CryptoSniper/main/scripts/deploy.sh && sudo bash /tmp/cryptosniper-deploy.sh
+```
+
+برای دانلود و بررسی **بدون نصب**، به انتهای دستور `--check` اضافه کنید.
+
+برای تشخیص فقط‌خواندنی مشکل HTTPS/Nginx (بدون تغییر یا restart سرویس‌ها):
+
+```bash
+curl -fsSL --retry 3 -o /tmp/cryptosniper-diagnose-nginx.sh https://raw.githubusercontent.com/ostaddehdari/CryptoSniper/main/scripts/diagnose-nginx.sh && sudo bash /tmp/cryptosniper-diagnose-nginx.sh
+```
+
+در صورت شکست اتصال HTTPS در نصب‌کننده، تغییرات مسیر Nginx بازگردانده می‌شوند. هنگام خطای ۴۰۴، به‌جای تلاش کورکورانه برای تغییر vhostهای سایر سرویس‌ها، ابتدا خروجی ابزار تشخیص بررسی شود. سرویس‌ها و migrationهای Stage 03 ممکن است موفق بوده باشند، حتی اگر مسیریابی عمومی وب هنوز آماده نباشد.
+
+**امنیت:** این دستور کد مخزن رسمی خودتان را روی سرور با دسترسی root اجرا می‌کند؛ پیش از اجرای هر نسخه جدید، تغییرات مخزن را بازبینی کنید. هیچ API Key یا رمز مدیریتی را در issue، commit یا گزارش عمومی منتشر نکنید.

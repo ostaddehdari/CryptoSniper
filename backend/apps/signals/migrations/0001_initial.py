@@ -104,7 +104,7 @@ class Migration(migrations.Migration):
                 ),
                 ("technical_confidence", models.PositiveSmallIntegerField(default=0)),
                 ("parser_version", models.CharField(default="manual-v1", max_length=40)),
-                ("parsed_payload", models.JSONField(default=dict)),
+                ("parsed_payload", models.JSONField(blank=True, default=dict)),
                 (
                     "status",
                     models.CharField(
@@ -123,7 +123,7 @@ class Migration(migrations.Migration):
                 ),
                 ("review_reason", models.CharField(blank=True, max_length=500)),
                 ("revision", models.PositiveIntegerField(default=1)),
-                ("approved_snapshot", models.JSONField(default=dict)),
+                ("approved_snapshot", models.JSONField(blank=True, default=dict)),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("updated_at", models.DateTimeField(auto_now=True)),
                 (

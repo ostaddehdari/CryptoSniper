@@ -126,11 +126,11 @@ class Signal(models.Model):
     stop_loss = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
     technical_confidence = models.PositiveSmallIntegerField(default=0)
     parser_version = models.CharField(max_length=40, default="manual-v1")
-    parsed_payload = models.JSONField(default=dict)
+    parsed_payload = models.JSONField(default=dict, blank=True)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.NEW)
     review_reason = models.CharField(max_length=500, blank=True)
     revision = models.PositiveIntegerField(default=1)
-    approved_snapshot = models.JSONField(default=dict)
+    approved_snapshot = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

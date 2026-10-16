@@ -28,5 +28,3 @@ def scan_outbox():
     for pk in ids:
         process_paper.apply_async(args=[pk], queue="orders")
     return {"queued": len(ids)}
-
-

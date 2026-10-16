@@ -27,8 +27,8 @@ import django  # noqa: E402
 django.setup()
 from apps.core.models import ServiceProbe  # noqa: E402
 from apps.exchanges.models import Exchange, UserExchangeAccount  # noqa: E402
-from apps.trading.models import Trade  # noqa: E402
 from apps.tradeplans.models import TradePlan  # noqa: E402
+from apps.trading.models import Trade  # noqa: E402
 from django.conf import settings  # noqa: E402
 from django.contrib.auth import get_user_model  # noqa: E402
 from django.core.cache import cache  # noqa: E402

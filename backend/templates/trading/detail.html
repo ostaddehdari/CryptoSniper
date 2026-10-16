@@ -1,4 +1,10 @@
-{% extends 'shell.html' %}{% block title %}Paper #{{ trade.pk }} | CryptoSniper
+{% extends 'shell.html' %}{% block title %}Paper #{{ trade.pk }} | CryptoSniper{% endblock %}{% block breadcrumb %}Paper / جزئیات{% endblock %}{% block content %}
+<div class="page-heading"><div><span class="eyebrow">DURABLE PAPER POSITION</span><h1>معامله #{{ trade.pk }} — {{ trade.market.symbol }}</h1><p class="muted">{{ trade.get_state_display }} · Spot Long · شبیه‌ساز؛ بدون Binance Live</p></div><a class="button button-soft" href="{% url 'paper-trades' %}">همه معاملات</a></div>
+{% if messages %}{% for msg in messages %}<div class="notice">{{ msg }}</div>{% endfor %}{% endif %}
+<div class="manual-preview-grid"><article class="panel"><h2>اطلاعات سفارش</h2><dl class="manual-stats"><div><dt>حجم سفارش</dt><dd>{{ trade.quantity }}</dd></div><div><dt>حجم اجراشده</dt><dd>{{ trade.filled_quantity }}</dd></div><div><dt>قیمت ورود برنامه</dt><dd>{{ trade.entry_price }}</dd></div><div><dt>موجودی رزروشده</dt><dd>{{ trade.capital_reserved }}</dd></div><div><dt>Mode</dt><dd>PAPER</dd></div></dl></article>
+<article class="panel"><h2>Position از Fillهای ثبت‌شده</h2><dl class="manual-stats"><div><dt>Quantity</dt><dd>{{ position.quantity|default:0 }}</dd></div><div><dt>Avg Entry</dt><dd>{{ position.average_entry|default:0 }}</dd></div><div><dt>Fees</dt><dd>{{ position.total_fees|default:0 }}</dd></div></dl></article></div>
+{% if trade.state == 'queued' %}<form method="post" action="{% url 'paper-cancel' trade.pk %}">{% csrf_token %}<button class="button button-soft" type="submit">لغو قبل از ارسال</button></form>{% endif %}
+<section class="panel manual-target-panel"><h2>رویدادهای پایدار</h2>{% for event in events %}<div class="service-row"><span>{{ event.event_type }}</span><span>{{ event.occurred_at|date:'Y/m/d H:i:s' }}</span></div>{% empty %}<p>رویدادی ثبت نشده است.</p>{% endfor %}<p class="muted">Outbox نامعلوم عمداً خودکار دوباره ارسال نمی‌شود؛ وضعیت آن باید در مرحله تطبیق Stage11 بررسی شود.</p></section>
 {% if protection %}
 <section class="panel manual-target-panel">
 <h2>پوشش خروج و وضعیت Trailing</h2>
@@ -49,10 +55,4 @@
 {% for fill in exit_fills %}<div class="service-row"><span>{{ fill.reason }} · {{ fill.quantity }} @ {{ fill.price }}</span><span>کارمزد {{ fill.fee }}</span></div>{% empty %}<p class="muted">هنوز خروجی ثبت نشده است.</p>{% endfor %}
 </section>
 {% else %}<section class="panel manual-target-panel"><p>طرح حفاظت در انتظار اولین Fill ورودی است.</p></section>{% endif %}
-{% endblock %}{% block breadcrumb %}Paper / جزئیات{% endblock %}{% block content %}
-<div class="page-heading"><div><span class="eyebrow">DURABLE PAPER POSITION</span><h1>معامله #{{ trade.pk }} — {{ trade.market.symbol }}</h1><p class="muted">{{ trade.get_state_display }} · Spot Long · شبیه‌ساز؛ بدون Binance Live</p></div><a class="button button-soft" href="{% url 'paper-trades' %}">همه معاملات</a></div>
-{% if messages %}{% for msg in messages %}<div class="notice">{{ msg }}</div>{% endfor %}{% endif %}
-<div class="manual-preview-grid"><article class="panel"><h2>اطلاعات سفارش</h2><dl class="manual-stats"><div><dt>حجم سفارش</dt><dd>{{ trade.quantity }}</dd></div><div><dt>حجم اجراشده</dt><dd>{{ trade.filled_quantity }}</dd></div><div><dt>قیمت ورود برنامه</dt><dd>{{ trade.entry_price }}</dd></div><div><dt>موجودی رزروشده</dt><dd>{{ trade.capital_reserved }}</dd></div><div><dt>Mode</dt><dd>PAPER</dd></div></dl></article>
-<article class="panel"><h2>Position از Fillهای ثبت‌شده</h2><dl class="manual-stats"><div><dt>Quantity</dt><dd>{{ position.quantity|default:0 }}</dd></div><div><dt>Avg Entry</dt><dd>{{ position.average_entry|default:0 }}</dd></div><div><dt>Fees</dt><dd>{{ position.total_fees|default:0 }}</dd></div></dl></article></div>
-{% if trade.state == 'queued' %}<form method="post" action="{% url 'paper-cancel' trade.pk %}">{% csrf_token %}<button class="button button-soft" type="submit">لغو قبل از ارسال</button></form>{% endif %}
-<section class="panel manual-target-panel"><h2>رویدادهای پایدار</h2>{% for event in events %}<div class="service-row"><span>{{ event.event_type }}</span><span>{{ event.occurred_at|date:'Y/m/d H:i:s' }}</span></div>{% empty %}<p>رویدادی ثبت نشده است.</p>{% endfor %}<p class="muted">Outbox نامعلوم عمداً خودکار دوباره ارسال نمی‌شود؛ وضعیت آن باید در مرحله تطبیق Stage11 بررسی شود.</p></section>{% endblock %}
+{% endblock %}

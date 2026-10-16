@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - .github/workflows/release-stage03.yml
+      - scripts/cryptosniper-stage03-run.sh
   workflow_dispatch:
 
 permissions:

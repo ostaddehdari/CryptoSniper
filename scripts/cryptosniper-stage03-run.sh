@@ -793,16 +793,43 @@ if ! nginx -t || ! systemctl reload nginx; then
     if nginx -t; then systemctl reload nginx || true; fi
     fail 'Nginx validation/reload failed; previous configuration was restored.'
 fi
-# This request is forced to the loopback origin to validate the Nginx route,
-# not the public TLS edge. The origin may intentionally use an internal or
-# edge-only certificate whose SAN does not contain the public hostname.
-if ! curl --insecure --fail --silent --show-error --max-time 15 \
-    --resolve "$SERVER_HOST:443:127.0.0.1" "https://$SERVER_HOST$URL_PREFIX/health/ready/"; then
+# Validate that Nginx actually loaded the new route. Reload is asynchronous:
+# one immediate HTTPS request may hit an old worker and return a false 404.
+# Allow old workers time to drain; never keep a broken route in production.
+if ! nginx -T 2>/dev/null | grep -Fq 'location ^~ /cryptosniper/'; then
     python3 "$TMP_DIR/nginx-route.py" rollback "$TMP_DIR/nginx-plan.json"
     if nginx -t; then systemctl reload nginx || true; fi
-    fail 'HTTPS subpath check failed; previous Nginx route was restored. Application services remain installed.'
+    fail 'Nginx did not load the CryptoSniper location snippet; config restored.'
 fi
-printf '\nPASS: HTTPS subpath through the local Nginx origin.\n'
+
+# Request the loopback HTTPS origin, not an external TLS edge. The origin's
+# certificate can be edge-only, so --insecure applies only to this localhost probe.
+# Never submit credentials or request private account information from this probe.
+probe_nginx_route() {
+    local route="$1" label="$2" attempt code
+    for ((attempt=1; attempt<=30; attempt++)); do
+        code=$(curl --insecure --silent --output /dev/null \
+            --write-out '%{http_code}' --max-time 5 \
+            --resolve "$SERVER_HOST:443:127.0.0.1" \
+            "https://$SERVER_HOST$URL_PREFIX$route" 2>/dev/null) || code="000"
+        if [[ "$code" == "200" ]]; then
+            printf 'PASS: Nginx %s HTTP 200 after attempt %s.\n' "$label" "$attempt"
+            return 0
+        fi
+        if (( attempt == 1 || attempt % 5 == 0 )); then
+            printf 'WAIT: Nginx %s returned HTTP %s (attempt %s/30).\n' "$label" "$code" "$attempt"
+        fi
+        sleep 1
+    done
+    return 1
+}
+if ! probe_nginx_route '/health/ready/' 'readiness' ||
+   ! probe_nginx_route '/auth/login/' 'login'; then
+    python3 "$TMP_DIR/nginx-route.py" rollback "$TMP_DIR/nginx-plan.json"
+    if nginx -t; then systemctl reload nginx || true; fi
+    fail 'HTTPS subpath still failed after 30 attempts; previous Nginx route restored. App services remain installed. Run scripts/diagnose-nginx.sh.'
+fi
+printf '\nPASS: HTTPS subpath and login through the local Nginx origin.\n'
 python3 - <<'PY'
 import json, os
 from pathlib import Path

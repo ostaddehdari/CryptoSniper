@@ -262,6 +262,11 @@ def main():
                 page.get_by_role("button", name="تأیید و تثبیت Snapshot (بدون سفارش)").click()
                 page.get_by_text("تأییدشده · فقط برای بررسی").wait_for()
                 page.get_by_role("button", name="ثبت درخواست اجرای Paper با تأیید من").click()
+                if "/paper/" not in page.url:
+                    raise AssertionError(
+                        f"Paper launch redirected to {page.url}; "
+                        f"notices={page.locator('.notice').all_text_contents()}"
+                    )
                 page.wait_for_url("**/paper/*/")
                 trade = Trade.objects.filter(owner=user).latest("pk")
                 wait_for(

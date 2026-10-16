@@ -337,3 +337,7 @@ def get_adapter(code, *, credentials=None, environment="paper"):
     except KeyError as error:
         raise UnsupportedOperationError(f"Adapter {code!r} is not registered.") from error
     return adapter_class(credentials=credentials, environment=environment)
+
+
+# Load built-in provider registrations after the base contract is defined.
+from . import binance as _binance  # noqa: E402, F401

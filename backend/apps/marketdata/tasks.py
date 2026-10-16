@@ -1,4 +1,5 @@
 """Periodic public-feed refresh, bounded and round-robin across watched markets."""
+
 import logging
 
 from celery import shared_task
@@ -27,11 +28,18 @@ def refresh_watchlists():
             status__in=("connected", "restricted"), permissions__can_read=True
         ).values_list("owner_id", "exchange_id")
     )
-    rows = WatchlistItem.objects.order_by("market_id").values_list(
-        "market_id", "watchlist__owner_id", "market__exchange_id"
-    ).distinct()[:2000]
-    ids = sorted({market_id for market_id, owner_id, exchange_id in rows
-                  if (owner_id, exchange_id) in allowed})
+    rows = (
+        WatchlistItem.objects.order_by("market_id")
+        .values_list("market_id", "watchlist__owner_id", "market__exchange_id")
+        .distinct()[:2000]
+    )
+    ids = sorted(
+        {
+            market_id
+            for market_id, owner_id, exchange_id in rows
+            if (owner_id, exchange_id) in allowed
+        }
+    )
     if not ids:
         return {"refreshed": 0, "available": 0}
     cursor = int(cache.get("marketdata:v1:cursor", 0)) % len(ids)

@@ -1,4 +1,5 @@
 """Bounded authenticated quotes, polling, and optional ASGI-only SSE."""
+
 import asyncio
 import json
 from datetime import timedelta
@@ -31,9 +32,15 @@ def _visible(request):
 
 
 def _state(markets):
-    return [{"market_id": market.pk, "symbol": market.symbol,
-             "exchange": market.exchange.code, "quote": get_quote(market)}
-            for market in markets]
+    return [
+        {
+            "market_id": market.pk,
+            "symbol": market.symbol,
+            "exchange": market.exchange.code,
+            "quote": get_quote(market),
+        }
+        for market in markets
+    ]
 
 
 @session_api_required
@@ -51,8 +58,9 @@ def api_quotes(request):
     markets = _visible(request)
     if markets is None:
         return JsonResponse({"error": "invalid_market_ids"}, status=400)
-    return JsonResponse({"markets": _state(markets), "display_only": True,
-                         "as_of": timezone.now().isoformat()})
+    return JsonResponse(
+        {"markets": _state(markets), "display_only": True, "as_of": timezone.now().isoformat()}
+    )
 
 
 @session_api_required

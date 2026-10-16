@@ -2,6 +2,7 @@
 
 Quotes are display-only in Stage 04: callers MUST NOT use this cache to fill orders.
 """
+
 import logging
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
@@ -109,7 +110,9 @@ def refresh_quote(market):
         return {"status": "ok", "market_id": market.pk, "data": get_quote(market)}
     except (AdapterError, ValueError, TypeError, KeyError, InvalidOperation):
         # Never log exception repr: HTTP transports can include signed URLs.
-        logger.warning("Market feed failed", extra={"market_id": market.pk, "exchange": adapter_code})
+        logger.warning(
+            "Market feed failed", extra={"market_id": market.pk, "exchange": adapter_code}
+        )
         return {"status": "unavailable", "market_id": market.pk}
     finally:
         cache.delete(lock_key)

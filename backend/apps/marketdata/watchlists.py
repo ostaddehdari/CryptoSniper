@@ -1,4 +1,5 @@
 """User-owned watchlists with enforced exchange-account visibility."""
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
@@ -7,7 +8,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
-from django.views.decorators.http import require_GET, require_http_methods, require_POST
+from django.views.decorators.http import require_GET, require_POST
 
 from apps.accounts.security import session_api_required
 from apps.exchanges.models import ExchangeMarket
@@ -33,15 +34,23 @@ def watchlist_page(request):
     # Entries tied to disconnected accounts remain in the DB, but never leak prices.
     allowed = eligible_markets(request.user)
     entries = list(
-        WatchlistItem.objects.filter(watchlist=active, market__in=allowed)
-        .select_related("market", "market__exchange")[:100]
+        WatchlistItem.objects.filter(watchlist=active, market__in=allowed).select_related(
+            "market", "market__exchange"
+        )[:100]
     )
     for entry in entries:
         entry.quote = get_quote(entry.market)
-    return render(request, "marketdata/watchlists.html", {
-        "nav": "watchlist", "watchlists": lists, "active": active,
-        "entries": entries, "search_results": search_markets(request.user, request.GET.get("q", ""), 20)
-    })
+    return render(
+        request,
+        "marketdata/watchlists.html",
+        {
+            "nav": "watchlist",
+            "watchlists": lists,
+            "active": active,
+            "entries": entries,
+            "search_results": search_markets(request.user, request.GET.get("q", ""), 20),
+        },
+    )
 
 
 @login_required
@@ -96,12 +105,23 @@ def api_watchlist(request, pk):
     entries = WatchlistItem.objects.filter(watchlist=watchlist, market__in=allowed).select_related(
         "market", "market__exchange"
     )[:100]
-    return JsonResponse({
-        "watchlist_id": watchlist.pk, "display_only": True,
-        "items": [{"id": item.pk, "market_id": item.market.pk,
-                   "symbol": item.market.symbol, "exchange": item.market.exchange.code,
-                   "quote": get_quote(item.market)} for item in entries],
-    })
+    return JsonResponse(
+        {
+            "watchlist_id": watchlist.pk,
+            "display_only": True,
+            "items": [
+                {
+                    "id": item.pk,
+                    "market_id": item.market.pk,
+                    "symbol": item.market.symbol,
+                    "exchange": item.market.exchange.code,
+                    "quote": get_quote(item.market),
+                }
+                for item in entries
+            ],
+        }
+    )
+
 
 @login_required
 @require_POST

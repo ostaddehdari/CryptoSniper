@@ -73,8 +73,16 @@ urlpatterns = [
     path("watchlist/", watchlist_views.watchlist_page, name="watchlists"),
     path("watchlist/create/", watchlist_views.create_watchlist, name="watchlist-create"),
     path("watchlist/<int:pk>/add/", watchlist_views.add_watchlist_item, name="watchlist-add"),
-    path("watchlist/<int:pk>/refresh/<int:market_id>/", watchlist_views.request_market_refresh, name="watchlist-refresh"),
-    path("watchlist/<int:pk>/remove/<int:item_id>/", watchlist_views.remove_watchlist_item, name="watchlist-remove"),
+    path(
+        "watchlist/<int:pk>/refresh/<int:market_id>/",
+        watchlist_views.request_market_refresh,
+        name="watchlist-refresh",
+    ),
+    path(
+        "watchlist/<int:pk>/remove/<int:item_id>/",
+        watchlist_views.remove_watchlist_item,
+        name="watchlist-remove",
+    ),
     path("api/v1/watchlists/<int:pk>/", watchlist_views.api_watchlist, name="api-watchlist"),
     path("exchanges/", exchange_views.exchange_center, name="exchange-center"),
     path("exchanges/add/", exchange_views.add_exchange_account, name="exchange-account-add"),

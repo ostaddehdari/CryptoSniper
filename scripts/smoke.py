@@ -28,6 +28,7 @@ django.setup()
 from apps.core.models import ServiceProbe  # noqa: E402
 from apps.exchanges.models import Exchange, UserExchangeAccount  # noqa: E402
 from apps.trading.models import Trade  # noqa: E402
+from apps.tradeplans.models import TradePlan  # noqa: E402
 from django.conf import settings  # noqa: E402
 from django.contrib.auth import get_user_model  # noqa: E402
 from django.core.cache import cache  # noqa: E402
@@ -197,6 +198,13 @@ def main():
                 page.get_by_role("button", name="ذخیره پیش‌نویس و نمایش محاسبات").click()
                 page.wait_for_url("**/manual/*/")
                 page.get_by_role("button", name="تأیید و تثبیت Snapshot (بدون سفارش)").click()
+                current_plan = TradePlan.objects.filter(owner=user).latest("pk")
+                current_plan.refresh_from_db()
+                if current_plan.status != "ready":
+                    raise AssertionError(
+                        f"SmartPaste plan={current_plan.status}, "
+                        f"messages={page.locator('.notice').all_text_contents()}"
+                    )
                 page.get_by_role("button", name="ثبت درخواست اجرای Paper با تأیید من").click()
                 page.wait_for_url("**/paper/*/")
                 paper = Trade.objects.filter(owner=user).latest("pk")

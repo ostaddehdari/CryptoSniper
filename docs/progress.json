@@ -96,6 +96,24 @@
           "run_id": 38896560818,
           "evidence_artifact_id": 12044127815,
           "evidence_sha256": "4696adb98920df0273a534209f70925bf79d640f652e75f81c4c0e3c7d15ea10"
+        },
+        {
+          "name": "Operator-provided Stage03 server-origin deployment verification",
+          "status": "passed",
+          "verified_by": "user-supplied installer log; not independently observed",
+          "date": "2026-10-16",
+          "app_readiness": "postgresql/redis_cache/redis_broker/redis_results=true",
+          "services": [
+            "web",
+            "orders",
+            "reports",
+            "beat",
+            "redis"
+          ],
+          "https_origin_health_http_code": 200,
+          "https_origin_login_http_code": 200,
+          "installer_result": "INSTALL_OK and DEPLOY_OK",
+          "remaining_blocker": "S03-W04 real provider account verification"
         }
       ],
       "commit_shas": [

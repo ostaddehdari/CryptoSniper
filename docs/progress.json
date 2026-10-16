@@ -155,14 +155,32 @@
     },
     "S05": {
       "status": "partial",
-      "completed_works": [],
-      "checks": [],
+      "completed_works": [
+        "S05-W01",
+        "S05-W02",
+        "S05-W03",
+        "S05-W04",
+        "S05-W05"
+      ],
+      "checks": [
+        {
+          "name": "Stage05 PostgreSQL/Redis/Workers/Beat/Chromium CI",
+          "status": "passed",
+          "pytest_passed": 61,
+          "run_id": 38931145676,
+          "tested_commit": "156018079c4a85c0079bf12643973f439f05786e",
+          "evidence_artifact_id": 12059695340
+        }
+      ],
       "commit_shas": [],
       "blockers": [
-        "S03 real Binance credential test pending; S04 percentage-change and alert indicators pending.",
-        "S05 CI and VPS deployment not yet verified."
+        "Real Binance account permission verification pending in S03-W04.",
+        "Remaining Stage04 acceptance gaps (24-hour change and Price Alert indicator).",
+        "Operator VPS deployment of Stage05 not yet verified."
       ],
-      "implementation": "All 5 workstreams implemented, CI pending, provider-specific dependencies upstream remain partial."
+      "implementation": "All 5 workstreams implemented, CI pending, provider-specific dependencies upstream remain partial.",
+      "release_tag": "stage05-v0.5.0rc1-deploy",
+      "release_commit": "156018079c4a85c0079bf12643973f439f05786e"
     },
     "S06": {
       "status": "not_started",

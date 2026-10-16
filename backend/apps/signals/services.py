@@ -120,7 +120,7 @@ def _validate_structure(owner, data):
             else [Decimal("10"), Decimal("10"), Decimal("80")]
         )
     )
-    return account, market, list(zip(prices, weights))
+    return account, market, list(zip(prices, weights, strict=True))
 
 
 @transaction.atomic

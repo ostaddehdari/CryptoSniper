@@ -27,14 +27,15 @@ class SignalSource(models.Model):
             )
         ]
 
+    def __str__(self):
+        return f"{self.name} ({self.method})"
+
     def clean(self):
         super().clean()
         self.name = self.name.strip()
         if not self.name:
             raise ValidationError({"name": "نام منبع لازم است."})
 
-    def __str__(self):
-        return f"{self.name} ({self.method})"
 
 
 class RawSignal(models.Model):
@@ -146,6 +147,9 @@ class Signal(models.Model):
             ),
         ]
 
+    def __str__(self):
+        return f"Signal #{self.pk} · {self.status}"
+
     def clean(self):
         super().clean()
         if self.source_id and self.owner_id and self.source.owner_id != self.owner_id:
@@ -162,8 +166,6 @@ class Signal(models.Model):
             if self.exchange_account.owner_id != self.owner_id:
                 raise ValidationError("حساب صرافی متعلق به کاربر دیگری است.")
 
-    def __str__(self):
-        return f"Signal #{self.pk} · {self.status}"
 
 
 class SignalTarget(models.Model):

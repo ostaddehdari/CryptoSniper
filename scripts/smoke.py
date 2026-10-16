@@ -168,6 +168,21 @@ def main():
                 page.reload()
                 page.get_by_text("BTC/USDT", exact=True).first.wait_for()
                 page.screenshot(path=str(artifacts / "exchange-detail-desktop.png"), full_page=True)
+                page.goto(base + "/watchlist/")
+                page.get_by_role("heading", name="دیده‌بان بازار").wait_for()
+                page.get_by_role("button", name="＋").first.click()
+                page.wait_for_url("**/watchlist/?list=*")
+                page.get_by_text("BTC/USDT", exact=True).first.wait_for()
+                page.screenshot(path=str(artifacts / "watchlist-desktop.png"), full_page=True)
+                page.get_by_role("button", name="بروزرسانی").click()
+                page.get_by_role("heading", name="دیده‌بان بازار").wait_for()
+                for width in (320, 390, 768):
+                    page.set_viewport_size({"width": width, "height": 844})
+                    assert page.evaluate("document.documentElement.scrollWidth <= innerWidth"), (
+                        f"Watchlist overflow at {width}px"
+                    )
+                page.screenshot(path=str(artifacts / "watchlist-mobile.png"), full_page=True)
+                page.set_viewport_size({"width": 1440, "height": 1000})
                 page.goto(base + "/dashboard/")
                 for width in (320, 390, 768):
                     page.set_viewport_size({"width": width, "height": 844})

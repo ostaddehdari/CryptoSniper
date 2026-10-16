@@ -4,6 +4,7 @@
 <aside class="sidebar" aria-label="منوی اصلی"><a class="brand" href="{% url 'dashboard' %}"><img src="{% static 'img/mark.svg' %}" alt="" width="38" height="38"><span>Crypto<span class="brand-accent">Sniper</span><small>کنترل، دقت، آرامش</small></span></a>
 <div class="nav-section-label">فضای کار</div><nav class="nav-links">
 <a href="{% url 'dashboard' %}" class="nav-link {% if nav == 'dashboard' %}active{% endif %}" {% if nav == 'dashboard' %}aria-current="page"{% endif %}><span class="nav-symbol" aria-hidden="true">◈</span> نمای کلی</a>
+<a href="{% url 'smart-paste' %}" class="nav-link"><span class="nav-symbol">✂</span> Smart Paste</a>
 <a href="{% url 'inbox' %}" class="nav-link {% if nav == 'inbox' %}active{% endif %}"><span class="nav-symbol" aria-hidden="true">▣</span> صندوق سیگنال‌ها</a>
 <a href="{% url 'manual-list' %}" class="nav-link {% if nav == 'manual' %}active{% endif %}"><span class="nav-symbol" aria-hidden="true">✎</span> برنامه معامله دستی</a>
 <a href="{% url 'watchlists' %}" class="nav-link {% if nav == 'watchlist' %}active{% endif %}"><span class="nav-symbol" aria-hidden="true">◉</span> واچ‌لیست</a>

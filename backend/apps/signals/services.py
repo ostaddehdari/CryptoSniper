@@ -144,7 +144,17 @@ def update_parsed(owner, pk, *, expected_revision, data, reason):
     signal.stop_loss = data["stop_loss"]
     signal.technical_confidence = 100  # completeness of manually reviewed fields ONLY
     signal.parser_version = "manual-review-v1"
-    signal.parsed_payload = {"edited_by_owner": True}
+    extracted = dict(signal.parsed_payload)
+    signal.parsed_payload = {
+        "edited_by_owner": True,
+        "extraction": extracted if extracted.get("parser_version") else {},
+        "trailing_sl": bool(extracted.get("trailing_defaults", {}).get("trailing_sl", False)),
+        "percentage_trailing": bool(
+            extracted.get("trailing_defaults", {}).get("percentage_trailing", False)
+        ),
+        "percentage_trigger": "tp1",
+        "percentage_distance": "1",
+    }
     signal.status = Signal.Status.PARSED
     signal.review_reason = ""
     signal.revision += 1
@@ -176,6 +186,12 @@ def transition(owner, pk, *, expected_revision, action, reason=""):
     if action == "approve":
         if signal.status != Signal.Status.PARSED:
             raise ValidationError("فقط سیگنال کامل و بازبینی‌شده قابل تأیید است.")
+        if signal.source.method == "smart_paste" and signal.parsed_payload.get(
+            "extraction", {}
+        ).get("futures_mentioned"):
+            raise ValidationError(
+                "سیگنال Futures نباید ضمنی به Spot/Margin تبدیل شود."
+            )
         if not signal.market_id or not signal.exchange_account_id:
             raise ValidationError("بازار یا حساب تأیید نشده است.")
         values = list(signal.targets.order_by("position").values("price"))

@@ -12,6 +12,7 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 from apps.accounts.security import session_api_required
 
 from .forms import ReceiveForm, ReviewForm
+from .parsing import parse_for_review
 from .models import Signal, SignalSource
 from .services import receive_signal, snapshot, transition, update_parsed
 from .sources import get_default_source
@@ -85,6 +86,25 @@ def receive(request):
 
 @login_required
 @never_cache
+@require_http_methods(["GET", "POST"])
+def smart_paste(request):
+    form = ReceiveForm(request.POST if request.method == "POST" else None)
+    if request.method == "POST" and form.is_valid():
+        source = get_default_source(request.user, SignalSource.Method.SMART_PASTE)
+        try:
+            signal, _, _ = receive_signal(
+                request.user, source, text=form.cleaned_data["text"]
+            )
+            parse_for_review(request.user, signal.pk)
+            messages.success(request, "تحلیل اولیه انجام شد؛ برای تأیید، بازبینی انسانی لازم است.")
+            return redirect("inbox-detail", pk=signal.pk)
+        except ValidationError as error:
+            form.add_error(None, error)
+    return render(request, "signals/smart_paste.html", {"nav": "inbox", "form": form})
+
+
+@login_required
+@never_cache
 @require_GET
 def detail(request, pk):
     item = owned(request.user, pk)
@@ -98,6 +118,13 @@ def detail(request, pk):
     }
     for target in item.targets.order_by("position"):
         initial[f"tp{target.position}"] = target.price
+    suggestion = item.parsed_payload.get("extraction", item.parsed_payload)
+    if suggestion.get("parser_version") and item.status in {"new", "needs_review"}:
+        for field, key in (("entry_price", "entry"), ("stop_loss", "stop_loss"), ("side", "side")):
+            if suggestion.get(key) and not initial.get(field):
+                initial[field] = suggestion[key]
+        for i, price in enumerate(suggestion.get("execution_targets", [])[:3], 1):
+            initial.setdefault(f"tp{i}", price)
     form = ReviewForm(request.user, initial=initial)
     return render(
         request,
@@ -212,6 +239,28 @@ def _json_body(request):
     if not isinstance(payload, dict):
         raise ValidationError("JSON باید یک شیء باشد.")
     return payload
+
+
+@session_api_required
+@never_cache
+@require_POST
+def api_smart_paste(request):
+    try:
+        body = _json_body(request)
+        form = ReceiveForm({"method": "smart_paste", "text": body.get("text")})
+        if not form.is_valid():
+            return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
+        source = get_default_source(request.user, "smart_paste")
+        signal, created, revised = receive_signal(
+            request.user, source, text=form.cleaned_data["text"]
+        )
+        signal = parse_for_review(request.user, signal.pk)
+        return JsonResponse(
+            {"signal": _serialize(signal), "created": created, "revised": revised},
+            status=201 if created else 200,
+        )
+    except ValidationError as error:
+        return JsonResponse({"error": error.messages}, status=400)
 
 
 @session_api_required

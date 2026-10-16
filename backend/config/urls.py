@@ -147,7 +147,11 @@ urlpatterns = [
     path("paper/<int:pk>/tick/", paper_views.paper_price_event, name="paper-tick"),
     path("paper/<int:pk>/trailing/", paper_views.set_trailing, name="paper-trailing"),
     path("api/v1/paper/<int:pk>/tick/", paper_views.api_paper_tick, name="api-paper-tick"),
-    path("api/v1/paper/<int:pk>/trailing/", paper_views.api_trailing_update, name="api-paper-trailing"),
+    path(
+        "api/v1/paper/<int:pk>/trailing/",
+        paper_views.api_trailing_update,
+        name="api-paper-trailing",
+    ),
     path("health/live/", live, name="health-live"),
     path("health/ready/", ready, name="health-ready"),
 ]

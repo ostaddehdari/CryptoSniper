@@ -27,5 +27,7 @@ def scan_outbox():
 # Import Celery module so explicitly named periodic PAPER tasks are registered.
 from .exits_tasks import (  # noqa: E402
     monitor_paper_exits as monitor_paper_exits,
+)
+from .exits_tasks import (
     paper_feed_staleness as paper_feed_staleness,
 )

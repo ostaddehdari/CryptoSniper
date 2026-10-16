@@ -17,11 +17,11 @@ from apps.accounts.security import session_api_required
 from apps.tradeplans.models import TradePlan
 
 from .execution import cancel_unsubmitted
-from .exits_stop import adjust_stop
 from .exits_engine import process_paper_price
-from .trailing_rules import configure_trailing
+from .exits_stop import adjust_stop
 from .intent import queue_paper_trade
-from .models import Trade, TradeProtection, TradeEvent
+from .models import Trade, TradeEvent, TradeProtection
+from .trailing_rules import configure_trailing
 
 
 def _owned(user, pk):
@@ -159,8 +159,11 @@ def move_stop(request, pk):
     trade = _owned(request.user, pk)
     try:
         adjust_stop(
-            request.user, trade.pk, version=int(request.POST.get("version", "0")),
-            mode=request.POST.get("mode", ""), price=request.POST.get("price"),
+            request.user,
+            trade.pk,
+            version=int(request.POST.get("version", "0")),
+            mode=request.POST.get("mode", ""),
+            price=request.POST.get("price"),
             reason=request.POST.get("reason", ""),
         )
         messages.success(request, "Stop با ثبت رویداد تغییر کرد.")
@@ -175,17 +178,22 @@ def move_stop(request, pk):
 def api_move_stop(request, pk):
     _owned(request.user, pk)
     if request.content_type != "application/json" or len(request.body) > 4000:
-        return JsonResponse({"error":"درخواست JSON معتبر لازم است."}, status=400)
+        return JsonResponse({"error": "درخواست JSON معتبر لازم است."}, status=400)
     try:
         body = json.loads(request.body)
         protection, moved = adjust_stop(
-            request.user, pk, version=int(body["version"]),
-            mode=body["mode"], price=body.get("price"), reason=body.get("reason", ""),
+            request.user,
+            pk,
+            version=int(body["version"]),
+            mode=body["mode"],
+            price=body.get("price"),
+            reason=body.get("reason", ""),
         )
-        return JsonResponse({"moved":moved, "stop":str(protection.effective_stop),
-                             "version":protection.version})
+        return JsonResponse(
+            {"moved": moved, "stop": str(protection.effective_stop), "version": protection.version}
+        )
     except (ValueError, KeyError, TypeError, ValidationError) as error:
-        return JsonResponse({"error":str(error)}, status=400)
+        return JsonResponse({"error": str(error)}, status=400)
 
 
 @login_required
@@ -194,11 +202,16 @@ def set_paper_scenario(request, pk):
     _owned(request.user, pk)
     try:
         with transaction.atomic():
-            trade = Trade.objects.select_for_update().select_related("account").get(
-                pk=pk, owner=request.user
+            trade = (
+                Trade.objects.select_for_update()
+                .select_related("account")
+                .get(pk=pk, owner=request.user)
             )
-            if (trade.account.environment != "paper" or trade.state != Trade.State.OPEN
-                    or trade.account.exchange.adapter_code != "simulator"):
+            if (
+                trade.account.environment != "paper"
+                or trade.state != Trade.State.OPEN
+                or trade.account.exchange.adapter_code != "simulator"
+            ):
                 raise ValidationError("سناریوی قیمت تنها برای Position باز شبیه‌ساز مجاز است.")
             rule = TradeProtection.objects.select_for_update().get(trade=trade)
             if rule.version != int(request.POST.get("version", "0")):
@@ -209,8 +222,9 @@ def set_paper_scenario(request, pk):
                 rule.coverage = TradeProtection.Coverage.MONITORED
                 rule.save(update_fields=("paper_scenario", "version", "coverage", "updated_at"))
                 TradeEvent.objects.create(
-                    trade=trade, event_type="PAPER_SCENARIO_ENABLED",
-                    payload={"native_stop":False, "feed":"user_test_prices"}
+                    trade=trade,
+                    event_type="PAPER_SCENARIO_ENABLED",
+                    payload={"native_stop": False, "feed": "user_test_prices"},
                 )
         messages.success(request, "سناریوی تست Paper فعال شد؛ فید خودکار این معامله متوقف است.")
     except (ValidationError, ValueError) as error:
@@ -224,7 +238,8 @@ def paper_price_event(request, pk):
     _owned(request.user, pk)
     try:
         result = process_paper_price(
-            pk, price=request.POST.get("price", ""),
+            pk,
+            price=request.POST.get("price", ""),
             event_key=request.POST.get("tick_key", str(uuid.uuid4())),
             source="paper_scenario",
         )
@@ -240,7 +255,9 @@ def set_trailing(request, pk):
     _owned(request.user, pk)
     try:
         configure_trailing(
-            request.user, pk, version=int(request.POST.get("version", "0")),
+            request.user,
+            pk,
+            version=int(request.POST.get("version", "0")),
             step_enabled=request.POST.get("step_enabled") == "on",
             percentage_enabled=request.POST.get("percentage_enabled") == "on",
             distance_percent=request.POST.get("distance_percent", "1"),
@@ -258,17 +275,18 @@ def set_trailing(request, pk):
 def api_paper_tick(request, pk):
     _owned(request.user, pk)
     if request.content_type != "application/json" or len(request.body) > 4000:
-        return JsonResponse({"error":"JSON معتبر لازم است."}, status=400)
+        return JsonResponse({"error": "JSON معتبر لازم است."}, status=400)
     try:
         body = json.loads(request.body)
         result = process_paper_price(
-            pk, price=body["price"],
+            pk,
+            price=body["price"],
             event_key=body.get("tick_key", str(uuid.uuid4())),
             source="paper_scenario",
         )
-        return JsonResponse({"result":result, "real_orders":False})
+        return JsonResponse({"result": result, "real_orders": False})
     except (ValueError, KeyError, TypeError, ValidationError) as error:
-        return JsonResponse({"error":str(error)}, status=400)
+        return JsonResponse({"error": str(error)}, status=400)
 
 
 @session_api_required
@@ -277,19 +295,25 @@ def api_paper_tick(request, pk):
 def api_trailing_update(request, pk):
     _owned(request.user, pk)
     if request.content_type != "application/json" or len(request.body) > 4000:
-        return JsonResponse({"error":"JSON معتبر لازم است."}, status=400)
+        return JsonResponse({"error": "JSON معتبر لازم است."}, status=400)
     try:
         body = json.loads(request.body)
         rule = configure_trailing(
-            request.user, pk, version=int(body["version"]),
+            request.user,
+            pk,
+            version=int(body["version"]),
             step_enabled=body["step_enabled"] is True,
             percentage_enabled=body["percentage_enabled"] is True,
             distance_percent=body["distance_percent"],
             reason=body.get("reason", ""),
         )
-        return JsonResponse({"version":rule.version,
-                             "effective_stop":str(rule.effective_stop),
-                             "percentage_active":rule.percentage_active,
-                             "real_orders":False})
+        return JsonResponse(
+            {
+                "version": rule.version,
+                "effective_stop": str(rule.effective_stop),
+                "percentage_active": rule.percentage_active,
+                "real_orders": False,
+            }
+        )
     except (ValueError, KeyError, TypeError, ValidationError) as error:
-        return JsonResponse({"error":str(error)}, status=400)
+        return JsonResponse({"error": str(error)}, status=400)

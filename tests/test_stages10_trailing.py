@@ -1,17 +1,15 @@
 """Stage10 Paper trailing: boundaries, activation, cancellation and recovery."""
-import uuid
+
 from datetime import timedelta
 from decimal import Decimal
 
 import pytest
-from django.core.exceptions import ValidationError
-from django.utils import timezone
-
 from apps.trading.exits_engine import process_paper_price
+from apps.trading.models import Order, PaperExitFill, Trade, TradeProtection, TradeTarget
 from apps.trading.trailing_math import monotonic_stop, percentage_stop
 from apps.trading.trailing_rules import configure_trailing
-from apps.trading.models import Order, PaperExitFill, Trade, TradeProtection, TradeTarget
-
+from django.core.exceptions import ValidationError
+from django.utils import timezone
 from test_stages09_exits import paper_trade
 
 
@@ -48,9 +46,13 @@ def test_switch_after_tp_cancel_logical_targets_and_prevent_double_exit(django_u
     first_qty = PaperExitFill.objects.get(trade=trade).quantity
     protection = TradeProtection.objects.get(trade=trade)
     updated = configure_trailing(
-        user, trade.pk, version=protection.version,
-        step_enabled=True, percentage_enabled=True, distance_percent="1",
-        reason="تغییر به فقط trailing"
+        user,
+        trade.pk,
+        version=protection.version,
+        step_enabled=True,
+        percentage_enabled=True,
+        distance_percent="1",
+        reason="تغییر به فقط trailing",
     )
     assert updated.percentage_enabled
     assert trade.targets.get(position=2).state == TradeTarget.State.CANCELLED
@@ -68,16 +70,22 @@ def test_pending_external_tp_blocks_change_without_assuming_cancel(django_user_m
     user = django_user_model.objects.create_user(username="trail-pending")
     trade = paper_trade(user, percentage=False, two=True)
     Order.objects.create(
-        trade=trade, account=trade.account,
+        trade=trade,
+        account=trade.account,
         client_order_id=f"cs-paper-exit-{trade.pk}-tp",
-        quantity=Decimal("0.000001"), price=Decimal("70000")
+        quantity=Decimal("0.000001"),
+        price=Decimal("70000"),
     )
     protection = trade.protection
     with pytest.raises(ValidationError):
         configure_trailing(
-            user, trade.pk, version=protection.version,
-            step_enabled=True, percentage_enabled=True,
-            distance_percent="1", reason="تست لغو نامعلوم"
+            user,
+            trade.pk,
+            version=protection.version,
+            step_enabled=True,
+            percentage_enabled=True,
+            distance_percent="1",
+            reason="تست لغو نامعلوم",
         )
     protection.refresh_from_db()
     assert not protection.percentage_enabled
@@ -91,11 +99,18 @@ def test_old_duplicate_and_stale_price_tick_are_ignored(django_user_model):
     observed = timezone.now()
     one = process_paper_price(trade.pk, price="72000", observed_at=observed, event_key="same-key")
     assert one["percentage_active"]
-    assert process_paper_price(trade.pk, price="72000", observed_at=observed,
-                               event_key="same-key")["status"] == "duplicate"
-    assert process_paper_price(trade.pk, price="50000",
-                               observed_at=observed - timedelta(seconds=1),
-                               event_key="old")["status"] == "old_tick"
+    assert (
+        process_paper_price(trade.pk, price="72000", observed_at=observed, event_key="same-key")[
+            "status"
+        ]
+        == "duplicate"
+    )
+    assert (
+        process_paper_price(
+            trade.pk, price="50000", observed_at=observed - timedelta(seconds=1), event_key="old"
+        )["status"]
+        == "old_tick"
+    )
     assert Trade.objects.get(pk=trade.pk).state == Trade.State.OPEN
     assert TradeProtection.objects.get(trade=trade).high_water == Decimal("72000")
 
@@ -117,11 +132,11 @@ def test_paper_scenario_owner_boundary_and_mode_guard(client, django_user_model)
     client.force_login(owner)
     url = f"/paper/{trade.pk}/scenario/"
     assert client.get(url).status_code == 405
-    assert client.post(url, {"version":trade.protection.version}).status_code == 302
+    assert client.post(url, {"version": trade.protection.version}).status_code == 302
     rule = TradeProtection.objects.get(trade=trade)
     assert rule.paper_scenario
-    result = client.post(f"/paper/{trade.pk}/tick/", {"price":"80000"})
+    result = client.post(f"/paper/{trade.pk}/tick/", {"price": "80000"})
     assert result.status_code == 302
     assert TradeProtection.objects.get(trade=trade).high_water == Decimal("80000")
     client.force_login(other)
-    assert client.post(f"/paper/{trade.pk}/tick/", {"price":"10"}).status_code == 404
+    assert client.post(f"/paper/{trade.pk}/tick/", {"price": "10"}).status_code == 404

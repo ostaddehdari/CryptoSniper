@@ -2,7 +2,8 @@
 
 Stage09-10: Only Paper Spot Long is allowed to perform an exit.
 """
-from decimal import Decimal, ROUND_DOWN
+
+from decimal import ROUND_DOWN, Decimal
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -22,9 +23,11 @@ def _decimal(raw):
 
 @transaction.atomic
 def ensure_exits(trade_id):
-    trade = Trade.objects.select_for_update().select_related(
-        "account", "account__exchange", "market"
-    ).get(pk=trade_id)
+    trade = (
+        Trade.objects.select_for_update()
+        .select_related("account", "account__exchange", "market")
+        .get(pk=trade_id)
+    )
     if trade.mode != "paper" or trade.account.environment != "paper":
         raise ValidationError("ایجاد خروج فقط برای حساب Paper مجاز است.")
     if trade.account.exchange.adapter_code != "simulator" or trade.side != "buy":
@@ -63,10 +66,15 @@ def ensure_exits(trade_id):
         if quantity < 0:
             raise ValidationError("تخصیص اهداف منفی شد.")
         allocated += quantity
-        targets.append(TradeTarget(
-            trade=trade, position=position, price=price,
-            share_percent=share, allocated_quantity=quantity,
-        ))
+        targets.append(
+            TradeTarget(
+                trade=trade,
+                position=position,
+                price=price,
+                share_percent=share,
+                allocated_quantity=quantity,
+            )
+        )
     if allocated != trade.quantity:
         raise ValidationError("جمع حجم اهداف با معامله هم‌خوان نیست.")
     TradeTarget.objects.bulk_create(targets)
@@ -75,7 +83,9 @@ def ensure_exits(trade_id):
     if distance >= 100:
         raise ValidationError("فاصله trailing باید کمتر از ۱۰۰٪ باشد.")
     protection = TradeProtection.objects.create(
-        trade=trade, initial_stop=stop, effective_stop=stop,
+        trade=trade,
+        initial_stop=stop,
+        effective_stop=stop,
         coverage=TradeProtection.Coverage.PENDING,
         step_enabled=bool(source.get("trailing_sl")),
         percentage_enabled=percentage,
@@ -83,8 +93,13 @@ def ensure_exits(trade_id):
         trigger_price=prices[0],
     )
     TradeEvent.objects.create(
-        trade=trade, event_type="EXIT_PLAN_CREATED",
-        payload={"targets":len(targets), "percentage_trailing":percentage,
-                 "mode":"paper_backend", "native_stop":False},
+        trade=trade,
+        event_type="EXIT_PLAN_CREATED",
+        payload={
+            "targets": len(targets),
+            "percentage_trailing": percentage,
+            "mode": "paper_backend",
+            "native_stop": False,
+        },
     )
     return protection, True

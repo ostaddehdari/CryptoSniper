@@ -1,4 +1,5 @@
 """Monotonic manual stop adjustments with audit and optimistic version control (Paper)."""
+
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
@@ -25,9 +26,11 @@ def adjust_stop(owner, trade_id, *, version, mode, price=None, reason=""):
     if mode == "breakeven":
         candidate = trade.entry_price
     elif mode == "previous_tp":
-        fulfilled = list(TradeTarget.objects.filter(
-            trade=trade, state=TradeTarget.State.FILLED
-        ).order_by("position"))
+        fulfilled = list(
+            TradeTarget.objects.filter(trade=trade, state=TradeTarget.State.FILLED).order_by(
+                "position"
+            )
+        )
         if not fulfilled:
             raise ValidationError("برای انتقال Stop به هدف قبلی، ابتدا TP باید تکمیل شود.")
         candidate = trade.entry_price if len(fulfilled) == 1 else fulfilled[-2].price
@@ -53,9 +56,19 @@ def adjust_stop(owner, trade_id, *, version, mode, price=None, reason=""):
     protection.effective_stop = candidate
     protection.version += 1
     protection.save(update_fields=("effective_stop", "version", "updated_at"))
-    TradeEvent.objects.create(trade=trade, event_type="MANUAL_STOP_MOVED",
-                              payload={"from":str(previous), "to":str(candidate),
-                                       "reason":reason.strip(), "mode":mode})
-    record_audit("paper_stop.adjusted", user=owner,
-                 metadata={"trade_id":trade.pk, "version":protection.version})
+    TradeEvent.objects.create(
+        trade=trade,
+        event_type="MANUAL_STOP_MOVED",
+        payload={
+            "from": str(previous),
+            "to": str(candidate),
+            "reason": reason.strip(),
+            "mode": mode,
+        },
+    )
+    record_audit(
+        "paper_stop.adjusted",
+        user=owner,
+        metadata={"trade_id": trade.pk, "version": protection.version},
+    )
     return protection, True

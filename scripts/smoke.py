@@ -229,10 +229,14 @@ def main():
                 page.locator('[name="price"]').fill("79100")
                 page.get_by_role("button", name="ارسال Tick آزمایشی به موتور Paper").click()
                 wait_for(lambda: Trade.objects.get(pk=paper.pk).state == "closed")
-                page.screenshot(path=str(artifacts / "paper-trailing-closed-desktop.png"), full_page=True)
+                page.screenshot(
+                    path=str(artifacts / "paper-trailing-closed-desktop.png"), full_page=True
+                )
                 page.set_viewport_size({"width": 390, "height": 844})
                 assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
-                page.screenshot(path=str(artifacts / "paper-trailing-closed-mobile.png"), full_page=True)
+                page.screenshot(
+                    path=str(artifacts / "paper-trailing-closed-mobile.png"), full_page=True
+                )
                 page.set_viewport_size({"width": 1440, "height": 1000})
                 page.goto(base + "/inbox/receive/")
                 page.get_by_role("heading", name="ثبت متن اصلی سیگنال").wait_for()

@@ -219,7 +219,6 @@ class PaperRiskPolicy(models.Model):
         return f"Paper risk limits for user {self.owner_id}"
 
 
-
 class TradeTarget(models.Model):
     """Execution-independent immutable allocation with mutable progress (Paper only)."""
 
@@ -319,8 +318,9 @@ class PaperExitFill(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=("trade", "tick_key", "reason", "target"),
-                                    name="paper_exit_fill_unique_tick"),
+            models.UniqueConstraint(
+                fields=("trade", "tick_key", "reason", "target"), name="paper_exit_fill_unique_tick"
+            ),
             models.CheckConstraint(condition=Q(quantity__gt=0), name="paper_exit_qty_positive"),
         ]
 
@@ -339,7 +339,9 @@ class PaperPriceEvent(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=("trade", "event_key"), name="paper_tick_trade_key_unique"),
+            models.UniqueConstraint(
+                fields=("trade", "event_key"), name="paper_tick_trade_key_unique"
+            ),
             models.CheckConstraint(condition=Q(price__gt=0), name="paper_tick_price_positive"),
         ]
 

@@ -1,4 +1,5 @@
 """Monotonic Paper trailing policy, version locking, and event audit."""
+
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
@@ -10,15 +11,17 @@ from .models import Order, Trade, TradeEvent, TradeProtection, TradeTarget
 
 
 @transaction.atomic
-def configure_trailing(owner, trade_id, *, version, step_enabled, percentage_enabled,
-                       distance_percent, reason):
-    trade = Trade.objects.select_for_update().select_related(
-        "account", "account__exchange"
-    ).get(owner=owner, pk=trade_id)
+def configure_trailing(
+    owner, trade_id, *, version, step_enabled, percentage_enabled, distance_percent, reason
+):
+    trade = (
+        Trade.objects.select_for_update()
+        .select_related("account", "account__exchange")
+        .get(owner=owner, pk=trade_id)
+    )
     if trade.state not in {Trade.State.OPEN, Trade.State.PARTIAL}:
         raise ValidationError("قواعد trailing فقط روی Paper Position باز قابل تغییرند.")
-    if (trade.account.environment != "paper"
-            or trade.account.exchange.adapter_code != "simulator"):
+    if trade.account.environment != "paper" or trade.account.exchange.adapter_code != "simulator":
         raise ValidationError("تغییر قواعد در حساب واقعی ممنوع است.")
     protection = TradeProtection.objects.select_for_update().get(trade=trade)
     if protection.version != int(version):
@@ -41,65 +44,98 @@ def configure_trailing(owner, trade_id, *, version, step_enabled, percentage_ena
             client_order_id__startswith=f"cs-paper-exit-{trade.pk}",
         ).exclude(state=Order.State.CANCELLED)
         if unexpected.exists():
-            raise ValidationError("سفارش خروج تأییدنشده است؛ بدون reconciliation حالت Percentage فعال نمی‌شود.")
-        cancelled = TradeTarget.objects.filter(trade=trade, state__in=[
-            TradeTarget.State.WAITING, TradeTarget.State.PARTIAL,
-        ]).update(state=TradeTarget.State.CANCELLED)
+            raise ValidationError(
+                "سفارش خروج تأییدنشده است؛ بدون reconciliation حالت Percentage فعال نمی‌شود."
+            )
+        cancelled = TradeTarget.objects.filter(
+            trade=trade,
+            state__in=[
+                TradeTarget.State.WAITING,
+                TradeTarget.State.PARTIAL,
+            ],
+        ).update(state=TradeTarget.State.CANCELLED)
         TradeEvent.objects.create(
-            trade=trade, event_type="PAPER_TARGETS_CANCELLED",
-            payload={"count":cancelled, "reason":"switch_to_percentage",
-                     "native_orders":0, "reconciled":True},
+            trade=trade,
+            event_type="PAPER_TARGETS_CANCELLED",
+            payload={
+                "count": cancelled,
+                "reason": "switch_to_percentage",
+                "native_orders": 0,
+                "reconciled": True,
+            },
         )
     elif protection.percentage_enabled and not percentage_enabled:
         # Only possible before activation. Filled targets are not revived.
         TradeTarget.objects.filter(trade=trade, state=TradeTarget.State.CANCELLED).update(
             state=TradeTarget.State.WAITING
         )
-    old = {"step":protection.step_enabled,
-           "percentage":protection.percentage_enabled,
-           "distance":str(protection.distance_percent)}
+    old = {
+        "step": protection.step_enabled,
+        "percentage": protection.percentage_enabled,
+        "distance": str(protection.distance_percent),
+    }
     protection.step_enabled = bool(step_enabled)
     protection.percentage_enabled = bool(percentage_enabled)
     protection.distance_percent = distance
     protection.version += 1
-    protection.save(update_fields=("step_enabled", "percentage_enabled",
-                                   "distance_percent", "version", "updated_at"))
-    TradeEvent.objects.create(
-        trade=trade, event_type="TRAILING_RULE_UPDATED",
-        payload={"from":old, "to":{"step":protection.step_enabled,
-                                    "percentage":protection.percentage_enabled,
-                                    "distance":str(distance)},
-                 "reason":reason.strip(), "stop":str(protection.effective_stop)}
+    protection.save(
+        update_fields=(
+            "step_enabled",
+            "percentage_enabled",
+            "distance_percent",
+            "version",
+            "updated_at",
+        )
     )
-    record_audit("paper.trailing.updated", user=owner,
-                 metadata={"trade_id":trade.pk, "version":protection.version})
+    TradeEvent.objects.create(
+        trade=trade,
+        event_type="TRAILING_RULE_UPDATED",
+        payload={
+            "from": old,
+            "to": {
+                "step": protection.step_enabled,
+                "percentage": protection.percentage_enabled,
+                "distance": str(distance),
+            },
+            "reason": reason.strip(),
+            "stop": str(protection.effective_stop),
+        },
+    )
+    record_audit(
+        "paper.trailing.updated",
+        user=owner,
+        metadata={"trade_id": trade.pk, "version": protection.version},
+    )
     return protection
+
 
 @transaction.atomic
 def reconcile_paper_cancellation(owner, trade_id, *, version):
     """Never mark external cancellation as successful; this is PAPER-only ledger."""
-    trade = Trade.objects.select_for_update().select_related("account", "account__exchange").get(
-        owner=owner, pk=trade_id
+    trade = (
+        Trade.objects.select_for_update()
+        .select_related("account", "account__exchange")
+        .get(owner=owner, pk=trade_id)
     )
     if trade.account.environment != "paper" or trade.account.exchange.adapter_code != "simulator":
         raise ValidationError("تطبیق لغو فقط در شبیه‌ساز مجاز است.")
     protection = TradeProtection.objects.select_for_update().get(trade=trade)
     if protection.version != version:
         raise ValidationError("نسخه اشتباه است.")
-    pending = Order.objects.filter(trade=trade, client_order_id__startswith=f"cs-paper-exit-{trade.pk}").exclude(
-        state__in=[Order.State.CANCELLED, Order.State.FILLED]
-    )
+    pending = Order.objects.filter(
+        trade=trade, client_order_id__startswith=f"cs-paper-exit-{trade.pk}"
+    ).exclude(state__in=[Order.State.CANCELLED, Order.State.FILLED])
     if pending.exists():
         raise ValidationError("لغو همه سفارش‌های خروج تأیید نشده است.")
     TradeTarget.objects.filter(
-        trade=trade,
-        state__in=[TradeTarget.State.WAITING, TradeTarget.State.PARTIAL]
+        trade=trade, state__in=[TradeTarget.State.WAITING, TradeTarget.State.PARTIAL]
     ).update(state=TradeTarget.State.CANCELLED)
     protection.coverage = TradeProtection.Coverage.MONITORED
     protection.version += 1
     protection.save(update_fields=("coverage", "version", "updated_at"))
     TradeEvent.objects.create(
-        trade=trade, event_type="PAPER_CANCEL_RECONCILED",
-        payload={"native_tp_orders":"none_open", "stop":str(protection.effective_stop)}
+        trade=trade,
+        event_type="PAPER_CANCEL_RECONCILED",
+        payload={"native_tp_orders": "none_open", "stop": str(protection.effective_stop)},
     )
     return protection

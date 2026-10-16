@@ -18,3 +18,18 @@
 
 ## نصب و انتشار
 از GitHub Release اختصاصی Stage04 و `scripts/deploy.sh` با SHA256 پین‌شده استفاده شود. ZIP تجمیعی باید مراحل ۰۱ تا ۰۴ را شامل شود و تنظیمات خصوصی Stage03 را حفظ کند.
+
+## شواهد آزمون و بسته انتشار
+
+- [GitHub Actions CI #38914310940](https://github.com/ostaddehdari/CryptoSniper/actions/runs/38914310940): **موفق** روی `c6914089372791a973f062f68dad4264bb78094a`؛ ۵۷ آزمون pytest موفق، ۰ شکست؛ Ruff، Django check، migration drift، PostgreSQL، Redis، Workers/Beat و Chromium smoke موفق.
+- Smoke مرورگر شامل ساخت Watchlist، افزودن بازار، درخواست بروزرسانی و بررسی عدم overflow در عرض‌های ۳۲۰/۳۹۰/۷۶۸ پیکسل است.
+- [انتشار تجمیعی ۰.۴.۰rc1](https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage04-v0.4.0rc1-deploy) روی همان سورس PIN‌شده ساخته و صحت ZIP/installer پیش از انتشار `--check` تأیید شده است.
+- ZIP: `bcc30b79c4990f27f287bab303ba2aee4d8c7e121cce249b18cb50cea4d96b73` (SHA-256)؛ Installer: `a285545256956f2a11234f161a69b5c45941ba3db460c7958e21ac7f1805ccc1`.
+
+## محدودیت‌های باقی‌مانده
+
+- هنوز **تأیید اتصال واقعی Binance API** توسط کاربر انجام نشده؛ S03 در وضعیت `partial` باقی می‌ماند و S04 نیز به سبب پیش‌نیاز در وضعیت `partial` است.
+- درصد تغییر ۲۴ ساعته Binance و indicator واقعی Price Alert هنوز در UI نیستند؛ Alert engine برای S12 برنامه‌ریزی شده است. در این نسخه نباید تغییر درصدی ساختگی نمایش داد.
+- SSE در این مرحله اختیاری و مخصوص ASGI است؛ نصب کنونی Gunicorn WSGI صرفاً polling دارد.
+- نصب این نسخه روی سرور کاربر هنوز انجام نشده؛ انتشار موفق GitHub جای تست استقرار کاربر را نمی‌گیرد.
+- تمام قیمت‌ها **display-only** هستند و execution با پول واقعی فعال نشده است.

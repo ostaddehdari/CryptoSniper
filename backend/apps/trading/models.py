@@ -16,6 +16,7 @@ class Trade(models.Model):
         UNCERTAIN = "uncertain", "نتیجه نامعلوم"
         FAILED = "failed", "ناموفق"
         CANCELLED = "cancelled", "لغوشده"
+        CLOSED = "closed", "بسته‌شده"
 
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="paper_trades"
@@ -216,3 +217,130 @@ class PaperRiskPolicy(models.Model):
 
     def __str__(self):
         return f"Paper risk limits for user {self.owner_id}"
+
+
+
+class TradeTarget(models.Model):
+    """Execution-independent immutable allocation with mutable progress (Paper only)."""
+
+    class State(models.TextChoices):
+        WAITING = "waiting", "منتظر"
+        PARTIAL = "partial", "بخشی اجرا شد"
+        FILLED = "filled", "تکمیل"
+        CANCELLED = "cancelled", "لغو"
+
+    trade = models.ForeignKey(Trade, on_delete=models.CASCADE, related_name="targets")
+    position = models.PositiveSmallIntegerField()
+    price = models.DecimalField(max_digits=32, decimal_places=16)
+    share_percent = models.DecimalField(max_digits=5, decimal_places=2)
+    allocated_quantity = models.DecimalField(max_digits=32, decimal_places=16)
+    filled_quantity = models.DecimalField(max_digits=32, decimal_places=16, default=0)
+    state = models.CharField(max_length=12, choices=State.choices, default=State.WAITING)
+
+    class Meta:
+        ordering = ("position",)
+        constraints = [
+            models.UniqueConstraint(fields=("trade", "position"), name="paper_target_slot_unique"),
+            models.CheckConstraint(
+                condition=Q(position__gte=1) & Q(position__lte=3),
+                name="paper_target_slot_range",
+            ),
+            models.CheckConstraint(condition=Q(price__gt=0), name="paper_target_price_positive"),
+            models.CheckConstraint(
+                condition=Q(allocated_quantity__gte=0) & Q(filled_quantity__gte=0),
+                name="paper_target_quantities_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=Q(share_percent__gt=0) & Q(share_percent__lte=100),
+                name="paper_target_share_valid",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Paper {self.trade_id} TP{self.position} {self.state}"
+
+
+class TradeProtection(models.Model):
+    """Persistent Paper managed SL and trailing rules; never a native exchange stop."""
+
+    class Coverage(models.TextChoices):
+        PENDING = "pending", "در انتظار ورود"
+        MONITORED = "monitored", "محافظت وابسته به Worker"
+        STALE = "stale", "فید قدیمی"
+        CANCELLING = "cancelling", "لغو نامشخص"
+        CLOSED = "closed", "بسته‌شده"
+
+    trade = models.OneToOneField(Trade, on_delete=models.CASCADE, related_name="protection")
+    initial_stop = models.DecimalField(max_digits=32, decimal_places=16)
+    effective_stop = models.DecimalField(max_digits=32, decimal_places=16)
+    coverage = models.CharField(max_length=16, choices=Coverage.choices, default=Coverage.PENDING)
+    step_enabled = models.BooleanField(default=False)
+    percentage_enabled = models.BooleanField(default=False)
+    percentage_active = models.BooleanField(default=False)
+    trigger_price = models.DecimalField(max_digits=32, decimal_places=16)
+    distance_percent = models.DecimalField(max_digits=8, decimal_places=4, default=1)
+    high_water = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
+    low_water = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
+    last_price = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
+    last_tick_at = models.DateTimeField(null=True, blank=True)
+    version = models.PositiveIntegerField(default=1)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(initial_stop__gt=0) & Q(effective_stop__gt=0),
+                name="paper_protection_positive_stop",
+            ),
+            models.CheckConstraint(
+                condition=Q(distance_percent__gt=0) & Q(distance_percent__lt=100),
+                name="paper_trailing_distance_valid",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Paper protection {self.trade_id} {self.coverage}"
+
+
+class PaperExitFill(models.Model):
+    """Durable, uniquely keyed Paper SELL ledger; never submitted to Binance."""
+
+    trade = models.ForeignKey(Trade, on_delete=models.CASCADE, related_name="exit_fills")
+    target = models.ForeignKey(
+        TradeTarget, on_delete=models.SET_NULL, null=True, blank=True, related_name="fills"
+    )
+    tick_key = models.CharField(max_length=100)
+    reason = models.CharField(max_length=24)
+    quantity = models.DecimalField(max_digits=32, decimal_places=16)
+    price = models.DecimalField(max_digits=32, decimal_places=16)
+    fee = models.DecimalField(max_digits=32, decimal_places=16, default=0)
+    occurred_at = models.DateTimeField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=("trade", "tick_key", "reason", "target"),
+                                    name="paper_exit_fill_unique_tick"),
+            models.CheckConstraint(condition=Q(quantity__gt=0), name="paper_exit_qty_positive"),
+        ]
+
+    def __str__(self):
+        return f"Paper exit {self.trade_id}: {self.reason}"
+
+
+class PaperPriceEvent(models.Model):
+    """Idempotent market event ingestion and ordering for recovery."""
+
+    trade = models.ForeignKey(Trade, on_delete=models.CASCADE, related_name="price_events")
+    event_key = models.CharField(max_length=100)
+    price = models.DecimalField(max_digits=32, decimal_places=16)
+    observed_at = models.DateTimeField()
+    source = models.CharField(max_length=24, default="simulator")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=("trade", "event_key"), name="paper_tick_trade_key_unique"),
+            models.CheckConstraint(condition=Q(price__gt=0), name="paper_tick_price_positive"),
+        ]
+
+    def __str__(self):
+        return f"Paper tick {self.trade_id} {self.event_key}"

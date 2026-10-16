@@ -25,6 +25,7 @@ STAGE01_SOURCE_COMMIT=ac1f74fe8a22a226e60283cbbd1b1a610e70d5de
 PREVIOUS_ARCHIVE_SHA256=1298e0d4ee4ce86f3af82f9f9033f5414381195f392b82e025ea563532209333
 STAGE01_ARCHIVE_SHA256=721c58cbf752fdd585550781f09ecd6175b586af0dd432e3435a71ce4f9245df
 OLDER_STAGE03_ARCHIVE_SHA256=9e51c6649d42a672ba4c14c43770e0e9e102d29005b7c1ddc3f16b4b89f27f19
+OFFICIAL_STAGE03_ARCHIVE_SHA256=38c96027f503f38a71cddb807e89db9d5aeaa1081b2cd7ed87a3c11158fd4f93
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 LOG_FILE=${LOG_FILE:-$SCRIPT_DIR/runlog.txt}
@@ -68,7 +69,7 @@ if [[ ${1:-} == --check ]]; then CHECK_ONLY=true; shift; fi
 [[ $# -le 1 ]] || fail 'Usage: bash run.sh [--check] [package.zip]'
 ARCHIVE=${1:-/tmp/CryptoSniper-Stage03-v0.3.0rc1.zip}
 export SERVER_HOST URL_PREFIX WEB_PORT PG_PORT REDIS_PORT SOURCE_COMMIT
-export PREVIOUS_SOURCE_COMMIT STAGE01_SOURCE_COMMIT PREVIOUS_ARCHIVE_SHA256 STAGE01_ARCHIVE_SHA256 OLDER_STAGE03_ARCHIVE_SHA256
+export PREVIOUS_SOURCE_COMMIT STAGE01_SOURCE_COMMIT PREVIOUS_ARCHIVE_SHA256 STAGE01_ARCHIVE_SHA256 OLDER_STAGE03_ARCHIVE_SHA256 OFFICIAL_STAGE03_ARCHIVE_SHA256
 export APP_DIR APP_ROOT CONFIG_DIR STATE_DIR LOGIN_FILE
 
 step 'VERIFY PACKAGE AND SETTINGS'
@@ -79,6 +80,14 @@ from pathlib import Path, PurePosixPath
 path = Path(sys.argv[1])
 if not path.is_file():
     raise SystemExit(f'ZIP not found: {path}')
+actual_sha256 = hashlib.file_digest(path.open('rb'), 'sha256').hexdigest()
+if actual_sha256 != os.environ['OFFICIAL_STAGE03_ARCHIVE_SHA256']:
+    raise SystemExit(
+        'Incorrect Stage03 ZIP (SHA-256 mismatch). Download the EXACT release asset '
+        'CryptoSniper-Stage03-v0.3.0rc1.zip from '
+        'https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage03-v0.3.0rc1-deploy '
+        f'(received SHA256: {actual_sha256}). Nothing was changed.'
+    )
 # Pin the release by checking the Git blob SHA-1 of independent immutable files.
 # GitHub-generated ZIP bytes can vary even while source contents stay identical.
 trusted_blobs = {
@@ -150,7 +159,7 @@ from pathlib import Path
 SNIPPET = Path('/etc/nginx/snippets/cryptosniper-location.conf')
 INCLUDE = f'include {SNIPPET};'
 MARKER = '# Managed by CryptoSniper Stage03 installer'
-KNOWN_MARKERS = ('# Managed by CryptoSniper Stage01 installer', MARKER)
+KNOWN_MARKERS = ('# Managed by CryptoSniper Stage01 installer', '# Managed by CryptoSniper Stage02 installer', MARKER)
 plan_path = Path(sys.argv[2])
 
 def digest(text):

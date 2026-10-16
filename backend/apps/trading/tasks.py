@@ -22,3 +22,10 @@ def scan_outbox():
     for pk in ids:
         process_paper.apply_async(args=[pk], queue="orders")
     return {"queued": len(ids)}
+
+
+# Import Celery module so explicitly named periodic PAPER tasks are registered.
+from .exits_tasks import (  # noqa: E402
+    monitor_paper_exits as monitor_paper_exits,
+    paper_feed_staleness as paper_feed_staleness,
+)

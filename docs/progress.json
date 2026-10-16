@@ -270,14 +270,46 @@
           "pytest_passed": 76,
           "tested_commit": "04d84c0e5ef75155bce32a173c2441e20f0f5080",
           "evidence": "GitHub Actions artifact"
+        },
+        {
+          "name": "Operator-supplied Stage08 cumulative VPS installation verification",
+          "status": "passed",
+          "verified_by": "User-supplied terminal log; no independent access",
+          "date": "2026-10-16",
+          "installed_version": "0.8.0rc1",
+          "release_tag": "stage08-v0.8.0rc1-deploy",
+          "sha256_zip_and_installer": "passed",
+          "check_only": "CHECK_OK",
+          "installer_result": "INSTALL_OK and DEPLOY_OK",
+          "migrations": [
+            "tradeplans.0002_tradeplan_origin_signal",
+            "trading.0001_initial"
+          ],
+          "readiness_checks": {
+            "postgresql": true,
+            "redis_cache": true,
+            "redis_broker": true,
+            "redis_results": true
+          },
+          "services_active": [
+            "redis",
+            "web",
+            "orders",
+            "reports",
+            "beat"
+          ],
+          "https_local_origin": {
+            "readiness": 200,
+            "login": 200
+          }
         }
       ],
       "commit_shas": [],
       "blockers": [
         "Prior S03-S06 formal acceptance and real Binance permissions remain pending.",
-        "Stage08 cumulative release not yet installed/tested on operator VPS."
+        "Public browser acceptance of Smart Paste-to-Trade-to-Paper by operator is still pending."
       ],
-      "implementation": "Five workstreams coded; 76 pytest plus browser/worker/postgres CI passed; cumulative release published; VPS and upstream acceptance pending.",
+      "implementation": "Five workstreams coded; 76 tests and CI browser/worker/postgres smoke passed; cumulative v0.8.0rc1 installation confirmed by user-supplied VPS log; upstream Binance/provider and UI acceptance pending.",
       "release_tag": "stage08-v0.8.0rc1-deploy",
       "release_commit": "04d84c0e5ef75155bce32a173c2441e20f0f5080"
     },
@@ -298,15 +330,47 @@
           "pytest_passed": 76,
           "tested_commit": "04d84c0e5ef75155bce32a173c2441e20f0f5080",
           "evidence": "GitHub Actions artifact"
+        },
+        {
+          "name": "Operator-supplied Stage08 cumulative VPS installation verification",
+          "status": "passed",
+          "verified_by": "User-supplied terminal log; no independent access",
+          "date": "2026-10-16",
+          "installed_version": "0.8.0rc1",
+          "release_tag": "stage08-v0.8.0rc1-deploy",
+          "sha256_zip_and_installer": "passed",
+          "check_only": "CHECK_OK",
+          "installer_result": "INSTALL_OK and DEPLOY_OK",
+          "migrations": [
+            "tradeplans.0002_tradeplan_origin_signal",
+            "trading.0001_initial"
+          ],
+          "readiness_checks": {
+            "postgresql": true,
+            "redis_cache": true,
+            "redis_broker": true,
+            "redis_results": true
+          },
+          "services_active": [
+            "redis",
+            "web",
+            "orders",
+            "reports",
+            "beat"
+          ],
+          "https_local_origin": {
+            "readiness": 200,
+            "login": 200
+          }
         }
       ],
       "commit_shas": [],
       "blockers": [
         "Prior S03-S06 formal acceptance and real Binance permissions remain pending.",
-        "Stage08 cumulative release not yet installed/tested on operator VPS.",
-        "Stage08 runs only simulator Spot Long Paper; TP/SL protective orders and trailing execution are deferred to S09/S10."
+        "Stage08 runs only simulator Spot Long Paper; TP/SL protective orders and trailing execution are deferred to S09/S10.",
+        "Public browser acceptance of Smart Paste-to-Trade-to-Paper by operator is still pending."
       ],
-      "implementation": "Five workstreams coded; 76 pytest plus browser/worker/postgres CI passed; cumulative release published; VPS and upstream acceptance pending.",
+      "implementation": "Five workstreams coded; 76 tests and CI browser/worker/postgres smoke passed; cumulative v0.8.0rc1 installation confirmed by user-supplied VPS log; upstream Binance/provider and UI acceptance pending.",
       "release_tag": "stage08-v0.8.0rc1-deploy",
       "release_commit": "04d84c0e5ef75155bce32a173c2441e20f0f5080"
     },

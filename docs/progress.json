@@ -217,15 +217,39 @@
           "run_id": 38939379593,
           "tested_commit": "2718263fb39c37e615a667ead65b039c9f659a58",
           "evidence_artifact_id": 12062622061
+        },
+        {
+          "name": "Operator-provided Stage06 VPS installation and HTTPS localhost-origin checks",
+          "status": "passed",
+          "verified_by": "User-supplied installer output only; no independent access to VPS",
+          "date": "2026-10-16",
+          "installed_version": "0.6.0rc1",
+          "installer_result": "INSTALL_OK and DEPLOY_OK",
+          "database_migration": "signals.0001_initial OK",
+          "services": [
+            "redis",
+            "web",
+            "orders",
+            "reports",
+            "beat"
+          ],
+          "readiness_checks": {
+            "postgresql": true,
+            "redis_cache": true,
+            "redis_broker": true,
+            "redis_results": true
+          },
+          "https_origin_readiness_http_code": 200,
+          "https_origin_login_http_code": 200
         }
       ],
       "commit_shas": [],
       "blockers": [
         "S03 real Binance API permissions still not verified using authorized account credentials.",
         "Upstream S04/S05 formal acceptance gaps remain partial.",
-        "Stage06 not yet installed and tested on operator VPS."
+        "Stage06 public-browser Inbox create/review/approve user acceptance not yet confirmed."
       ],
-      "implementation": "Five workstreams coded and 66 tests, real PostgreSQL/Redis/Worker/Beat/browser smoke passed; GitHub Release published; VPS deployment pending.",
+      "implementation": "All five workstreams implemented, 66 tests passed in GitHub CI, Stage06 deployment confirmed by user-provided VPS log; upstream Binance and acceptance checks still pending.",
       "release_tag": "stage06-v0.6.0rc1-deploy",
       "release_commit": "2718263fb39c37e615a667ead65b039c9f659a58"
     },

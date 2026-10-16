@@ -35,3 +35,6 @@ class WatchlistItem(models.Model):
                 fields=("watchlist", "market"), name="market_watchlist_item_unique"
             )
         ]
+
+    def __str__(self):
+        return f"{self.watchlist_id}:{self.market_id}"

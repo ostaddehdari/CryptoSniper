@@ -222,11 +222,11 @@ def main():
                 page.get_by_role("heading", name="پوشش خروج و وضعیت Trailing").wait_for()
                 page.get_by_role("button", name="شروع سناریوی قیمت دستی Paper", exact=False).click()
                 page.get_by_role("button", name="ارسال Tick آزمایشی به موتور Paper").wait_for()
-                page.locator('[name="price"]').fill("80000")
+                page.locator('.paper-price-form [name="price"]').fill("80000")
                 page.get_by_role("button", name="ارسال Tick آزمایشی به موتور Paper").click()
                 page.get_by_role("heading", name="پوشش خروج و وضعیت Trailing").wait_for()
                 assert Trade.objects.get(pk=paper.pk).state == "open"
-                page.locator('[name="price"]').fill("79100")
+                page.locator('.paper-price-form [name="price"]').fill("79100")
                 page.get_by_role("button", name="ارسال Tick آزمایشی به موتور Paper").click()
                 wait_for(lambda: Trade.objects.get(pk=paper.pk).state == "closed")
                 page.screenshot(

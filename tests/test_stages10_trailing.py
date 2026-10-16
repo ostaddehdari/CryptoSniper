@@ -43,7 +43,7 @@ def test_switch_after_tp_cancel_logical_targets_and_prevent_double_exit(django_u
     user = django_user_model.objects.create_user(username="trail-switch")
     trade = paper_trade(user, percentage=False, step=True, two=True)
     process_paper_price(trade.pk, price="70000", event_key="tp-a")
-    first_qty = PaperExitFill.objects.get(trade=trade).quantity
+    assert PaperExitFill.objects.get(trade=trade).quantity > 0
     protection = TradeProtection.objects.get(trade=trade)
     updated = configure_trailing(
         user,

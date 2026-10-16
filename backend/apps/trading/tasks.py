@@ -3,6 +3,10 @@
 from celery import shared_task
 
 from .execution import dispatch_paper, expire_inflight
+from .exits_tasks import (
+    monitor_paper_exits as monitor_paper_exits,
+    paper_feed_staleness as paper_feed_staleness,
+)
 from .models import ExecutionOutbox
 
 
@@ -24,10 +28,3 @@ def scan_outbox():
     return {"queued": len(ids)}
 
 
-# Import Celery module so explicitly named periodic PAPER tasks are registered.
-from .exits_tasks import (  # noqa: E402
-    monitor_paper_exits as monitor_paper_exits,
-)
-from .exits_tasks import (
-    paper_feed_staleness as paper_feed_staleness,
-)

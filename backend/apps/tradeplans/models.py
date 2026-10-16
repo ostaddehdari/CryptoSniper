@@ -21,7 +21,7 @@ class TradePlan(models.Model):
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="trade_plans"
     )
-    exchange_account = models.ForeignKey("exchanges.UserExchangeAccount", on_delete=models.PROTECT)
+    exchange_account = models.ForeignKey("exchanges.UserExchangeAccount", on_delete=models.CASCADE)
     market = models.ForeignKey("exchanges.ExchangeMarket", on_delete=models.PROTECT)
     client_token = models.UUIDField(default=uuid.uuid4)
     source = models.CharField(max_length=24, default="manual")

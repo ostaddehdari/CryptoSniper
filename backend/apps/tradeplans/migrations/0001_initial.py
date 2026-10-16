@@ -85,7 +85,7 @@ class Migration(migrations.Migration):
                 (
                     "exchange_account",
                     models.ForeignKey(
-                        on_delete=django.db.models.deletion.PROTECT,
+                        on_delete=django.db.models.deletion.CASCADE,
                         to="exchanges.userexchangeaccount",
                     ),
                 ),

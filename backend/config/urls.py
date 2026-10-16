@@ -4,6 +4,7 @@ from apps.core.health import dependency_status
 from apps.exchanges import views as exchange_views
 from apps.marketdata import views as market_views
 from apps.tradeplans import context as trade_context
+from apps.tradeplans import views as plan_views
 from apps.marketdata import watchlists as watchlist_views
 from django.http import JsonResponse
 from django.urls import path
@@ -72,6 +73,14 @@ urlpatterns = [
     ),
     path("dashboard/", views.dashboard, name="dashboard"),
     path("api/v1/manual/context/", trade_context.manual_context, name="manual-context"),
+    path("api/v1/manual/plans/", plan_views.api_create, name="api-manual-create"),
+    path("api/v1/manual/plans/<int:pk>/", plan_views.api_plan, name="api-manual-detail"),
+    path("api/v1/manual/plans/<int:pk>/confirm/", plan_views.api_confirm, name="api-manual-confirm"),
+    path("manual/", plan_views.list_plans, name="manual-list"),
+    path("manual/new/", plan_views.new_plan, name="manual-new"),
+    path("manual/<int:pk>/", plan_views.preview_plan, name="manual-preview"),
+    path("manual/<int:pk>/edit/", plan_views.edit_plan, name="manual-edit"),
+    path("manual/<int:pk>/confirm/", plan_views.confirm_plan, name="manual-confirm"),
     path("watchlist/", watchlist_views.watchlist_page, name="watchlists"),
     path("watchlist/create/", watchlist_views.create_watchlist, name="watchlist-create"),
     path("watchlist/<int:pk>/add/", watchlist_views.add_watchlist_item, name="watchlist-add"),

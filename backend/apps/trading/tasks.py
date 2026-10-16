@@ -5,6 +5,8 @@ from celery import shared_task
 from .execution import dispatch_paper, expire_inflight
 from .exits_tasks import (
     monitor_paper_exits as monitor_paper_exits,
+)
+from .exits_tasks import (
     paper_feed_staleness as paper_feed_staleness,
 )
 from .models import ExecutionOutbox

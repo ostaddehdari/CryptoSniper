@@ -5,9 +5,9 @@
     "S01",
     "S02"
   ],
-  "current_stage": "S05",
-  "next_stage": "S05",
-  "last_completed_work": "S05-W05",
+  "current_stage": "S06",
+  "next_stage": "S06",
+  "last_completed_work": "S06-W05",
   "implementation_started": true,
   "stage_results": {
     "S01": {
@@ -201,11 +201,22 @@
       "release_commit": "156018079c4a85c0079bf12643973f439f05786e"
     },
     "S06": {
-      "status": "not_started",
-      "completed_works": [],
+      "status": "partial",
+      "completed_works": [
+        "S06-W01",
+        "S06-W02",
+        "S06-W03",
+        "S06-W04",
+        "S06-W05"
+      ],
       "checks": [],
       "commit_shas": [],
-      "blockers": []
+      "blockers": [
+        "Stage03 Binance real-account read/permission verification still pending.",
+        "Stage04 and Stage05 acceptance gaps remain partial.",
+        "Stage06 CI migration/worker/browser tests and operator deployment not yet confirmed."
+      ],
+      "implementation": "Five workstreams committed: sources, immutable raw revision history, structured signals, transactional inbox review workflow, private REST+UI; testing in progress."
     },
     "S07": {
       "status": "not_started",

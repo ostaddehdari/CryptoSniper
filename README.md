@@ -53,3 +53,5 @@ curl -fsSL --retry 3 -o /tmp/cryptosniper-diagnose-nginx.sh https://raw.githubus
 - [گزارش اجرایی استیج ۴](docs/reports/stage-04.md) — توسعه مستقل آغاز شده؛ تأیید CI/Provider و نصب نهایی در انتظار شواهد است.
 
 - [استیج ۵ — برنامه‌های دستی و پیش‌نمایش](docs/reports/stage-05.md): نسخه آزمایشی `0.5.0rc1`، Draft/Ready، بدون اجرای سفارش.
+
+- [Stage06 Signal Inbox](docs/reports/stage-06.md): نسخه آزمایشی v0.6.0rc1، ثبت خام و بازبینی تاریخچه‌دار، بدون Telegram/AI و سفارش واقعی.

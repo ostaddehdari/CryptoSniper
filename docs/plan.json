@@ -318,7 +318,7 @@
       "depends_on": [
         "S05"
       ],
-      "status": "not_started",
+      "status": "partial",
       "source_sections": [
         7,
         8,
@@ -334,7 +334,7 @@
           "title": "Sources و قرارداد ورودی",
           "deliverables": "signal_sources برای manual/smart_paste و نوع توسعه‌پذیر؛ abstraction منبع خارجی بدون اتصال Telethon یا AI.",
           "acceptance": "فقط سه روش اصلی در taxonomy وجود داشته باشد؛ shortcut و Watchlist منبع نباشند.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S06-W02",
@@ -342,7 +342,7 @@
           "title": "نگهداری ورودی اصلی",
           "deliverables": "raw_signals با متن اصلی، payload، checksum، external_id و نسخه دریافت؛ تاریخچه revisions.",
           "acceptance": "متن اصلی حذف یا بازنویسی نشود؛ duplicate همان منبع دوباره پردازش نشود.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S06-W03",
@@ -350,7 +350,7 @@
           "title": "مدل سیگنال ساختاریافته",
           "deliverables": "signals و signal_targets، یک Entry، حداکثر سه هدف اجرایی، confidence فنی و parser_version.",
           "acceptance": "کلیدهای ارتباطی و ترتیب اهداف و مالکیت کاربر معتبر باشند.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S06-W04",
@@ -358,7 +358,7 @@
           "title": "گردش کار Inbox",
           "deliverables": "New/Parsed/Needs Review/Approved/Rejected/Executed/Failed با transition کنترل‌شده.",
           "acceptance": "تأیید تکراری، سیگنال ناقص و انتقال وضعیت غیرمجاز رد شوند.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S06-W05",
@@ -366,7 +366,7 @@
           "title": "UI و API بررسی",
           "deliverables": "مقایسه raw و parsed، فیلتر source/status/date، ویرایش قبل تأیید و ثبت audit.",
           "acceptance": "کاربر اصلاح و رد/تأیید کند و نسخه قبلی و علت تغییر قابل ردیابی بماند.",
-          "status": "not_started"
+          "status": "done"
         }
       ]
     },

@@ -391,7 +391,7 @@
           "title": "Normalization مستقل",
           "deliverables": "اعداد فارسی/عربی، فاصله، emoji، برچسب‌های فارسی/انگلیسی و symbol؛ اصل متن دست‌نخورده بماند.",
           "acceptance": "متن نویزی و ارقام محلی بدون تغییر raw text قابل پردازش باشد.",
-          "status": "partial"
+          "status": "done"
         },
         {
           "id": "S07-W02",
@@ -399,7 +399,7 @@
           "title": "استخراج اجزای سیگنال",
           "deliverables": "Pair، direction، Entry/range، targets، SL، leverage و source؛ فقط سه TP اول برای اجرا.",
           "acceptance": "سیگنال نمونه OP با ۶ هدف، ۳ هدف اجرایی و هر ۶ هدف در داده استخراج اصلی حفظ شود.",
-          "status": "partial"
+          "status": "done"
         },
         {
           "id": "S07-W03",
@@ -407,7 +407,7 @@
           "title": "ابهام، Range و confidence",
           "deliverables": "rule تبدیل range ثبت‌شده، score فنی، هشدار تعارض و بلوکه‌کردن ورودی ناقص؛ عدم حدس بازار futures.",
           "acceptance": "range مبهم، SL مفقود و چند symbol به Needs Review بروند؛ confidence احتمال سود نباشد.",
-          "status": "partial"
+          "status": "done"
         },
         {
           "id": "S07-W04",
@@ -415,7 +415,7 @@
           "title": "رابط Smart Paste",
           "deliverables": "paste آزاد، preview و اصلاح؛ دو trailing پیش‌فرض ON، Percentage trigger=TP1 و distance=۱٪.",
           "acceptance": "متن تبلیغی نیاز به پاک‌سازی دستی نداشته باشد؛ فیلدهای استخراج‌شده پیش از اجرای واقعی قابل بررسی باشند.",
-          "status": "partial"
+          "status": "done"
         },
         {
           "id": "S07-W05",
@@ -423,7 +423,7 @@
           "title": "آزمون Parser و اتصال Inbox",
           "deliverables": "fixtures متنوع FA/EN، noise، short، range و targets اضافی؛ قرارداد versioned parser.",
           "acceptance": "parser تکرارپذیر و خطاهای استخراج در Inbox آشکار باشد؛ بدون Telethon و بدون AI اجرا شود.",
-          "status": "partial"
+          "status": "done"
         }
       ]
     },
@@ -453,7 +453,7 @@
           "title": "State machine و رویدادها",
           "deliverables": "lifecycle معامله و order/position مستقل؛ TP_REACHED و TRAILING_ACTIVE به‌صورت event/substate بدون تداخل fill state.",
           "acceptance": "transition غیرمجاز رد و هر تغییر معتبر با trade_events افزایشی ثبت شود.",
-          "status": "partial"
+          "status": "done"
         },
         {
           "id": "S08-W02",
@@ -461,7 +461,7 @@
           "title": "Order intent و idempotency",
           "deliverables": "trades/orders/order_fills/positions، client_order_id پایدار، outbox و uniquenessهای account-scoped.",
           "acceptance": "retry API/Worker و crash بعد submit سفارش دوم ایجاد نکند؛ timeout وضعیت نامعلوم بسازد.",
-          "status": "partial"
+          "status": "done"
         },
         {
           "id": "S08-W03",
@@ -469,7 +469,7 @@
           "title": "Executor و sync",
           "deliverables": "ارسال توسط Worker، partial fills، cancel، fetch_order و محاسبه position از fills در simulator و adapter.",
           "acceptance": "partial fill و duplicate fill موجودی/quantity را دو برابر نکند.",
-          "status": "partial"
+          "status": "done"
         },
         {
           "id": "S08-W04",
@@ -477,7 +477,7 @@
           "title": "Risk و انتخاب Mode",
           "deliverables": "حد سرمایه/تعداد معاملات، reserve موجودی همزمان، Spot long فقط، Margin short فقط با borrow/repay پشتیبانی‌شده؛ Paper پیش‌فرض.",
           "acceptance": "دو معامله همزمان از یک موجودی بیش از حد مصرف نکنند؛ Futures/Perpetual در نسخه نخست رد شوند.",
-          "status": "partial"
+          "status": "done"
         },
         {
           "id": "S08-W05",
@@ -485,7 +485,7 @@
           "title": "چرخه انتهابه‌انتها پایه",
           "deliverables": "Manual/Smart Paste→plan→Worker→entry→fills→position با REST مدیریت و audit.",
           "acceptance": "بدون مرورگر باز معامله در paper/sandbox ادامه یابد؛ خطاها طبقه‌بندی و نتیجه مستند شود.",
-          "status": "partial"
+          "status": "done"
         }
       ]
     },

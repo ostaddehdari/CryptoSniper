@@ -262,13 +262,24 @@
         "S07-W04",
         "S07-W05"
       ],
-      "checks": [],
+      "checks": [
+        {
+          "name": "Stages07+08 PostgreSQL/Redis/Celery/Chromium CI",
+          "status": "passed",
+          "run_id": 38954065804,
+          "pytest_passed": 76,
+          "tested_commit": "04d84c0e5ef75155bce32a173c2441e20f0f5080",
+          "evidence": "GitHub Actions artifact"
+        }
+      ],
       "commit_shas": [],
       "blockers": [
-        "Prior S03-S06 formal acceptance and Binance real provider test remain pending.",
-        "Stage07/08 CI and VPS deployment not yet verified."
+        "Prior S03-S06 formal acceptance and real Binance permissions remain pending.",
+        "Stage08 cumulative release not yet installed/tested on operator VPS."
       ],
-      "implementation": "Five workstreams committed, awaiting CI, integration, release and operator VPS verification."
+      "implementation": "Five workstreams coded; 76 pytest plus browser/worker/postgres CI passed; cumulative release published; VPS and upstream acceptance pending.",
+      "release_tag": "stage08-v0.8.0rc1-deploy",
+      "release_commit": "04d84c0e5ef75155bce32a173c2441e20f0f5080"
     },
     "S08": {
       "status": "partial",
@@ -279,13 +290,25 @@
         "S08-W04",
         "S08-W05"
       ],
-      "checks": [],
+      "checks": [
+        {
+          "name": "Stages07+08 PostgreSQL/Redis/Celery/Chromium CI",
+          "status": "passed",
+          "run_id": 38954065804,
+          "pytest_passed": 76,
+          "tested_commit": "04d84c0e5ef75155bce32a173c2441e20f0f5080",
+          "evidence": "GitHub Actions artifact"
+        }
+      ],
       "commit_shas": [],
       "blockers": [
-        "Prior S03-S06 formal acceptance and Binance real provider test remain pending.",
-        "Stage07/08 CI and VPS deployment not yet verified."
+        "Prior S03-S06 formal acceptance and real Binance permissions remain pending.",
+        "Stage08 cumulative release not yet installed/tested on operator VPS.",
+        "Stage08 runs only simulator Spot Long Paper; TP/SL protective orders and trailing execution are deferred to S09/S10."
       ],
-      "implementation": "Five workstreams committed, awaiting CI, integration, release and operator VPS verification."
+      "implementation": "Five workstreams coded; 76 pytest plus browser/worker/postgres CI passed; cumulative release published; VPS and upstream acceptance pending.",
+      "release_tag": "stage08-v0.8.0rc1-deploy",
+      "release_commit": "04d84c0e5ef75155bce32a173c2441e20f0f5080"
     },
     "S09": {
       "status": "not_started",

@@ -170,15 +170,33 @@
           "run_id": 38931145676,
           "tested_commit": "156018079c4a85c0079bf12643973f439f05786e",
           "evidence_artifact_id": 12059695340
+        },
+        {
+          "name": "Stage05 operator-provided VPS installation and localhost HTTPS origin health",
+          "status": "passed",
+          "verified_by": "User-supplied terminal log only, not independent server access",
+          "date": "2026-10-16",
+          "installer_result": "INSTALL_OK and DEPLOY_OK",
+          "installed_version": "0.5.0rc1",
+          "database_migration": "tradeplans.0001_initial OK",
+          "services": [
+            "web",
+            "orders",
+            "reports",
+            "beat",
+            "redis"
+          ],
+          "https_origin_readiness_http_code": 200,
+          "https_origin_login_http_code": 200
         }
       ],
       "commit_shas": [],
       "blockers": [
         "Real Binance account permission verification pending in S03-W04.",
         "Remaining Stage04 acceptance gaps (24-hour change and Price Alert indicator).",
-        "Operator VPS deployment of Stage05 not yet verified."
+        "Public-browser manual trade form flow on operator VPS not yet independently confirmed."
       ],
-      "implementation": "All 5 workstreams implemented, CI pending, provider-specific dependencies upstream remain partial.",
+      "implementation": "All five Stage05 workstreams implemented; 61 tests passed in CI and operator-supplied VPS installation log confirms INSTALL_OK/DEPLOY_OK. Upstream/provider and public-browser acceptance remain pending.",
       "release_tag": "stage05-v0.5.0rc1-deploy",
       "release_commit": "156018079c4a85c0079bf12643973f439f05786e"
     },

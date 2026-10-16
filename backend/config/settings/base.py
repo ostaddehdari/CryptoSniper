@@ -89,6 +89,7 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 TRADING_MODE = "paper"
 LIVE_TRADING_ENABLED = False
 ENABLED_MARKET_TYPES = ("spot", "margin")
+EXCHANGE_CREDENTIAL_KEYS = env.list("EXCHANGE_CREDENTIAL_KEYS", default=[])
 
 DATABASES = {"default": env.db("DATABASE_URL")}
 if DATABASES["default"]["ENGINE"] != "django.db.backends.postgresql":

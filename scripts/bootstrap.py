@@ -1,5 +1,6 @@
 """Create a private development .env without printing or committing its secret."""
 
+import base64
 import secrets
 from pathlib import Path
 
@@ -10,6 +11,8 @@ if path.exists():
 text = (root / ".env.example").read_text()
 password = secrets.token_urlsafe(24)
 text = text.replace("DJANGO_SECRET_KEY=\n", "DJANGO_SECRET_KEY=" + secrets.token_urlsafe(64) + "\n")
+exchange_key = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode()
+text = text.replace("EXCHANGE_CREDENTIAL_KEYS=\n", f"EXCHANGE_CREDENTIAL_KEYS=1:{exchange_key}\n")
 text = text.replace("CHANGE_ME", password)
 text += "\nPOSTGRES_PASSWORD=" + password + "\n"
 path.write_text(text)

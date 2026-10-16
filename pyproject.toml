@@ -12,6 +12,7 @@ dependencies = [
   "whitenoise>=6.9,<7",
   "gunicorn>=23,<24",
   "uvicorn>=0.34,<0.42",
+  "cryptography>=46,<47",
 ]
 
 [dependency-groups]

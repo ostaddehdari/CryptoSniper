@@ -49,6 +49,8 @@ def ingest(owner, source, envelope: InboundEnvelope):
             .first()
         )
         if old:
+            if old.revisions.filter(checksum=checksum).exists():
+                return old, False, False
             # Historical input is append-only, never replace original bytes.
             number = old.revision_number + 1
             RawSignalRevision.objects.create(

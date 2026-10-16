@@ -77,6 +77,11 @@ def test_raw_exact_bytes_idempotency_revision_and_scope(django_user_model):
     signal.refresh_from_db()
     assert signal.raw_signal.original_text == original
     assert signal.raw_signal.revision_number == 2
+    same_again, created, revised = receive_signal(
+        owner, source, text="corrected text", payload={"sequence": 2}, external_id="msg-7"
+    )
+    assert same_again.pk == signal.pk and not created and not revised
+    assert RawSignalRevision.objects.filter(raw_signal=signal.raw_signal).count() == 2
     assert RawSignalRevision.objects.get(raw_signal=signal.raw_signal, version=2).text == (
         "corrected text"
     )

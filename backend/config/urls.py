@@ -7,6 +7,8 @@ from apps.marketdata import watchlists as watchlist_views
 from apps.signals import views as inbox_views
 from apps.tradeplans import context as trade_context
 from apps.tradeplans import views as plan_views
+from apps.trading import views as paper_views
+from apps.trading import risk as paper_risk_views
 from django.http import JsonResponse
 from django.urls import path
 
@@ -73,6 +75,13 @@ urlpatterns = [
         name="api-trading-preferences",
     ),
     path("dashboard/", views.dashboard, name="dashboard"),
+    path("paper/", paper_views.list_trades, name="paper-trades"),
+    path("paper/<int:pk>/", paper_views.trade_detail, name="paper-trade-detail"),
+    path("paper/launch/<int:plan_id>/", paper_views.launch_trade, name="paper-launch"),
+    path("paper/<int:pk>/cancel/", paper_views.cancel_trade, name="paper-cancel"),
+    path("paper/risk/", paper_risk_views.paper_risk, name="paper-risk"),
+    path("api/v1/paper/trades/", paper_views.api_trades, name="api-paper-trades"),
+    path("api/v1/paper/trades/<int:pk>/", paper_views.api_trade_detail, name="api-paper-detail"),
     path("inbox/", inbox_views.inbox, name="inbox"),
     path("inbox/receive/", inbox_views.receive, name="inbox-receive"),
     path("smart-paste/", inbox_views.smart_paste, name="smart-paste"),

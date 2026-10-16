@@ -3,7 +3,7 @@
 {% if form.non_field_errors %}<div class="form-error">{{ form.non_field_errors }}</div>{% endif %}
 <div class="manual-grid"><section class="panel" data-manual-context-url="{% url 'manual-context' %}">
 <form method="post" class="manual-form" autocomplete="off" id="manual-entry-form">{% csrf_token %}
-{{ form.client_token }}{% if plan %}<input type="hidden" name="revision" value="{{ plan.revision }}">{% endif %}
+{{ form.client_token }}{{ form.origin_signal }}{% if plan %}<input type="hidden" name="revision" value="{{ plan.revision }}">{% endif %}
 <div class="manual-section"><h2>۱. حساب و بازار</h2><div class="manual-fields">
 <div class="field"><label for="id_account">حساب صرافی</label><select name="account" id="id_account" class="input" required><option value="">انتخاب حساب</option>{% for item in accounts %}<option data-exchange="{{ item.exchange_id }}" value="{{ item.pk }}" {% if form.account.value|stringformat:'s' == item.pk|stringformat:'s' %}selected{% endif %}>{{ item.label }} — {{ item.exchange.name }}</option>{% endfor %}</select>{{ form.account.errors }}</div>
 <div class="field"><label for="id_market">ارز، جفت‌ارز و بازار</label><select name="market" id="id_market" class="input" required><option value="">انتخاب بازار</option>{% for item in markets %}<option data-exchange="{{ item.exchange_id }}" value="{{ item.pk }}" {% if form.market.value|stringformat:'s' == item.pk|stringformat:'s' %}selected{% endif %}>{{ item.symbol }} · {{ item.get_market_type_display }} · {{ item.exchange.name }}</option>{% endfor %}</select>{{ form.market.errors }}</div>

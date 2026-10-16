@@ -1,4 +1,7 @@
-{% extends 'shell.html' %}{% block title %}پیش‌نمایش برنامه | CryptoSniper{% endblock %}{% block breadcrumb %}برنامه معامله / پیش‌نمایش{% endblock %}{% block content %}
+{% extends 'shell.html' %}{% block title %}پیش‌نمایش برنامه | CryptoSniper{% if plan.status == 'ready' %}
+<section class="panel"><h2>اجرای آزمایشی Paper</h2><p class="muted">فقط حساب شبیه‌ساز و Spot Long با اهرم ۱؛ دستور واقعی به Binance ارسال نمی‌شود.</p>
+<form method="post" action="{% url 'paper-launch' plan.pk %}">{% csrf_token %}<input type="hidden" name="request_key" value="{{ paper_request_key }}"><button type="submit" class="button button-primary">ثبت درخواست اجرای Paper با تأیید من</button></form></section>
+{% endif %}{% endblock %}{% block breadcrumb %}برنامه معامله / پیش‌نمایش{% endblock %}{% block content %}
 <div class="page-heading"><div><span class="eyebrow">PLAN PREVIEW · NO LIVE ORDER</span><h1>برنامه {{ plan.market.symbol }}</h1><p class="muted">{{ plan.exchange_account.label }} · {{ plan.get_side_display }} · {{ plan.get_status_display }}</p></div><a class="button button-soft" href="{% url 'manual-list' %}">همه برنامه‌ها</a></div>
 {% if messages %}{% for message in messages %}<div class="notice" role="status">{{ message }}</div>{% endfor %}{% endif %}
 <div class="manual-preview-status">{% if plan.status == 'ready' %}Snapshot تأییدشده؛ تغییر تنظیمات حساب آن را عوض نمی‌کند.{% else %}پیش‌نویس قابل اصلاح؛ برای تأیید باید موجودی و قوانین بازار معتبر باشند.{% endif %}</div>

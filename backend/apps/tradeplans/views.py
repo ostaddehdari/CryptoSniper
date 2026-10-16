@@ -1,7 +1,10 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+import uuid
+
 from django.db import IntegrityError
+from apps.signals.models import Signal
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
@@ -43,7 +46,27 @@ def _form_context(form, request, *, plan=None):
 @never_cache
 @require_http_methods(["GET", "POST"])
 def new_plan(request):
-    form = ManualTradeForm(request.user, request.POST if request.method == "POST" else None)
+    initial = {}
+    signal_id = request.GET.get("signal")
+    if signal_id and request.method == "GET":
+        signal = get_object_or_404(
+            Signal, pk=signal_id, owner=request.user, status=Signal.Status.APPROVED
+        )
+        initial = {
+            "origin_signal": signal.pk,
+            "account": signal.exchange_account_id, "market": signal.market_id,
+            "source": "manual",
+        "origin_signal": plan.origin_signal_id, "side": signal.side,
+            "entry_price": signal.entry_price, "stop_loss": signal.stop_loss,
+            "leverage": 1, "capital": 50, "trailing_distance": 1,
+            "trailing_sl": bool(signal.parsed_payload.get("trailing_sl", False)),
+            "percentage_trailing": bool(signal.parsed_payload.get("percentage_trailing", False)),
+        }
+        for target in signal.targets.order_by("position"):
+            initial[f"tp{target.position}"] = target.price
+    form = ManualTradeForm(
+        request.user, request.POST if request.method == "POST" else None, initial=initial
+    )
     if request.method == "POST" and form.is_valid():
         try:
             plan, _ = create_draft(request.user, form.cleaned_data)
@@ -101,6 +124,7 @@ def preview_plan(request, pk):
         {
             "plan": plan,
             "nav": "manual",
+            "paper_request_key": uuid.uuid4(),
             "snapshot": plan.approved_snapshot if plan.status == "ready" else plan.preview,
         },
     )

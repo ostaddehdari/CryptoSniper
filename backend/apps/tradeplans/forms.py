@@ -3,6 +3,7 @@ import uuid
 from django import forms
 
 from apps.exchanges.models import ExchangeMarket, UserExchangeAccount
+from apps.signals.models import Signal
 
 
 class ManualTradeForm(forms.Form):
@@ -48,10 +49,15 @@ class ManualTradeForm(forms.Form):
         max_value=99,
         initial=1,
     )
+    origin_signal = forms.ModelChoiceField(queryset=Signal.objects.none(),
+                                          required=False, widget=forms.HiddenInput)
     client_token = forms.UUIDField(widget=forms.HiddenInput)
 
     def __init__(self, owner, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["origin_signal"].queryset = Signal.objects.filter(
+            owner=owner, status=Signal.Status.APPROVED
+        )
         self.fields["account"].queryset = (
             UserExchangeAccount.objects.for_user(owner)
             .filter(status__in=("connected", "restricted"), permissions__can_read=True)
@@ -61,7 +67,7 @@ class ManualTradeForm(forms.Form):
             exchange_id__in=self.fields["account"].queryset.values("exchange_id"), active=True
         ).select_related("exchange")
         for key, field in self.fields.items():
-            if key != "client_token":
+            if key not in {"client_token", "origin_signal"}:
                 field.widget.attrs.setdefault("class", "input")
         if not self.is_bound:
             self.initial.setdefault("client_token", uuid.uuid4())
@@ -76,6 +82,14 @@ class ManualTradeForm(forms.Form):
                 self.add_error("market", "مجوز Margin این حساب تأیید نشده است.")
             if market.market_type == "spot" and data.get("side") != "long":
                 self.add_error("side", "Spot فقط خرید Long را پشتیبانی می‌کند.")
+        origin = data.get("origin_signal")
+        if origin:
+            if origin.status != Signal.Status.APPROVED:
+                self.add_error("origin_signal", "سیگنال باید ابتدا تأیید شده باشد.")
+            if account and market and (
+                origin.exchange_account_id != account.pk or origin.market_id != market.pk
+            ):
+                self.add_error("origin_signal", "حساب و بازار باید با سیگنال تأییدشده برابر باشند.")
         targets = (data.get("tp1"), data.get("tp2"), data.get("tp3"))
         if targets[2] and not targets[1]:
             self.add_error("tp3", "TP3 بدون TP2 معتبر نیست.")

@@ -20,9 +20,9 @@ class Trade(models.Model):
                               related_name="paper_trades")
     account = models.ForeignKey("exchanges.UserExchangeAccount", on_delete=models.CASCADE)
     market = models.ForeignKey("exchanges.ExchangeMarket", on_delete=models.PROTECT)
-    plan = models.ForeignKey("tradeplans.TradePlan", on_delete=models.PROTECT,
+    plan = models.ForeignKey("tradeplans.TradePlan", on_delete=models.CASCADE,
                              null=True, blank=True)
-    signal = models.ForeignKey("signals.Signal", on_delete=models.PROTECT,
+    signal = models.ForeignKey("signals.Signal", on_delete=models.CASCADE,
                                null=True, blank=True)
     request_key = models.UUIDField(default=uuid.uuid4)
     request_hash = models.CharField(max_length=64)

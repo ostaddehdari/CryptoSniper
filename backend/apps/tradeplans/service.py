@@ -15,7 +15,7 @@ def _normalized(data):
     return {
         name: (
             item.pk
-            if name in {"account", "market"}
+            if name in {"account", "market", "origin_signal"}
             else str(item)
             if item is not None and hasattr(item, "as_tuple")
             else item
@@ -41,12 +41,14 @@ def create_draft(owner, data):
         return found, False
     preview = build_preview(data)
     preview["form_digest"] = digest
+    preview["origin_signal_id"] = data["origin_signal"].pk if data.get("origin_signal") else None
     plan = TradePlan.objects.create(
         owner=owner,
         exchange_account=data["account"],
         market=data["market"],
         client_token=token,
-        source="manual",
+        source="smart_paste" if data.get("origin_signal") and data["origin_signal"].source.method == "smart_paste" else "manual",
+        origin_signal=data.get("origin_signal"),
         side=data["side"],
         entry_price=data["entry_price"],
         stop_loss=data["stop_loss"],
@@ -72,6 +74,8 @@ def update_draft(plan, data, expected_revision):
         raise ValidationError("نسخه فرم قدیمی است؛ صفحه را تازه‌سازی کنید.")
     payload = build_preview(data)
     payload["form_digest"] = _hash(data)
+    payload["origin_signal_id"] = data["origin_signal"].pk if data.get("origin_signal") else None
+    locked.origin_signal = data.get("origin_signal")
     locked.exchange_account = data["account"]
     locked.market = data["market"]
     for name in (
@@ -122,6 +126,7 @@ def approve_plan(owner, plan_id, expected_revision):
     # versioned JSON snapshot. Never silently mutate it due to later preferences.
     verified = build_preview(data)
     verified["form_digest"] = plan.preview.get("form_digest")
+    verified["origin_signal_id"] = plan.origin_signal_id
     plan.status = TradePlan.Status.READY
     plan.approved_snapshot = dict(verified)
     plan.approved_at = timezone.now()

@@ -137,3 +137,7 @@ def test_smart_paste_review_to_approved_plan(django_user_model):
     approved = approve_plan(user, plan.pk, plan.revision)
     assert approved.status == "ready"
     assert approved.approved_snapshot["origin_signal_id"] == signal.pk
+    from apps.trading.intent import queue_paper_trade
+
+    trade, created = queue_paper_trade(user, plan.pk, request_key=uuid.uuid4())
+    assert created and trade.signal_id == signal.pk

@@ -206,6 +206,10 @@ def main():
                         f"messages={page.locator('.notice').all_text_contents()}"
                     )
                 page.get_by_role("button", name="ثبت درخواست اجرای Paper با تأیید من").click()
+                if "/paper/" not in page.url or "/paper/launch/" in page.url:
+                    raise AssertionError(
+                        "Paper POST rejected: " + str(page.locator(".notice").all_text_contents())
+                    )
                 page.wait_for_url("**/paper/*/")
                 paper = Trade.objects.filter(owner=user).latest("pk")
                 wait_for(lambda: Trade.objects.get(pk=paper.pk).state == "open", seconds=45)

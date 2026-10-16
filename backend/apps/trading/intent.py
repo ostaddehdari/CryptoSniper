@@ -105,6 +105,7 @@ def queue_paper_trade(owner, plan_id, *, request_key):
         account=account,
         market=market,
         plan=plan,
+        signal=plan.origin_signal,
         request_key=request_key,
         request_hash=digest,
         quantity=quantity,

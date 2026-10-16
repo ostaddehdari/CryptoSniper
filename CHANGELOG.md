@@ -1,3 +1,11 @@
+## v0.10.0rc1 — استیج‌های ۹ و ۱۰ (۱۶ اکتبر ۲۰۲۶)
+
+- مدل مستقل TP targets، توزیع Decimal و rounding به هدف آخر؛ دفتر Fill خروج و کنترل حد موجودی.
+- اجرای مرحله‌ای Paper TP/SL، Move to Entry/previous TP/manual SL با audit، بدون Native stop.
+- Percentage Trailing فعال‌شونده در TP1 با High-water پایدار؛ تقدم آن بر TP Sell و جلوگیری از فروش مضاعف.
+- سناریوی Tick دستی فقط برای Paper، پایش مستقل Celery و تشخیص فید قدیمی؛ دستور واقعی Binance همچنان غیرفعال.
+- ۸۶ تست CI موفق و انتشار ZIP تجمعی با SHA256. استقرار VPS تا ارائه لاگ کاربر تأیید نشده.
+
 # تاریخچه تغییرات
 
 ## 0.3.0rc1 — استیج ۳، ۱۶ اکتبر ۲۰۲۶

@@ -383,13 +383,31 @@
         "S09-W04",
         "S09-W05"
       ],
-      "checks": [],
-      "commit_shas": [],
-      "blockers": [
-        "Previous Stage03 Binance real account and upstream formal acceptance gaps not completed.",
-        "Stages09/10 schema, PostgreSQL tests, worker/browser smoke, operator VPS deployment not yet verified."
+      "checks": [
+        {
+          "name": "Stages09+10 CI: PostgreSQL/Redis/Celery/Chromium Paper exits",
+          "status": "passed",
+          "pytest_passed": 86,
+          "run_id": 38959567887,
+          "tested_commit": "acde2adbe6a37d0ab875e7aff078beae4e7c6907",
+          "evidence_artifact_id": 12071179939
+        }
       ],
-      "implementation": "Five workstreams implemented as PAPER-only; CI and operator deployment pending."
+      "commit_shas": [
+        "11625e672ca81fd2bae33cc3a693d488e47fec65",
+        "6ddcab3968fb4bcacb626a7702c6d7f5d492cef6",
+        "b27874a04b5cf52125130c323e65abe386da6512",
+        "d661002aa87ef54db3e05168b7cae7b377a40b85",
+        "0030c38a170f6ce25f3abbf6e7d6ccc431fdb08f"
+      ],
+      "blockers": [
+        "Prior S03 Binance read-only account permission test and upstream formal acceptance gaps are still pending.",
+        "Stage10 cumulative release has not yet been deployed/verified on operator VPS.",
+        "Native protective exchange stops, Binance live order execution and Margin/Short order execution remain unavailable. PAPER backend-managed protection is not guaranteed during outages."
+      ],
+      "implementation": "All five workstreams developed; 86 pytest tests and real PostgreSQL/Redis/Worker/Beat/Chromium smoke passed; cumulative GitHub Release published; VPS deployment and upstream acceptance pending.",
+      "release_tag": "stage10-v0.10.0rc1-deploy",
+      "release_commit": "acde2adbe6a37d0ab875e7aff078beae4e7c6907"
     },
     "S10": {
       "status": "partial",
@@ -400,14 +418,31 @@
         "S10-W04",
         "S10-W05"
       ],
-      "checks": [],
-      "commit_shas": [],
-      "blockers": [
-        "Previous Stage03 Binance real account and upstream formal acceptance gaps not completed.",
-        "Stages09/10 schema, PostgreSQL tests, worker/browser smoke, operator VPS deployment not yet verified.",
-        "Short/Margin trailing math supported for isolated calculations only; execution disabled until verified borrow/repay. Native exchange stops not implemented; protection is backend-managed Paper only."
+      "checks": [
+        {
+          "name": "Stages09+10 CI: PostgreSQL/Redis/Celery/Chromium Paper exits",
+          "status": "passed",
+          "pytest_passed": 86,
+          "run_id": 38959567887,
+          "tested_commit": "acde2adbe6a37d0ab875e7aff078beae4e7c6907",
+          "evidence_artifact_id": 12071179939
+        }
       ],
-      "implementation": "Five workstreams implemented as PAPER-only; CI and operator deployment pending."
+      "commit_shas": [
+        "1f2f95e5942801d37f625231e20a8ad0ee2e826d",
+        "ec3898fa2ed572c248d6bd4fa101a585afca1b88",
+        "0fd7cbfe7346905225288192531a1bb8e4355435",
+        "d671031d224cf4c4467097db6a46325bef68164e",
+        "a181f0b1b9243100d2ded44b8559b26bbcef8557"
+      ],
+      "blockers": [
+        "Prior S03 Binance read-only account permission test and upstream formal acceptance gaps are still pending.",
+        "Stage10 cumulative release has not yet been deployed/verified on operator VPS.",
+        "Native protective exchange stops, Binance live order execution and Margin/Short order execution remain unavailable. PAPER backend-managed protection is not guaranteed during outages."
+      ],
+      "implementation": "All five workstreams developed; 86 pytest tests and real PostgreSQL/Redis/Worker/Beat/Chromium smoke passed; cumulative GitHub Release published; VPS deployment and upstream acceptance pending.",
+      "release_tag": "stage10-v0.10.0rc1-deploy",
+      "release_commit": "acde2adbe6a37d0ab875e7aff078beae4e7c6907"
     },
     "S11": {
       "status": "not_started",

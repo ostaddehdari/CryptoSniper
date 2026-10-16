@@ -261,7 +261,7 @@
       "depends_on": [
         "S04"
       ],
-      "status": "not_started",
+      "status": "partial",
       "source_sections": [
         5,
         10,
@@ -275,7 +275,7 @@
           "title": "Manual Entry کامل",
           "deliverables": "Coin، source، exchange، Spot/Margin، direction، یک Entry، حداکثر سه TP، SL، مبلغ سرمایه، leverage و trailing.",
           "acceptance": "فرم کامل در موبایل قابل استفاده و حجم نهایی position ورودی مستقیم نداشته باشد.",
-          "status": "not_started"
+          "status": "partial"
         },
         {
           "id": "S05-W02",
@@ -283,7 +283,7 @@
           "title": "اعتبارسنجی و محاسبات Decimal",
           "deliverables": "ترتیب Entry/TP/SL برای long/short، موجودی، fees، rounding، min order و مبلغ سرمایه به quantity.",
           "acceptance": "سناریوهای lot step، min notional و موجودی ناکافی بدون float آزمون شوند.",
-          "status": "not_started"
+          "status": "partial"
         },
         {
           "id": "S05-W03",
@@ -291,7 +291,7 @@
           "title": "اطلاعات لحظه‌ای فرم",
           "deliverables": "قیمت، timestamp، فاصله قیمت تا Entry، فاصله درصد Entry تا TP و SL، balance و leverage مجاز.",
           "acceptance": "تغییر ارز/صرافی تمام مقادیر وابسته را به‌درستی به‌روز کند.",
-          "status": "not_started"
+          "status": "partial"
         },
         {
           "id": "S05-W04",
@@ -299,7 +299,7 @@
           "title": "Trade Plan و snapshot",
           "deliverables": "پیش‌نمایش مبلغ، quantity محاسبه‌شده، هزینه، قوانین خروج و ثبت draft/ready؛ این استیج هنوز سفارش live ارسال نمی‌کند.",
           "acceptance": "تغییر تنظیمات بعدی snapshot طرح تأییدشده را بی‌صدا عوض نکند.",
-          "status": "not_started"
+          "status": "partial"
         },
         {
           "id": "S05-W05",
@@ -307,7 +307,7 @@
           "title": "REST و آزمون مسیر دستی",
           "deliverables": "endpoint ساخت/ویرایش/تأیید draft، idempotency اولیه و خطاهای فارسی روشن.",
           "acceptance": "ارسال تکراری یک فرم یک draft بسازد؛ مسیر فرم تا preview کامل شود.",
-          "status": "not_started"
+          "status": "partial"
         }
       ]
     },

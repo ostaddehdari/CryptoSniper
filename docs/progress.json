@@ -5,9 +5,9 @@
     "S01",
     "S02"
   ],
-  "current_stage": "S04",
-  "next_stage": "S04",
-  "last_completed_work": "S04-W05",
+  "current_stage": "S05",
+  "next_stage": "S05",
+  "last_completed_work": "S05-W05",
   "implementation_started": true,
   "stage_results": {
     "S01": {
@@ -147,18 +147,22 @@
       "blockers": [
         "S03-W04 real Binance API permissions test not yet performed (no credential provided).",
         "24-hour percentage change and Price Alert indicator not yet implemented; Price Alert engine is deferred to S12.",
-        "S04 operator-host deployment not yet verified."
+        "S04 deployed on operator server 2026-10-16; no proof of public-browser Binance read connection."
       ],
       "implementation": "Five Stage04 workstreams committed and CI-checked; S04 remains partial for listed acceptance gaps.",
       "release_tag": "stage04-v0.4.0rc1-deploy",
       "release_commit": "c6914089372791a973f062f68dad4264bb78094a"
     },
     "S05": {
-      "status": "not_started",
+      "status": "partial",
       "completed_works": [],
       "checks": [],
       "commit_shas": [],
-      "blockers": []
+      "blockers": [
+        "S03 real Binance credential test pending; S04 percentage-change and alert indicators pending.",
+        "S05 CI and VPS deployment not yet verified."
+      ],
+      "implementation": "All 5 workstreams implemented, CI pending, provider-specific dependencies upstream remain partial."
     },
     "S06": {
       "status": "not_started",

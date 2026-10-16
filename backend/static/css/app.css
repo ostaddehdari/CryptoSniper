@@ -86,3 +86,16 @@
 @media(max-width:960px){.inbox-review-grid{grid-template-columns:1fr}.inbox-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.inbox-filters{grid-template-columns:1fr}.inbox-item{flex-wrap:wrap}.inbox-item>span:last-child{margin-right:auto}
 .inbox-actions .button{width:100%}}
+
+
+/* Stage09-10 Paper exit workspace: visual protection status, always disclose backend-only stop */
+.exit-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:20px 0}
+.exit-controls form{display:grid;gap:12px;min-width:0;padding:16px;border:1px solid var(--line);border-radius:12px}
+.exit-controls h3{font-size:14px;margin:0}
+.exit-controls label,.paper-price-form label{display:grid;gap:7px;font-size:11px}
+.exit-controls input[type="checkbox"]{width:17px;height:17px}
+.exit-controls .input,.paper-price-form .input{width:100%;min-height:42px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+.paper-price-form{display:flex;flex-wrap:wrap;align-items:end;gap:12px;padding:18px 0}
+.paper-price-form p{width:100%}
+.paper-price-form label{min-width:200px;flex:1}
+@media(max-width:760px){.exit-controls{grid-template-columns:1fr}.paper-price-form{display:grid}.paper-price-form label{min-width:0}}

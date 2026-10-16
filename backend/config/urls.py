@@ -7,7 +7,7 @@ from django.urls import path
 
 
 def live(request):
-    return JsonResponse({"status": "ok", "service": "cryptosniper", "stage": "S02"})
+    return JsonResponse({"status": "ok", "service": "cryptosniper", "stage": "S03"})
 
 
 def ready(request):

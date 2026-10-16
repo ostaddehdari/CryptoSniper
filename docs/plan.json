@@ -147,7 +147,7 @@
       "depends_on": [
         "S02"
       ],
-      "status": "not_started",
+      "status": "partial",
       "source_sections": [
         16,
         18,
@@ -161,7 +161,7 @@
           "title": "کاتالوگ و capability صرافی",
           "deliverables": "exchanges، user_exchange_accounts، exchange_markets و assets؛ اعلام قابلیت Spot/Margin و محدودیت هر بازار.",
           "acceptance": "بازار و قابلیت پشتیبانی‌نشده قابل انتخاب یا اجرا نباشد.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S03-W02",
@@ -169,7 +169,7 @@
           "title": "نگهداری امن credentials",
           "deliverables": "رمزنگاری authenticated برای key/secret/passphrase، کلید خارج DB، key version و disable فوری اتصال.",
           "acceptance": "secret در پاسخ API، HTML، log و repository دیده نشود؛ rotation قابل آزمون باشد.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S03-W03",
@@ -177,7 +177,7 @@
           "title": "قرارداد Adapter و شبیه‌ساز پایه",
           "deliverables": "interface عملیات صرافی و simulator اولیه برای balance/ticker/order/fill/cancel؛ پایه paper trading از همین استیج.",
           "acceptance": "contract tests روی simulator و رد پاسخ ناسازگار بدون تغییر موتور معامله.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S03-W04",
@@ -185,7 +185,7 @@
           "title": "Adapterهای واقعی و بررسی مجوز",
           "deliverables": "پیاده‌سازی providerهای انتخاب‌شده با sandbox در صورت وجود؛ test connection، trading permission و no-withdrawal.",
           "acceptance": "کلید دارای مجوز برداشت رد شود؛ permission نامعلوم اجازه live execution نگیرد.",
-          "status": "not_started"
+          "status": "partial"
         },
         {
           "id": "S03-W05",
@@ -193,7 +193,7 @@
           "title": "همگام‌سازی بازار و موجودی",
           "deliverables": "balance_snapshots، min notional، tick/lot step، fees، حداکثر leverage وابسته به حساب/بازار و UI مدیریت اتصال.",
           "acceptance": "metadata و balance با زمان دریافت نمایش داده شوند؛ محدودیت صرافی hard-code نشود.",
-          "status": "not_started"
+          "status": "done"
         }
       ]
     },

@@ -5,9 +5,9 @@
     "S01",
     "S02"
   ],
-  "current_stage": null,
+  "current_stage": "S03",
   "next_stage": "S03",
-  "last_completed_work": "S02-W05",
+  "last_completed_work": "S03-W05",
   "implementation_started": true,
   "stage_results": {
     "S01": {
@@ -74,11 +74,36 @@
       "blockers": []
     },
     "S03": {
-      "status": "not_started",
-      "completed_works": [],
-      "checks": [],
-      "commit_shas": [],
-      "blockers": []
+      "status": "partial",
+      "completed_works": [
+        "S03-W01",
+        "S03-W02",
+        "S03-W03",
+        "S03-W05"
+      ],
+      "checks": [
+        {
+          "name": "Local Ruff, Django check, migration drift and adapter contract tests",
+          "status": "passed",
+          "pytest_passed": 7,
+          "tested_commit": "2f9b48fb3762076122a19913ed7fbe5dc948d95e"
+        },
+        {
+          "name": "Real PostgreSQL/Redis/Worker/Beat/browser CI",
+          "status": "pending"
+        }
+      ],
+      "commit_shas": [
+        "985db094814e812da863328b8f163ab6f0831581",
+        "e819551206eca56042f6ec945b42b62c023a0646",
+        "d4bf6d2a96f7239810067eb5c84cd2930f4f2f53",
+        "6b09f98cb530fe8bfeca163c2ccff0c0b82d9962",
+        "2f9b48fb3762076122a19913ed7fbe5dc948d95e"
+      ],
+      "blockers": [
+        "Target exchange has not been confirmed by the user.",
+        "No authorized sandbox/live credential is available for an external provider verification."
+      ]
     },
     "S04": {
       "status": "not_started",

@@ -187,7 +187,7 @@ def main():
                 page.locator('[name="entry_price"]').fill("65000")
                 page.locator('[name="stop_loss"]').fill("60000")
                 page.locator('[name="tp1"]').fill("70000")
-                page.locator('[name="reason"]').fill("بازبینی مرورگر")
+                page.locator("#id_reason").fill("بازبینی مرورگر")
                 page.get_by_role("button", name="ذخیره اصلاحات و اعتبارسنجی").click()
                 page.get_by_role("button", name="تأیید دستی (بدون معامله)").click()
                 page.get_by_text("سیگنال پس از تأیید یا رد قابل اصلاح نیست.").wait_for()

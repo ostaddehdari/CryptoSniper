@@ -5,9 +5,9 @@
     "S01",
     "S02"
   ],
-  "current_stage": "S08",
-  "next_stage": "S08",
-  "last_completed_work": "S08-W05",
+  "current_stage": "S10",
+  "next_stage": "S10",
+  "last_completed_work": "S10-W05",
   "implementation_started": true,
   "stage_results": {
     "S01": {
@@ -375,18 +375,39 @@
       "release_commit": "04d84c0e5ef75155bce32a173c2441e20f0f5080"
     },
     "S09": {
-      "status": "not_started",
-      "completed_works": [],
+      "status": "partial",
+      "completed_works": [
+        "S09-W01",
+        "S09-W02",
+        "S09-W03",
+        "S09-W04",
+        "S09-W05"
+      ],
       "checks": [],
       "commit_shas": [],
-      "blockers": []
+      "blockers": [
+        "Previous Stage03 Binance real account and upstream formal acceptance gaps not completed.",
+        "Stages09/10 schema, PostgreSQL tests, worker/browser smoke, operator VPS deployment not yet verified."
+      ],
+      "implementation": "Five workstreams implemented as PAPER-only; CI and operator deployment pending."
     },
     "S10": {
-      "status": "not_started",
-      "completed_works": [],
+      "status": "partial",
+      "completed_works": [
+        "S10-W01",
+        "S10-W02",
+        "S10-W03",
+        "S10-W04",
+        "S10-W05"
+      ],
       "checks": [],
       "commit_shas": [],
-      "blockers": []
+      "blockers": [
+        "Previous Stage03 Binance real account and upstream formal acceptance gaps not completed.",
+        "Stages09/10 schema, PostgreSQL tests, worker/browser smoke, operator VPS deployment not yet verified.",
+        "Short/Margin trailing math supported for isolated calculations only; execution disabled until verified borrow/repay. Native exchange stops not implemented; protection is backend-managed Paper only."
+      ],
+      "implementation": "Five workstreams implemented as PAPER-only; CI and operator deployment pending."
     },
     "S11": {
       "status": "not_started",

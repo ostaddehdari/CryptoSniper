@@ -496,7 +496,7 @@
       "depends_on": [
         "S08"
       ],
-      "status": "not_started",
+      "status": "partial",
       "source_sections": [
         11,
         12
@@ -508,7 +508,7 @@
           "title": "Snapshot هدف‌ها و درصدها",
           "deliverables": "trade_targets مستقل از signals، سه هدف، پیش‌فرض ۱۰/۱۰/۸۰ و policy تعداد اهداف کمتر.",
           "acceptance": "مجموع تخصیص ۱۰۰٪ و rounding سهم آخر درست باشد؛ تغییر signal معامله موجود را عوض نکند.",
-          "status": "not_started"
+          "status": "partial"
         },
         {
           "id": "S09-W02",
@@ -516,7 +516,7 @@
           "title": "اجرای خروج پله‌ای",
           "deliverables": "TP orderها برای حالت Percentage OFF، خروج فقط به‌اندازه quantity موجود و handling partial fills.",
           "acceptance": "TP1/TP2/TP3 و filled همزمان از موجودی بیشتر نفروشند.",
-          "status": "not_started"
+          "status": "partial"
         },
         {
           "id": "S09-W03",
@@ -524,7 +524,7 @@
           "title": "Stop Loss محافظتی",
           "deliverables": "SL اولیه، capability native stop یا backend-managed stop با نمایش وضعیت حفاظت؛ نداشتن پوشش معتبر مانع live شود.",
           "acceptance": "SL و TP همزمان، cancel race و قطع feed نتیجه محافظتی مشخص داشته باشند.",
-          "status": "not_started"
+          "status": "partial"
         },
         {
           "id": "S09-W04",
@@ -532,7 +532,7 @@
           "title": "تغییر SL و Break-even",
           "deliverables": "move-to-entry، move-to-TP قبلی و تغییر دستی با نسخه plan و ثبت دلیل.",
           "acceptance": "تغییر استاپ معتبر ثبت و تنظیم ناامن یا با قیمت ناسازگار رد شود.",
-          "status": "not_started"
+          "status": "partial"
         },
         {
           "id": "S09-W05",
@@ -540,7 +540,7 @@
           "title": "آزمون exits و نمایش",
           "deliverables": "رابط TP progress/SL، آزمایش fee، dust، cancel و سفارش معلق در simulator/sandbox.",
           "acceptance": "بستن یک position یک بار انجام شود و remaining quantity و audit صحیح بماند.",
-          "status": "not_started"
+          "status": "partial"
         }
       ]
     },
@@ -551,7 +551,7 @@
       "depends_on": [
         "S09"
       ],
-      "status": "not_started",
+      "status": "partial",
       "source_sections": [
         13,
         14
@@ -563,7 +563,7 @@
           "title": "قواعد و تقدم trailing",
           "deliverables": "trailing_rules با step trailing و Percentage جدا؛ تقدم Percentage پس از activation و stop هرگز ضعیف‌تر نشود.",
           "acceptance": "دو toggle روشن خروج مضاعف یا عقب‌رفتن stop ایجاد نکنند.",
-          "status": "not_started"
+          "status": "partial"
         },
         {
           "id": "S10-W02",
@@ -571,7 +571,7 @@
           "title": "الگوریتم درصدی",
           "deliverables": "trigger پیش‌فرض TP1، فاصله ۱٪، high-water برای Long و low-water برای Margin Short مجاز.",
           "acceptance": "Long=highest×(۱−d) و Short=lowest×(۱+d) با Decimal و boundary tests صحیح باشند.",
-          "status": "not_started"
+          "status": "partial"
         },
         {
           "id": "S10-W03",
@@ -579,7 +579,7 @@
           "title": "لغو TP و race handling",
           "deliverables": "Percentage ON از ابتدا: TPها marker فعال‌سازی و بدون TP sell؛ activation روی معاملات موجود: لغو TP باز و reconciliation fillها.",
           "acceptance": "در TP1 خروج پله‌ای همزمان رخ ندهد؛ لغو ناموفق هرگز فرض موفق نشود.",
-          "status": "not_started"
+          "status": "partial"
         },
         {
           "id": "S10-W04",
@@ -587,7 +587,7 @@
           "title": "خروج پویا و بازیابی",
           "deliverables": "persist high/low/current stop، ترتیب price events و version lock؛ عبور از TP3 معامله را صرفاً به‌علت TP3 نبندد.",
           "acceptance": "restart، tick تکراری/قدیمی و جهش قیمت stop را خراب نکنند؛ خروج یک‌بار انجام شود.",
-          "status": "not_started"
+          "status": "partial"
         },
         {
           "id": "S10-W05",
@@ -595,7 +595,7 @@
           "title": "کنترل‌ها و تست end-to-end",
           "deliverables": "نمای activation/stop/remaining، خاموش/روشن‌کردن قانون با audit و مسیر trailing تا close.",
           "acceptance": "سناریوی عبور Long از TP3 و برگشت ۱٪، partial fill و cancel race در paper/sandbox ثبت شود.",
-          "status": "not_started"
+          "status": "partial"
         }
       ]
     },

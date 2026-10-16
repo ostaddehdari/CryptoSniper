@@ -168,6 +168,36 @@ def main():
                 page.reload()
                 page.get_by_text("BTC/USDT", exact=True).first.wait_for()
                 page.screenshot(path=str(artifacts / "exchange-detail-desktop.png"), full_page=True)
+                page.goto(base + "/inbox/receive/")
+                page.get_by_role("heading", name="ثبت متن اصلی سیگنال").wait_for()
+                page.locator('[name="method"]').select_option("manual")
+                page.locator('[name="text"]').fill(
+                    "BTC/USDT\\nEntry: 65000\\nTP1: 70000\\nSL: 60000"
+                )
+                page.get_by_role(
+                    "button", name="ثبت در Inbox بدون اجرای معامله"
+                ).click()
+                page.wait_for_url("**/inbox/*/")
+                page.get_by_role("heading", name="بررسی سیگنال", exact=False).wait_for()
+                page.screenshot(path=str(artifacts / "inbox-review-desktop.png"), full_page=True)
+                page.locator('[name="account_id"]').select_option(str(account.pk))
+                page.locator('[name="market_id"]').select_option(
+                    label="BTC/USDT"
+                )
+                page.locator('[name="entry_price"]').fill("65000")
+                page.locator('[name="stop_loss"]').fill("60000")
+                page.locator('[name="tp1"]').fill("70000")
+                page.locator('[name="reason"]').fill("بازبینی مرورگر")
+                page.get_by_role("button", name="ذخیره اصلاحات و اعتبارسنجی").click()
+                page.get_by_role("button", name="تأیید دستی (بدون معامله)").click()
+                page.get_by_text("سیگنال پس از تأیید یا رد قابل اصلاح نیست.").wait_for()
+                for width in (320, 390, 768):
+                    page.set_viewport_size({"width": width, "height": 844})
+                    assert page.evaluate("document.documentElement.scrollWidth <= innerWidth"), (
+                        f"Signal Inbox overflow at {width}px"
+                    )
+                page.screenshot(path=str(artifacts / "inbox-review-mobile.png"), full_page=True)
+                page.set_viewport_size({"width": 1440, "height": 1000})
                 page.goto(base + "/manual/new/")
                 page.get_by_role("heading", name="ورود دستی معامله").wait_for()
                 page.locator('[name="account"]').select_option(str(account.pk))

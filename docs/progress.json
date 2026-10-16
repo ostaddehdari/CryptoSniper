@@ -5,9 +5,9 @@
     "S01",
     "S02"
   ],
-  "current_stage": "S03",
-  "next_stage": "S03",
-  "last_completed_work": "S03-W05",
+  "current_stage": "S04",
+  "next_stage": "S04",
+  "last_completed_work": "S04-W05",
   "implementation_started": true,
   "stage_results": {
     "S01": {
@@ -126,16 +126,20 @@
         "8945272bace438ae110455b281b1ff95eddd59be"
       ],
       "blockers": [
-        "Target exchange has not been confirmed by the user.",
-        "No authorized sandbox/live credential is available for an external provider verification."
-      ]
+        "Binance selected; first real account permission/read test remains pending. Do not upload credentials to GitHub."
+      ],
+      "target_provider": "binance"
     },
     "S04": {
-      "status": "not_started",
+      "status": "partial",
       "completed_works": [],
       "checks": [],
       "commit_shas": [],
-      "blockers": []
+      "blockers": [
+        "Stage 03 first-provider live read/permission verification has not been performed.",
+        "Stage 04 production deployment not yet verified."
+      ],
+      "implementation": "five workstreams coded; CI and provider-dependent verification pending"
     },
     "S05": {
       "status": "not_started",

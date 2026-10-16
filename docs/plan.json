@@ -204,7 +204,7 @@
       "depends_on": [
         "S03"
       ],
-      "status": "not_started",
+      "status": "partial",
       "source_sections": [
         9,
         17,
@@ -218,7 +218,7 @@
           "title": "جمع‌آوری قیمت و کش",
           "deliverables": "ticker و orderbook مستقل از داده معامله، Redis برای آخرین قیمت و timestamps.",
           "acceptance": "قیمت منقضی علامت‌گذاری شود و برای اجرای معامله معتبر محسوب نشود.",
-          "status": "not_started"
+          "status": "partial"
         },
         {
           "id": "S04-W02",
@@ -226,7 +226,7 @@
           "title": "جست‌وجوی Coin و Pair",
           "deliverables": "جست‌وجوی دارایی، symbol canonical، بازار قابل معامله در حساب‌های متصل و اطلاعات precision.",
           "acceptance": "انتخاب ارز فقط صرافی/بازار قابل معامله برای همان کاربر را برگرداند.",
-          "status": "not_started"
+          "status": "partial"
         },
         {
           "id": "S04-W03",
@@ -234,7 +234,7 @@
           "title": "انتقال realtime به رابط",
           "deliverables": "SSE یا WebSocket در ASGI و polling کنترل‌شده در WSGI برای نمایش؛ reconnect و محدودسازی subscription.",
           "acceptance": "قطع و وصل ارتباط UI داده صحیح بازگرداند و داده کاربر دیگر منتشر نشود.",
-          "status": "not_started"
+          "status": "partial"
         },
         {
           "id": "S04-W04",
@@ -242,7 +242,7 @@
           "title": "Watchlist و میان‌برها",
           "deliverables": "watchlists/items، قیمت و تغییر درصد، exchange و alert indicator؛ Quick Signal→Manual و Quick Paste→Smart Paste.",
           "acceptance": "Watchlist و shortcut روش جدید سیگنال در analytics ایجاد نکنند.",
-          "status": "not_started"
+          "status": "partial"
         },
         {
           "id": "S04-W05",
@@ -250,7 +250,7 @@
           "title": "کیفیت feed و رابط موبایل",
           "deliverables": "وضعیت feed، retry/backoff، rate limit، نمای فهرست موبایل و workspace دسکتاپ.",
           "acceptance": "feed قطع/قدیمی به‌وضوح دیده شود و refresh همزمان محدود باشد.",
-          "status": "not_started"
+          "status": "partial"
         }
       ]
     },

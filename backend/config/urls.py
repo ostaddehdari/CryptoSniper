@@ -3,6 +3,7 @@ from apps.core import views
 from apps.core.health import dependency_status
 from apps.exchanges import views as exchange_views
 from apps.marketdata import views as market_views
+from apps.tradeplans import context as trade_context
 from apps.marketdata import watchlists as watchlist_views
 from django.http import JsonResponse
 from django.urls import path
@@ -70,6 +71,7 @@ urlpatterns = [
         name="api-trading-preferences",
     ),
     path("dashboard/", views.dashboard, name="dashboard"),
+    path("api/v1/manual/context/", trade_context.manual_context, name="manual-context"),
     path("watchlist/", watchlist_views.watchlist_page, name="watchlists"),
     path("watchlist/create/", watchlist_views.create_watchlist, name="watchlist-create"),
     path("watchlist/<int:pk>/add/", watchlist_views.add_watchlist_item, name="watchlist-add"),

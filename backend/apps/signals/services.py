@@ -168,7 +168,7 @@ def update_parsed(owner, pk, *, expected_revision, data, reason):
 def transition(owner, pk, *, expected_revision, action, reason=""):
     signal = (
         Signal.objects.select_for_update()
-        .select_related("raw_signal", "source", "market", "exchange_account")
+        .select_related("raw_signal", "source")
         .get(owner=owner, pk=pk)
     )
     if signal.revision != expected_revision:

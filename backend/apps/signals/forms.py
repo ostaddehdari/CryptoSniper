@@ -17,6 +17,7 @@ class ReceiveForm(forms.Form):
     )
     text = forms.CharField(
         label="متن اصلی سیگنال",
+        strip=False,
         max_length=40000,
         widget=forms.Textarea(attrs={"rows": 8, "placeholder": "متن اصلی بدون تغییر ذخیره می‌شود."}),
     )

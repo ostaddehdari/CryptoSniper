@@ -86,19 +86,26 @@
           "name": "Local Ruff, Django check, migration drift and adapter contract tests",
           "status": "passed",
           "pytest_passed": 7,
-          "tested_commit": "2f9b48fb3762076122a19913ed7fbe5dc948d95e"
+          "tested_commit": "23c552bada413708f49030ad0dd79d3890c10b80"
         },
         {
           "name": "Real PostgreSQL/Redis/Worker/Beat/browser CI",
-          "status": "pending"
+          "status": "passed",
+          "pytest_passed": 53,
+          "tested_commit": "8945272bace438ae110455b281b1ff95eddd59be",
+          "run_id": 38896560818,
+          "evidence_artifact_id": 12044127815,
+          "evidence_sha256": "4696adb98920df0273a534209f70925bf79d640f652e75f81c4c0e3c7d15ea10"
         }
       ],
       "commit_shas": [
-        "985db094814e812da863328b8f163ab6f0831581",
-        "e819551206eca56042f6ec945b42b62c023a0646",
-        "d4bf6d2a96f7239810067eb5c84cd2930f4f2f53",
-        "6b09f98cb530fe8bfeca163c2ccff0c0b82d9962",
-        "2f9b48fb3762076122a19913ed7fbe5dc948d95e"
+        "fd7c8148367836b60488102ffff2392ea5a39ae6",
+        "e0eeac2bd09d7842e499e306c8cfb57510688460",
+        "50f8e6f073c4b5d51402f464e088ce0bf93909dc",
+        "0497c8cd0d8abe6f392a58c94e21c5a897c6c051",
+        "23c552bada413708f49030ad0dd79d3890c10b80",
+        "b00ee3b746fca765c6150827045459e40bb1e822",
+        "8945272bace438ae110455b281b1ff95eddd59be"
       ],
       "blockers": [
         "Target exchange has not been confirmed by the user.",

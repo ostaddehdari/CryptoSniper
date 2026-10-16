@@ -27,8 +27,15 @@
 | Django system check | موفق |
 | `makemigrations --check --dry-run` | بدون تغییر؛ PostgreSQL محلی در این محیط در دسترس نبود و warning اتصال ثبت شد |
 | ۷ تست خالص قرارداد Simulator و Binance | موفق |
-| secret redaction و ciphertext | کد و تست integration افزوده شد؛ اجرای PostgreSQL در CI انجام می‌شود |
-| Browser smoke | مسیرهای desktop/mobile و screenshot استیج ۳ به اسکریپت CI اضافه شد |
+| secret redaction و ciphertext | موفق روی PostgreSQL در CI |
+| Browser smoke | موفق روی Chromium در desktop و عرض‌های ۳۲۰، ۳۹۰ و ۷۶۸ پیکسل |
+
+## شواهد CI نهایی
+
+- [GitHub Actions Run #8](https://github.com/ostaddehdari/CryptoSniper/actions/runs/38896560818): موفق روی commit `8945272bace438ae110455b281b1ff95eddd59be`.
+- ۵۳ تست Pytest روی PostgreSQL واقعی: ۵۳ موفق، صفر failure/error/skip.
+- Redis، سه Worker مستقل، Beat، HTTP readiness و smoke مرورگر همگی موفق.
+- artifact شماره `12044127815` با SHA-256 برابر `4696adb98920df0273a534209f70925bf79d640f652e75f81c4c0e3c7d15ea10` شامل JUnit و ۱۰ screenshot دسکتاپ/موبایل است.
 
 ## مرز امنیتی
 

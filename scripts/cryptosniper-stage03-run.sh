@@ -796,7 +796,8 @@ fi
 # Validate that Nginx actually loaded the new route. Reload is asynchronous:
 # one immediate HTTPS request may hit an old worker and return a false 404.
 # Allow old workers time to drain; never keep a broken route in production.
-if ! nginx -T 2>/dev/null | grep -Fq 'location ^~ /cryptosniper/'; then
+if ! nginx -T > "$TMP_DIR/nginx-loaded.conf" 2>/dev/null ||
+   ! grep -Fq 'location ^~ /cryptosniper/' "$TMP_DIR/nginx-loaded.conf"; then
     python3 "$TMP_DIR/nginx-route.py" rollback "$TMP_DIR/nginx-plan.json"
     if nginx -t; then systemctl reload nginx || true; fi
     fail 'Nginx did not load the CryptoSniper location snippet; config restored.'

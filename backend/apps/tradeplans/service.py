@@ -15,7 +15,7 @@ def _normalized(data):
     return {
         name: (
             item.pk
-            if name in {"account", "market", "origin_signal"}
+            if name in {"account", "market", "origin_signal"} and item is not None
             else str(item)
             if item is not None and hasattr(item, "as_tuple")
             else item

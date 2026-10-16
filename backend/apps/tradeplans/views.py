@@ -15,102 +15,128 @@ from .service import approve_plan, create_draft, update_draft
 
 
 def owned(user, pk):
-    return get_object_or_404(TradePlan.objects.select_related(
-        "market", "market__exchange", "exchange_account"
-    ), owner=user, pk=pk)
+    return get_object_or_404(
+        TradePlan.objects.select_related("market", "market__exchange", "exchange_account"),
+        owner=user,
+        pk=pk,
+    )
 
 
 @login_required
 @never_cache
 @require_GET
 def list_plans(request):
-    plans = TradePlan.objects.filter(owner=request.user).select_related("market", "exchange_account")[:100]
-    return render(request, "tradeplans/list.html", {"plans":plans, "nav":"manual"})
+    plans = TradePlan.objects.filter(owner=request.user).select_related(
+        "market", "exchange_account"
+    )[:100]
+    return render(request, "tradeplans/list.html", {"plans": plans, "nav": "manual"})
 
 
 def _form_context(form, request, *, plan=None):
     accounts = list(form.fields["account"].queryset)
     markets = list(form.fields["market"].queryset.select_related("exchange"))
     form.fields["account"].widget.attrs["data-accounts"] = "1"
-    return {"form":form, "accounts":accounts, "markets":markets, "plan":plan,
-            "nav":"manual"}
+    return {"form": form, "accounts": accounts, "markets": markets, "plan": plan, "nav": "manual"}
 
 
 @login_required
 @never_cache
 @require_http_methods(["GET", "POST"])
 def new_plan(request):
-    form=ManualTradeForm(request.user, request.POST if request.method=="POST" else None)
-    if request.method=="POST" and form.is_valid():
+    form = ManualTradeForm(request.user, request.POST if request.method == "POST" else None)
+    if request.method == "POST" and form.is_valid():
         try:
             plan, _ = create_draft(request.user, form.cleaned_data)
             return redirect("manual-preview", pk=plan.pk)
         except (ValidationError, IntegrityError) as error:
             form.add_error(None, str(error))
-    return render(request,"tradeplans/form.html",_form_context(form, request))
+    return render(request, "tradeplans/form.html", _form_context(form, request))
 
 
 @login_required
 @never_cache
 @require_http_methods(["GET", "POST"])
 def edit_plan(request, pk):
-    plan=owned(request.user,pk)
-    if plan.status!=TradePlan.Status.DRAFT:
-        return redirect("manual-preview",pk=pk)
-    initial={
-        "account":plan.exchange_account_id, "market":plan.market_id,
-        "source":"manual", "side":plan.side, "entry_price":plan.entry_price,
-        "stop_loss":plan.stop_loss, "tp1":plan.tp1, "tp2":plan.tp2, "tp3":plan.tp3,
-        "capital":plan.capital,"leverage":plan.leverage,
-        "trailing_sl":plan.trailing_sl,"percentage_trailing":plan.percentage_trailing,
-        "trailing_distance":plan.trailing_distance,"client_token":plan.client_token
+    plan = owned(request.user, pk)
+    if plan.status != TradePlan.Status.DRAFT:
+        return redirect("manual-preview", pk=pk)
+    initial = {
+        "account": plan.exchange_account_id,
+        "market": plan.market_id,
+        "source": "manual",
+        "side": plan.side,
+        "entry_price": plan.entry_price,
+        "stop_loss": plan.stop_loss,
+        "tp1": plan.tp1,
+        "tp2": plan.tp2,
+        "tp3": plan.tp3,
+        "capital": plan.capital,
+        "leverage": plan.leverage,
+        "trailing_sl": plan.trailing_sl,
+        "percentage_trailing": plan.percentage_trailing,
+        "trailing_distance": plan.trailing_distance,
+        "client_token": plan.client_token,
     }
-    form=ManualTradeForm(request.user,request.POST if request.method=="POST" else None,initial=initial)
-    if request.method=="POST" and form.is_valid():
+    form = ManualTradeForm(
+        request.user, request.POST if request.method == "POST" else None, initial=initial
+    )
+    if request.method == "POST" and form.is_valid():
         try:
-            expected=int(request.POST.get("revision","0"))
-            update_draft(plan,form.cleaned_data,expected)
-            return redirect("manual-preview",pk=pk)
+            expected = int(request.POST.get("revision", "0"))
+            update_draft(plan, form.cleaned_data, expected)
+            return redirect("manual-preview", pk=pk)
         except (ValidationError, ValueError) as error:
-            form.add_error(None,str(error))
-    return render(request,"tradeplans/form.html",_form_context(form,request,plan=plan))
+            form.add_error(None, str(error))
+    return render(request, "tradeplans/form.html", _form_context(form, request, plan=plan))
 
 
 @login_required
 @never_cache
 @require_GET
-def preview_plan(request,pk):
-    plan=owned(request.user,pk)
-    return render(request,"tradeplans/preview.html",{"plan":plan, "nav":"manual",
-                    "snapshot":plan.approved_snapshot if plan.status=="ready" else plan.preview})
+def preview_plan(request, pk):
+    plan = owned(request.user, pk)
+    return render(
+        request,
+        "tradeplans/preview.html",
+        {
+            "plan": plan,
+            "nav": "manual",
+            "snapshot": plan.approved_snapshot if plan.status == "ready" else plan.preview,
+        },
+    )
 
 
 @login_required
 @require_POST
-def confirm_plan(request,pk):
-    plan=owned(request.user,pk)
+def confirm_plan(request, pk):
+    plan = owned(request.user, pk)
     try:
-        revision=int(request.POST.get("revision","0"))
-        approve_plan(request.user,plan.pk,revision)
-        messages.success(request,"برنامه تأیید و Snapshot ثابت ثبت شد؛ هیچ سفارشی ارسال نشد.")
-    except (ValueError,ValidationError) as error:
-        messages.error(request,str(error))
-    return redirect("manual-preview",pk=pk)
+        revision = int(request.POST.get("revision", "0"))
+        approve_plan(request.user, plan.pk, revision)
+        messages.success(request, "برنامه تأیید و Snapshot ثابت ثبت شد؛ هیچ سفارشی ارسال نشد.")
+    except (ValueError, ValidationError) as error:
+        messages.error(request, str(error))
+    return redirect("manual-preview", pk=pk)
 
 
 def _serialized(plan):
-    return {"id":plan.pk,"status":plan.status,"revision":plan.revision,
-            "market_id":plan.market_id,"account_id":plan.exchange_account_id,
-            "client_token":str(plan.client_token),
-            "snapshot":plan.approved_snapshot if plan.status=="ready" else plan.preview,
-            "orders_submitted":0}
+    return {
+        "id": plan.pk,
+        "status": plan.status,
+        "revision": plan.revision,
+        "market_id": plan.market_id,
+        "account_id": plan.exchange_account_id,
+        "client_token": str(plan.client_token),
+        "snapshot": plan.approved_snapshot if plan.status == "ready" else plan.preview,
+        "orders_submitted": 0,
+    }
 
 
 @session_api_required
 @never_cache
 @require_GET
-def api_plan(request,pk):
-    return JsonResponse({"plan":_serialized(owned(request.user,pk))})
+def api_plan(request, pk):
+    return JsonResponse({"plan": _serialized(owned(request.user, pk))})
 
 
 @session_api_required
@@ -119,39 +145,47 @@ def api_plan(request,pk):
 def api_create(request):
     try:
         import json
-        if request.content_type!="application/json":
-            return JsonResponse({"error":"application/json لازم است"},status=415)
-        body=json.loads(request.body)
-        if not isinstance(body,dict):
+
+        if request.content_type != "application/json":
+            return JsonResponse({"error": "application/json لازم است"}, status=415)
+        body = json.loads(request.body)
+        if not isinstance(body, dict):
             raise ValueError("invalid json")
-        form=ManualTradeForm(request.user,body)
+        form = ManualTradeForm(request.user, body)
         if not form.is_valid():
-            return JsonResponse({"errors":form.errors.get_json_data()},status=400)
-        plan, created=create_draft(request.user,form.cleaned_data)
-        return JsonResponse({"plan":_serialized(plan),"created":created},status=201 if created else 200)
-    except (ValueError,ValidationError,IntegrityError) as e:
-        return JsonResponse({"error":str(e)},status=400)
+            return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
+        plan, created = create_draft(request.user, form.cleaned_data)
+        return JsonResponse(
+            {"plan": _serialized(plan), "created": created}, status=201 if created else 200
+        )
+    except (ValueError, ValidationError, IntegrityError) as e:
+        return JsonResponse({"error": str(e)}, status=400)
 
 
 @session_api_required
 @never_cache
 @require_http_methods(["POST"])
-def api_confirm(request,pk):
+def api_confirm(request, pk):
     import json
-    owned(request.user,pk)
+
+    owned(request.user, pk)
     try:
-        body=json.loads(request.body) if request.content_type=="application/json" else request.POST
-        revision=int(body.get("revision",0))
-        plan=approve_plan(request.user,pk,revision)
-        return JsonResponse({"plan":_serialized(plan)})
-    except (ValueError,ValidationError) as e:
-        return JsonResponse({"error":str(e)},status=400)
+        body = (
+            json.loads(request.body) if request.content_type == "application/json" else request.POST
+        )
+        revision = int(body.get("revision", 0))
+        plan = approve_plan(request.user, pk, revision)
+        return JsonResponse({"plan": _serialized(plan)})
+    except (ValueError, ValidationError) as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
 
 @session_api_required
 @never_cache
 @require_http_methods(["POST"])
 def api_edit(request, pk):
     import json
+
     plan = owned(request.user, pk)
     if request.content_type != "application/json":
         return JsonResponse({"error": "application/json لازم است"}, status=415)

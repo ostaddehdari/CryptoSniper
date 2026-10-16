@@ -9,15 +9,18 @@ from django.db.models import Q
 
 class TradePlan(models.Model):
     """Owner-controlled paper-only intent. Absolutely no exchange order is placed."""
+
     class Status(models.TextChoices):
         DRAFT = "draft", "پیش‌نویس"
         READY = "ready", "تأییدشده برای بررسی"
-    
+
     class Side(models.TextChoices):
         LONG = "long", "خرید / Long"
         SHORT = "short", "فروش / Short"
 
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="trade_plans")
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="trade_plans"
+    )
     exchange_account = models.ForeignKey("exchanges.UserExchangeAccount", on_delete=models.PROTECT)
     market = models.ForeignKey("exchanges.ExchangeMarket", on_delete=models.PROTECT)
     client_token = models.UUIDField(default=uuid.uuid4)
@@ -29,8 +32,9 @@ class TradePlan(models.Model):
     tp1 = models.DecimalField(max_digits=32, decimal_places=16)
     tp2 = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
     tp3 = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
-    capital = models.DecimalField(max_digits=32, decimal_places=16,
-                                  validators=[MinValueValidator(Decimal("0.00000001"))])
+    capital = models.DecimalField(
+        max_digits=32, decimal_places=16, validators=[MinValueValidator(Decimal("0.00000001"))]
+    )
     leverage = models.DecimalField(max_digits=10, decimal_places=4, default=Decimal("1"))
     trailing_sl = models.BooleanField(default=False)
     percentage_trailing = models.BooleanField(default=False)
@@ -45,9 +49,13 @@ class TradePlan(models.Model):
     class Meta:
         ordering = ("-created_at",)
         constraints = [
-            models.UniqueConstraint(fields=("owner", "client_token"), name="tradeplan_owner_token_unique"),
+            models.UniqueConstraint(
+                fields=("owner", "client_token"), name="tradeplan_owner_token_unique"
+            ),
             models.CheckConstraint(condition=Q(capital__gt=0), name="tradeplan_capital_positive"),
-            models.CheckConstraint(condition=Q(leverage__gte=1), name="tradeplan_leverage_positive"),
+            models.CheckConstraint(
+                condition=Q(leverage__gte=1), name="tradeplan_leverage_positive"
+            ),
         ]
 
     def __str__(self):

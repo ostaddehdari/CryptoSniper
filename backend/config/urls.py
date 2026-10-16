@@ -3,9 +3,9 @@ from apps.core import views
 from apps.core.health import dependency_status
 from apps.exchanges import views as exchange_views
 from apps.marketdata import views as market_views
+from apps.marketdata import watchlists as watchlist_views
 from apps.tradeplans import context as trade_context
 from apps.tradeplans import views as plan_views
-from apps.marketdata import watchlists as watchlist_views
 from django.http import JsonResponse
 from django.urls import path
 
@@ -75,7 +75,9 @@ urlpatterns = [
     path("api/v1/manual/context/", trade_context.manual_context, name="manual-context"),
     path("api/v1/manual/plans/", plan_views.api_create, name="api-manual-create"),
     path("api/v1/manual/plans/<int:pk>/", plan_views.api_plan, name="api-manual-detail"),
-    path("api/v1/manual/plans/<int:pk>/confirm/", plan_views.api_confirm, name="api-manual-confirm"),
+    path(
+        "api/v1/manual/plans/<int:pk>/confirm/", plan_views.api_confirm, name="api-manual-confirm"
+    ),
     path("api/v1/manual/plans/<int:pk>/edit/", plan_views.api_edit, name="api-manual-edit"),
     path("manual/", plan_views.list_plans, name="manual-list"),
     path("manual/new/", plan_views.new_plan, name="manual-new"),

@@ -6,31 +6,59 @@ from apps.exchanges.models import ExchangeMarket, UserExchangeAccount
 
 
 class ManualTradeForm(forms.Form):
-    account = forms.ModelChoiceField(label="حساب صرافی", queryset=UserExchangeAccount.objects.none())
+    account = forms.ModelChoiceField(
+        label="حساب صرافی", queryset=UserExchangeAccount.objects.none()
+    )
     market = forms.ModelChoiceField(label="ارز و جفت‌ارز", queryset=ExchangeMarket.objects.none())
     source = forms.ChoiceField(label="منبع", choices=[("manual", "ورود دستی")])
-    side = forms.ChoiceField(label="جهت معامله", choices=[("long", "Long / خرید"), ("short", "Short / فروش")])
-    entry_price = forms.DecimalField(label="قیمت ورود", max_digits=32, decimal_places=16, min_value=0.0000000000000001)
-    tp1 = forms.DecimalField(label="TP1", max_digits=32, decimal_places=16, min_value=0.0000000000000001)
-    tp2 = forms.DecimalField(label="TP2", max_digits=32, decimal_places=16, min_value=0.0000000000000001, required=False)
-    tp3 = forms.DecimalField(label="TP3", max_digits=32, decimal_places=16, min_value=0.0000000000000001, required=False)
-    stop_loss = forms.DecimalField(label="حد ضرر (SL)", max_digits=32, decimal_places=16, min_value=0.0000000000000001)
-    capital = forms.DecimalField(label="مبلغ سرمایه (به ارز Quote)", max_digits=32, decimal_places=16, min_value=0.0000000000000001)
-    leverage = forms.DecimalField(label="اهرم", max_digits=10, decimal_places=4, min_value=1, initial=1)
+    side = forms.ChoiceField(
+        label="جهت معامله", choices=[("long", "Long / خرید"), ("short", "Short / فروش")]
+    )
+    entry_price = forms.DecimalField(
+        label="قیمت ورود", max_digits=32, decimal_places=16, min_value=0.0000000000000001
+    )
+    tp1 = forms.DecimalField(
+        label="TP1", max_digits=32, decimal_places=16, min_value=0.0000000000000001
+    )
+    tp2 = forms.DecimalField(
+        label="TP2", max_digits=32, decimal_places=16, min_value=0.0000000000000001, required=False
+    )
+    tp3 = forms.DecimalField(
+        label="TP3", max_digits=32, decimal_places=16, min_value=0.0000000000000001, required=False
+    )
+    stop_loss = forms.DecimalField(
+        label="حد ضرر (SL)", max_digits=32, decimal_places=16, min_value=0.0000000000000001
+    )
+    capital = forms.DecimalField(
+        label="مبلغ سرمایه (به ارز Quote)",
+        max_digits=32,
+        decimal_places=16,
+        min_value=0.0000000000000001,
+    )
+    leverage = forms.DecimalField(
+        label="اهرم", max_digits=10, decimal_places=4, min_value=1, initial=1
+    )
     trailing_sl = forms.BooleanField(label="Trailing SL پله‌ای", required=False)
     percentage_trailing = forms.BooleanField(label="Percentage Trailing", required=False)
-    trailing_distance = forms.DecimalField(label="فاصله trailing (%)", max_digits=8, decimal_places=4,
-                                          min_value=0.001, max_value=99, initial=1)
+    trailing_distance = forms.DecimalField(
+        label="فاصله trailing (%)",
+        max_digits=8,
+        decimal_places=4,
+        min_value=0.001,
+        max_value=99,
+        initial=1,
+    )
     client_token = forms.UUIDField(widget=forms.HiddenInput)
 
     def __init__(self, owner, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["account"].queryset = UserExchangeAccount.objects.for_user(owner).filter(
-            status__in=("connected", "restricted"), permissions__can_read=True
-        ).select_related("exchange")
+        self.fields["account"].queryset = (
+            UserExchangeAccount.objects.for_user(owner)
+            .filter(status__in=("connected", "restricted"), permissions__can_read=True)
+            .select_related("exchange")
+        )
         self.fields["market"].queryset = ExchangeMarket.objects.filter(
-            exchange_id__in=self.fields["account"].queryset.values("exchange_id"),
-            active=True
+            exchange_id__in=self.fields["account"].queryset.values("exchange_id"), active=True
         ).select_related("exchange")
         for key, field in self.fields.items():
             if key != "client_token":

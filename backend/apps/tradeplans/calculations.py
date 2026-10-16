@@ -1,6 +1,7 @@
 """Deterministic Decimal-only manual trade preview; never sends exchange orders."""
+
 from datetime import timedelta
-from decimal import Decimal, ROUND_DOWN
+from decimal import ROUND_DOWN, Decimal
 
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -94,27 +95,36 @@ def build_preview(data, now=None):
     required_cash = notional / leverage + entry_fee
     if required_cash > capital:
         raise ValidationError("سرمایه اختصاص‌یافته برای کارمزد و حجم کافی نیست.")
-    balances = (
-        BalanceSnapshot.objects.filter(exchange_account=account, asset=market.quote_asset)
-        .order_by("-captured_at")
-    )
+    balances = BalanceSnapshot.objects.filter(
+        exchange_account=account, asset=market.quote_asset
+    ).order_by("-captured_at")
     latest = balances.first()
     if not latest or latest.captured_at < now - timedelta(minutes=15):
         raise ValidationError("موجودی Quote تازه نیست؛ ابتدا همگام‌سازی حساب را انجام دهید.")
     if latest.free_balance < required_cash:
         raise ValidationError("موجودی آزاد Quote برای سرمایه انتخاب‌شده کافی نیست.")
-    percentage = [Decimal("100")] if len(targets) == 1 else (
-        [Decimal("10"), Decimal("90")] if len(targets) == 2 else
-        [Decimal("10"), Decimal("10"), Decimal("80")]
+    percentage = (
+        [Decimal("100")]
+        if len(targets) == 1
+        else (
+            [Decimal("10"), Decimal("90")]
+            if len(targets) == 2
+            else [Decimal("10"), Decimal("10"), Decimal("80")]
+        )
     )
     trailing_distance = data.get("trailing_distance", Decimal("1"))
     if data.get("percentage_trailing") and not (ZERO < trailing_distance < HUNDRED):
         raise ValidationError("فاصله Percentage Trailing باید بین صفر و صد باشد.")
     if trailing_distance is None:
         trailing_distance = Decimal("1")
-    tp_info = [{"price": text(tp), "share_percent": text(percentage[i]),
-                "distance_percent": text(abs((tp-entry)/entry) * HUNDRED)}
-               for i, tp in enumerate(targets)]
+    tp_info = [
+        {
+            "price": text(tp),
+            "share_percent": text(percentage[i]),
+            "distance_percent": text(abs((tp - entry) / entry) * HUNDRED),
+        }
+        for i, tp in enumerate(targets)
+    ]
     risk_fraction = abs((sl - entry) / entry) * HUNDRED
     return {
         "schema": "cryptosniper.tradeplan.preview.v1",
@@ -143,8 +153,11 @@ def build_preview(data, now=None):
         "trailing_sl": bool(data.get("trailing_sl")),
         "percentage_trailing": bool(data.get("percentage_trailing")),
         "trailing_distance_percent": text(trailing_distance),
-        "exit_policy": ("percentage_trailing_only_after_tp1" if data.get("percentage_trailing")
-                        else "scheduled_targets"),
+        "exit_policy": (
+            "percentage_trailing_only_after_tp1"
+            if data.get("percentage_trailing")
+            else "scheduled_targets"
+        ),
         "calculated_at": now.isoformat(),
         "market_metadata_synced_at": market.synced_at.isoformat() if market.synced_at else None,
         "balance_captured_at": latest.captured_at.isoformat(),

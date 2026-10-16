@@ -1,4 +1,55 @@
-{% extends 'shell.html' %}{% block title %}Paper #{{ trade.pk }} | CryptoSniper{% endblock %}{% block breadcrumb %}Paper / جزئیات{% endblock %}{% block content %}
+{% extends 'shell.html' %}{% block title %}Paper #{{ trade.pk }} | CryptoSniper
+{% if protection %}
+<section class="panel manual-target-panel">
+<h2>پوشش خروج و وضعیت Trailing</h2>
+<p class="muted"><strong>فقط Paper · Stop تحت مدیریت Worker، نه سفارش Native صرافی.</strong> هنگام قطعی سرور یا فید، خروج تضمین نمی‌شود. معامله واقعی غیرفعال است.</p>
+<dl class="manual-stats">
+<div><dt>پوشش</dt><dd>{{ protection.get_coverage_display }}</dd></div>
+<div><dt>Stop اولیه</dt><dd>{{ protection.initial_stop }}</dd></div>
+<div><dt>Stop مؤثر</dt><dd>{{ protection.effective_stop }}</dd></div>
+<div><dt>آخرین قیمت پردازش‌شده</dt><dd>{{ protection.last_price|default:'ناموجود' }}</dd></div>
+<div><dt>فعال‌سازی Percentage</dt><dd>{% if protection.percentage_active %}فعال{% else %}منتظر {{ protection.trigger_price }}{% endif %}</dd></div>
+<div><dt>بیشترین قیمت از فعال‌سازی</dt><dd>{{ protection.high_water|default:'—' }}</dd></div>
+<div><dt>مقدار باقی‌مانده</dt><dd>{{ position.quantity|default:'0' }}</dd></div>
+</dl>
+<div class="market-table-wrap"><table class="market-table"><thead><tr><th>هدف</th><th>قیمت</th><th>سهم</th><th>تخصیص</th><th>اجراشده</th><th>وضعیت</th></tr></thead><tbody>
+{% for target in targets %}<tr><td>TP{{ target.position }}</td><td>{{ target.price }}</td><td>{{ target.share_percent }}٪</td><td>{{ target.allocated_quantity }}</td><td>{{ target.filled_quantity }}</td><td>{{ target.get_state_display }}</td></tr>{% endfor %}
+</tbody></table></div>
+{% if trade.state == 'open' or trade.state == 'partially_filled' %}
+<div class="exit-controls">
+<form method="post" action="{% url 'paper-stop' trade.pk %}">{% csrf_token %}
+<h3>تغییر Stop</h3><input type="hidden" name="version" value="{{ protection.version }}">
+<label>روش <select class="input" name="mode"><option value="breakeven">انتقال به Entry</option><option value="previous_tp">انتقال به TP قبلی</option><option value="manual">مقدار دستی</option></select></label>
+<label>قیمت دستی<input class="input" type="number" step="any" name="price" placeholder="فقط برای حالت دستی"></label>
+<label>علت تغییر<input class="input" name="reason" minlength="3" required></label>
+<button class="button button-soft" type="submit">ثبت Stop جدید</button></form>
+<form method="post" action="{% url 'paper-trailing' trade.pk %}">{% csrf_token %}
+<h3>Trailing</h3><input type="hidden" name="version" value="{{ protection.version }}">
+<label><input type="checkbox" name="step_enabled" {% if protection.step_enabled %}checked{% endif %}> Trailing پله‌ای</label>
+<label><input type="checkbox" name="percentage_enabled" {% if protection.percentage_enabled %}checked{% endif %}> Percentage Trailing (Trigger = TP1)</label>
+<label>فاصله درصدی<input class="input" type="number" step="0.001" min="0.001" max="99.999" name="distance_percent" value="{{ protection.distance_percent }}" required></label>
+<label>علت تغییر<input class="input" name="reason" minlength="3" required></label>
+<button class="button button-soft" type="submit">به‌روزرسانی قوانین Paper</button></form>
+</div>
+{% if not protection.paper_scenario %}
+<form method="post" action="{% url 'paper-scenario' trade.pk %}">{% csrf_token %}
+<input type="hidden" name="version" value="{{ protection.version }}">
+<button class="button button-soft" type="submit">شروع سناریوی قیمت دستی Paper (توقف فید خودکار همین معامله)</button>
+</form>
+{% else %}
+<form method="post" action="{% url 'paper-tick' trade.pk %}" class="paper-price-form">{% csrf_token %}
+<label>قیمت آزمایشی بعدی <input type="number" step="any" min="0.00000001" name="price" required class="input" placeholder="مثلاً 70000 یا 69300"></label>
+<button class="button button-primary" type="submit">ارسال Tick آزمایشی به موتور Paper</button>
+<p class="muted">این قیمت ساختگی است و فقط Position شبیه‌ساز همین حساب را تغییر می‌دهد. برای بازگشت به فید خودکار، معامله Paper جدیدی ایجاد کنید.</p>
+</form>
+{% endif %}
+{% endif %}
+</section>
+<section class="panel manual-target-panel"><h2>خروج‌های ثبت‌شده</h2>
+{% for fill in exit_fills %}<div class="service-row"><span>{{ fill.reason }} · {{ fill.quantity }} @ {{ fill.price }}</span><span>کارمزد {{ fill.fee }}</span></div>{% empty %}<p class="muted">هنوز خروجی ثبت نشده است.</p>{% endfor %}
+</section>
+{% else %}<section class="panel manual-target-panel"><p>طرح حفاظت در انتظار اولین Fill ورودی است.</p></section>{% endif %}
+{% endblock %}{% block breadcrumb %}Paper / جزئیات{% endblock %}{% block content %}
 <div class="page-heading"><div><span class="eyebrow">DURABLE PAPER POSITION</span><h1>معامله #{{ trade.pk }} — {{ trade.market.symbol }}</h1><p class="muted">{{ trade.get_state_display }} · Spot Long · شبیه‌ساز؛ بدون Binance Live</p></div><a class="button button-soft" href="{% url 'paper-trades' %}">همه معاملات</a></div>
 {% if messages %}{% for msg in messages %}<div class="notice">{{ msg }}</div>{% endfor %}{% endif %}
 <div class="manual-preview-grid"><article class="panel"><h2>اطلاعات سفارش</h2><dl class="manual-stats"><div><dt>حجم سفارش</dt><dd>{{ trade.quantity }}</dd></div><div><dt>حجم اجراشده</dt><dd>{{ trade.filled_quantity }}</dd></div><div><dt>قیمت ورود برنامه</dt><dd>{{ trade.entry_price }}</dd></div><div><dt>موجودی رزروشده</dt><dd>{{ trade.capital_reserved }}</dd></div><div><dt>Mode</dt><dd>PAPER</dd></div></dl></article>

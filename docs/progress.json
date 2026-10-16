@@ -133,13 +133,25 @@
     "S04": {
       "status": "partial",
       "completed_works": [],
-      "checks": [],
+      "checks": [
+        {
+          "name": "Stage04 PostgreSQL/Redis/Celery/Chromium CI",
+          "status": "passed",
+          "run_id": 38914310940,
+          "tested_commit": "c6914089372791a973f062f68dad4264bb78094a",
+          "pytest_passed": 57,
+          "artifact_id": 12051169300
+        }
+      ],
       "commit_shas": [],
       "blockers": [
-        "Stage 03 first-provider live read/permission verification has not been performed.",
-        "Stage 04 production deployment not yet verified."
+        "S03-W04 real Binance API permissions test not yet performed (no credential provided).",
+        "24-hour percentage change and Price Alert indicator not yet implemented; Price Alert engine is deferred to S12.",
+        "S04 operator-host deployment not yet verified."
       ],
-      "implementation": "five workstreams coded; CI and provider-dependent verification pending"
+      "implementation": "Five Stage04 workstreams committed and CI-checked; S04 remains partial for listed acceptance gaps.",
+      "release_tag": "stage04-v0.4.0rc1-deploy",
+      "release_commit": "c6914089372791a973f062f68dad4264bb78094a"
     },
     "S05": {
       "status": "not_started",

@@ -1,0 +1,53 @@
+name: Build Stage04 installation files
+on:
+  push:
+    paths:
+      - .github/workflows/release-stage04.yml
+      - scripts/cryptosniper-stage04-run.sh
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build pinned cumulative source ZIP and versioned installer
+        shell: bash
+        run: |
+          set -euo pipefail
+          PIN=c6914089372791a973f062f68dad4264bb78094a
+          mkdir -p dist
+          git cat-file -e "$PIN^{commit}"
+          git archive --format=zip --prefix=CryptoSniper/ -o dist/CryptoSniper-Stage04-v0.4.0rc1.zip "$PIN"
+          cp scripts/cryptosniper-stage04-run.sh dist/cryptosniper-stage04-run.sh
+          SHA=$(sha256sum dist/CryptoSniper-Stage04-v0.4.0rc1.zip | awk '{print $1}')
+          sed -i "s/__SOURCE_COMMIT__/$PIN/g" dist/cryptosniper-stage04-run.sh
+          sed -i "s/__STAGE04_ARCHIVE_SHA256__/$SHA/g" dist/cryptosniper-stage04-run.sh
+          sed -i "s/__BLOB_PYPROJECT__/$(git rev-parse "$PIN:pyproject.toml")/g" dist/cryptosniper-stage04-run.sh
+          sed -i "s/__BLOB_UVLOCK__/$(git rev-parse "$PIN:uv.lock")/g" dist/cryptosniper-stage04-run.sh
+          sed -i "s/__BLOB_PROGRESS__/$(git rev-parse "$PIN:docs/progress.json")/g" dist/cryptosniper-stage04-run.sh
+          sed -i "s/__BLOB_FEEDS__/$(git rev-parse "$PIN:backend/apps/marketdata/feeds.py")/g" dist/cryptosniper-stage04-run.sh
+          ! grep -Eq '__[A-Z0-9_]+__' dist/cryptosniper-stage04-run.sh
+          chmod +x dist/cryptosniper-stage04-run.sh
+          bash -n dist/cryptosniper-stage04-run.sh
+          bash dist/cryptosniper-stage04-run.sh --check dist/CryptoSniper-Stage04-v0.4.0rc1.zip
+          sha256sum dist/CryptoSniper-Stage04-v0.4.0rc1.zip dist/cryptosniper-stage04-run.sh | tee dist/SHA256SUMS.txt
+      - name: Publish two exact installation assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG=stage04-v0.4.0rc1-deploy
+          PIN=c6914089372791a973f062f68dad4264bb78094a
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+          else
+            gh release create "$TAG" dist/* --target "$PIN" --prerelease \
+              --title "CryptoSniper Stage 04 v0.4.0rc1 - cumulative preview" \
+              --notes "Includes Stage01-04 source and exact Ubuntu installer. Stage03 Binance credential permission verification remains pending. Paper and display-only; no real orders. CI passed: https://github.com/ostaddehdari/CryptoSniper/actions/runs/38914310940"
+          fi
+          gh release view "$TAG" --json assets,url

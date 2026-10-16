@@ -26,7 +26,7 @@ import django  # noqa: E402
 
 django.setup()
 from apps.core.models import ServiceProbe  # noqa: E402
-from apps.exchanges.models import Exchange, UserExchangeAccount  # noqa: E402
+from apps.exchanges.models import Exchange, ExchangeMarket, UserExchangeAccount  # noqa: E402
 from apps.tradeplans.models import TradePlan  # noqa: E402
 from apps.trading.models import Trade  # noqa: E402
 from django.conf import settings  # noqa: E402
@@ -183,9 +183,13 @@ def main():
                 )
                 page.locator('[name="account_id"]').select_option(str(account.pk))
                 page.locator('[name="market_id"]').select_option(
-                    page.locator('[name="market_id"] option')
-                    .filter(has_text="BTC/USDT")
-                    .first.get_attribute("value")
+                    str(
+                        ExchangeMarket.objects.get(
+                            exchange=account.exchange,
+                            symbol="BTC/USDT",
+                            market_type="spot",
+                        ).pk
+                    )
                 )
                 page.locator('[name="entry_price"]').fill("65000")
                 page.locator('[name="stop_loss"]').fill("60000")

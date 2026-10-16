@@ -37,7 +37,6 @@ class SignalSource(models.Model):
             raise ValidationError({"name": "نام منبع لازم است."})
 
 
-
 class RawSignal(models.Model):
     """Immutable original input. New versions are append-only RawSignalRevision rows."""
 
@@ -165,7 +164,6 @@ class Signal(models.Model):
                 raise ValidationError("بازار متعلق به این اتصال نیست.")
             if self.exchange_account.owner_id != self.owner_id:
                 raise ValidationError("حساب صرافی متعلق به کاربر دیگری است.")
-
 
 
 class SignalTarget(models.Model):

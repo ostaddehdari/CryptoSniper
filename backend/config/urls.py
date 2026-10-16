@@ -76,6 +76,7 @@ urlpatterns = [
     path("api/v1/manual/plans/", plan_views.api_create, name="api-manual-create"),
     path("api/v1/manual/plans/<int:pk>/", plan_views.api_plan, name="api-manual-detail"),
     path("api/v1/manual/plans/<int:pk>/confirm/", plan_views.api_confirm, name="api-manual-confirm"),
+    path("api/v1/manual/plans/<int:pk>/edit/", plan_views.api_edit, name="api-manual-edit"),
     path("manual/", plan_views.list_plans, name="manual-list"),
     path("manual/new/", plan_views.new_plan, name="manual-new"),
     path("manual/<int:pk>/", plan_views.preview_plan, name="manual-preview"),

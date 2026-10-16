@@ -1,4 +1,5 @@
 """Transactional Inbox transitions, review evidence, idempotency, and audit."""
+
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
@@ -9,7 +10,7 @@ from apps.accounts.audit import record_audit
 from apps.exchanges.models import ExchangeMarket, UserExchangeAccount
 
 from .ingestion import ingest
-from .models import RawSignalRevision, Signal, SignalRevision, SignalTarget
+from .models import Signal, SignalRevision, SignalTarget
 from .sources import InboundEnvelope
 
 
@@ -26,8 +27,7 @@ def snapshot(signal):
         "entry": str(signal.entry_price) if signal.entry_price is not None else None,
         "stop_loss": str(signal.stop_loss) if signal.stop_loss is not None else None,
         "targets": [
-            {"position": t.position, "price": str(t.price),
-             "share_percent": str(t.share_percent)}
+            {"position": t.position, "price": str(t.price), "share_percent": str(t.share_percent)}
             for t in signal.targets.order_by("position")
         ],
         "technical_confidence": signal.technical_confidence,
@@ -40,23 +40,28 @@ def snapshot(signal):
 
 
 def _revision(signal, *, owner, reason):
-    SignalRevision.objects.create(signal=signal, revision=signal.revision,
-                                  actor=owner, reason=reason, snapshot=snapshot(signal))
+    SignalRevision.objects.create(
+        signal=signal,
+        revision=signal.revision,
+        actor=owner,
+        reason=reason,
+        snapshot=snapshot(signal),
+    )
 
 
 @transaction.atomic
 def receive_signal(owner, source, *, text, payload=None, external_id=""):
     raw, created, revised = ingest(
-        owner, source,
-        InboundEnvelope(text=text, payload=payload or {}, external_id=external_id)
+        owner, source, InboundEnvelope(text=text, payload=payload or {}, external_id=external_id)
     )
     signal, created_signal = Signal.objects.get_or_create(
         raw_signal=raw, defaults={"owner": owner, "source": source}
     )
     if created_signal:
         _revision(signal, owner=owner, reason="ورود متن اصلی")
-        record_audit("signal.received", user=owner, metadata={
-            "signal_id": signal.pk, "source_id": source.pk})
+        record_audit(
+            "signal.received", user=owner, metadata={"signal_id": signal.pk, "source_id": source.pk}
+        )
     elif revised and signal.status in {"new", "parsed", "needs_review"}:
         signal.status = Signal.Status.NEEDS_REVIEW
         signal.review_reason = "نسخه جدیدی از متن اصلی دریافت شده است."
@@ -67,14 +72,19 @@ def receive_signal(owner, source, *, text, payload=None, external_id=""):
 
 
 def _validate_structure(owner, data):
-    account = UserExchangeAccount.objects.for_user(owner).select_related(
-        "exchange"
-    ).filter(pk=data["account_id"]).first()
+    account = (
+        UserExchangeAccount.objects.for_user(owner)
+        .select_related("exchange")
+        .filter(pk=data["account_id"])
+        .first()
+    )
     if not account or account.status not in {"connected", "restricted"}:
         raise ValidationError("حساب صرافی مجاز و متصل نیست.")
-    market = ExchangeMarket.objects.select_related("exchange").filter(
-        pk=data["market_id"], exchange_id=account.exchange_id, active=True
-    ).first()
+    market = (
+        ExchangeMarket.objects.select_related("exchange")
+        .filter(pk=data["market_id"], exchange_id=account.exchange_id, active=True)
+        .first()
+    )
     if not market:
         raise ValidationError("بازار فعالِ متعلق به حساب پیدا نشد.")
     side = data["side"]
@@ -101,18 +111,25 @@ def _validate_structure(owner, data):
     for val in [entry, sl, *prices]:
         if val % market.price_step:
             raise ValidationError("قیمت‌ها باید مطابق Tick Size بازار باشند.")
-    weights = [Decimal("100")] if len(targets) == 1 else (
-        [Decimal("10"), Decimal("90")] if len(targets) == 2 else
-        [Decimal("10"), Decimal("10"), Decimal("80")]
+    weights = (
+        [Decimal("100")]
+        if len(targets) == 1
+        else (
+            [Decimal("10"), Decimal("90")]
+            if len(targets) == 2
+            else [Decimal("10"), Decimal("10"), Decimal("80")]
+        )
     )
     return account, market, list(zip(prices, weights))
 
 
 @transaction.atomic
 def update_parsed(owner, pk, *, expected_revision, data, reason):
-    signal = Signal.objects.select_for_update().select_related(
-        "raw_signal", "source"
-    ).get(owner=owner, pk=pk)
+    signal = (
+        Signal.objects.select_for_update()
+        .select_related("raw_signal", "source")
+        .get(owner=owner, pk=pk)
+    )
     if signal.revision != expected_revision:
         raise ValidationError("نسخه فرم قدیمی است؛ صفحه را تازه کنید.")
     if signal.status not in {"new", "parsed", "needs_review"}:
@@ -134,21 +151,26 @@ def update_parsed(owner, pk, *, expected_revision, data, reason):
     signal.full_clean()
     signal.save()
     signal.targets.all().delete()
-    SignalTarget.objects.bulk_create([
-        SignalTarget(signal=signal, position=i + 1, price=price, share_percent=share)
-        for i, (price, share) in enumerate(targets)
-    ])
+    SignalTarget.objects.bulk_create(
+        [
+            SignalTarget(signal=signal, position=i + 1, price=price, share_percent=share)
+            for i, (price, share) in enumerate(targets)
+        ]
+    )
     _revision(signal, owner=owner, reason=reason.strip())
-    record_audit("signal.revised", user=owner, metadata={
-        "signal_id": signal.pk, "revision": signal.revision})
+    record_audit(
+        "signal.revised", user=owner, metadata={"signal_id": signal.pk, "revision": signal.revision}
+    )
     return signal
 
 
 @transaction.atomic
 def transition(owner, pk, *, expected_revision, action, reason=""):
-    signal = Signal.objects.select_for_update().select_related(
-        "raw_signal", "source", "market", "exchange_account"
-    ).get(owner=owner, pk=pk)
+    signal = (
+        Signal.objects.select_for_update()
+        .select_related("raw_signal", "source", "market", "exchange_account")
+        .get(owner=owner, pk=pk)
+    )
     if signal.revision != expected_revision:
         raise ValidationError("نسخه سیگنال تغییر کرده است؛ صفحه را تازه کنید.")
     if action == "approve":
@@ -157,11 +179,17 @@ def transition(owner, pk, *, expected_revision, action, reason=""):
         if not signal.market_id or not signal.exchange_account_id:
             raise ValidationError("بازار یا حساب تأیید نشده است.")
         values = list(signal.targets.order_by("position").values("price"))
-        _validate_structure(owner, {
-            "account_id": signal.exchange_account_id, "market_id": signal.market_id,
-            "side": signal.side, "entry_price": signal.entry_price,
-            "stop_loss": signal.stop_loss, "targets": values,
-        })
+        _validate_structure(
+            owner,
+            {
+                "account_id": signal.exchange_account_id,
+                "market_id": signal.market_id,
+                "side": signal.side,
+                "entry_price": signal.entry_price,
+                "stop_loss": signal.stop_loss,
+                "targets": values,
+            },
+        )
         signal.status = Signal.Status.APPROVED
         signal.approved_snapshot = snapshot(signal)
         signal.approved_snapshot["status"] = Signal.Status.APPROVED
@@ -188,6 +216,9 @@ def transition(owner, pk, *, expected_revision, action, reason=""):
     signal.full_clean()
     signal.save()
     _revision(signal, owner=owner, reason=reason.strip() or "تأیید دستی")
-    record_audit("signal." + action, user=owner, metadata={
-        "signal_id": signal.pk, "revision": signal.revision})
+    record_audit(
+        "signal." + action,
+        user=owner,
+        metadata={"signal_id": signal.pk, "revision": signal.revision},
+    )
     return signal

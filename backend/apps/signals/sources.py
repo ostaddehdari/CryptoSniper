@@ -1,4 +1,5 @@
 """Versioned ingestion contract; no network, Telethon, AI, or parser is invoked."""
+
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -10,6 +11,7 @@ from .models import SignalSource
 @dataclass(frozen=True)
 class InboundEnvelope:
     """Raw input belongs to an explicitly owner-scoped source."""
+
     text: str
     payload: dict
     external_id: str = ""
@@ -28,9 +30,7 @@ def get_default_source(user, method=SignalSource.Method.MANUAL):
         SignalSource.Method.MANUAL: "ورود دستی من",
         SignalSource.Method.SMART_PASTE: "Smart Paste من",
     }[method]
-    source, _ = SignalSource.objects.get_or_create(
-        owner=user, name=name, method=method
-    )
+    source, _ = SignalSource.objects.get_or_create(owner=user, name=name, method=method)
     return source
 
 

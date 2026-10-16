@@ -1,13 +1,11 @@
 import json
-from datetime import datetime, time
+from datetime import datetime
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
-from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
@@ -23,7 +21,8 @@ def owned(user, pk):
     return get_object_or_404(
         Signal.objects.filter(owner=user).select_related(
             "source", "raw_signal", "market", "exchange_account"
-        ), pk=pk
+        ),
+        pk=pk,
     )
 
 
@@ -56,11 +55,16 @@ def filtered(user, params):
 @never_cache
 @require_GET
 def inbox(request):
-    return render(request, "signals/inbox.html", {
-        "nav": "inbox", "items": filtered(request.user, request.GET)[:100],
-        "statuses": Signal.Status.choices,
-        "methods": SignalSource.Method.choices,
-    })
+    return render(
+        request,
+        "signals/inbox.html",
+        {
+            "nav": "inbox",
+            "items": filtered(request.user, request.GET)[:100],
+            "statuses": Signal.Status.choices,
+            "methods": SignalSource.Method.choices,
+        },
+    )
 
 
 @login_required
@@ -95,11 +99,17 @@ def detail(request, pk):
     for target in item.targets.order_by("position"):
         initial[f"tp{target.position}"] = target.price
     form = ReviewForm(request.user, initial=initial)
-    return render(request, "signals/detail.html", {
-        "nav": "inbox", "item": item, "form": form,
-        "historical": item.history.order_by("-revision"),
-        "raw_revisions": item.raw_signal.revisions.order_by("-version"),
-    })
+    return render(
+        request,
+        "signals/detail.html",
+        {
+            "nav": "inbox",
+            "item": item,
+            "form": form,
+            "historical": item.history.order_by("-revision"),
+            "raw_revisions": item.raw_signal.revisions.order_by("-version"),
+        },
+    )
 
 
 @login_required
@@ -109,8 +119,13 @@ def edit(request, pk):
     form = ReviewForm(request.user, request.POST)
     if form.is_valid():
         try:
-            update_parsed(request.user, item.pk, expected_revision=form.cleaned_data["revision"],
-                          data=form.structured(), reason=form.cleaned_data["reason"])
+            update_parsed(
+                request.user,
+                item.pk,
+                expected_revision=form.cleaned_data["revision"],
+                data=form.structured(),
+                reason=form.cleaned_data["reason"],
+            )
             messages.success(request, "نسخه بازبینی‌شده ثبت شد.")
         except ValidationError as error:
             messages.error(request, "; ".join(error.messages))
@@ -125,9 +140,13 @@ def action(request, pk):
     item = owned(request.user, pk)
     try:
         revision = int(request.POST.get("revision", "0"))
-        transition(request.user, item.pk, expected_revision=revision,
-                   action=request.POST.get("action", ""),
-                   reason=request.POST.get("reason", ""))
+        transition(
+            request.user,
+            item.pk,
+            expected_revision=revision,
+            action=request.POST.get("action", ""),
+            reason=request.POST.get("reason", ""),
+        )
         messages.success(request, "وضعیت با ثبت تاریخچه تغییر کرد؛ سفارشی ارسال نشد.")
     except (ValueError, ValidationError) as error:
         messages.error(request, str(error))
@@ -136,12 +155,17 @@ def action(request, pk):
 
 def _serialize(item):
     return {
-        "id": item.pk, "status": item.status,
-        "revision": item.revision, "source_id": item.source_id,
+        "id": item.pk,
+        "status": item.status,
+        "revision": item.revision,
+        "source_id": item.source_id,
         "source_method": item.source.method,
-        "raw": {"id": item.raw_signal_id, "original_text": item.raw_signal.original_text,
-                "received_version": item.raw_signal.received_version,
-                "revisions": item.raw_signal.revision_number},
+        "raw": {
+            "id": item.raw_signal_id,
+            "original_text": item.raw_signal.original_text,
+            "received_version": item.raw_signal.received_version,
+            "revisions": item.raw_signal.revision_number,
+        },
         "structured": snapshot(item),
         "approved_snapshot": item.approved_snapshot if item.status == "approved" else None,
         "execution_enabled": False,
@@ -153,10 +177,20 @@ def _serialize(item):
 @require_GET
 def api_list(request):
     rows = filtered(request.user, request.GET)[:100]
-    return JsonResponse({"items": [{"id": item.pk, "status": item.status,
-                                   "source_method": item.source.method,
-                                   "revision": item.revision} for item in rows],
-                         "execution_enabled": False})
+    return JsonResponse(
+        {
+            "items": [
+                {
+                    "id": item.pk,
+                    "status": item.status,
+                    "source_method": item.source.method,
+                    "revision": item.revision,
+                }
+                for item in rows
+            ],
+            "execution_enabled": False,
+        }
+    )
 
 
 @session_api_required
@@ -191,12 +225,16 @@ def api_receive(request):
             return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
         source = get_default_source(request.user, form.cleaned_data["method"])
         signal, created, revised = receive_signal(
-            request.user, source, text=form.cleaned_data["text"],
+            request.user,
+            source,
+            text=form.cleaned_data["text"],
             payload=body.get("payload", {}),
             external_id=str(body.get("external_id", "")),
         )
-        return JsonResponse({"signal": _serialize(signal),
-                             "created": created, "revised": revised}, status=201 if created else 200)
+        return JsonResponse(
+            {"signal": _serialize(signal), "created": created, "revised": revised},
+            status=201 if created else 200,
+        )
     except ValidationError as error:
         return JsonResponse({"error": error.messages}, status=400)
 
@@ -211,8 +249,13 @@ def api_edit(request, pk):
         form = ReviewForm(request.user, body)
         if not form.is_valid():
             return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
-        signal = update_parsed(request.user, item.pk, expected_revision=form.cleaned_data["revision"],
-                               data=form.structured(), reason=form.cleaned_data["reason"])
+        signal = update_parsed(
+            request.user,
+            item.pk,
+            expected_revision=form.cleaned_data["revision"],
+            data=form.structured(),
+            reason=form.cleaned_data["reason"],
+        )
         return JsonResponse({"signal": _serialize(signal)})
     except ValidationError as error:
         return JsonResponse({"error": error.messages}, status=400)
@@ -225,8 +268,13 @@ def api_action(request, pk):
     item = owned(request.user, pk)
     try:
         body = _json_body(request)
-        signal = transition(request.user, item.pk, expected_revision=int(body.get("revision", 0)),
-                            action=body.get("action", ""), reason=str(body.get("reason", "")))
+        signal = transition(
+            request.user,
+            item.pk,
+            expected_revision=int(body.get("revision", 0)),
+            action=body.get("action", ""),
+            reason=str(body.get("reason", "")),
+        )
         return JsonResponse({"signal": _serialize(signal)})
     except (ValidationError, ValueError, TypeError) as error:
         return JsonResponse({"error": str(error)}, status=400)

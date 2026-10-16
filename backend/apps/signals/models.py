@@ -1,4 +1,5 @@
 """The three canonical signal ingress methods, no Telegram or AI adapter in S06."""
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -10,8 +11,9 @@ class SignalSource(models.Model):
         SMART_PASTE = "smart_paste", "چسباندن هوشمند"
         TELEGRAM = "telegram", "تلگرام (فقط Stage21)"
 
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
-                              related_name="signal_sources")
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="signal_sources"
+    )
     name = models.CharField(max_length=80)
     method = models.CharField(max_length=16, choices=Method.choices)
     enabled = models.BooleanField(default=True)
@@ -20,8 +22,9 @@ class SignalSource(models.Model):
     class Meta:
         ordering = ("method", "name", "pk")
         constraints = [
-            models.UniqueConstraint(fields=("owner", "method", "name"),
-                                    name="signal_source_owner_method_name_unique")
+            models.UniqueConstraint(
+                fields=("owner", "method", "name"), name="signal_source_owner_method_name_unique"
+            )
         ]
 
     def clean(self):
@@ -36,8 +39,10 @@ class SignalSource(models.Model):
 
 class RawSignal(models.Model):
     """Immutable original input. New versions are append-only RawSignalRevision rows."""
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
-                              related_name="raw_signals")
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="raw_signals"
+    )
     source = models.ForeignKey(SignalSource, on_delete=models.CASCADE, related_name="inputs")
     original_text = models.TextField()
     original_payload = models.JSONField(default=dict)
@@ -50,11 +55,15 @@ class RawSignal(models.Model):
     class Meta:
         ordering = ("-received_at",)
         constraints = [
-            models.UniqueConstraint(fields=("owner", "source", "checksum"),
-                                    name="rawsignal_owner_source_checksum_unique"),
-            models.UniqueConstraint(fields=("owner", "source", "external_id"),
-                                    condition=~models.Q(external_id=""),
-                                    name="rawsignal_owner_source_external_unique"),
+            models.UniqueConstraint(
+                fields=("owner", "source", "checksum"),
+                name="rawsignal_owner_source_checksum_unique",
+            ),
+            models.UniqueConstraint(
+                fields=("owner", "source", "external_id"),
+                condition=~models.Q(external_id=""),
+                name="rawsignal_owner_source_external_unique",
+            ),
         ]
         indexes = [models.Index(fields=("owner", "received_at"))]
 
@@ -63,8 +72,7 @@ class RawSignal(models.Model):
 
 
 class RawSignalRevision(models.Model):
-    raw_signal = models.ForeignKey(RawSignal, on_delete=models.CASCADE,
-                                   related_name="revisions")
+    raw_signal = models.ForeignKey(RawSignal, on_delete=models.CASCADE, related_name="revisions")
     version = models.PositiveIntegerField()
     text = models.TextField()
     payload = models.JSONField(default=dict)
@@ -75,8 +83,9 @@ class RawSignalRevision(models.Model):
     class Meta:
         ordering = ("version",)
         constraints = [
-            models.UniqueConstraint(fields=("raw_signal", "version"),
-                                    name="rawsignal_revision_unique"),
+            models.UniqueConstraint(
+                fields=("raw_signal", "version"), name="rawsignal_revision_unique"
+            ),
         ]
 
     def __str__(self):
@@ -85,6 +94,7 @@ class RawSignalRevision(models.Model):
 
 class Signal(models.Model):
     """One entry, at most three executable targets; trade execution is a later stage."""
+
     class Status(models.TextChoices):
         NEW = "new", "جدید"
         PARSED = "parsed", "ساختارمند"
@@ -98,16 +108,19 @@ class Signal(models.Model):
         LONG = "long", "Long"
         SHORT = "short", "Short"
 
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
-                              related_name="inbox_signals")
-    source = models.ForeignKey(SignalSource, on_delete=models.CASCADE,
-                               related_name="signals")
-    raw_signal = models.OneToOneField(RawSignal, on_delete=models.CASCADE,
-                                     related_name="structured_signal")
-    exchange_account = models.ForeignKey("exchanges.UserExchangeAccount",
-                                         on_delete=models.CASCADE, null=True, blank=True)
-    market = models.ForeignKey("exchanges.ExchangeMarket", on_delete=models.PROTECT,
-                               null=True, blank=True)
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="inbox_signals"
+    )
+    source = models.ForeignKey(SignalSource, on_delete=models.CASCADE, related_name="signals")
+    raw_signal = models.OneToOneField(
+        RawSignal, on_delete=models.CASCADE, related_name="structured_signal"
+    )
+    exchange_account = models.ForeignKey(
+        "exchanges.UserExchangeAccount", on_delete=models.CASCADE, null=True, blank=True
+    )
+    market = models.ForeignKey(
+        "exchanges.ExchangeMarket", on_delete=models.PROTECT, null=True, blank=True
+    )
     side = models.CharField(max_length=8, choices=Side.choices, blank=True)
     entry_price = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
     stop_loss = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
@@ -123,11 +136,14 @@ class Signal(models.Model):
 
     class Meta:
         ordering = ("-created_at",)
-        indexes = [models.Index(fields=("owner", "status", "created_at")),
-                   models.Index(fields=("owner", "source", "created_at"))]
+        indexes = [
+            models.Index(fields=("owner", "status", "created_at")),
+            models.Index(fields=("owner", "source", "created_at")),
+        ]
         constraints = [
-            models.CheckConstraint(condition=models.Q(technical_confidence__lte=100),
-                                   name="signal_confidence_lte_100"),
+            models.CheckConstraint(
+                condition=models.Q(technical_confidence__lte=100), name="signal_confidence_lte_100"
+            ),
         ]
 
     def clean(self):
@@ -135,7 +151,10 @@ class Signal(models.Model):
         if self.source_id and self.owner_id and self.source.owner_id != self.owner_id:
             raise ValidationError("منبع سیگنال متعلق به این کاربر نیست.")
         if self.raw_signal_id and self.owner_id:
-            if self.raw_signal.owner_id != self.owner_id or self.raw_signal.source_id != self.source_id:
+            if (
+                self.raw_signal.owner_id != self.owner_id
+                or self.raw_signal.source_id != self.source_id
+            ):
                 raise ValidationError("ورودی اصلی سیگنال با کاربر یا منبع هم‌خوان نیست.")
         if self.market_id and self.exchange_account_id:
             if self.market.exchange_id != self.exchange_account.exchange_id:
@@ -156,15 +175,20 @@ class SignalTarget(models.Model):
     class Meta:
         ordering = ("position",)
         constraints = [
-            models.UniqueConstraint(fields=("signal", "position"),
-                                    name="signal_target_position_unique"),
-            models.CheckConstraint(condition=models.Q(position__gte=1) & models.Q(position__lte=3),
-                                   name="signal_target_position_range"),
-            models.CheckConstraint(condition=models.Q(price__gt=0),
-                                   name="signal_target_positive_price"),
-            models.CheckConstraint(condition=models.Q(share_percent__gt=0) &
-                                   models.Q(share_percent__lte=100),
-                                   name="signal_target_share_range"),
+            models.UniqueConstraint(
+                fields=("signal", "position"), name="signal_target_position_unique"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(position__gte=1) & models.Q(position__lte=3),
+                name="signal_target_position_range",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(price__gt=0), name="signal_target_positive_price"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(share_percent__gt=0) & models.Q(share_percent__lte=100),
+                name="signal_target_share_range",
+            ),
         ]
 
     def __str__(self):
@@ -173,18 +197,21 @@ class SignalTarget(models.Model):
 
 class SignalRevision(models.Model):
     """Historical structured snapshots; never updated after creation."""
+
     signal = models.ForeignKey(Signal, on_delete=models.CASCADE, related_name="history")
     revision = models.PositiveIntegerField()
-    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-                              null=True, blank=True)
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True
+    )
     reason = models.CharField(max_length=500)
     snapshot = models.JSONField(default=dict)
     recorded_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ("revision",)
-        constraints = [models.UniqueConstraint(fields=("signal", "revision"),
-                                               name="signal_revision_unique")]
+        constraints = [
+            models.UniqueConstraint(fields=("signal", "revision"), name="signal_revision_unique")
+        ]
 
     def __str__(self):
         return f"Signal {self.signal_id} revision {self.revision}"

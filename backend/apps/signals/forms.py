@@ -16,29 +16,49 @@ class ReceiveForm(forms.Form):
         ],
     )
     text = forms.CharField(
-        label="متن اصلی سیگنال", max_length=40000,
+        label="متن اصلی سیگنال",
+        max_length=40000,
         widget=forms.Textarea(attrs={"rows": 8, "placeholder": "متن اصلی بدون تغییر ذخیره می‌شود."}),
     )
 
 
 class ReviewForm(forms.Form):
-    account_id = forms.ModelChoiceField(label="حساب صرافی",
-                                        queryset=UserExchangeAccount.objects.none())
+    account_id = forms.ModelChoiceField(
+        label="حساب صرافی", queryset=UserExchangeAccount.objects.none()
+    )
     market_id = forms.ModelChoiceField(label="بازار", queryset=ExchangeMarket.objects.none())
     side = forms.ChoiceField(label="جهت", choices=(("long", "Long"), ("short", "Short")))
-    entry_price = forms.DecimalField(label="Entry", max_digits=32, decimal_places=16, min_value=Decimal("0.0000000000000001"))
-    stop_loss = forms.DecimalField(label="Stop Loss", max_digits=32, decimal_places=16, min_value=Decimal("0.0000000000000001"))
-    tp1 = forms.DecimalField(label="TP1", max_digits=32, decimal_places=16, min_value=Decimal("0.0000000000000001"))
-    tp2 = forms.DecimalField(label="TP2", required=False, max_digits=32, decimal_places=16, min_value=Decimal("0.0000000000000001"))
-    tp3 = forms.DecimalField(label="TP3", required=False, max_digits=32, decimal_places=16, min_value=Decimal("0.0000000000000001"))
+    entry_price = forms.DecimalField(
+        label="Entry", max_digits=32, decimal_places=16, min_value=Decimal("0.0000000000000001")
+    )
+    stop_loss = forms.DecimalField(
+        label="Stop Loss", max_digits=32, decimal_places=16, min_value=Decimal("0.0000000000000001")
+    )
+    tp1 = forms.DecimalField(
+        label="TP1", max_digits=32, decimal_places=16, min_value=Decimal("0.0000000000000001")
+    )
+    tp2 = forms.DecimalField(
+        label="TP2",
+        required=False,
+        max_digits=32,
+        decimal_places=16,
+        min_value=Decimal("0.0000000000000001"),
+    )
+    tp3 = forms.DecimalField(
+        label="TP3",
+        required=False,
+        max_digits=32,
+        decimal_places=16,
+        min_value=Decimal("0.0000000000000001"),
+    )
     revision = forms.IntegerField(widget=forms.HiddenInput, min_value=1)
     reason = forms.CharField(label="دلیل ویرایش", max_length=500, min_length=3)
 
     def __init__(self, owner, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["account_id"].queryset = UserExchangeAccount.objects.for_user(
-            owner
-        ).filter(status__in=("connected", "restricted"))
+        self.fields["account_id"].queryset = UserExchangeAccount.objects.for_user(owner).filter(
+            status__in=("connected", "restricted")
+        )
         self.fields["market_id"].queryset = ExchangeMarket.objects.filter(
             active=True,
             exchange_id__in=self.fields["account_id"].queryset.values_list(
@@ -67,8 +87,6 @@ class ReviewForm(forms.Form):
             "entry_price": data["entry_price"],
             "stop_loss": data["stop_loss"],
             "targets": [
-                {"price": data[key]}
-                for key in ("tp1", "tp2", "tp3")
-                if data.get(key) is not None
+                {"price": data[key]} for key in ("tp1", "tp2", "tp3") if data.get(key) is not None
             ],
         }

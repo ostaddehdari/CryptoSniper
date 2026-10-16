@@ -174,17 +174,15 @@ def main():
                 page.locator('[name="text"]').fill(
                     "BTC/USDT\\nEntry: 65000\\nTP1: 70000\\nSL: 60000"
                 )
-                page.get_by_role(
-                    "button", name="ثبت در Inbox بدون اجرای معامله"
-                ).click()
+                page.get_by_role("button", name="ثبت در Inbox بدون اجرای معامله").click()
                 page.wait_for_url("**/inbox/*/")
                 page.get_by_role("heading", name="بررسی سیگنال", exact=False).wait_for()
                 page.screenshot(path=str(artifacts / "inbox-review-desktop.png"), full_page=True)
                 page.locator('[name="account_id"]').select_option(str(account.pk))
                 page.locator('[name="market_id"]').select_option(
-                    page.locator('[name="market_id"] option').filter(
-                        has_text="BTC/USDT"
-                    ).first.get_attribute("value")
+                    page.locator('[name="market_id"] option')
+                    .filter(has_text="BTC/USDT")
+                    .first.get_attribute("value")
                 )
                 page.locator('[name="entry_price"]').fill("65000")
                 page.locator('[name="stop_loss"]').fill("60000")

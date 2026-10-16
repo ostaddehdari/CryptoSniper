@@ -182,7 +182,9 @@ def main():
                 page.screenshot(path=str(artifacts / "inbox-review-desktop.png"), full_page=True)
                 page.locator('[name="account_id"]').select_option(str(account.pk))
                 page.locator('[name="market_id"]').select_option(
-                    label="BTC/USDT"
+                    page.locator('[name="market_id"] option').filter(
+                        has_text="BTC/USDT"
+                    ).first.get_attribute("value")
                 )
                 page.locator('[name="entry_price"]').fill("65000")
                 page.locator('[name="stop_loss"]').fill("60000")

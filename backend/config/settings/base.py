@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.exchanges",
     "apps.marketdata",
+    "apps.tradeplans",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

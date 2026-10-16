@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from apps.exchanges.adapters import AdapterError, get_adapter
 
+from .exits_plan import ensure_exits
 from .models import (
     CapitalReservation,
     ExecutionOutbox,
@@ -88,6 +89,7 @@ def record_fill(order_id, *, exchange_fill_id, quantity, price, fee=Decimal("0")
         TradeEvent.objects.create(
             trade=trade, event_type="ENTRY_FILLED", payload={"order_id": order.pk}
         )
+    ensure_exits(trade.pk)
     return fill, True
 
 

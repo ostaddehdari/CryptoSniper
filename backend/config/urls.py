@@ -141,6 +141,8 @@ urlpatterns = [
     path("system/status/", views.system_status, name="system-status"),
     path("system/probe/", views.create_probe, name="create-probe"),
     path("system/probe/<uuid:probe_id>/", views.probe_status, name="probe-status"),
+    path("paper/<int:pk>/stop/", trading_views.move_stop, name="paper-stop"),
+    path("api/v1/paper/<int:pk>/stop/", trading_views.api_move_stop, name="api-paper-stop"),
     path("health/live/", live, name="health-live"),
     path("health/ready/", ready, name="health-ready"),
 ]

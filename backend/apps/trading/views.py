@@ -17,6 +17,7 @@ from apps.accounts.security import session_api_required
 from apps.tradeplans.models import TradePlan
 
 from .execution import cancel_unsubmitted
+from .exits_stop import adjust_stop
 from .intent import queue_paper_trade
 from .models import Trade
 
@@ -72,6 +73,9 @@ def trade_detail(request, pk):
             "orders": trade.orders.all(),
             "nav": "paper",
             "position": getattr(trade, "position", None),
+            "protection": getattr(trade, "protection", None),
+            "targets": trade.targets.order_by("position"),
+            "exit_fills": trade.exit_fills.order_by("-occurred_at")[:25],
         },
     )
 
@@ -145,3 +149,38 @@ def api_trades(request):
         )
     except (KeyError, ValueError, TypeError, ValidationError, IntegrityError) as error:
         return JsonResponse({"error": str(error)}, status=400)
+
+
+@login_required
+@require_POST
+def move_stop(request, pk):
+    trade = _owned(request.user, pk)
+    try:
+        adjust_stop(
+            request.user, trade.pk, version=int(request.POST.get("version", "0")),
+            mode=request.POST.get("mode", ""), price=request.POST.get("price"),
+            reason=request.POST.get("reason", ""),
+        )
+        messages.success(request, "Stop با ثبت رویداد تغییر کرد.")
+    except (ValidationError, ValueError) as error:
+        messages.error(request, str(error))
+    return redirect("paper-trade-detail", pk=pk)
+
+
+@session_api_required
+@never_cache
+@require_POST
+def api_move_stop(request, pk):
+    _owned(request.user, pk)
+    if request.content_type != "application/json" or len(request.body) > 4000:
+        return JsonResponse({"error":"درخواست JSON معتبر لازم است."}, status=400)
+    try:
+        body = json.loads(request.body)
+        protection, moved = adjust_stop(
+            request.user, pk, version=int(body["version"]),
+            mode=body["mode"], price=body.get("price"), reason=body.get("reason", ""),
+        )
+        return JsonResponse({"moved":moved, "stop":str(protection.effective_stop),
+                             "version":protection.version})
+    except (ValueError, KeyError, TypeError, ValidationError) as error:
+        return JsonResponse({"error":str(error)}, status=400)

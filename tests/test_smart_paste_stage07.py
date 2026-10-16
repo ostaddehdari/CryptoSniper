@@ -88,32 +88,49 @@ def test_smart_paste_review_to_approved_plan(django_user_model):
     set_account_credentials(account, {})
     account.save()
     sync_exchange_account(account)
-    market = ExchangeMarket.objects.get(
-        exchange=exchange, symbol="BTC/USDT", market_type="spot"
-    )
+    market = ExchangeMarket.objects.get(exchange=exchange, symbol="BTC/USDT", market_type="spot")
     source = get_default_source(user, "smart_paste")
     raw, _, _ = receive_signal(
         user, source, text="BTC/USDT LONG\nEntry: 65000\nTP1: 70000\nSL: 60000"
     )
     parsed = parse_for_review(user, raw.pk)
     reviewed = update_parsed(
-        user, raw.pk, expected_revision=parsed.revision,
+        user,
+        raw.pk,
+        expected_revision=parsed.revision,
         data={
-            "account_id": account.pk, "market_id": market.pk, "side": "long",
-            "entry_price": Decimal("65000"), "stop_loss": Decimal("60000"),
+            "account_id": account.pk,
+            "market_id": market.pk,
+            "side": "long",
+            "entry_price": Decimal("65000"),
+            "stop_loss": Decimal("60000"),
             "targets": [{"price": Decimal("70000")}],
-        }, reason="تأیید با بررسی کامل",
+        },
+        reason="تأیید با بررسی کامل",
     )
     signal = transition(user, raw.pk, expected_revision=reviewed.revision, action="approve")
     assert signal.status == "approved"
-    form = ManualTradeForm(user, {
-        "account": account.pk, "market": market.pk, "source": "manual",
-        "origin_signal": signal.pk, "side": "long", "entry_price": "65000",
-        "stop_loss": "60000", "tp1": "70000", "tp2": "", "tp3": "",
-        "capital": "50", "leverage": "1", "trailing_distance": "1",
-        "trailing_sl": "on", "percentage_trailing": "on",
-        "client_token": str(uuid.uuid4()),
-    })
+    form = ManualTradeForm(
+        user,
+        {
+            "account": account.pk,
+            "market": market.pk,
+            "source": "manual",
+            "origin_signal": signal.pk,
+            "side": "long",
+            "entry_price": "65000",
+            "stop_loss": "60000",
+            "tp1": "70000",
+            "tp2": "",
+            "tp3": "",
+            "capital": "50",
+            "leverage": "1",
+            "trailing_distance": "1",
+            "trailing_sl": "on",
+            "percentage_trailing": "on",
+            "client_token": str(uuid.uuid4()),
+        },
+    )
     assert form.is_valid(), form.errors
     plan, created = create_draft(user, form.cleaned_data)
     assert created and plan.origin_signal_id == signal.pk

@@ -17,6 +17,10 @@ BACKEND = ROOT / "backend"
 sys.path.insert(0, str(BACKEND))
 if os.environ.get("DJANGO_SETTINGS_MODULE", "").endswith(("production", "staging")):
     raise SystemExit("Smoke must never run against production or staging.")
+# Playwright's synchronous API owns an internal event loop. This disposable smoke
+# runner is single-threaded, so allow its two ORM polls while that loop is active.
+# Production web and worker processes never receive this setting.
+os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 os.environ["DJANGO_SETTINGS_MODULE"] = "config.settings.test"
 import django  # noqa: E402
 

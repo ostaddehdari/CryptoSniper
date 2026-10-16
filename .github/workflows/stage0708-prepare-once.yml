@@ -1,0 +1,63 @@
+name: Stage07-08 schema and Ruff preparation
+on:
+  push:
+    paths:
+      - .github/workflows/stage0708-prepare-once.yml
+permissions:
+  contents: write
+jobs:
+  prepare:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16-bookworm
+        env:
+          POSTGRES_USER: cryptosniper
+          POSTGRES_PASSWORD: stage0708-ci-only
+          POSTGRES_DB: cryptosniper_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U cryptosniper -d cryptosniper_ci"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.test
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      DATABASE_URL: postgresql://cryptosniper:stage0708-ci-only@127.0.0.1:5432/cryptosniper_ci
+      REDIS_CACHE_URL: redis://127.0.0.1:6379/0
+      CELERY_BROKER_URL: redis://127.0.0.1:6379/1
+      CELERY_RESULT_BACKEND: redis://127.0.0.1:6379/2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.12.19'
+      - name: Temporary private secret
+        run: |
+          python - <<'PY'
+          import os, secrets
+          token=secrets.token_urlsafe(64)
+          print('::add-mask::'+token)
+          with open(os.environ['GITHUB_ENV'], 'a') as f: f.write('DJANGO_SECRET_KEY='+token+'\n')
+          PY
+      - run: uv sync --frozen
+      - name: Generate real Django migrations and apply Ruff
+        run: |
+          uv run python backend/manage.py makemigrations tradeplans trading --noinput
+          uv run ruff check backend tests scripts --fix || true
+          uv run ruff format backend tests scripts
+          uv run ruff check backend tests scripts || true
+      - name: Commit generated files without rewriting history
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend tests scripts
+          if ! git diff --cached --quiet; then
+            git commit -m "استیج‌های ۰۷ و ۰۸: ساخت migrations و قالب‌بندی Python"
+            git push origin HEAD:main
+          fi

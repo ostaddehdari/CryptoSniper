@@ -41,9 +41,7 @@ def configure_trailing(owner, trade_id, *, version, step_enabled, percentage_ena
             client_order_id__startswith=f"cs-paper-exit-{trade.pk}",
         ).exclude(state=Order.State.CANCELLED)
         if unexpected.exists():
-            protection.coverage = TradeProtection.Coverage.CANCELLING
-            protection.save(update_fields=("coverage", "updated_at"))
-            raise ValidationError("لغو سفارش خروج هنوز تأیید نشده؛ حالت Percentage فعال نشد.")
+            raise ValidationError("سفارش خروج تأییدنشده است؛ بدون reconciliation حالت Percentage فعال نمی‌شود.")
         cancelled = TradeTarget.objects.filter(trade=trade, state__in=[
             TradeTarget.State.WAITING, TradeTarget.State.PARTIAL,
         ]).update(state=TradeTarget.State.CANCELLED)
@@ -75,4 +73,33 @@ def configure_trailing(owner, trade_id, *, version, step_enabled, percentage_ena
     )
     record_audit("paper.trailing.updated", user=owner,
                  metadata={"trade_id":trade.pk, "version":protection.version})
+    return protection
+
+@transaction.atomic
+def reconcile_paper_cancellation(owner, trade_id, *, version):
+    """Never mark external cancellation as successful; this is PAPER-only ledger."""
+    trade = Trade.objects.select_for_update().select_related("account", "account__exchange").get(
+        owner=owner, pk=trade_id
+    )
+    if trade.account.environment != "paper" or trade.account.exchange.adapter_code != "simulator":
+        raise ValidationError("تطبیق لغو فقط در شبیه‌ساز مجاز است.")
+    protection = TradeProtection.objects.select_for_update().get(trade=trade)
+    if protection.version != version:
+        raise ValidationError("نسخه اشتباه است.")
+    pending = Order.objects.filter(trade=trade, client_order_id__startswith=f"cs-paper-exit-{trade.pk}").exclude(
+        state__in=[Order.State.CANCELLED, Order.State.FILLED]
+    )
+    if pending.exists():
+        raise ValidationError("لغو همه سفارش‌های خروج تأیید نشده است.")
+    TradeTarget.objects.filter(
+        trade=trade,
+        state__in=[TradeTarget.State.WAITING, TradeTarget.State.PARTIAL]
+    ).update(state=TradeTarget.State.CANCELLED)
+    protection.coverage = TradeProtection.Coverage.MONITORED
+    protection.version += 1
+    protection.save(update_fields=("coverage", "version", "updated_at"))
+    TradeEvent.objects.create(
+        trade=trade, event_type="PAPER_CANCEL_RECONCILED",
+        payload={"native_tp_orders":"none_open", "stop":str(protection.effective_stop)}
+    )
     return protection

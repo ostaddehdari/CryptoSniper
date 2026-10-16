@@ -11,6 +11,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from .exits_plan import ensure_exits
+from .trailing_math import monotonic_stop, percentage_stop
 from .models import (
     CapitalReservation, PaperExitFill, PaperPriceEvent, Position,
     Trade, TradeEvent, TradeProtection, TradeTarget,
@@ -120,6 +121,8 @@ def process_paper_price(trade_id, *, price, observed_at=None, event_key=None,
         return {"status":"duplicate"}
     if protection.last_tick_at and observed_at <= protection.last_tick_at:
         return {"status":"old_tick"}
+    if protection.coverage == TradeProtection.Coverage.CANCELLING:
+        return {"status":"cancel_reconciliation_pending"}
     position = Position.objects.select_for_update().filter(trade=trade).first()
     if not position or position.quantity <= 0:
         return {"status":"no_position"}
@@ -143,10 +146,12 @@ def process_paper_price(trade_id, *, price, observed_at=None, event_key=None,
             )
         if protection.percentage_active:
             protection.high_water = max(protection.high_water or price, price)
-            derived = protection.high_water * (
-                Decimal("1") - protection.distance_percent / Decimal("100")
+            derived = percentage_stop(
+                side="long", high=protection.high_water, distance=protection.distance_percent
             )
-            protection.effective_stop = max(protection.effective_stop, derived)
+            protection.effective_stop = monotonic_stop(
+                "long", protection.effective_stop, derived
+            )
     if price <= protection.effective_stop:
         fill = _payout(
             trade=trade, position=position, protection=protection,

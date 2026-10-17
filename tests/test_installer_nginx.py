@@ -16,6 +16,9 @@ INSTALLER = ROOT / "scripts/cryptosniper-stage12-run.sh"
 
 
 class NginxUpgradeTests(unittest.TestCase):
+    installer = INSTALLER
+    stage = 12
+
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(prefix="cs-nginx-regression-")
         self.addCleanup(self.temporary.cleanup)
@@ -30,7 +33,7 @@ class NginxUpgradeTests(unittest.TestCase):
             " location /other-site/ { proxy_pass http://127.0.0.1:18870; }\n}\n"
         )
         source = (
-            INSTALLER.read_text()
+            self.installer.read_text()
             .split("cat > \"$TMP_DIR/nginx-route.py\" <<'PY'\n", 1)[1]
             .split("\nPY\n", 1)[0]
         )
@@ -76,7 +79,7 @@ class NginxUpgradeTests(unittest.TestCase):
 
     def test_all_prior_managed_versions_are_accepted_without_mutation(self):
         vhost = self.vhost.read_bytes()
-        for stage in range(1, 13):
+        for stage in range(1, self.stage + 1):
             with self.subTest(stage=stage):
                 previous = self.old_snippet(stage)
                 self.snippet.write_text(previous)
@@ -92,7 +95,9 @@ class NginxUpgradeTests(unittest.TestCase):
         self.assertEqual(self.run_helper("plan").returncode, 0)
         result = self.run_helper("apply")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertTrue(self.snippet.read_text().startswith(self.old_snippet(12).splitlines()[0]))
+        self.assertTrue(
+            self.snippet.read_text().startswith(self.old_snippet(self.stage).splitlines()[0])
+        )
         self.assertEqual(self.vhost.read_bytes(), before)  # Existing include is not duplicated.
         self.assertIn("/other-site/", self.vhost.read_text())
         self.assertEqual(self.run_helper("rollback").returncode, 0)
@@ -149,6 +154,11 @@ class NginxUpgradeTests(unittest.TestCase):
         self.assertEqual(self.run_helper("rollback").returncode, 0)
         self.assertFalse(self.snippet.exists())
         self.assertEqual(self.vhost.read_text(), before)
+
+
+class Stage14NginxUpgradeTests(NginxUpgradeTests):
+    installer = ROOT / "scripts/cryptosniper-stage14-run.sh"
+    stage = 14
 
 
 if __name__ == "__main__":

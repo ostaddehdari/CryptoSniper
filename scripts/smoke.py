@@ -268,9 +268,7 @@ def main():
                 page.set_viewport_size({"width": 390, "height": 844})
                 assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
                 page.screenshot(path=str(artifacts / "history14-mobile.png"), full_page=True)
-                print(
-                    "PASS Stage13 dashboard mobile and Stage14 UI-confirmed close via independent Worker"
-                )
+                print("PASS S13 mobile dashboard + S14 confirmed close via orders Worker")
                 page.set_viewport_size({"width": 1440, "height": 1000})
                 page.goto(base + "/inbox/receive/")
                 page.get_by_role("heading", name="ثبت متن اصلی سیگنال").wait_for()

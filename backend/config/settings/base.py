@@ -219,3 +219,8 @@ for queue_name in OPERATION_QUEUES:
         "args": (queue_name,),
         "options": {"queue": queue_name, "expires": 25},
     }
+CELERY_BEAT_SCHEDULE["price-alerts"] = {
+    "task": "alerts.evaluate",
+    "schedule": 8.0,
+    "options": {"queue": "alerts", "expires": 7},
+}

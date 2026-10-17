@@ -1,4 +1,5 @@
 from apps.accounts import views as account_views
+from apps.alerts import notifications as notification_views
 from apps.core import views
 from apps.core.health import dependency_status
 from apps.exchanges import views as exchange_views
@@ -30,6 +31,19 @@ def ready(request):
 
 
 urlpatterns = [
+    path("notifications/", notification_views.center, name="notifications"),
+    path(
+        "notifications/preferences/",
+        notification_views.preferences,
+        name="notification-preferences",
+    ),
+    path("api/v1/notifications/", notification_views.api_list, name="api-notifications"),
+    path("api/v1/notifications/<int:pk>/read/", notification_views.read, name="notification-read"),
+    path(
+        "api/v1/notifications/browser-claim/",
+        notification_views.browser_claim,
+        name="notification-browser-claim",
+    ),
     path("operations/", operation_views.center, name="operations"),
     path("operations/<int:pk>/control/", operation_views.control, name="operations-control"),
     path("api/v1/operations/health/", operation_views.api_health, name="api-operations-health"),

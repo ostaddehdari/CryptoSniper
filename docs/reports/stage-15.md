@@ -20,6 +20,7 @@
 
 - اجرای اولیه CI روی commit `57c19e1e289cd997ffe821ec454a453b7d2e680b`: **۱۴۹ تست**، migration واقعی PostgreSQL، Redis، هفت Worker و Beat موفق؛ مرحلهٔ browser یک خطای JavaScript در محافظ آفلاین Stage16 پیدا کرد که در commit `e1d376b75b329d8b80016da17a4811951faf0a59` رفع و با regression test پوشش داده شد.
 - [CI موفق پس از اصلاح](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39055497955): **۱۵۰ تست**، schema/lint/migration، PostgreSQL/Redis، هفت Worker/Beat و Chromium؛ artifact شواهد `12109002649`.
-- checksumهای Release پس از انتشار در `docs/progress.json` ثبت می‌شوند.
+- [CI منبع دقیق بسته](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39057096349) روی `10158473f4504275814232e4db5b4506135e1685`: **۱۵۶ تست**، Chromium و artifact `12110585867`.
+- Workflow بسته‌ساز، ۱۸ regression نصب‌کننده و `CHECK_OK` را پاس کرد و artifact `12110062971` ساخت. GitHub Actions ایجاد صفحهٔ Release را با 403 رد کرد؛ همان bytes با ZIP SHA `a550681e…982a` و installer SHA `3d8360a2…b754` در commit تغییرناپذیر `104038e39090d2ba911ea1c7281ff39709270016` ثبت و دوباره دانلود/بررسی شدند.
 - پذیرش حجم بزرگ تاریخچه، نصب Stage16 روی VPS و مرورگر عمومی هنوز باز است. Binance واقعی و اجرای Margin/Short در این نسخه تأیید نشده‌اند.
 

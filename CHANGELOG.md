@@ -5,7 +5,8 @@
 - مرکز گزارش با فیلتر، drill-down، CSV مقاوم در برابر formula injection و نمودار SVG هم‌منبع.
 - navigation و کارت‌های موبایل، فرم‌های سازگار با کیبورد و draft فقط در history، جدول/کارت Trades و تنظیمات یکپارچه؛ Telegram/AI همچنان S21.
 - PWA با cache فقط static، بدون cache داده خصوصی یا صف POST؛ offline submit متوقف می‌شود و پس از اتصال replay خودکار ندارد.
-- نصب Stage14 توسط لاگ اپراتور تأیید شد. Release تجمیعی Stage16 پس از CI دقیق منتشر می‌شود؛ real Binance writes و Margin/Short خاموش‌اند.
+- ۱۵۶ تست منبع دقیق، PostgreSQL/Redis، هفت Worker/Beat و Chromium پاس شدند؛ بستهٔ `CHECK_OK` با ZIP و installer دارای SHA ثابت در commit تغییرناپذیر مخزن ثبت شد.
+- نصب Stage14 توسط لاگ اپراتور تأیید شد. بستهٔ تجمیعی Stage16 پس از CI دقیق در commit ثابت مخزن منتشر شد؛ ساخت صفحهٔ GitHub Release به علت permission 403 باز است. real Binance writes و Margin/Short خاموش‌اند.
 
 ## 0.14.0rc1 — استیج‌های ۱۳ و ۱۴ (2026-10-17)
 

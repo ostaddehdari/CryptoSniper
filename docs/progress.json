@@ -707,20 +707,45 @@
           "dashboard_queries": 17,
           "dashboard_build_ms": 26.61,
           "evidence_artifact_id": 12109002649
+        },
+        {
+          "name": "Exact-source Stage16 integration and browser acceptance",
+          "status": "passed",
+          "run_id": 39057096349,
+          "url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/39057096349",
+          "tested_commit": "10158473f4504275814232e4db5b4506135e1685",
+          "pytest_passed": 156,
+          "dashboard_queries": 17,
+          "dashboard_build_ms": 20.4,
+          "evidence_artifact_id": 12110585867
+        },
+        {
+          "name": "Stage16 package build, 18 Nginx regressions, CHECK_OK and immutable asset verification",
+          "status": "passed_with_release_page_blocked",
+          "run_id": 39058612200,
+          "artifact_id": 12110062971,
+          "archive_sha256": "a550681ec25a7ae933c8af751bf5adadf4ef2316fd44e71778854bef4105982a",
+          "installer_sha256": "3d8360a292b4d579a06dc1aefffa67160b150a9fe4cd7de2209f238b4053b754",
+          "asset_commit": "104038e39090d2ba911ea1c7281ff39709270016",
+          "release_page": "blocked: GitHub Actions POST /releases returned HTTP 403"
         }
       ],
       "commit_shas": [
-        "4c94ceb9",
-        "fb18d575",
-        "af6da53",
-        "e7b7dff",
-        "56ef945"
+        "4c94ceb9a46dc8e3ed2745eb20a961596045fbe6",
+        "fb18d575b39d6351bb873564c16069ce0278134b",
+        "af6da53c8ca27d7166dbe487e29d314a89e4d4eb",
+        "e7b7dff4d80cc4ea7656bb5a9a9462428747abd5",
+        "56ef9454a557443ff64a1c006373d9aac629b286"
       ],
       "blockers": [
         "Real Binance credential/provider acceptance and live/Margin execution remain outside the verified Paper scope.",
-        "Stage16 release installation and public-browser acceptance remain pending."
+        "Stage16 installation and public-browser acceptance remain pending.",
+        "GitHub Actions cannot create the Release page (HTTP 403); verified assets are pinned in the repository instead."
       ],
-      "implementation": "All five reporting works are implemented: Decimal gross/net P/L, fee conversion and interest policy, fixed breakeven statistics, idempotent timezone aggregates, CSV/SVG exports, cache invalidation and trade drill-down. Final exact-source CI/release evidence is added after publication."
+      "implementation": "All five reporting works are implemented: Decimal gross/net P/L, fee conversion and interest policy, fixed breakeven statistics, idempotent timezone aggregates, CSV/SVG exports, cache invalidation and trade drill-down. Exact-source CI passed 156 tests; the verified deploy bytes are pinned in an immutable repository commit because GitHub Actions release creation returned permission 403.",
+      "release_tag": "stage16-v0.16.0rc1-deploy",
+      "release_commit": "10158473f4504275814232e4db5b4506135e1685",
+      "asset_commit": "104038e39090d2ba911ea1c7281ff39709270016"
     },
     "S16": {
       "status": "partial",
@@ -752,21 +777,47 @@
           "dashboard_queries": 17,
           "dashboard_build_ms": 26.61,
           "evidence_artifact_id": 12109002649
+        },
+        {
+          "name": "Exact-source Stage16 integration and browser acceptance",
+          "status": "passed",
+          "run_id": 39057096349,
+          "url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/39057096349",
+          "tested_commit": "10158473f4504275814232e4db5b4506135e1685",
+          "pytest_passed": 156,
+          "dashboard_queries": 17,
+          "dashboard_build_ms": 20.4,
+          "evidence_artifact_id": 12110585867
+        },
+        {
+          "name": "Stage16 package build, 18 Nginx regressions, CHECK_OK and immutable asset verification",
+          "status": "passed_with_release_page_blocked",
+          "run_id": 39058612200,
+          "artifact_id": 12110062971,
+          "archive_sha256": "a550681ec25a7ae933c8af751bf5adadf4ef2316fd44e71778854bef4105982a",
+          "installer_sha256": "3d8360a292b4d579a06dc1aefffa67160b150a9fe4cd7de2209f238b4053b754",
+          "asset_commit": "104038e39090d2ba911ea1c7281ff39709270016",
+          "release_page": "blocked: GitHub Actions POST /releases returned HTTP 403"
         }
       ],
       "commit_shas": [
-        "c122c5d",
-        "4bf7ddd",
-        "f71e98a",
-        "07762a5",
-        "57c19e1"
+        "c122c5d6fea37997a563459f389e81a5285576be",
+        "4bf7dddfc204d05bd99e92cf418300ac96236177",
+        "f71e98a2ac1acf0b8dee0f70ba2a988d19981494",
+        "07762a55ed0672de9ea549cddaf120152f2277dd",
+        "57c19e1e289cd997ffe821ec454a453b7d2e680b",
+        "e1d376b75b329d8b80016da17a4811951faf0a59"
       ],
       "blockers": [
         "Stage16 VPS installation and public-browser acceptance remain pending.",
         "Real Binance order writes and Margin/Short execution remain disabled.",
-        "Telegram/channel ingestion and AI analysis remain explicitly deferred to S21."
+        "Telegram/channel ingestion and AI analysis remain explicitly deferred to S21.",
+        "GitHub Actions cannot create the Release page (HTTP 403); verified assets are pinned in the repository instead."
       ],
-      "implementation": "All five experience works are implemented: mobile navigation/cards, keyboard-safe form drafts, responsive trades/timeline, unified settings/source surfaces and a static-assets-only PWA with explicit offline transaction blocking. Final exact-source CI/release evidence is added after publication."
+      "implementation": "All five experience works are implemented: mobile navigation/cards, keyboard-safe form drafts, responsive trades/timeline, unified settings/source surfaces and a static-assets-only PWA with explicit offline transaction blocking. Exact-source CI passed 156 tests; the verified deploy bytes are pinned in an immutable repository commit because GitHub Actions release creation returned permission 403.",
+      "release_tag": "stage16-v0.16.0rc1-deploy",
+      "release_commit": "10158473f4504275814232e4db5b4506135e1685",
+      "asset_commit": "104038e39090d2ba911ea1c7281ff39709270016"
     },
     "S17": {
       "status": "not_started",

@@ -76,6 +76,6 @@ uv run --no-dev gunicorn --chdir backend config.wsgi:application --bind 127.0.0.
 
 ## Reports و PWA نسخه 0.16
 
-Stage15 محاسبات Decimal و گزارش‌های aggregate/CSV/SVG را اضافه می‌کند و Stage16 رابط موبایل/دسکتاپ و PWA را تکمیل می‌کند. Service Worker فقط static assetهای عمومی را cache می‌کند؛ پاسخ خصوصی، API، navigation و عملیات POST هرگز برای اجرای آفلاین ذخیره نمی‌شوند. نصب‌کننده Stage16 نصب مدیریت‌شده Stage14 و headerهای دقیق Stage01–16 را می‌پذیرد، اما snippet ناشناس یا تغییر هم‌زمان Nginx را بدون بازنویسی رد می‌کند.
+Stage15 محاسبات Decimal و گزارش‌های aggregate/CSV/SVG را اضافه می‌کند و Stage16 رابط موبایل/دسکتاپ و PWA را تکمیل می‌کند. Service Worker فقط static assetهای عمومی را cache می‌کند؛ پاسخ خصوصی، API، navigation و عملیات POST هرگز برای اجرای آفلاین ذخیره نمی‌شوند. نصب‌کننده Stage16 نصب مدیریت‌شده Stage14 و headerهای دقیق Stage01–16 را می‌پذیرد، اما snippet ناشناس یا تغییر هم‌زمان Nginx را بدون بازنویسی رد می‌کند. deploy این نسخه ZIP و installer تأییدشده را از commit ثابت `104038e39090d2ba911ea1c7281ff39709270016` می‌گیرد؛ بنابراین تغییر بعدی شاخهٔ main bytes نصب را عوض نمی‌کند.
 
 لاگ اپراتور نصب موفق Stage14 را تأیید کرده است. برای Stage16 ابتدا `scripts/deploy.sh --check` و سپس نصب عادی را اجرا کنید؛ نتیجهٔ نصب 0.16 تا ارائهٔ لاگ جدید تأییدشده محسوب نمی‌شود.

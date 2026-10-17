@@ -1,0 +1,16 @@
+SOURCE=10158473f4504275814232e4db5b4506135e1685
+CI=https://github.com/ostaddehdari/CryptoSniper/actions/runs/39057096349
+MODE=Paper Spot Long reports/PWA; no real exchange writes
+INSTALLER_BUILD_COMMIT=0569e4978b336e72e10424590e5cf9a24fe9511a
+
+===== VERIFY PACKAGE AND SETTINGS | 2026-10-17T18:33:29+00:00 =====
+
+===== VERIFY PACKAGE AND SETTINGS | 2026-10-17T18:33:29+00:00 =====
+PASS: pinned Stage16 source blobs, safe paths and version 0.16.0rc1.
+HTTPS URL: https://srun.ir/cryptosniper/auth/login/
+PASS: pinned Stage16 source blobs, safe paths and version 0.16.0rc1.
+HTTPS URL: https://srun.ir/cryptosniper/auth/login/
+
+CHECK_OK: archive and Ubuntu version validated; nothing was installed.
+
+CHECK_OK: archive and Ubuntu version validated; nothing was installed.

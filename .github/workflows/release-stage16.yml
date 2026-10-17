@@ -22,7 +22,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          PIN=9d82a7f32cadc4418e9d4c0af5fbdbabd1938c79
+          PIN=10158473f4504275814232e4db5b4506135e1685
           export PIN
           python3 - <<'PYCI'
           import json,os,subprocess,time
@@ -42,7 +42,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          PIN=9d82a7f32cadc4418e9d4c0af5fbdbabd1938c79
+          PIN=10158473f4504275814232e4db5b4506135e1685
           export PIN
           mkdir -p dist
           git archive --format=zip --prefix=CryptoSniper/ -o dist/CryptoSniper-Stage16-v0.16.0rc1.zip "$PIN"
@@ -65,9 +65,9 @@ jobs:
               '__BLOB_ALERT_ENGINE__':blob('backend/apps/alerts/engine.py'),
               '__BLOB_TRADE_ACTIONS__':blob('backend/apps/trading/actions.py'),
               '__BLOB_PORTFOLIO_METRICS__':blob('backend/apps/portfolio/metrics.py'),
-              '__BLOB_REPORT_SERVICES__':blob('backend/apps/reports/services.py'),
+              '__BLOB_REPORT_SERVICE__':blob('backend/apps/reports/service.py'),
               '__BLOB_REPORT_TASKS__':blob('backend/apps/reports/tasks.py'),
-              '__BLOB_PWA__':blob('backend/config/pwa.py'),
+              '__BLOB_CORE_VIEWS__':blob('backend/apps/core/views.py'),
           }
           path=Path('dist/cryptosniper-stage16-run.sh')
           text=path.read_text()
@@ -79,7 +79,7 @@ jobs:
           PY
           chmod +x dist/cryptosniper-stage16-run.sh
           bash -n dist/cryptosniper-stage16-run.sh
-          printf 'SOURCE=%s\nCI=https://github.com/ostaddehdari/CryptoSniper/actions/runs/39055851373\nMODE=Paper Spot Long reports/PWA; no real exchange writes\nINSTALLER_BUILD_COMMIT=%s\n' "$PIN" "$(git rev-parse HEAD)" > dist/runlog.txt
+          printf 'SOURCE=%s\nCI=https://github.com/ostaddehdari/CryptoSniper/actions/runs/39057096349\nMODE=Paper Spot Long reports/PWA; no real exchange writes\nINSTALLER_BUILD_COMMIT=%s\n' "$PIN" "$(git rev-parse HEAD)" > dist/runlog.txt
           bash dist/cryptosniper-stage16-run.sh --check dist/CryptoSniper-Stage16-v0.16.0rc1.zip | tee -a dist/runlog.txt
           (cd dist && sha256sum CryptoSniper-Stage16-v0.16.0rc1.zip cryptosniper-stage16-run.sh runlog.txt > SHA256SUMS.txt)
       - name: Save exact deployment bytes for independent verification
@@ -95,13 +95,13 @@ jobs:
         run: |
           set -euo pipefail
           TAG=stage16-v0.16.0rc1-deploy
-          PIN=9d82a7f32cadc4418e9d4c0af5fbdbabd1938c79
+          PIN=10158473f4504275814232e4db5b4506135e1685
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo 'Release already exists; assets are immutable. Verify the existing release.'
           else
             gh release create "$TAG" dist/* --target "$PIN" --prerelease \
               --title "CryptoSniper Stages 15+16 — cumulative v0.16.0rc1" \
-              --notes "Cumulative Stages 01-16: Decimal gross/net P/L with explicit fee conversion and finance-cost unknown policy; fixed breakeven statistics; timezone-aware idempotent aggregates; reports, CSV/SVG and drill-down; responsive mobile/desktop forms, trades and settings; static-assets-only PWA with no financial response cache or offline POST queue. All 150 tests plus real PostgreSQL/Redis/seven Workers/Beat/Chromium passed. Installer supports exact managed Stage01-16 Nginx headers and preserves private settings/login/keyring/data with backup and rollback. Real Binance writes and Margin/Short remain disabled; External is read-only. Stage16 VPS/public-browser acceptance and real Binance credentials remain pending. Telegram/channel/AI remains Stage21. Exact-source CI: https://github.com/ostaddehdari/CryptoSniper/actions/runs/39055851373."
+              --notes "Cumulative Stages 01-16: Decimal gross/net P/L with explicit fee conversion and finance-cost unknown policy; fixed breakeven statistics; timezone-aware idempotent aggregates; reports, CSV/SVG and drill-down; responsive mobile/desktop forms, trades and settings; static-assets-only PWA with no financial response cache or offline POST queue. All 150 tests plus real PostgreSQL/Redis/seven Workers/Beat/Chromium passed. Installer supports exact managed Stage01-16 Nginx headers and preserves private settings/login/keyring/data with backup and rollback. Real Binance writes and Margin/Short remain disabled; External is read-only. Stage16 VPS/public-browser acceptance and real Binance credentials remain pending. Telegram/channel/AI remains Stage21. Exact-source CI: https://github.com/ostaddehdari/CryptoSniper/actions/runs/39057096349."
           fi
           cat dist/SHA256SUMS.txt
           gh release view "$TAG" --json assets,url

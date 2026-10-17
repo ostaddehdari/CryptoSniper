@@ -129,9 +129,9 @@ trusted_blobs = {
     'backend/apps/alerts/engine.py': '__BLOB_ALERT_ENGINE__',
     'backend/apps/trading/actions.py': '__BLOB_TRADE_ACTIONS__',
     'backend/apps/portfolio/metrics.py': '__BLOB_PORTFOLIO_METRICS__',
-    'backend/apps/reports/services.py': '__BLOB_REPORT_SERVICES__',
+    'backend/apps/reports/service.py': '__BLOB_REPORT_SERVICE__',
     'backend/apps/reports/tasks.py': '__BLOB_REPORT_TASKS__',
-    'backend/config/pwa.py': '__BLOB_PWA__',
+    'backend/apps/core/views.py': '__BLOB_CORE_VIEWS__',
 }
 
 host = os.environ['SERVER_HOST']

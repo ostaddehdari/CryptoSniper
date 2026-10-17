@@ -70,7 +70,8 @@ report_error() {
             done
             systemctl daemon-reload || true
         fi
-        for service in redis web orders reports beat; do
+        for service in redis web orders reports beat signals market-data trailing alerts maintenance; do
+            if [[ $service != redis && ! -f /etc/systemd/system/cryptosniper-$service.service ]]; then continue; fi
             systemctl restart "cryptosniper-$service.service" 2>/dev/null || true
         done
         printf 'ROLLBACK: previous application restored.'
@@ -86,7 +87,7 @@ APP_BACKUP=""
 UNIT_BACKUP=""
 cleanup() { if [[ -n "$TMP_DIR" ]]; then rm -rf -- "$TMP_DIR"; fi; }
 trap cleanup EXIT
-fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
+fail() { printf 'ERROR: %s\n' "$*" >&2; report_error 1 "${BASH_LINENO[0]}"; }
 step() { printf '\n===== %s | %s =====\n' "$*" "$(date -Is)"; }
 
 CHECK_ONLY=false

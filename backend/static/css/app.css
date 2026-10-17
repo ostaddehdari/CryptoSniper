@@ -137,3 +137,5 @@
 .trade-card { min-width:0; overflow-wrap:anywhere; }
 .trade-card .manual-stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
 .pagination { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:1rem; margin-block:1rem; }
+.raw-signal {white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%;font:inherit}
+.service-row small {display:block;overflow-wrap:anywhere;white-space:normal}

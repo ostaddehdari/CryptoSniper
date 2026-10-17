@@ -49,6 +49,8 @@ def detail_context(user, pk, params):
         events.append(event)
     return {
         "request_key": str(uuid4()),
+        "needs_reconciliation": trade.state in ("uncertain", "submitting", "partially_filled"),
+        "recovery_open": False,
         "actions": trade.actions.order_by("-pk")[:10],
         "trade": trade,
         "events": events,

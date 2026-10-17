@@ -383,3 +383,6 @@ class TradeAction(models.Model):
             )
         ]
         indexes = [models.Index(fields=("state", "next_attempt_at"))]
+
+    def __str__(self):
+        return f"Paper close {self.pk}: {self.state}"

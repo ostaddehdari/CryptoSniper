@@ -352,3 +352,17 @@ def close_trade(request, pk):
     except (ValidationError, ValueError, TypeError) as error:
         messages.error(request, str(error))
     return redirect("paper-trade-detail", pk=pk)
+
+
+@login_required
+@never_cache
+@require_GET
+def trade_status(request, pk):
+    trade = _owned(request.user, pk)
+    return JsonResponse(
+        {
+            "state": trade.state,
+            "revision": trade.revision,
+            "actions": list(trade.actions.order_by("-pk").values("id", "state", "code")[:10]),
+        }
+    )

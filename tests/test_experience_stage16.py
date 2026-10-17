@@ -1,6 +1,7 @@
 """Stage16 final responsive shell, PWA and accessibility checks."""
 
 import pytest
+from apps.signals.models import SignalSource
 from django.urls import reverse
 from test_stages09_exits import paper_trade
 
@@ -47,3 +48,28 @@ def test_trade_catalogue_and_detail_keep_vital_mobile_fields(client, django_user
     for value in (b"trade-facts", b"trade-timeline", b"Trailing", b"P/L"):
         assert value in detail.content
     assert trade.market.get_market_type_display().encode() in detail.content
+
+
+@pytest.mark.django_db
+def test_settings_routes_are_linked_and_telegram_stays_deferred(client, django_user_model):
+    user = django_user_model.objects.create_user(username="settings16")
+    telegram = SignalSource.objects.create(
+        owner=user, name="کانال آزمایشی", method="telegram", enabled=False
+    )
+    client.force_login(user)
+    page = client.get(reverse("source-settings"))
+    assert page.status_code == 200
+    for route in (
+        "profile",
+        "sessions",
+        "trading-preferences",
+        "source-settings",
+        "exchange-center",
+        "alerts",
+        "reports",
+        "audit-events",
+    ):
+        assert reverse(route).encode() in page.content
+    client.post(reverse("source-settings"), {"source_id": telegram.pk, "enabled": "on"})
+    telegram.refresh_from_db()
+    assert telegram.enabled is False

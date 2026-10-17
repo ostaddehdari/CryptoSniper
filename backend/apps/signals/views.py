@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
+from apps.accounts.audit import record_audit
 from apps.accounts.security import session_api_required
 
 from .forms import ReceiveForm, ReviewForm
@@ -64,6 +65,42 @@ def inbox(request):
             "items": filtered(request.user, request.GET)[:100],
             "statuses": Signal.Status.choices,
             "methods": SignalSource.Method.choices,
+        },
+    )
+
+
+@login_required
+@never_cache
+@require_http_methods(["GET", "POST"])
+def source_settings(request):
+    for method, name in (
+        (SignalSource.Method.MANUAL, "ورود دستی من"),
+        (SignalSource.Method.SMART_PASTE, "Smart Paste من"),
+    ):
+        SignalSource.objects.get_or_create(owner=request.user, method=method, name=name)
+    if request.method == "POST":
+        source = get_object_or_404(
+            SignalSource.objects.filter(owner=request.user), pk=request.POST.get("source_id")
+        )
+        if source.method == SignalSource.Method.TELEGRAM:
+            messages.error(request, "اتصال Telegram طبق برنامه فقط در استیج ۲۱ فعال می‌شود.")
+        else:
+            source.enabled = request.POST.get("enabled") == "on"
+            source.save(update_fields=("enabled",))
+            record_audit(
+                "signal_source.updated",
+                request=request,
+                user=request.user,
+                metadata={"source_id": source.pk, "enabled": source.enabled},
+            )
+            messages.success(request, "وضعیت منبع محلی ذخیره شد.")
+        return redirect("source-settings")
+    return render(
+        request,
+        "signals/source_settings.html",
+        {
+            "nav": "settings",
+            "sources": SignalSource.objects.filter(owner=request.user).order_by("method", "name"),
         },
     )
 

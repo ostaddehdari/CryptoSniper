@@ -124,6 +124,7 @@ urlpatterns = [
     path("api/v1/paper/trades/", paper_views.api_trades, name="api-paper-trades"),
     path("api/v1/paper/trades/<int:pk>/", paper_views.api_trade_detail, name="api-paper-detail"),
     path("inbox/", inbox_views.inbox, name="inbox"),
+    path("settings/sources/", inbox_views.source_settings, name="source-settings"),
     path("inbox/receive/", inbox_views.receive, name="inbox-receive"),
     path("smart-paste/", inbox_views.smart_paste, name="smart-paste"),
     path("api/v1/smart-paste/", inbox_views.api_smart_paste, name="api-smart-paste"),

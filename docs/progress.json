@@ -517,6 +517,21 @@
           "name": "Release source/installer SHA256, safe paths, Ubuntu and --check",
           "status": "passed",
           "run_id": 39019202911
+        },
+        {
+          "name": "Operator Stage12 upgrade blocked safely at Nginx preflight",
+          "status": "failed_safe",
+          "date": "2026-10-17",
+          "verified_by": "User-provided terminal log",
+          "reason": "Stage10 managed header omitted in installer; no application/data replacement reached"
+        },
+        {
+          "name": "Installer r1 routing regression and exact release --check",
+          "status": "passed",
+          "regression_tests_passed": 6,
+          "run_id": 39041880098,
+          "installer_sha256": "c2991fddebd65de18a1673f34f758f774e5fb042d2257e15f1a5ed3395c76740",
+          "application_source_unchanged": true
         }
       ],
       "commit_shas": [],
@@ -525,7 +540,7 @@
         "Stage12 cumulative installation and public-browser acceptance on operator VPS not yet verified."
       ],
       "implementation": "All five workstreams implemented for Paper/read-only observations. 110 PostgreSQL tests, seven queues and Chromium browser smoke passed; exact cumulative release and CHECK_OK installer published. Real Binance credentials and VPS Stage12/public-browser acceptance remain pending.",
-      "release_tag": "stage12-v0.12.0rc1-deploy",
+      "release_tag": "stage12-v0.12.0rc1-deploy-r1",
       "release_commit": "21b8b520466b1c7e76b495bbbfefa81f24b8371e"
     },
     "S13": {

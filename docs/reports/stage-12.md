@@ -33,3 +33,9 @@
 - [انتشار تجمعی 0.12.0rc1](https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage12-v0.12.0rc1-deploy)، [ساخت و CHECK_OK نصب‌کننده](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39019202911).
 - ZIP SHA256: `71d3f3b9e789990a69e4680ddc726103c5d358bf2e2edd722540d210b8e9d7d1`؛ Installer SHA256: `cc1670dbacffab78408bafc1c44d516d8489c46844f7563e110cb0af62e3be2a`.
 - آخرین نصب تأییدشدهٔ VPS طبق لاگ کاربر 0.10.0rc1 است؛ نصب 0.12 روی VPS هنوز انجام/تأیید نشده است.
+
+## اصلاح نصب‌کننده r1 — ۱۷ اکتبر ۲۰۲۶
+
+لاگ کاربر نشان داد ارتقا از 0.10 در مرحلهٔ بررسی Nginx با پیام unmanaged متوقف شد؛ برنامه و دیتابیس در این اجرا تعویض نشدند. علت، جاافتادن Stage10 در KNOWN_MARKERS نصب‌کنندهٔ Stage12 بود. اصلاح r1 همهٔ headerهای دقیق Stage01 تا Stage12 را می‌پذیرد و فایل ناشناس یا تغییر هم‌زمان فایل را همچنان رد می‌کند. هیچ راهکار حذف snippet یا دورزدن تشخیص مالکیت به کاربر داده نشد.
+
+[انتشار r1](https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage12-v0.12.0rc1-deploy-r1) · [شش تست regression و CHECK_OK بسته](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39041880098). ZIP همان source قبلاً آزموده‌شده است؛ SHA256 نصب‌کننده جدید: `c2991fddebd65de18a1673f34f758f774e5fb042d2257e15f1a5ed3395c76740`. نصب مجدد VPS با r1 هنوز باید توسط لاگ واقعی تأیید شود.

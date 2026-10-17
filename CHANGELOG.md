@@ -1,5 +1,13 @@
 ## v0.10.0rc1 — استیج‌های ۹ و ۱۰ (۱۶ اکتبر ۲۰۲۶)
 
+## 0.12.0rc1 — installer r1 (2026-10-17)
+
+- Fixed Stage10-managed Nginx snippets being rejected during the Stage12 upgrade.
+- Recognize exact managed headers for Stage01–12, keep rejecting unmanaged/lookalike files, and refuse a snippet changed between plan and apply.
+- Six installer regression tests passed on temporary files: every managed version, Stage10 upgrade/rollback, fresh routing, unmanaged headers and concurrent edits. Application ZIP/source is unchanged.
+- Operator log confirms the original upgrade stopped before application/data replacement. VPS installation with r1 is still pending.
+
+
 ## 0.12.0rc1 — 2026-10-17
 
 - S11: seven queues, leased Beat, durable Paper provider receipts, fenced recovery, bounded retry/dead-letter, reconciliation, read-only External observations and owner operations center.

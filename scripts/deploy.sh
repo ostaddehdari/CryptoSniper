@@ -5,11 +5,11 @@
 set -Eeuo pipefail
 umask 077
 
-RELEASE_TAG='stage12-v0.12.0rc1-deploy'
+RELEASE_TAG='stage12-v0.12.0rc1-deploy-r1'
 ZIP_NAME='CryptoSniper-Stage12-v0.12.0rc1.zip'
 INSTALLER_NAME='cryptosniper-stage12-run.sh'
 ZIP_SHA256='71d3f3b9e789990a69e4680ddc726103c5d358bf2e2edd722540d210b8e9d7d1'
-INSTALLER_SHA256='cc1670dbacffab78408bafc1c44d516d8489c46844f7563e110cb0af62e3be2a'
+INSTALLER_SHA256='c2991fddebd65de18a1673f34f758f774e5fb042d2257e15f1a5ed3395c76740'
 RELEASE_BASE="https://github.com/ostaddehdari/CryptoSniper/releases/download/$RELEASE_TAG"
 MODE="${1:-install}"
 if [[ "$MODE" != 'install' && "$MODE" != '--check' ]]; then

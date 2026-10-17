@@ -224,3 +224,8 @@ CELERY_BEAT_SCHEDULE["price-alerts"] = {
     "schedule": 8.0,
     "options": {"queue": "alerts", "expires": 7},
 }
+CELERY_BEAT_SCHEDULE["portfolio-display-refresh"] = {
+    "task": "marketdata.refresh_portfolio",
+    "schedule": 20.0,
+    "options": {"queue": "market_data", "expires": 18},
+}

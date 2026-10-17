@@ -54,3 +54,47 @@ def refresh_watchlists():
             count += 1
     logger.info("Public market refresh complete", extra={"market_count": count})
     return {"refreshed": count, "available": len(ids)}
+
+
+@shared_task(name="marketdata.refresh_portfolio", acks_late=True, time_limit=40)
+def refresh_portfolio():
+    """Bounded round-robin rates for reported holdings, independently of an open UI."""
+    from apps.exchanges.models import BalanceSnapshot
+    from apps.trading.models import Trade
+
+    assets = (
+        BalanceSnapshot.objects.filter(
+            total_balance__gt=0, exchange_account__status__in=["connected", "restricted"]
+        )
+        .values_list("asset_id", flat=True)
+        .distinct()
+    )
+    exchanges = UserExchangeAccount.objects.filter(
+        status__in=["connected", "restricted"], permissions__can_read=True
+    ).values_list("exchange_id", flat=True)
+    ids = list(
+        ExchangeMarket.objects.filter(
+            exchange_id__in=exchanges, active=True, market_type="spot", base_asset_id__in=assets
+        )
+        .order_by("pk")
+        .values_list("pk", flat=True)[:2000]
+    )
+    ids = sorted(
+        set(ids)
+        | set(
+            Trade.objects.filter(state__in=["open", "partially_filled"]).values_list(
+                "market_id", flat=True
+            )
+        )
+    )
+    if not ids:
+        return {"refreshed": 0}
+    cursor = int(cache.get("portfolio:quote-cursor", 0)) % len(ids)
+    chunk = [ids[(cursor + i) % len(ids)] for i in range(min(2, len(ids)))]
+    cache.set("portfolio:quote-cursor", (cursor + len(chunk)) % len(ids), 3600)
+    count = 0
+    for market in ExchangeMarket.objects.filter(pk__in=chunk).select_related("exchange"):
+        quote = get_quote(market)
+        if not quote or quote["stale"]:
+            count += refresh_quote(market)["status"] == "ok"
+    return {"refreshed": count}

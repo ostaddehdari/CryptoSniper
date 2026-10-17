@@ -1,4 +1,4 @@
-name: Stage 03 checks
+name: CryptoSniper integration checks
 on:
   push:
   pull_request:
@@ -68,6 +68,16 @@ jobs:
           uv run python backend/manage.py collectstatic --noinput
       - name: Unit and PostgreSQL integration tests
         run: uv run pytest --junitxml=.runtime/pytest.xml
+      - name: Measured dashboard query and build budget
+        run: |
+          uv run python - <<'PYMETRICS'
+          import xml.etree.ElementTree as ET
+          for case in ET.parse('.runtime/pytest.xml').iter('testcase'):
+              props=case.find('properties')
+              if props is not None:
+                  for prop in props:
+                      print(prop.attrib['name']+'='+prop.attrib['value'])
+          PYMETRICS
       - name: Install browser for UI smoke
         run: uv run playwright install --with-deps chromium
       - name: Real Worker, Beat, HTTP and mobile/desktop smoke
@@ -76,7 +86,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: stage-03-evidence
+          name: stage-14-evidence
           path: |
             .runtime/pytest.xml
             .runtime/screenshots/*.png

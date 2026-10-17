@@ -22,6 +22,7 @@ dev = ["pytest>=8.3,<10", "pytest-django>=4.11,<5", "ruff>=0.11,<1", "httpx>=0.2
 DJANGO_SETTINGS_MODULE = "config.settings.test"
 pythonpath = ["backend"]
 testpaths = ["tests"]
+junit_family = "legacy"
 addopts = "-ra --strict-markers"
 markers = ["integration: requires actual PostgreSQL, Redis and Celery processes"]
 

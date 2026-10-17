@@ -2,6 +2,7 @@
 
 import pytest
 from django.urls import reverse
+from test_stages09_exits import paper_trade
 
 
 @pytest.mark.django_db
@@ -32,3 +33,17 @@ def test_manual_and_smart_paste_have_keyboard_safe_preserved_forms(client, djang
         assert b"form-draft.js" in response.content
     assert b'inputmode="decimal"' in manual.content
     assert b"localStorage" not in smart.content
+
+
+@pytest.mark.django_db
+def test_trade_catalogue_and_detail_keep_vital_mobile_fields(client, django_user_model):
+    user = django_user_model.objects.create_user(username="trades16")
+    trade = paper_trade(user)
+    client.force_login(user)
+    catalogue = client.get(reverse("paper-trades"))
+    detail = client.get(reverse("paper-trade-detail", args=[trade.pk]))
+    assert b"trade-desktop-table" in catalogue.content
+    assert b"trade-card-grid" in catalogue.content
+    for value in (b"trade-facts", b"trade-timeline", b"Trailing", b"P/L"):
+        assert value in detail.content
+    assert trade.market.get_market_type_display().encode() in detail.content

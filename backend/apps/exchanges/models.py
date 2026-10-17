@@ -171,6 +171,9 @@ class UserExchangeAccount(UserOwnedModel):
 
 
 class BalanceSnapshot(models.Model):
+    wallet_scope = models.CharField(
+        max_length=12, choices=[("spot", "Spot"), ("margin", "Margin")], default="spot"
+    )
     exchange_account = models.ForeignKey(
         UserExchangeAccount, on_delete=models.CASCADE, related_name="balance_snapshots"
     )

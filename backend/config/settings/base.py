@@ -148,6 +148,7 @@ CELERY_TASK_ROUTES = {
     "operations.*": {"queue": "maintenance"},
     "exchanges.*": {"queue": "maintenance"},
     "marketdata.*": {"queue": "market_data"},
+    "trading.close_remaining": {"queue": "orders"},
     "trading.process_paper": {"queue": "orders"},
     "trading.scan_outbox": {"queue": "maintenance"},
     "trading.monitor_paper_exits": {"queue": "trailing"},

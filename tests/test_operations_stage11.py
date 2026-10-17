@@ -34,7 +34,7 @@ def setup_trade(user):
     return trade, trade.orders.get().outbox
 
 
-@pytest.mark.django_db(transaction=True)
+@pytest.mark.django_db(transaction=True, serialized_rollback=True)
 def test_parallel_workers_one_durable_order_and_fill(django_user_model):
     user = django_user_model.objects.create_user(username="concurrent11")
     trade, box = setup_trade(user)

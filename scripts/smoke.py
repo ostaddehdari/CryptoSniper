@@ -141,6 +141,12 @@ def main():
                 page.get_by_role("button", name="ورود به فضای کار").click()
                 page.wait_for_url("**/dashboard/")
                 page.get_by_text("ذخیره نتایج", exact=True).wait_for()
+                page.get_by_role("heading", name="موجودی و ارزش حساب‌ها").wait_for()
+                assert page.locator("#dashboard-panels").get_attribute("aria-busy") == "false"
+                page.set_viewport_size({"width": 390, "height": 844})
+                assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+                page.screenshot(path=str(artifacts / "dashboard13-mobile.png"), full_page=True)
+                page.set_viewport_size({"width": 1440, "height": 1000})
                 page.screenshot(path=str(artifacts / "dashboard-desktop.png"), full_page=True)
                 page.goto(base + "/settings/profile/")
                 page.get_by_role("heading", name="پروفایل").wait_for()
@@ -236,6 +242,34 @@ def main():
                 assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
                 page.screenshot(
                     path=str(artifacts / "paper-trailing-closed-mobile.png"), full_page=True
+                )
+                page.set_viewport_size({"width": 1440, "height": 1000})
+                # Independent second Paper trade: confirmed UI -> durable row -> orders Worker.
+                import uuid
+
+                from apps.trading.intent import queue_paper_trade
+                from apps.trading.models import PaperExitFill, TradeAction
+
+                managed, _ = queue_paper_trade(user, current_plan.pk, request_key=uuid.uuid4())
+                wait_for(lambda: Trade.objects.get(pk=managed.pk).state == "open", seconds=45)
+                page.goto(base + f"/paper/{managed.pk}/")
+                page.locator('#close-remaining [name="confirmed"]').check()
+                page.get_by_role("button", name="تأیید و ارسال بستن باقی‌مانده").click()
+                wait_for(
+                    lambda: TradeAction.objects.filter(trade=managed, state="done").exists(),
+                    seconds=45,
+                )
+                assert (
+                    PaperExitFill.objects.filter(trade=managed, reason="manual_close").count() == 1
+                )
+                page.reload()
+                page.screenshot(path=str(artifacts / "manual-close14-desktop.png"), full_page=True)
+                page.goto(base + "/paper/?tab=history")
+                page.set_viewport_size({"width": 390, "height": 844})
+                assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+                page.screenshot(path=str(artifacts / "history14-mobile.png"), full_page=True)
+                print(
+                    "PASS Stage13 dashboard mobile and Stage14 UI-confirmed close via independent Worker"
                 )
                 page.set_viewport_size({"width": 1440, "height": 1000})
                 page.goto(base + "/inbox/receive/")
@@ -338,6 +372,12 @@ def main():
                 page.locator(".sidebar").get_by_role("link", name="وضعیت سرویس‌ها").click()
                 page.wait_for_url("**/system/")
                 page.get_by_text("ذخیره نتایج", exact=True).wait_for()
+                page.get_by_role("heading", name="موجودی و ارزش حساب‌ها").wait_for()
+                assert page.locator("#dashboard-panels").get_attribute("aria-busy") == "false"
+                page.set_viewport_size({"width": 390, "height": 844})
+                assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+                page.screenshot(path=str(artifacts / "dashboard13-mobile.png"), full_page=True)
+                page.set_viewport_size({"width": 1440, "height": 1000})
                 page.screenshot(path=str(artifacts / "system-mobile.png"), full_page=True)
                 with page.expect_response(
                     lambda res: res.url == base + "/system/probe/" and res.request.method == "POST"

@@ -50,7 +50,25 @@ def detail_context(user, pk, params):
     return {
         "request_key": str(uuid4()),
         "needs_reconciliation": trade.state in ("uncertain", "submitting", "partially_filled"),
-        "recovery_open": False,
+        "recovery_open": trade.account.recoveryissue_set.filter(resolved=False).exists(),
+        "execution_snapshot": {
+            k: v
+            for k, v in trade.snapshot.items()
+            if k
+            in {
+                "entry_price",
+                "stop_loss",
+                "capital",
+                "leverage",
+                "side",
+                "source",
+                "market_type",
+                "trailing_sl",
+                "percentage_trailing",
+                "trailing_distance_percent",
+            }
+            and isinstance(v, (str, int, bool, type(None)))
+        },
         "actions": trade.actions.order_by("-pk")[:10],
         "trade": trade,
         "events": events,

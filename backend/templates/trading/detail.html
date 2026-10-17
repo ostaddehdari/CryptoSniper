@@ -60,7 +60,7 @@
 </section>
 {% else %}<section class="panel manual-target-panel"><p>طرح حفاظت در انتظار اولین Fill ورودی است.</p></section>{% endif %}
 
-<section class="panel manual-target-panel"><h2>مبدأ و تصمیم معامله</h2>
+<section class="panel manual-target-panel"><h2>مبدأ و تصمیم معامله</h2><p>Snapshot تثبیت‌شده: {{ execution_snapshot }}</p>
 <p>{{ trade.account.label }} · {{ trade.market.exchange.name }} · {{ trade.market.get_market_type_display }} · {{ trade.get_side_display }} · اهرم {{ trade.plan.leverage|default:1 }}</p>
 {% if trade.signal %}<p>منبع: {{ trade.signal.source.name }} · نسخه {{ trade.signal.revision }} · {{ trade.signal.get_status_display }}</p><h3>متن اصلی سیگنال</h3><pre class="raw-signal">{{ trade.signal.raw_signal.original_text }}</pre><h3>مقادیر ساختارمند</h3><p>{{ trade.signal.side }} · Entry {{ trade.signal.entry_price }} · SL {{ trade.signal.stop_loss }} · {{ trade.signal.parser_version }}</p>{% else %}<p>ورود دستی؛ سیگنال خارجی ندارد.</p>{% endif %}
 {% if trade.plan %}<p>Plan #{{ trade.plan_id }} · سرمایه {{ trade.plan.capital }} · Entry {{ trade.plan.entry_price }} · SL {{ trade.plan.stop_loss }} · TP {{ trade.plan.tp1 }} / {{ trade.plan.tp2|default:'—' }} / {{ trade.plan.tp3|default:'—' }}</p>{% endif %}

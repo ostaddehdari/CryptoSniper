@@ -153,7 +153,12 @@ def summarize(user, trades):
                 bucket["unpriced_open"] += 1
             else:
                 bucket["unrealized"] += trade.stats["unrealized"]
-        if trade.state == "closed" and trade.stats["realized"] is not None:
+        if (
+            trade.state == "closed"
+            and trade.stats["realized"] is not None
+            and trade.stats["entry_quantity"] > 0
+            and trade.stats["remaining"] == 0
+        ):
             bucket["closed"] += 1
             bucket["wins"] += trade.stats["realized"] > 0
     for bucket in buckets.values():

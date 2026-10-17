@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "apps.tradeplans",
     "apps.signals",
     "apps.trading",
+    "apps.operations",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -131,13 +132,28 @@ CELERY_ENABLE_UTC = True
 CELERY_TASK_ALWAYS_EAGER = False
 CELERY_TASK_DEFAULT_QUEUE = "maintenance"
 CELERY_TASK_CREATE_MISSING_QUEUES = False
-CELERY_TASK_QUEUES = {
-    "orders": {"exchange": "orders", "routing_key": "orders"},
-    "reports": {"exchange": "reports", "routing_key": "reports"},
-    "maintenance": {"exchange": "maintenance", "routing_key": "maintenance"},
+OPERATION_QUEUES = (
+    "signals",
+    "orders",
+    "market_data",
+    "trailing",
+    "alerts",
+    "reports",
+    "maintenance",
+)
+CELERY_TASK_QUEUES = {q: {"exchange": q, "routing_key": q} for q in OPERATION_QUEUES}
+CELERY_TASK_ROUTES = {
+    "core.*": {"queue": "maintenance"},
+    "operations.*": {"queue": "maintenance"},
+    "exchanges.*": {"queue": "maintenance"},
+    "marketdata.*": {"queue": "market_data"},
+    "trading.process_paper": {"queue": "orders"},
+    "trading.scan_outbox": {"queue": "maintenance"},
+    "trading.monitor_paper_exits": {"queue": "trailing"},
+    "trading.paper_feed_staleness": {"queue": "trailing"},
+    "alerts.*": {"queue": "alerts"},
 }
-CELERY_TASK_ROUTES = {"core.worker_heartbeat": {"queue": "maintenance"}}
-CELERY_TASK_ROUTES["exchanges.sync_account"] = {"queue": "maintenance"}
+CELERY_BEAT_SCHEDULER = "apps.operations.scheduler.LeasedScheduler"
 CELERY_BROKER_CONNECTION_TIMEOUT = 3
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_BROKER_CONNECTION_MAX_RETRIES = 3
@@ -166,17 +182,17 @@ CELERY_BEAT_SCHEDULE["paper-outbox-scan"] = {
 CELERY_BEAT_SCHEDULE["paper-exit-monitor"] = {
     "task": "trading.monitor_paper_exits",
     "schedule": 12.0,
-    "options": {"queue": "maintenance", "expires": 10},
+    "options": {"queue": "trailing", "expires": 10},
 }
 CELERY_BEAT_SCHEDULE["paper-feed-staleness"] = {
     "task": "trading.paper_feed_staleness",
     "schedule": 30.0,
-    "options": {"queue": "maintenance", "expires": 25},
+    "options": {"queue": "trailing", "expires": 25},
 }
 CELERY_BEAT_SCHEDULE["market-display-refresh"] = {
     "task": "marketdata.refresh_watchlists",
     "schedule": 30.0,
-    "options": {"queue": "maintenance", "expires": 20},
+    "options": {"queue": "market_data", "expires": 20},
 }
 
 LOGGING = {
@@ -189,3 +205,16 @@ LOGGING = {
         "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
     },
 }
+
+CELERY_BEAT_SCHEDULE["account-recovery"] = {
+    "task": "operations.recover",
+    "schedule": 20.0,
+    "options": {"queue": "maintenance", "expires": 18},
+}
+for queue_name in OPERATION_QUEUES:
+    CELERY_BEAT_SCHEDULE["heartbeat-" + queue_name] = {
+        "task": "operations.heartbeat",
+        "schedule": 30.0,
+        "args": (queue_name,),
+        "options": {"queue": queue_name, "expires": 25},
+    }

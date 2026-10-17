@@ -76,7 +76,7 @@ def main():
                     subprocess.Popen(args, cwd=BACKEND, env=env, stdout=log, stderr=log)
                 )
 
-            for queue in ("orders", "reports", "maintenance"):
+            for queue in settings.OPERATION_QUEUES:
                 start(
                     queue,
                     [

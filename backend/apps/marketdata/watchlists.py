@@ -133,7 +133,7 @@ def request_market_refresh(request, pk, market_id):
         return redirect("watchlists")
     throttle = f"marketdata:v1:manual:{request.user.pk}:{market.pk}"
     if cache.add(throttle, "1", timeout=20):
-        refresh_market.apply_async(args=[market.pk], queue="maintenance")
+        refresh_market.apply_async(args=[market.pk], queue="market_data")
         messages.success(request, "به‌روزرسانی قیمت در صف قرار گرفت.")
     else:
         messages.info(request, "لطفاً برای به‌روزرسانی مجدد کمی صبر کنید.")

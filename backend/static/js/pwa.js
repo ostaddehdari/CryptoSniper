@@ -10,7 +10,9 @@
   window.addEventListener("offline", render);
   render();
   document.addEventListener("submit", event => {
-    const method = (event.target.method || "get").toLowerCase();
+    // A form control named "method" shadows HTMLFormElement.method (Smart Paste
+    // intentionally has one), so read the attribute instead of the DOM property.
+    const method = (event.target.getAttribute("method") || "get").toLowerCase();
     if (method === "post" && !navigator.onLine) {
       event.preventDefault();
       if (banner) {

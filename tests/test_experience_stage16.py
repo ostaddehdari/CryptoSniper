@@ -1,5 +1,7 @@
 """Stage16 final responsive shell, PWA and accessibility checks."""
 
+from pathlib import Path
+
 import pytest
 from apps.signals.models import SignalSource
 from django.urls import reverse
@@ -86,6 +88,12 @@ def test_pwa_manifest_and_worker_cache_static_assets_only(client):
     assert b"startsWith(staticPrefix)" in body
     assert b"Background Sync" not in body and b"indexedDB" not in body
     assert b"/api/" not in body and b"/dashboard/" not in body
+
+
+def test_offline_submit_guard_tolerates_a_control_named_method():
+    script = (Path(__file__).parents[1] / "backend/static/js/pwa.js").read_text()
+    assert 'event.target.getAttribute("method")' in script
+    assert "event.target.method" not in script
 
 
 @pytest.mark.django_db

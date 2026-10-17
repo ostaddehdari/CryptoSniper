@@ -575,10 +575,17 @@
           "pytest_passed": 137,
           "dashboard_queries": 16,
           "dashboard_build_ms": 25.76,
-          "workload": "one Paper trade with owner data; small CI workload, not production capacity"
+          "workload": "one Paper trade with owner data; small CI workload, not production capacity",
+          "evidence_artifact_id": 12104864902
         }
       ],
-      "commit_shas": [],
+      "commit_shas": [
+        "784a901cd4a0d2de34c84bae54de7d817df87070",
+        "7fbd3ba68071b798b069808e9e2c297a8ad54f5f",
+        "5af43b754157c60316d5859933f006a0f658a4d0",
+        "2c7221f6296e0ce584acb76ab1db6a8a5aff4594",
+        "5212ab4e52bc03882300a1ec7a514e3ca8c278e4"
+      ],
       "blockers": [
         "Stage14 VPS upgrade and public-browser acceptance not yet performed.",
         "Real Binance credentials/provider acceptance and live/Margin/Short management are outside the verified Paper implementation.",
@@ -605,10 +612,17 @@
           "pytest_passed": 137,
           "dashboard_queries": 16,
           "dashboard_build_ms": 25.76,
-          "workload": "one Paper trade with owner data; small CI workload, not production capacity"
+          "workload": "one Paper trade with owner data; small CI workload, not production capacity",
+          "evidence_artifact_id": 12104864902
         }
       ],
-      "commit_shas": [],
+      "commit_shas": [
+        "447635c8a0151819d221343b0bb459a544d41dca",
+        "398a787171bce1f2bbf16005587561f8409aa839",
+        "f77a8fc44e9b22808f387742cc51c40e1591ac6c",
+        "107b670ed7f6004cc7deabcde1a421eeca4c9c4f",
+        "c0ab188cdaedf928da65526c6cf51ab32e9b2ced"
+      ],
       "blockers": [
         "Stage14 VPS upgrade and public-browser acceptance not yet performed.",
         "Real Binance credentials/provider acceptance and live/Margin/Short management are outside the verified Paper implementation.",

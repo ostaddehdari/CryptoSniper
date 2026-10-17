@@ -28,7 +28,7 @@ Query count و build latency در CI و JUnit ثبت می‌شوند؛ این ا
 
 ## نتیجهٔ بررسی نهایی
 
-- [CI موفق منبع دقیق](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39045862763)، commit `83e3db394728c0e8b379165cf2ce53873106b561`: **۱۳۷ تست موفق**؛ lint/format، Django check، migration drift، migration واقعی، PostgreSQL/Redis، هفت Worker و Beat و Chromium.
+- [CI موفق منبع دقیق](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39045862763)، commit `83e3db394728c0e8b379165cf2ce53873106b561`، artifact `12104864902`: **۱۳۷ تست موفق**؛ lint/format، Django check، migration drift، migration واقعی، PostgreSQL/Redis، هفت Worker و Beat و Chromium.
 - بستن با تأیید UI تا Fill در orders Worker، رقابت close/SL/TP، replay و مالکیت پاس شد. داشبورد دارای داده و History روی موبایل، عرض‌های ۳۲۰/۳۹۰/۷۶۸، دسکتاپ، offline/reconnect و نبود خطای JS/overflow پاس شد. هشدار و ثبت مستقل پس از بستن مرورگر نیز همچنان پاس است.
 - بودجهٔ داشبورد در workload کوچک آزمون: **۱۶ query و ۲۵٫۷۶ میلی‌ثانیه** build سمت سرور؛ تضمین latency یا ظرفیت VPS نیست.
 - نصب‌کنندهٔ Stage14 دوازده آزمون regression مشترک Stage12/14 برای headerهای قبلی، unmanaged/تغییر هم‌زمان، نصب مسیر و rollback را پاس کرد. فایل‌های واقعی Nginx سرور در این آزمون‌ها تغییر نکردند.

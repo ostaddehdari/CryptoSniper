@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "apps.trading",
     "apps.operations",
     "apps.alerts",
+    "apps.reports",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

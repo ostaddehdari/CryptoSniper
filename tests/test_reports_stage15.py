@@ -4,6 +4,7 @@ from decimal import Decimal
 
 import pytest
 from apps.portfolio.metrics import result_for, summarize, trade_queryset
+from apps.reports.stats import classify_result, report_statistics
 from apps.trading.exits_engine import process_paper_price
 from apps.trading.models import TradeFinanceEvent
 from django.utils import timezone
@@ -59,3 +60,23 @@ def test_unknown_fee_conversion_never_invents_net_result(django_user_model):
     assert data["trades"][0].stats["paid_fees"] is None
     assert data["trades"][0].stats["realized"] is None
     assert data["buckets"][0]["unpriced_open"] == 1
+
+
+@pytest.mark.django_db
+def test_statistics_exclude_open_and_define_breakeven_denominator(django_user_model):
+    user = django_user_model.objects.create_user(username="stats15")
+    open_trade = paper_trade(user)
+    closed_trade = paper_trade(user)
+    process_paper_price(closed_trade.pk, price="59000", event_key="stats-loss")
+    report = report_statistics(user)
+    bucket = report["buckets"][0]
+    assert bucket["total_trades"] == 2
+    assert bucket["open_trades"] == 1
+    assert bucket["closed_trades"] == 1
+    assert bucket["losses"] == 1 and bucket["wins"] == 0
+    assert bucket["win_rate"] == 0
+    assert bucket["best_trade"] == bucket["worst_trade"] < 0
+    assert open_trade.pk in {trade.pk for trade in report["trades"]}
+    assert classify_result(Decimal("0.00000001")) == "breakeven"
+    assert classify_result(Decimal("-0.00000001")) == "breakeven"
+    assert classify_result(Decimal("0.00000002")) == "win"

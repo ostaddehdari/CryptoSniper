@@ -1,0 +1,104 @@
+name: Build Stage13-14 cumulative deployment
+on:
+  push:
+    paths:
+      - .github/workflows/release-stage14.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Installer upgrade, unmanaged config and rollback regression tests
+        run: python3 -m unittest discover -s tests -p test_installer_nginx.py -v
+      - name: Require successful integration checks for the exact source
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          PIN=aa22b995b70d5394f296ba387837ed4c4ee6427b
+          export PIN
+          python3 - <<'PYCI'
+          import json,os,subprocess,time
+          pin=os.environ['PIN']
+          for attempt in range(120):
+              rows=json.loads(subprocess.check_output(['gh','run','list','--workflow','ci.yml','--commit',pin,'--json','conclusion,status,url'],text=True))
+              if any(r['status']=='completed' and r['conclusion']=='success' for r in rows):
+                  print('PASS: exact source completed CI.')
+                  break
+              if any(r['status']=='completed' and r['conclusion'] in ('failure','cancelled') for r in rows):
+                  raise SystemExit('Exact-source CI failed; no release is permitted.')
+              time.sleep(5)
+          else:
+              raise SystemExit('Timed out waiting for exact-source CI; no release.')
+          PYCI
+      - name: Assemble exact source and validated installer
+        shell: bash
+        run: |
+          set -euo pipefail
+          PIN=aa22b995b70d5394f296ba387837ed4c4ee6427b
+          export PIN
+          mkdir -p dist
+          git archive --format=zip --prefix=CryptoSniper/ -o dist/CryptoSniper-Stage14-v0.14.0rc1.zip "$PIN"
+          cp scripts/cryptosniper-stage14-run.sh dist/cryptosniper-stage14-run.sh
+          python3 - <<'PY'
+          import hashlib,os,re,subprocess
+          from pathlib import Path
+          pin=os.environ['PIN']
+          def blob(path):
+              return subprocess.check_output(['git','rev-parse',pin+':'+path],text=True).strip()
+          archive=Path('dist/CryptoSniper-Stage14-v0.14.0rc1.zip')
+          substitutions={
+              '__SOURCE_COMMIT__':pin,
+              '__STAGE14_ARCHIVE_SHA256__':hashlib.file_digest(archive.open('rb'),'sha256').hexdigest(),
+              '__BLOB_PYPROJECT__':blob('pyproject.toml'),
+              '__BLOB_UVLOCK__':blob('uv.lock'),
+              '__BLOB_PROGRESS__':blob('docs/progress.json'),
+              '__BLOB_EXITS_ENGINE__':blob('backend/apps/trading/exits_engine.py'),
+              '__BLOB_RECOVERY__':blob('backend/apps/operations/recovery.py'),
+              '__BLOB_ALERT_ENGINE__':blob('backend/apps/alerts/engine.py'),
+              '__BLOB_TRADE_ACTIONS__':blob('backend/apps/trading/actions.py'),
+              '__BLOB_PORTFOLIO_METRICS__':blob('backend/apps/portfolio/metrics.py'),
+          }
+          path=Path('dist/cryptosniper-stage14-run.sh')
+          text=path.read_text()
+          for old,new in substitutions.items():
+              if old not in text: raise SystemExit('Missing placeholder '+old)
+              text=text.replace(old,new)
+          if re.search(r'__[A-Z0-9_]+__',text): raise SystemExit('Unexpanded placeholders')
+          path.write_text(text)
+          PY
+          chmod +x dist/cryptosniper-stage14-run.sh
+          bash -n dist/cryptosniper-stage14-run.sh
+          printf 'SOURCE=%s\nCI=https://github.com/ostaddehdari/CryptoSniper/actions/runs/39046206076\nMODE=Paper Spot Long; no real exchange writes\nINSTALLER_BUILD_COMMIT=%s\n' "$PIN" "$(git rev-parse HEAD)" > dist/runlog.txt
+          bash dist/cryptosniper-stage14-run.sh --check dist/CryptoSniper-Stage14-v0.14.0rc1.zip | tee -a dist/runlog.txt
+          (cd dist && sha256sum CryptoSniper-Stage14-v0.14.0rc1.zip cryptosniper-stage14-run.sh runlog.txt > SHA256SUMS.txt)
+      - name: Save exact deployment bytes for independent verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage14-deployment
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 7
+      - name: Publish immutable cumulative prerelease
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG=stage14-v0.14.0rc1-deploy
+          PIN=aa22b995b70d5394f296ba387837ed4c4ee6427b
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo 'Release already exists; assets are immutable. Verify the existing release.'
+          else
+            gh release create "$TAG" dist/* --target "$PIN" --prerelease \
+              --title "CryptoSniper Stages 13+14 — cumulative v0.14.0rc1" \
+              --notes "Cumulative Stages 01-14: actual owner dashboard, wallet-aware balances and fresh-rate valuation, shared fill/fee net P&L, mobile/desktop workspace, filtered paginated trade history and safe evidence timeline, confirmed durable Paper close through orders Worker with SL/TP serialization, pending/unknown/reconciliation states and reconnect. All 137 tests plus real PostgreSQL/Redis/seven Workers/Beat/Chromium passed. Installer supports prior exact managed Stage01-14 Nginx headers and preserves private settings/login/keyring/data, with backup and rollback. Real Binance writes and Margin/Short remain disabled; External is read-only. Partial/uncertain entry needs reconciliation before close. Stage14 VPS installation/public-browser acceptance and real Binance credentials remain pending. Telethon/AI remains Stage21. Exact-source CI: https://github.com/ostaddehdari/CryptoSniper/actions/runs/39046206076."
+          fi
+          cat dist/SHA256SUMS.txt
+          gh release view "$TAG" --json assets,url

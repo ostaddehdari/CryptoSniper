@@ -99,3 +99,15 @@
 .paper-price-form p{width:100%}
 .paper-price-form label{min-width:200px;flex:1}
 @media(max-width:760px){.exit-controls{grid-template-columns:1fr}.paper-price-form{display:grid}.paper-price-form label{min-width:0}}
+
+/* Stage 11/12 owner operations and alert workspace */
+.alert-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit,minmax(min(100%,310px),1fr)); }
+.alert-form { max-width: 760px; }
+.alert-form p { display: grid; gap: .5rem; margin-block: 1rem; }
+.alert-form input:not([type=checkbox]):not([type=hidden]), .alert-form select { width: 100%; min-width: 0; }
+.alert-form .errorlist { color: var(--danger, #b91c1c); }
+.ops-account, .notification-item { border-block-end: 1px solid var(--border,#e2e8f0); padding-block: 1rem; overflow-wrap:anywhere; }
+.ops-account form { display: flex; flex-wrap: wrap; gap: .5rem; }
+.notification-unread { border-inline-start: 3px solid var(--primary,#0f766e); padding-inline-start: 1rem; }
+.notification-bell { text-decoration: none; white-space: nowrap; font-size: .85rem; }
+@media(max-width:480px) { .notification-bell { padding: .2rem; min-width: 30px; } }

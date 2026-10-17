@@ -1,5 +1,6 @@
 from apps.accounts import views as account_views
 from apps.alerts import notifications as notification_views
+from apps.alerts import views as alert_views
 from apps.core import views
 from apps.core.health import dependency_status
 from apps.exchanges import views as exchange_views
@@ -16,7 +17,7 @@ from django.urls import path
 
 
 def live(request):
-    return JsonResponse({"status": "ok", "service": "cryptosniper", "stage": "S10"})
+    return JsonResponse({"status": "ok", "service": "cryptosniper", "stage": "S12"})
 
 
 def ready(request):
@@ -31,6 +32,11 @@ def ready(request):
 
 
 urlpatterns = [
+    path("alerts/", alert_views.center, name="alerts"),
+    path("alerts/new/", alert_views.edit, name="alert-new"),
+    path("alerts/<int:pk>/edit/", alert_views.edit, name="alert-edit"),
+    path("alerts/<int:pk>/disable/", alert_views.disable, name="alert-disable"),
+    path("api/v1/alerts/", alert_views.api_list, name="api-alerts"),
     path("notifications/", notification_views.center, name="notifications"),
     path(
         "notifications/preferences/",

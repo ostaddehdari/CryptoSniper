@@ -38,8 +38,13 @@ def watchlist_page(request):
             "market", "market__exchange"
         )[:100]
     )
+    from apps.alerts.models import PriceAlert
+
     for entry in entries:
         entry.quote = get_quote(entry.market)
+        entry.alert_count = PriceAlert.objects.filter(
+            owner=request.user, market=entry.market, enabled=True
+        ).count()
     return render(
         request,
         "marketdata/watchlists.html",

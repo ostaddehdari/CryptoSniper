@@ -63,3 +63,8 @@ def recover():
         ):
             reconcile_account(pk)
         return {"processed": len(outcomes)}
+
+
+@shared_task(name="operations.reconcile_one", acks_late=True, time_limit=120)
+def reconcile_one(account_id):
+    return reconcile_account(account_id)

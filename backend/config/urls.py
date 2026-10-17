@@ -4,6 +4,7 @@ from apps.core.health import dependency_status
 from apps.exchanges import views as exchange_views
 from apps.marketdata import views as market_views
 from apps.marketdata import watchlists as watchlist_views
+from apps.operations import views as operation_views
 from apps.signals import views as inbox_views
 from apps.tradeplans import context as trade_context
 from apps.tradeplans import views as plan_views
@@ -29,6 +30,9 @@ def ready(request):
 
 
 urlpatterns = [
+    path("operations/", operation_views.center, name="operations"),
+    path("operations/<int:pk>/control/", operation_views.control, name="operations-control"),
+    path("api/v1/operations/health/", operation_views.api_health, name="api-operations-health"),
     path("", views.home, name="home"),
     path("auth/login/", account_views.SignInView.as_view(), name="login"),
     path("auth/logout/", account_views.sign_out, name="logout"),

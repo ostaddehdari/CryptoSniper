@@ -10,6 +10,7 @@
 <a href="{% url 'manual-list' %}" class="nav-link {% if nav == 'manual' %}active{% endif %}"><span class="nav-symbol" aria-hidden="true">✎</span> برنامه معامله دستی</a>
 <a href="{% url 'watchlists' %}" class="nav-link {% if nav == 'watchlist' %}active{% endif %}"><span class="nav-symbol" aria-hidden="true">◉</span> واچ‌لیست</a>
 <a href="{% url 'exchange-center' %}" class="nav-link {% if nav == 'exchanges' %}active{% endif %}" {% if nav == 'exchanges' %}aria-current="page"{% endif %}><span class="nav-symbol" aria-hidden="true">⇄</span> صرافی‌ها</a>
+<a class="nav-link {% if nav == 'operations' %}active{% endif %}" href="{% url 'operations' %}">⌁ مرکز عملیات</a>
 <a href="{% url 'system' %}" class="nav-link {% if nav == 'system' %}active{% endif %}" {% if nav == 'system' %}aria-current="page"{% endif %}><span class="nav-symbol" aria-hidden="true">⌁</span> وضعیت سرویس‌ها</a>
 <a href="{% url 'profile' %}" class="nav-link {% if nav == 'settings' %}active{% endif %}" {% if nav == 'settings' %}aria-current="page"{% endif %}><span class="nav-symbol" aria-hidden="true">⚙</span> تنظیمات حساب</a></nav>
 <div class="coming-next"><span class="eyebrow">اکنون آماده</span><p>اتصال امن صرافی و شبیه‌ساز Paper فعال است. اجرای سفارش واقعی همچنان خاموش است.</p></div>

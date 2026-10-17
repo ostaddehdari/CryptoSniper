@@ -66,21 +66,9 @@ def list_trades(request):
 @never_cache
 @require_GET
 def trade_detail(request, pk):
-    trade = _owned(request.user, pk)
-    return render(
-        request,
-        "trading/detail.html",
-        {
-            "trade": trade,
-            "events": trade.events.all(),
-            "orders": trade.orders.all(),
-            "nav": "paper",
-            "position": getattr(trade, "position", None),
-            "protection": getattr(trade, "protection", None),
-            "targets": trade.targets.order_by("position"),
-            "exit_fills": trade.exit_fills.order_by("-occurred_at")[:25],
-        },
-    )
+    from .detail_context import detail_context
+
+    return render(request, "trading/detail.html", detail_context(request.user, pk, request.GET))
 
 
 @login_required

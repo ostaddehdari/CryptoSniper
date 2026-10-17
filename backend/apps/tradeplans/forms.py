@@ -70,6 +70,17 @@ class ManualTradeForm(forms.Form):
         for key, field in self.fields.items():
             if key not in {"client_token", "origin_signal"}:
                 field.widget.attrs.setdefault("class", "input")
+            if key in {
+                "entry_price",
+                "tp1",
+                "tp2",
+                "tp3",
+                "stop_loss",
+                "capital",
+                "leverage",
+                "trailing_distance",
+            }:
+                field.widget.attrs.update({"inputmode": "decimal", "dir": "ltr"})
         if not self.is_bound:
             self.initial.setdefault("client_token", uuid.uuid4())
 

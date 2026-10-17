@@ -40,4 +40,4 @@ Worker قیمت تازه را از adapter شبیه‌ساز می‌گیرد ی�
 
 - ZIP SHA256: `4e16302de319c8277f96155e5f671e84df4acecec878db6d31963c9aeef96fd4`
 - Installer SHA256: `6136648196c48c714e25900965758c2b1a5ff97d054332e4fe878048c257254e`
-- `scripts/deploy.sh` همین tag و هر دو SHA را pin می‌کند. آخرین نصب VPS تأییدشده همان Stage12 است؛ Stage14 هنوز باید با لاگ اپراتور تأیید شود.
+- `scripts/deploy.sh` همین tag و هر دو SHA را pin می‌کند. لاگ اپراتور در 2026-10-17 نصب موفق Stage14، حفظ داده/تنظیمات/keyring/login، سلامت ده سرویس و HTTP 200 مسیرهای readiness/login روی Nginx محلی را تأیید کرد؛ پذیرش مرورگر عمومی همچنان باز است.

@@ -1,3 +1,12 @@
+## 0.16.0rc1 — استیج‌های ۱۵ و ۱۶ (2026-10-17)
+
+- P/L مالی Decimal با gross/net، تبدیل fee asset، بهره/بازپرداخت Margin و policy صریح unknown؛ آمار با breakeven ثابت و win-rate مستند.
+- aggregateهای idempotent روز/هفته/ماه بر اساس timezone و تفکیک coin/exchange/source، cache versioned و rebuild مستقل در صف reports.
+- مرکز گزارش با فیلتر، drill-down، CSV مقاوم در برابر formula injection و نمودار SVG هم‌منبع.
+- navigation و کارت‌های موبایل، فرم‌های سازگار با کیبورد و draft فقط در history، جدول/کارت Trades و تنظیمات یکپارچه؛ Telegram/AI همچنان S21.
+- PWA با cache فقط static، بدون cache داده خصوصی یا صف POST؛ offline submit متوقف می‌شود و پس از اتصال replay خودکار ندارد.
+- نصب Stage14 توسط لاگ اپراتور تأیید شد. Release تجمیعی Stage16 پس از CI دقیق منتشر می‌شود؛ real Binance writes و Margin/Short خاموش‌اند.
+
 ## 0.14.0rc1 — استیج‌های ۱۳ و ۱۴ (2026-10-17)
 
 - Dashboard با موجودی و ارزش‌گذاری دارای زمان/نرخ، P/L مشترک Fill/fee، شاخص‌های timezone، نمایش موبایل/دسکتاپ و refresh جزئی با خطای واضح.

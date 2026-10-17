@@ -5,9 +5,9 @@
     "S01",
     "S02"
   ],
-  "current_stage": "S14",
-  "next_stage": "S15",
-  "last_completed_work": "S14-W05",
+  "current_stage": "S16",
+  "next_stage": "S17",
+  "last_completed_work": "S16-W05",
   "implementation_started": true,
   "stage_results": {
     "S01": {
@@ -593,6 +593,13 @@
           "archive_sha256": "4e16302de319c8277f96155e5f671e84df4acecec878db6d31963c9aeef96fd4",
           "installer_sha256": "6136648196c48c714e25900965758c2b1a5ff97d054332e4fe878048c257254e",
           "server_installed": false
+        },
+        {
+          "name": "Operator Stage14 successful VPS upgrade",
+          "status": "passed",
+          "date": "2026-10-17T16:53:00Z",
+          "verified_by": "User-provided terminal log",
+          "evidence": "SHA/check passed; private configuration, database, login and keyring preserved; migrations/static completed; ten services healthy; local Nginx readiness/login HTTP200; INSTALL_OK and DEPLOY_OK."
         }
       ],
       "commit_shas": [
@@ -603,7 +610,7 @@
         "5212ab4e52bc03882300a1ec7a514e3ca8c278e4"
       ],
       "blockers": [
-        "Stage14 VPS upgrade and public-browser acceptance not yet performed.",
+        "Stage14 VPS upgrade passed by operator log; public-browser acceptance remains pending.",
         "Real Binance credentials/provider acceptance and live/Margin/Short management are outside the verified Paper implementation.",
         "Large-history performance acceptance pending; the dashboard currently reads all owner ledger rows and only measured small-workload budgets are reported."
       ],
@@ -647,6 +654,13 @@
           "archive_sha256": "4e16302de319c8277f96155e5f671e84df4acecec878db6d31963c9aeef96fd4",
           "installer_sha256": "6136648196c48c714e25900965758c2b1a5ff97d054332e4fe878048c257254e",
           "server_installed": false
+        },
+        {
+          "name": "Operator Stage14 successful VPS upgrade",
+          "status": "passed",
+          "date": "2026-10-17T16:53:00Z",
+          "verified_by": "User-provided terminal log",
+          "evidence": "SHA/check passed; private configuration, database, login and keyring preserved; migrations/static completed; ten services healthy; local Nginx readiness/login HTTP200; INSTALL_OK and DEPLOY_OK."
         }
       ],
       "commit_shas": [
@@ -657,7 +671,7 @@
         "c0ab188cdaedf928da65526c6cf51ab32e9b2ced"
       ],
       "blockers": [
-        "Stage14 VPS upgrade and public-browser acceptance not yet performed.",
+        "Stage14 VPS upgrade passed by operator log; public-browser acceptance remains pending.",
         "Real Binance credentials/provider acceptance and live/Margin/Short management are outside the verified Paper implementation.",
         "Closing a partially filled or uncertain entry requires reconciliation first; automatic cancellation of an unfilled entry remainder is not implemented."
       ],
@@ -666,18 +680,93 @@
       "release_commit": "aa22b995b70d5394f296ba387837ed4c4ee6427b"
     },
     "S15": {
-      "status": "not_started",
-      "completed_works": [],
-      "checks": [],
-      "commit_shas": [],
-      "blockers": []
+      "status": "partial",
+      "completed_works": [
+        "S15-W01",
+        "S15-W02",
+        "S15-W03",
+        "S15-W04",
+        "S15-W05"
+      ],
+      "checks": [
+        {
+          "name": "PostgreSQL/Redis/seven Workers/Beat unit and integration checks",
+          "status": "passed",
+          "run_id": 39055119271,
+          "tested_commit": "57c19e1e289cd997ffe821ec454a453b7d2e680b",
+          "pytest_passed": 149,
+          "note": "All unit/integration checks passed; this run's browser step exposed the subsequently fixed named-form-control JavaScript regression."
+        },
+        {
+          "name": "Exact-code PostgreSQL/Redis/seven Workers/Beat/Chromium integration after browser fix",
+          "status": "passed",
+          "run_id": 39055497955,
+          "url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/39055497955",
+          "tested_commit": "e1d376b75b329d8b80016da17a4811951faf0a59",
+          "pytest_passed": 150,
+          "dashboard_queries": 17,
+          "dashboard_build_ms": 26.61,
+          "evidence_artifact_id": 12109002649
+        }
+      ],
+      "commit_shas": [
+        "4c94ceb9",
+        "fb18d575",
+        "af6da53",
+        "e7b7dff",
+        "56ef945"
+      ],
+      "blockers": [
+        "Real Binance credential/provider acceptance and live/Margin execution remain outside the verified Paper scope.",
+        "Stage16 release installation and public-browser acceptance remain pending."
+      ],
+      "implementation": "All five reporting works are implemented: Decimal gross/net P/L, fee conversion and interest policy, fixed breakeven statistics, idempotent timezone aggregates, CSV/SVG exports, cache invalidation and trade drill-down. Final exact-source CI/release evidence is added after publication."
     },
     "S16": {
-      "status": "not_started",
-      "completed_works": [],
-      "checks": [],
-      "commit_shas": [],
-      "blockers": []
+      "status": "partial",
+      "completed_works": [
+        "S16-W01",
+        "S16-W02",
+        "S16-W03",
+        "S16-W04",
+        "S16-W05"
+      ],
+      "checks": [
+        {
+          "name": "PostgreSQL/Redis/seven Workers/Beat unit and integration checks",
+          "status": "passed",
+          "run_id": 39055119271,
+          "tested_commit": "57c19e1e289cd997ffe821ec454a453b7d2e680b",
+          "pytest_passed": 149,
+          "dashboard_queries": 17,
+          "dashboard_build_ms": 28.31,
+          "note": "The browser step found a named-form-control collision in the offline guard; fixed in e1d376b with a regression test."
+        },
+        {
+          "name": "Exact-code PostgreSQL/Redis/seven Workers/Beat/Chromium integration after browser fix",
+          "status": "passed",
+          "run_id": 39055497955,
+          "url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/39055497955",
+          "tested_commit": "e1d376b75b329d8b80016da17a4811951faf0a59",
+          "pytest_passed": 150,
+          "dashboard_queries": 17,
+          "dashboard_build_ms": 26.61,
+          "evidence_artifact_id": 12109002649
+        }
+      ],
+      "commit_shas": [
+        "c122c5d",
+        "4bf7ddd",
+        "f71e98a",
+        "07762a5",
+        "57c19e1"
+      ],
+      "blockers": [
+        "Stage16 VPS installation and public-browser acceptance remain pending.",
+        "Real Binance order writes and Margin/Short execution remain disabled.",
+        "Telegram/channel ingestion and AI analysis remain explicitly deferred to S21."
+      ],
+      "implementation": "All five experience works are implemented: mobile navigation/cards, keyboard-safe form drafts, responsive trades/timeline, unified settings/source surfaces and a static-assets-only PWA with explicit offline transaction blocking. Final exact-source CI/release evidence is added after publication."
     },
     "S17": {
       "status": "not_started",

@@ -837,7 +837,7 @@
       "depends_on": [
         "S14"
       ],
-      "status": "not_started",
+      "status": "done",
       "source_sections": [
         31,
         41,
@@ -850,7 +850,7 @@
           "title": "P/L و Fees و Margin cost",
           "deliverables": "Decimal، realized/unrealized، gross/net، fee asset conversion، borrowed interest و policy ارقام نامعلوم.",
           "acceptance": "fixtureهای Spot/Margin سود/زیان/کارمزد و repayment با نتیجه معلوم تطبیق دهند.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S15-W02",
@@ -858,7 +858,7 @@
           "title": "آمار اصلی",
           "deliverables": "total/win/loss، win rate، average profit/loss، best/worst و duration؛ تعریف breakeven ثابت.",
           "acceptance": "معامله باز با بسته اشتباه نشود و مخرج win rate مستند باشد.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S15-W03",
@@ -866,7 +866,7 @@
           "title": "گزارش‌های تفکیکی",
           "deliverables": "Coin/exchange/source/day/week/month و daily_performance با timezone کاربر و job idempotent.",
           "acceptance": "اجرای دوباره aggregation عددها را دوباره نشمارد و مرز روز درست باشد.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S15-W04",
@@ -874,7 +874,7 @@
           "title": "UI نمودار و خروجی",
           "deliverables": "نمودارهای سود/زیان و source/exchange، بازه تاریخ و فایل گزارش CSV و تصویر نمودار قابل خروجی.",
           "acceptance": "اعداد نمودار/جدول/خروجی یکسان و متن CSV در برابر formula injection محافظت شود.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S15-W05",
@@ -882,7 +882,7 @@
           "title": "کارایی و یکپارچگی",
           "deliverables": "cache/invalidations و drill-down از شاخص به معاملات واقعی.",
           "acceptance": "اصلاح fill/fee توسط reconciliation گزارش را به‌روز کند؛ گزارش سنگین orders را عقب نیندازد.",
-          "status": "not_started"
+          "status": "done"
         }
       ]
     },
@@ -893,7 +893,7 @@
       "depends_on": [
         "S15"
       ],
-      "status": "not_started",
+      "status": "done",
       "source_sections": [
         32,
         33,
@@ -909,7 +909,7 @@
           "title": "Login/Dashboard/Watchlist",
           "deliverables": "طراحی نهایی مستقل موبایل با Light اصلی، Dark اختیاری، navigation و empty/error states.",
           "acceptance": "خوانایی، لمس و مسیرهای اصلی در viewportهای مشخص و مرورگر هدف بررسی شود.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S16-W02",
@@ -917,7 +917,7 @@
           "title": "Manual و Smart Paste",
           "deliverables": "فرم‌های یک‌دستی، preview واضح، پیام اعتبارسنجی و keyboard behavior با حفظ ارزش‌ها.",
           "acceptance": "باز/بسته‌شدن کیبورد دکمه تأیید را نپوشاند و state فرم حفظ شود.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S16-W03",
@@ -925,7 +925,7 @@
           "title": "Inbox/Trades/Details",
           "deliverables": "کارت‌های موبایل و جدول‌های دسکتاپ، timeline و controls خوانا.",
           "acceptance": "هیچ فیلد حیاتی Spot/Margin و trailing در موبایل گم نشود.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S16-W04",
@@ -933,7 +933,7 @@
           "title": "Reports/Settings/Alerts",
           "deliverables": "گزارش نموداری، تب‌های settings و exchange/source interfaces؛ تلگرام هنوز متصل نیست.",
           "acceptance": "تمام ۱۰ صفحه اصلی و صفحات کمکی مسیر کامل و لینک سالم داشته باشند.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S16-W05",
@@ -941,7 +941,7 @@
           "title": "PWA و دسترس‌پذیری",
           "deliverables": "manifest، icon، installability، assets cache؛ داده مالی خصوصی cache نشود و اقدام معاملاتی offline queue نشود.",
           "acceptance": "offline به‌وضوح نمایش داده شود؛ submit قدیمی بعد reconnect خودکار اجرا نشود؛ keyboard/contrast بررسی شود.",
-          "status": "not_started"
+          "status": "done"
         }
       ]
     },

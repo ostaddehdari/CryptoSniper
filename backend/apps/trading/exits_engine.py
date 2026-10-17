@@ -87,6 +87,11 @@ def _payout(*, trade, position, protection, price, quantity, reason, key, target
         TradeTarget.objects.filter(
             trade=trade, state__in=[TradeTarget.State.WAITING, TradeTarget.State.PARTIAL]
         ).update(state=TradeTarget.State.CANCELLED)
+        from apps.alerts.models import PriceAlert
+
+        PriceAlert.objects.filter(trade=trade, enabled=True).update(
+            enabled=False, status="trade_closed"
+        )
         TradeEvent.objects.create(
             trade=trade,
             event_type="PAPER_CLOSED",

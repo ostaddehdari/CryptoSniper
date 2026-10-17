@@ -82,6 +82,10 @@ def evaluate(alert_id, *, price, observed_at, source):
     )
     if source != allowed_source:
         return "wrong_source"
+    from apps.marketdata.search import market_is_readable
+
+    if not market_is_readable(alert.owner, alert.market):
+        return "connection_unavailable"
     if not alert.market.active:
         return "market_inactive"
     if alert.last_observed_at and observed_at <= alert.last_observed_at:
@@ -120,7 +124,9 @@ def evaluate(alert_id, *, price, observed_at, source):
             owner=alert.owner,
             event=event,
             title=alert.title,
-            body=f"{alert.market.symbol} · قیمت {price} · {alert.get_kind_display()} ({metric:.4f})",
+            body=(
+                f"{alert.market.symbol} · قیمت {price} · {alert.get_kind_display()} ({metric:.4f})"
+            ),
             severity="warning" if alert.kind in PROXIMITY else "info",
             in_app=preferences.in_app,
             browser=preferences.browser,

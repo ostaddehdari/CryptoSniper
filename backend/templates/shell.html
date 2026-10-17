@@ -6,7 +6,7 @@
 <a href="{% url 'dashboard' %}" class="nav-link {% if nav == 'dashboard' %}active{% endif %}" {% if nav == 'dashboard' %}aria-current="page"{% endif %}><span class="nav-symbol" aria-hidden="true">◈</span> نمای کلی</a>
 <a href="{% url 'smart-paste' %}" class="nav-link"><span class="nav-symbol">✂</span> Smart Paste</a>
 <a href="{% url 'inbox' %}" class="nav-link {% if nav == 'inbox' %}active{% endif %}"><span class="nav-symbol" aria-hidden="true">▣</span> صندوق سیگنال‌ها</a>
-<a href="{% url 'paper-trades' %}" class="nav-link {% if nav == 'paper' %}active{% endif %}"><span class="nav-symbol">◷</span> معاملات Paper</a>
+<a href="{% url 'paper-trades' %}" class="nav-link {% if nav == 'paper' %}active{% endif %}"><span class="nav-symbol">◷</span> معاملات و تاریخچه</a>
 <a href="{% url 'manual-list' %}" class="nav-link {% if nav == 'manual' %}active{% endif %}"><span class="nav-symbol" aria-hidden="true">✎</span> برنامه معامله دستی</a>
 <a class="nav-link {% if nav == 'alerts' %}active{% endif %}" href="{% url 'alerts' %}">♧ هشدارها</a>
 <a href="{% url 'watchlists' %}" class="nav-link {% if nav == 'watchlist' %}active{% endif %}"><span class="nav-symbol" aria-hidden="true">◉</span> واچ‌لیست</a>

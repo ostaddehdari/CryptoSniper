@@ -1,6 +1,7 @@
 """Persistent simulator provider. Real adapters keep their explicit read-only boundary."""
 
 import hashlib
+from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -26,7 +27,9 @@ def submit(order):
             "symbol": order.trade.market.symbol,
             "quantity": order.quantity,
             "price": order.price,
-            "fee": order.quantity * order.price * order.trade.market.taker_fee,
+            "fee": (order.quantity * order.price * order.trade.market.taker_fee).quantize(
+                Decimal("0.0000000000000001")
+            ),
         },
     )
     if (receipt.symbol, receipt.quantity, receipt.price) != (

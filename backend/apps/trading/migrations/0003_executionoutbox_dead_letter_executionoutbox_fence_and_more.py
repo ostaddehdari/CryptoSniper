@@ -5,25 +5,24 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('trading', '0002_alter_trade_state_tradetarget_paperexitfill_and_more'),
+        ("trading", "0002_alter_trade_state_tradetarget_paperexitfill_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='executionoutbox',
-            name='dead_letter',
+            model_name="executionoutbox",
+            name="dead_letter",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='executionoutbox',
-            name='fence',
+            model_name="executionoutbox",
+            name="fence",
             field=models.PositiveIntegerField(default=0),
         ),
         migrations.AddField(
-            model_name='executionoutbox',
-            name='next_attempt_at',
+            model_name="executionoutbox",
+            name="next_attempt_at",
             field=models.DateTimeField(default=django.utils.timezone.now),
         ),
     ]

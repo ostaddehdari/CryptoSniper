@@ -1,6 +1,7 @@
 """Celery workers handle orders independently of browser sessions."""
 
 from celery import shared_task
+from django.db.models import Q
 from django.utils import timezone
 
 from .execution import dispatch_paper, expire_inflight
@@ -23,10 +24,11 @@ def scan_outbox():
     expire_inflight()
     ids = list(
         ExecutionOutbox.objects.filter(
+            Q(order__account__accountcontrol__paused=False)
+            | Q(order__account__accountcontrol__isnull=True),
             state="pending",
             dead_letter=False,
             next_attempt_at__lte=timezone.now(),
-            order__account__accountcontrol__paused=False,
         )
         .order_by("created_at")
         .values_list("pk", flat=True)[:20]

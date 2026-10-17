@@ -343,7 +343,53 @@ def main():
                     lambda res: res.url == base + "/system/probe/" and res.request.method == "POST"
                 ):
                     page.get_by_role("button", name="بررسی Worker").click()
+                # Stage11/12: real UI rule, then a simulator quote after browser closes.
+                from apps.alerts.models import Notification, PriceAlert
+                from apps.marketdata.feeds import refresh_quote
+                from django.utils import timezone
+
+                smoke_market = ExchangeMarket.objects.get(
+                    exchange__code="simulator", symbol="BTC/USDT", market_type="spot"
+                )
+                refresh_quote(smoke_market)
+                page.goto(base + "/alerts/new/")
+                page.locator('[name="title"]').fill("هشدار مرورگر Stage12")
+                page.locator('[name="market"]').select_option(str(smoke_market.pk))
+                page.locator('[name="kind"]').select_option("price")
+                page.locator('[name="direction"]').select_option("above")
+                page.locator('[name="threshold"]').fill("66000")
+                page.get_by_role("button", name="ذخیره هشدار", exact=True).click()
+                page.wait_for_url("**/alerts/")
+                page.get_by_role("heading", name="هشدار مرورگر Stage12").wait_for()
+                alert = PriceAlert.objects.get(owner=user, title="هشدار مرورگر Stage12")
+                page.screenshot(path=str(artifacts / "alerts-desktop.png"), full_page=True)
+                for route in ("/alerts/", "/notifications/", "/operations/"):
+                    page.goto(base + route)
+                    for width in (320, 390, 768):
+                        page.set_viewport_size({"width": width, "height": 844})
+                        assert page.evaluate(
+                            "document.documentElement.scrollWidth <= innerWidth"
+                        ), route
+                    page.screenshot(
+                        path=str(artifacts / (route.strip("/") + "-mobile.png")), full_page=True
+                    )
                 page.close()
+                payload = cache.get(f"marketdata:v1:quote:{smoke_market.pk}")
+                payload.update(price="67000", observed_at=timezone.now().isoformat())
+                cache.set(f"marketdata:v1:quote:{smoke_market.pk}", payload, 90)
+                wait_for(
+                    lambda: Notification.objects.filter(owner=user, event__alert=alert).exists()
+                )
+                assert Notification.objects.filter(owner=user, event__alert=alert).count() == 1
+                page = context.new_page()
+                page.goto(base + "/notifications/")
+                page.get_by_role("heading", name="هشدار مرورگر Stage12").wait_for()
+                page.get_by_role("button", name="خواندم", exact=True).first.click()
+                page.close()
+                print(
+                    "PASS alert UI and independent Worker after browser close; "
+                    "notification read and mobile operations"
+                )
                 assert not errors, errors
                 browser.close()
             # Browser and its page have now closed; server and Worker continue independently.

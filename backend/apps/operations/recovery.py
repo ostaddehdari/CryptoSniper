@@ -24,6 +24,8 @@ def classify_failure(outbox_id, error):
     permanent = isinstance(error, (ValidationError, AuthenticationError, UnsupportedOperationError))
     code = "permanent_validation" if permanent else "transient_unknown"
     box = ExecutionOutbox.objects.get(pk=outbox_id)
+    if box.state == "done":
+        return
     delay = min(300, 2 ** min(box.attempts, 8)) + random.randint(0, 5)
     ExecutionOutbox.objects.filter(pk=box.pk).update(
         last_error_code=code,
@@ -143,7 +145,7 @@ def reconcile_trade(trade_id):
         else ("open" if entry_qty == trade.quantity else "partially_filled")
     )
     changed = trade.filled_quantity != entry_qty or trade.state != expected_state
-    expected_average = entry_cost / entry_qty
+    expected_average = (entry_cost / entry_qty).quantize(Decimal("0.0000000000000001"))
     if not position:
         position = Position.objects.create(trade=trade, account=trade.account)
         changed = True

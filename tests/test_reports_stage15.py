@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 import pytest
 from apps.portfolio.metrics import result_for, summarize, trade_queryset
 from apps.reports.aggregation import rebuild_user_reports
+from apps.reports.exports import safe_csv_cell
 from apps.reports.models import PerformanceAggregate
 from apps.reports.stats import classify_result, report_statistics
 from apps.trading.exits_engine import process_paper_price
@@ -109,3 +110,30 @@ def test_aggregation_is_idempotent_and_uses_user_day_week_month(django_user_mode
     daily = PerformanceAggregate.objects.get(owner=user, period_kind="day", dimension_kind="total")
     assert str(daily.period_start) == "2026-10-18"
     assert daily.trade_count == 1 and daily.losses == 1
+
+
+@pytest.mark.django_db
+def test_report_ui_api_csv_svg_are_consistent_and_owner_scoped(client, django_user_model):
+    owner = django_user_model.objects.create_user(username="exports15")
+    other = django_user_model.objects.create_user(username="exports15-other")
+    trade = paper_trade(owner)
+    process_paper_price(trade.pk, price="59000", event_key="export-loss")
+    rebuild_user_reports(owner.pk)
+    client.force_login(owner)
+    page = client.get("/reports/?period=day&group=total")
+    api = client.get("/api/v1/reports/?period=day&group=total")
+    csv_response = client.get("/reports/export.csv?period=day&group=total")
+    chart = client.get("/reports/chart.svg?period=day&group=total")
+    assert (
+        page.status_code == api.status_code == csv_response.status_code == chart.status_code == 200
+    )
+    net = str(api.json()["rows"][0]["net_realized"])
+    assert net.encode() in csv_response.content
+    assert net.encode() in chart.content
+    assert (
+        csv_response["Cache-Control"] == "max-age=0, no-cache, no-store, must-revalidate, private"
+    )
+    client.force_login(other)
+    assert client.get("/api/v1/reports/?period=day&group=total").json()["rows"] == []
+    assert safe_csv_cell("=IMPORTXML('x')").startswith("'=")
+    assert safe_csv_cell("normal") == "normal"

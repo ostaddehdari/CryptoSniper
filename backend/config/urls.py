@@ -9,6 +9,7 @@ from apps.marketdata import watchlists as watchlist_views
 from apps.operations import views as operation_views
 from apps.portfolio import external_views
 from apps.portfolio import views as portfolio_views
+from apps.reports import views as report_views
 from apps.signals import views as inbox_views
 from apps.tradeplans import context as trade_context
 from apps.tradeplans import views as plan_views
@@ -34,6 +35,10 @@ def ready(request):
 
 
 urlpatterns = [
+    path("reports/", report_views.center, name="reports"),
+    path("reports/export.csv", report_views.export_csv, name="report-csv"),
+    path("reports/chart.svg", report_views.export_chart, name="report-chart"),
+    path("api/v1/reports/", report_views.api_report, name="api-reports"),
     path("external/<int:pk>/", external_views.detail, name="external-detail"),
     path("dashboard/panels/", portfolio_views.fragment, name="dashboard-fragment"),
     path("api/v1/dashboard/", portfolio_views.api_dashboard, name="api-dashboard"),

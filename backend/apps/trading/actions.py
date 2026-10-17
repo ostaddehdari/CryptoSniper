@@ -56,6 +56,8 @@ def request_close(owner, trade_id, *, request_key, revision, confirmed):
         raise ValidationError("نسخه صفحه قدیمی است؛ صفحه را تازه کنید.")
     if trade.state != Trade.State.OPEN or not _entry_settled(trade):
         raise ValidationError("ابتدا نتیجه ورود نامعلوم یا ناقص را در مرکز عملیات تطبیق دهید.")
+    if not TradeProtection.objects.filter(trade=trade).exists():
+        raise ValidationError("طرح حفاظت هنوز آماده نیست؛ ابتدا Worker و تطبیق را بررسی کنید.")
     if TradeProtection.objects.filter(trade=trade, coverage="cancelling").exists():
         raise ValidationError("لغو خروج هنوز قطعی نیست؛ ابتدا تطبیق کنید.")
     pending = TradeAction.objects.filter(trade=trade, state__in=["pending", "waiting_feed"]).first()

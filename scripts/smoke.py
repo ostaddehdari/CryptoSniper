@@ -361,12 +361,21 @@ def main():
                 page.screenshot(path=str(artifacts / "watchlist-mobile.png"), full_page=True)
                 page.set_viewport_size({"width": 1440, "height": 1000})
                 page.goto(base + "/dashboard/")
+                page.get_by_role("heading", name="موجودی و ارزش حساب‌ها").wait_for()
                 for width in (320, 390, 768):
                     page.set_viewport_size({"width": width, "height": 844})
                     assert page.evaluate("document.documentElement.scrollWidth <= innerWidth"), (
                         width
                     )
                 page.screenshot(path=str(artifacts / "dashboard-mobile.png"), full_page=True)
+                page.route("**/dashboard/panels/**", lambda route: route.abort())
+                page.reload()
+                page.get_by_text("ارتباط قطع شده؛", exact=False).wait_for()
+                page.unroute("**/dashboard/panels/**")
+                page.evaluate("document.dispatchEvent(new Event('visibilitychange'))")
+                page.get_by_role("heading", name="موجودی و ارزش حساب‌ها").wait_for()
+                page.get_by_text("متصل · به‌روزرسانی خودکار", exact=False).wait_for()
+                print("PASS dashboard explicit offline state and reconnect")
                 page.goto(base + "/exchanges/")
                 assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
                 page.screenshot(path=str(artifacts / "exchanges-mobile.png"), full_page=True)
@@ -375,12 +384,6 @@ def main():
                 page.locator(".sidebar").get_by_role("link", name="وضعیت سرویس‌ها").click()
                 page.wait_for_url("**/system/")
                 page.get_by_text("ذخیره نتایج", exact=True).wait_for()
-                page.get_by_role("heading", name="موجودی و ارزش حساب‌ها").wait_for()
-                assert page.locator("#dashboard-panels").get_attribute("aria-busy") == "false"
-                page.set_viewport_size({"width": 390, "height": 844})
-                assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
-                page.screenshot(path=str(artifacts / "dashboard13-mobile.png"), full_page=True)
-                page.set_viewport_size({"width": 1440, "height": 1000})
                 page.screenshot(path=str(artifacts / "system-mobile.png"), full_page=True)
                 with page.expect_response(
                     lambda res: res.url == base + "/system/probe/" and res.request.method == "POST"

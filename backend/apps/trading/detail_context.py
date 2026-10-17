@@ -41,9 +41,10 @@ def detail_context(user, pk, params):
     page = Paginator(trade.events.order_by("-pk"), 30).get_page(params.get("events"))
     events = []
     for event in page:
+        payload = event.payload if isinstance(event.payload, dict) else {}
         event.safe_payload = {
             k: v
-            for k, v in event.payload.items()
+            for k, v in payload.items()
             if k in SAFE_EVENT_KEYS and isinstance(v, (str, int, float, bool, type(None)))
         }
         events.append(event)

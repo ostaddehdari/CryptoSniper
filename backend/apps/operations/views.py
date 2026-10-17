@@ -149,3 +149,48 @@ def api_health(request):
             "live_execution": False,
         }
     )
+
+
+@login_required
+@require_POST
+@transaction.atomic
+def resolve_dead_letter(request, pk):
+    from apps.trading.execution import consume_receipt
+    from apps.trading.models import CapitalReservation, Order, Trade, TradeEvent
+
+    from .provider import lookup
+
+    info = get_object_or_404(
+        ExecutionOutbox.objects.select_related("order"), pk=pk, order__trade__owner=request.user
+    )
+    account = info.order.account
+    if account.environment != "paper" or account.exchange.adapter_code != "simulator":
+        return JsonResponse({"error": "paper_only"}, status=400)
+    control, _ = AccountControl.objects.get_or_create(account=account)
+    AccountControl.objects.select_for_update().get(pk=control.pk)
+    trade = Trade.objects.select_for_update().get(pk=info.order.trade_id)
+    order = Order.objects.select_for_update().get(pk=info.order_id)
+    box = ExecutionOutbox.objects.select_for_update().get(pk=pk)
+    if not box.dead_letter or str(box.fence) != request.POST.get("fence"):
+        return JsonResponse({"error": "stale_or_not_dead_letter"}, status=409)
+    receipt = lookup(order)
+    if receipt:
+        consume_receipt(box.pk, receipt)
+    elif order.filled_quantity == 0 and box.state in {"uncertain", "error"}:
+        order.state, trade.state = "failed", "failed"
+        order.save(update_fields=("state", "updated_at"))
+        trade.save(update_fields=("state", "updated_at"))
+        box.state, box.dead_letter = "done", False
+        box.fence += 1
+        box.last_error_code = "operator_discarded"
+        box.save()
+        CapitalReservation.objects.filter(trade=trade).update(active=False)
+        TradeEvent.objects.create(trade=trade, event_type="DEAD_LETTER_DISCARDED")
+    else:
+        return JsonResponse({"error": "reconciliation_required"}, status=409)
+    RecoveryIssue.objects.filter(account=account, key=f"outbox:{pk}").update(resolved=True)
+    record_audit("operations.dead_letter_resolved", user=request.user, metadata={"outbox_id": pk})
+    messages.success(
+        request, "نتیجه از دفتر شبیه‌ساز بررسی شد؛ تطبیق و ادامهٔ حساب را جداگانه اجرا کنید."
+    )
+    return redirect("operations")

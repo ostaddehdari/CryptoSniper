@@ -5,9 +5,9 @@
     "S01",
     "S02"
   ],
-  "current_stage": "S10",
-  "next_stage": "S10",
-  "last_completed_work": "S10-W05",
+  "current_stage": "S12",
+  "next_stage": "S13",
+  "last_completed_work": "S12-W05",
   "implementation_started": true,
   "stage_results": {
     "S01": {
@@ -391,6 +391,16 @@
           "run_id": 38959567887,
           "tested_commit": "acde2adbe6a37d0ab875e7aff078beae4e7c6907",
           "evidence_artifact_id": 12071179939
+        },
+        {
+          "name": "Operator-supplied Stage10 VPS installation and HTTPS local origin",
+          "status": "passed",
+          "date": "2026-10-17",
+          "verified_by": "User-provided terminal log; no independent server access",
+          "installed_version": "0.10.0rc1",
+          "installer_result": "INSTALL_OK and DEPLOY_OK",
+          "readiness_http": 200,
+          "login_http": 200
         }
       ],
       "commit_shas": [
@@ -402,10 +412,9 @@
       ],
       "blockers": [
         "Prior S03 Binance read-only account permission test and upstream formal acceptance gaps are still pending.",
-        "Stage10 cumulative release has not yet been deployed/verified on operator VPS.",
         "Native protective exchange stops, Binance live order execution and Margin/Short order execution remain unavailable. PAPER backend-managed protection is not guaranteed during outages."
       ],
-      "implementation": "All five workstreams developed; 86 pytest tests and real PostgreSQL/Redis/Worker/Beat/Chromium smoke passed; cumulative GitHub Release published; VPS deployment and upstream acceptance pending.",
+      "implementation": "All five workstreams developed; 86 pytest tests and real PostgreSQL/Redis/Worker/Beat/Chromium smoke passed; cumulative GitHub Release published; VPS deployment and upstream acceptance pending. Stage10 installation confirmed by user-provided log 2026-10-17.",
       "release_tag": "stage10-v0.10.0rc1-deploy",
       "release_commit": "acde2adbe6a37d0ab875e7aff078beae4e7c6907"
     },
@@ -426,6 +435,16 @@
           "run_id": 38959567887,
           "tested_commit": "acde2adbe6a37d0ab875e7aff078beae4e7c6907",
           "evidence_artifact_id": 12071179939
+        },
+        {
+          "name": "Operator-supplied Stage10 VPS installation and HTTPS local origin",
+          "status": "passed",
+          "date": "2026-10-17",
+          "verified_by": "User-provided terminal log; no independent server access",
+          "installed_version": "0.10.0rc1",
+          "installer_result": "INSTALL_OK and DEPLOY_OK",
+          "readiness_http": 200,
+          "login_http": 200
         }
       ],
       "commit_shas": [
@@ -437,26 +456,61 @@
       ],
       "blockers": [
         "Prior S03 Binance read-only account permission test and upstream formal acceptance gaps are still pending.",
-        "Stage10 cumulative release has not yet been deployed/verified on operator VPS.",
         "Native protective exchange stops, Binance live order execution and Margin/Short order execution remain unavailable. PAPER backend-managed protection is not guaranteed during outages."
       ],
-      "implementation": "All five workstreams developed; 86 pytest tests and real PostgreSQL/Redis/Worker/Beat/Chromium smoke passed; cumulative GitHub Release published; VPS deployment and upstream acceptance pending.",
+      "implementation": "All five workstreams developed; 86 pytest tests and real PostgreSQL/Redis/Worker/Beat/Chromium smoke passed; cumulative GitHub Release published; VPS deployment and upstream acceptance pending. Stage10 installation confirmed by user-provided log 2026-10-17.",
       "release_tag": "stage10-v0.10.0rc1-deploy",
       "release_commit": "acde2adbe6a37d0ab875e7aff078beae4e7c6907"
     },
     "S11": {
-      "status": "not_started",
-      "completed_works": [],
-      "checks": [],
+      "status": "partial",
+      "completed_works": [
+        "S11-W01",
+        "S11-W02",
+        "S11-W03",
+        "S11-W04",
+        "S11-W05"
+      ],
+      "checks": [
+        {
+          "name": "PostgreSQL/Redis/Workers/Beat/Chromium Stage11+12 CI",
+          "status": "passed",
+          "run_id": 39018777612,
+          "tested_commit": "9b2a9c109da0e2c1b03a6bfa2c186e778c0bf793",
+          "url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/39018777612"
+        }
+      ],
       "commit_shas": [],
-      "blockers": []
+      "blockers": [
+        "Real Binance account read/permissions verification remains pending; no real order writes or Margin/Short.",
+        "Stage12 cumulative installation and public-browser acceptance on operator VPS not yet verified."
+      ],
+      "implementation": "Five workstreams implemented for Paper/read-only observations. CI passed on 9b2a9c1; final cumulative source, release and VPS acceptance pending."
     },
     "S12": {
-      "status": "not_started",
-      "completed_works": [],
-      "checks": [],
+      "status": "partial",
+      "completed_works": [
+        "S12-W01",
+        "S12-W02",
+        "S12-W03",
+        "S12-W04",
+        "S12-W05"
+      ],
+      "checks": [
+        {
+          "name": "PostgreSQL/Redis/Workers/Beat/Chromium Stage11+12 CI",
+          "status": "passed",
+          "run_id": 39018777612,
+          "tested_commit": "9b2a9c109da0e2c1b03a6bfa2c186e778c0bf793",
+          "url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/39018777612"
+        }
+      ],
       "commit_shas": [],
-      "blockers": []
+      "blockers": [
+        "Real Binance account read/permissions verification remains pending; no real order writes or Margin/Short.",
+        "Stage12 cumulative installation and public-browser acceptance on operator VPS not yet verified."
+      ],
+      "implementation": "Five workstreams implemented for Paper/read-only observations. CI passed on 9b2a9c1; final cumulative source, release and VPS acceptance pending."
     },
     "S13": {
       "status": "not_started",

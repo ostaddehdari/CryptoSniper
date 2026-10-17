@@ -32,6 +32,11 @@ def ready(request):
 
 
 urlpatterns = [
+    path(
+        "operations/dead-letter/<int:pk>/resolve/",
+        operation_views.resolve_dead_letter,
+        name="operations-resolve-dead-letter",
+    ),
     path("alerts/", alert_views.center, name="alerts"),
     path("alerts/new/", alert_views.edit, name="alert-new"),
     path("alerts/<int:pk>/edit/", alert_views.edit, name="alert-edit"),

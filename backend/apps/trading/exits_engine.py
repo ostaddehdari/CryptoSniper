@@ -126,7 +126,7 @@ def process_paper_price(
         raise ValidationError("منبع این Tick برای اجرای Paper مجاز نیست.")
     price = _value(price)
     trade = (
-        Trade.objects.select_for_update()
+        Trade.objects.select_for_update(of=("self",))
         .select_related("account", "account__exchange", "market")
         .get(pk=trade_id)
     )

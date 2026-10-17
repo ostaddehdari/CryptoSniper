@@ -606,7 +606,7 @@
       "depends_on": [
         "S10"
       ],
-      "status": "not_started",
+      "status": "partial",
       "source_sections": [
         23,
         24,
@@ -626,7 +626,7 @@
           "title": "تفکیک صف‌ها و Scheduler",
           "deliverables": "signals/orders/market_data/trailing/alerts/reports/maintenance؛ قرارداد queue تلگرام فقط برای استیج آخر.",
           "acceptance": "گزارش سنگین صف orders را متوقف نکند و Beat در یک instance مسئول اجرا باشد.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S11-W02",
@@ -634,7 +634,7 @@
           "title": "Locks و transaction/outbox",
           "deliverables": "DB row locks برای وضعیت مالی، Redis lease با fencing/version و commit-before-dispatch.",
           "acceptance": "expire شدن lock و رقابت دو Worker سبب دو submit یا close نشود.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S11-W03",
@@ -642,7 +642,7 @@
           "title": "Retry طبقه‌بندی‌شده",
           "deliverables": "backoff، jitter، timeout و dead-letter؛ سفارش نامعلوم پیش از retry از exchange lookup شود.",
           "acceptance": "پس از timeout-with-order-created سفارش مجدد ساخته نشود؛ خطای دائمی retry نامحدود نشود.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S11-W04",
@@ -650,7 +650,7 @@
           "title": "Reconciliation و recovery",
           "deliverables": "order/position/balance/trade reconciliation؛ pause اجرای جدید در اختلاف حساس و recovery پس از crash.",
           "acceptance": "fill گمشده و سفارش خارجی شناخته‌شده با audit بازیابی و اختلاف ناشناخته هشدار دهد.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S11-W05",
@@ -658,7 +658,7 @@
           "title": "Health و عملیات",
           "deliverables": "worker heartbeat، queue age، feed lag، last sync، کنترل pause/resume و runbook خرابی.",
           "acceptance": "قطع Redis/DB/Worker آزمایش و محدودیت واقعی بازیابی گزارش شود؛ برنامه به مرورگر متکی نباشد.",
-          "status": "not_started"
+          "status": "done"
         }
       ]
     },
@@ -669,7 +669,7 @@
       "depends_on": [
         "S11"
       ],
-      "status": "not_started",
+      "status": "partial",
       "source_sections": [
         26,
         27
@@ -681,7 +681,7 @@
           "title": "مدل Alert و پایه مرجع",
           "deliverables": "price_alerts عمومی/مرتبط، قیمت مشخص، %↑ و %↓؛ reference price/time و direction ذخیره شود.",
           "acceptance": "alert درصدی مبنای ثابت معلوم داشته باشد و trigger مبهم پذیرفته نشود.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S12-W02",
@@ -689,7 +689,7 @@
           "title": "موتور Alert عمومی",
           "deliverables": "crossing detection، threshold، hysteresis و policy یک‌بار/تکرارشونده.",
           "acceptance": "tick تکراری notification تکراری نسازد؛ feed قدیمی alert غلط نسازد.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S12-W03",
@@ -697,7 +697,7 @@
           "title": "Alert معامله",
           "deliverables": "قیمت، profit%، درصد نسبت Entry، نزدیک SL و نزدیک Percentage activation/stop با تعریف دقیق فاصله.",
           "acceptance": "profit بعد fee و borrowed interest مبنای مشخص داشته باشد و trade بسته alert فعال نداشته باشد.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S12-W04",
@@ -705,7 +705,7 @@
           "title": "Notifications مرکزی",
           "deliverables": "in-app و browser notification با رضایت مرورگر، unread/read، severity و ترجیحات channel.",
           "acceptance": "رد مجوز browser باعث خرابی in-app نشود؛ اعلان کاربر دیگر قابل مشاهده نباشد.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S12-W05",
@@ -713,7 +713,7 @@
           "title": "UI Alerts و آزمون",
           "deliverables": "ساخت/ویرایش/خاموش‌کردن alert و شاخص Watchlist و top bar اعلان‌ها.",
           "acceptance": "سناریوی threshold و proximity و read receipt روی موبایل/دسکتاپ کامل شود.",
-          "status": "not_started"
+          "status": "done"
         }
       ]
     },

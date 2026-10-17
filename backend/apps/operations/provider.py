@@ -11,6 +11,19 @@ from .models import PaperProviderOrder
 
 @transaction.atomic
 def submit(order):
+    from apps.trading.models import Order, Trade
+
+    Trade.objects.select_for_update(of=("self",)).get(pk=order.trade_id)
+    order = (
+        Order.objects.select_for_update(of=("self",))
+        .select_related("account__exchange", "trade__market")
+        .get(pk=order.pk)
+    )
+    existing = lookup(order)
+    if existing:
+        return existing
+    if order.state not in {"submitting", "uncertain"}:
+        raise ValidationError("سفارش برای ارسال مجاز نیست.")
     account = order.account
     if account.environment != "paper" or account.exchange.adapter_code != "simulator":
         raise ValidationError("فقط Simulator Paper مجاز است.")

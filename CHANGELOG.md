@@ -1,5 +1,12 @@
 ## v0.10.0rc1 — استیج‌های ۹ و ۱۰ (۱۶ اکتبر ۲۰۲۶)
 
+## 0.12.0rc1 — 2026-10-17
+
+- S11: seven queues, leased Beat, durable Paper provider receipts, fenced recovery, bounded retry/dead-letter, reconciliation, read-only External observations and owner operations center.
+- S12: fixed-reference crossing/proximity/profit alerts, central in-app/browser notifications with permission and read receipts, Watchlist indicators and private UI/API.
+- Cumulative installer preserves managed settings/data and backs up systemd units; real Binance order writes remain disabled. CI passed on 9b2a9c1; final cumulative build and VPS acceptance pending.
+
+
 - مدل مستقل TP targets، توزیع Decimal و rounding به هدف آخر؛ دفتر Fill خروج و کنترل حد موجودی.
 - اجرای مرحله‌ای Paper TP/SL، Move to Entry/previous TP/manual SL با audit، بدون Native stop.
 - Percentage Trailing فعال‌شونده در TP1 با High-water پایدار؛ تقدم آن بر TP Sell و جلوگیری از فروش مضاعف.

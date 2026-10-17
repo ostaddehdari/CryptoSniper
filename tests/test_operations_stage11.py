@@ -222,3 +222,24 @@ def test_external_observations_are_readonly(monkeypatch, django_user_model):
     assert ExternalObservation.objects.filter(account=account).count() == 2
     assert not Trade.objects.filter(account=account).exists()
     assert all(call[0] == "GET" for call in adapter.transport.calls)
+
+
+@pytest.mark.django_db
+def test_dead_letter_discard_is_safe_and_owner_scoped(client, django_user_model):
+    user = django_user_model.objects.create_user(username="discard11")
+    trade, box = setup_trade(user)
+    claim_outbox(box.pk)
+    ExecutionOutbox.objects.filter(pk=box.pk).update(
+        state="uncertain", attempts=5, dead_letter=True
+    )
+    box.refresh_from_db()
+    client.force_login(user)
+    endpoint = reverse("operations-resolve-dead-letter", args=[box.pk])
+    assert client.post(endpoint, {"fence": 999}).status_code == 409
+    assert client.post(endpoint, {"fence": box.fence}).status_code == 302
+    trade.refresh_from_db()
+    assert trade.state == "failed" and not trade.reservation.active
+    # A delayed provider submit after discard cannot create a new receipt.
+    with pytest.raises(ValidationError):
+        provider.submit(trade.orders.get())
+    assert not PaperProviderOrder.objects.exists()

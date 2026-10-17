@@ -59,3 +59,5 @@ curl -fsSL --retry 3 -o /tmp/cryptosniper-diagnose-nginx.sh https://raw.githubus
 - [Stage07 Smart Paste](docs/reports/stage-07.md) و [Stage08 Paper Execution](docs/reports/stage-08.md): نسخه تجمعی آزمایشی 0.8.0rc1، فقط Paper/Simulator و بدون سفارش واقعی Binance.
 
 - [Stage09 TP/SL](docs/reports/stage-09.md) و [Stage10 Trailing](docs/reports/stage-10.md): خروج حفاظتی فقط Paper، نسخه آزمایشی 0.10.0rc1.
+
+- [Stage11 Operations & Recovery](docs/reports/stage-11.md) و [Stage12 Alerts & Notifications](docs/reports/stage-12.md): نسخه تجمعی آزمایشی 0.12.0rc1، فقط Paper/مشاهده فقط‌خواندنی؛ اجرای واقعی Binance غیرفعال.

@@ -24,7 +24,7 @@ def _decimal(raw):
 @transaction.atomic
 def ensure_exits(trade_id):
     trade = (
-        Trade.objects.select_for_update()
+        Trade.objects.select_for_update(of=("self",))
         .select_related("account", "account__exchange", "market")
         .get(pk=trade_id)
     )

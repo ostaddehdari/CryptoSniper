@@ -15,7 +15,7 @@ def configure_trailing(
     owner, trade_id, *, version, step_enabled, percentage_enabled, distance_percent, reason
 ):
     trade = (
-        Trade.objects.select_for_update()
+        Trade.objects.select_for_update(of=("self",))
         .select_related("account", "account__exchange")
         .get(owner=owner, pk=trade_id)
     )
@@ -113,7 +113,7 @@ def configure_trailing(
 def reconcile_paper_cancellation(owner, trade_id, *, version):
     """Never mark external cancellation as successful; this is PAPER-only ledger."""
     trade = (
-        Trade.objects.select_for_update()
+        Trade.objects.select_for_update(of=("self",))
         .select_related("account", "account__exchange")
         .get(owner=owner, pk=trade_id)
     )

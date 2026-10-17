@@ -1,6 +1,9 @@
 from decimal import Decimal
+from types import SimpleNamespace
 
-from .models import PerformanceAggregate
+from django.core.cache import cache
+
+from .models import PerformanceAggregate, ReportRefreshState
 
 ZERO = Decimal(0)
 
@@ -8,6 +11,20 @@ ZERO = Decimal(0)
 def report_dataset(user, cleaned):
     period = cleaned.get("period") or "day"
     group = cleaned.get("group") or "total"
+    state = ReportRefreshState.objects.filter(owner=user).first()
+    cache_key = (
+        f"reports:v1:{user.pk}:{state.built_version if state else 0}:"
+        f"{period}:{group}:{cleaned.get('date_from')}:{cleaned.get('date_to')}"
+    )
+    cached = None
+    if state and state.dirty_at is None:
+        try:
+            cached = cache.get(cache_key)
+        except Exception:  # Cache failure must not hide financial reports.
+            cached = None
+    if cached is not None:
+        cached["rows"] = [SimpleNamespace(**row) for row in cached["rows"]]
+        return cached
     query = PerformanceAggregate.objects.filter(
         owner=user, timezone=user.timezone, period_kind=period, dimension_kind=group
     )
@@ -38,10 +55,46 @@ def report_dataset(user, cleaned):
             row.drill_query = f"coin={row.dimension_value}"
         elif group == "source":
             row.drill_query = f"source={row.dimension_value}"
-    return {
+        elif group == "exchange":
+            row.drill_query = f"exchange={row.dimension_value}"
+    result = {
         "rows": rows,
         "total": total,
         "period": period,
         "group": group,
         "latest": max((row.updated_at for row in rows), default=None),
     }
+    if state and state.dirty_at is None:
+        payload = {
+            **result,
+            "rows": [
+                {
+                    key: getattr(row, key)
+                    for key in (
+                        "period_start",
+                        "dimension_value",
+                        "currency",
+                        "trade_count",
+                        "unknown_count",
+                        "wins",
+                        "losses",
+                        "breakeven",
+                        "gross_realized",
+                        "net_realized",
+                        "fees",
+                        "margin_interest",
+                        "duration_seconds",
+                        "updated_at",
+                        "bar_percent",
+                        "bar_sign",
+                        "drill_query",
+                    )
+                }
+                for row in rows
+            ],
+        }
+        try:
+            cache.set(cache_key, payload, 120)
+        except Exception:
+            pass
+    return result

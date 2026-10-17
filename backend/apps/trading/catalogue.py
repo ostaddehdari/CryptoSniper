@@ -16,6 +16,7 @@ class TradeFilter(forms.Form):
     account = forms.ModelChoiceField(queryset=UserExchangeAccount.objects.none(), required=False)
     state = forms.ChoiceField(choices=[("", "همه وضعیت‌ها"), *Trade.State.choices], required=False)
     coin = forms.RegexField(regex=r"^[A-Za-z0-9/_-]{0,32}$", required=False, label="ارز یا نماد")
+    exchange = forms.RegexField(regex=r"^[a-z0-9_-]{0,32}$", required=False, label="صرافی")
     source = forms.ChoiceField(
         choices=[("", "همه منابع"), ("manual", "ورود دستی"), ("smart_paste", "Smart Paste")],
         required=False,
@@ -49,6 +50,8 @@ def catalogue(owner, params):
             queryset = queryset.filter(state=data["state"])
         if data.get("coin"):
             queryset = queryset.filter(market__symbol__icontains=data["coin"].upper())
+        if data.get("exchange"):
+            queryset = queryset.filter(market__exchange__code=data["exchange"])
         if data.get("source") == "smart_paste":
             queryset = queryset.filter(signal__source__method="smart_paste")
         elif data.get("source") == "manual":

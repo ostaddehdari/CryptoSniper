@@ -8,7 +8,8 @@ import pytest
 from apps.portfolio.metrics import result_for, summarize, trade_queryset
 from apps.reports.aggregation import rebuild_user_reports
 from apps.reports.exports import safe_csv_cell
-from apps.reports.models import PerformanceAggregate
+from apps.reports.models import PerformanceAggregate, ReportRefreshState
+from apps.reports.service import report_dataset
 from apps.reports.stats import classify_result, report_statistics
 from apps.trading.exits_engine import process_paper_price
 from apps.trading.models import TradeFinanceEvent
@@ -137,3 +138,27 @@ def test_report_ui_api_csv_svg_are_consistent_and_owner_scoped(client, django_us
     assert client.get("/api/v1/reports/?period=day&group=total").json()["rows"] == []
     assert safe_csv_cell("=IMPORTXML('x')").startswith("'=")
     assert safe_csv_cell("normal") == "normal"
+
+
+@pytest.mark.django_db
+def test_fill_correction_invalidates_cache_and_rebuild_updates_drilldown(client, django_user_model):
+    owner = django_user_model.objects.create_user(username="invalidate15")
+    trade = paper_trade(owner)
+    process_paper_price(trade.pk, price="59000", event_key="invalidate-loss")
+    rebuild_user_reports(owner.pk)
+    state = ReportRefreshState.objects.get(owner=owner)
+    assert state.dirty_at is None and state.built_version == state.source_version
+    before = report_dataset(owner, {"period": "day", "group": "exchange"})
+    fill = trade.orders.get().fills.get()
+    fill.fee += Decimal("1")
+    fill.save(update_fields=("fee",))
+    state.refresh_from_db()
+    assert state.dirty_at is not None and state.source_version > state.built_version
+    rebuild_user_reports(owner.pk)
+    after = report_dataset(owner, {"period": "day", "group": "exchange"})
+    assert after["total"]["net_realized"] == before["total"]["net_realized"] - Decimal("1")
+    row = after["rows"][0]
+    assert row.drill_query == f"exchange={trade.market.exchange.code}"
+    client.force_login(owner)
+    response = client.get(f"/paper/?tab=history&{row.drill_query}")
+    assert response.status_code == 200 and str(trade.pk).encode() in response.content

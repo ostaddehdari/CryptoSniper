@@ -62,3 +62,16 @@ class PerformanceAggregate(models.Model):
 
     def __str__(self):
         return f"{self.owner_id}:{self.period_kind}:{self.period_start}:{self.dimension_value}"
+
+
+class ReportRefreshState(models.Model):
+    owner = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="report_refresh"
+    )
+    source_version = models.PositiveBigIntegerField(default=1)
+    built_version = models.PositiveBigIntegerField(default=0)
+    dirty_at = models.DateTimeField(null=True, blank=True)
+    last_built_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"report refresh {self.owner_id}: {self.built_version}/{self.source_version}"

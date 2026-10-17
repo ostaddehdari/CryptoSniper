@@ -5,10 +5,11 @@ from zoneinfo import ZoneInfo
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.utils import timezone
 
 from apps.portfolio.metrics import summarize, trade_queryset
 
-from .models import PerformanceAggregate
+from .models import PerformanceAggregate, ReportRefreshState
 from .stats import classify_result
 
 ZERO = Decimal(0)
@@ -106,4 +107,9 @@ def rebuild_user_reports(user_id):
     if kept:
         stale = stale.exclude(pk__in=kept)
     deleted, _ = stale.delete()
+    state, _ = ReportRefreshState.objects.get_or_create(owner=user)
+    state.built_version = state.source_version
+    state.dirty_at = None
+    state.last_built_at = timezone.now()
+    state.save(update_fields=("built_version", "dirty_at", "last_built_at"))
     return {"rows": len(kept), "deleted": deleted}

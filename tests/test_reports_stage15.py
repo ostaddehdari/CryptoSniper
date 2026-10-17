@@ -1,9 +1,13 @@
 """Stage15 financial reports stay Decimal, owner-scoped and export-safe."""
 
+from datetime import datetime
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 import pytest
 from apps.portfolio.metrics import result_for, summarize, trade_queryset
+from apps.reports.aggregation import rebuild_user_reports
+from apps.reports.models import PerformanceAggregate
 from apps.reports.stats import classify_result, report_statistics
 from apps.trading.exits_engine import process_paper_price
 from apps.trading.models import TradeFinanceEvent
@@ -80,3 +84,28 @@ def test_statistics_exclude_open_and_define_breakeven_denominator(django_user_mo
     assert classify_result(Decimal("0.00000001")) == "breakeven"
     assert classify_result(Decimal("-0.00000001")) == "breakeven"
     assert classify_result(Decimal("0.00000002")) == "win"
+
+
+@pytest.mark.django_db
+def test_aggregation_is_idempotent_and_uses_user_day_week_month(django_user_model):
+    user = django_user_model.objects.create_user(username="aggregate15", timezone="Asia/Tehran")
+    trade = paper_trade(user)
+    process_paper_price(trade.pk, price="59000", event_key="aggregate-loss")
+    closed_at = datetime(2026, 10, 17, 20, 45, tzinfo=ZoneInfo("UTC"))
+    trade.exit_fills.update(occurred_at=closed_at)
+    first = rebuild_user_reports(user.pk)
+    snapshot = list(
+        PerformanceAggregate.objects.filter(owner=user)
+        .order_by("pk")
+        .values_list("pk", "trade_count", "net_realized")
+    )
+    second = rebuild_user_reports(user.pk)
+    assert first["rows"] == second["rows"] == 12  # 3 periods × 4 dimensions
+    assert snapshot == list(
+        PerformanceAggregate.objects.filter(owner=user)
+        .order_by("pk")
+        .values_list("pk", "trade_count", "net_realized")
+    )
+    daily = PerformanceAggregate.objects.get(owner=user, period_kind="day", dimension_kind="total")
+    assert str(daily.period_start) == "2026-10-18"
+    assert daily.trade_count == 1 and daily.losses == 1

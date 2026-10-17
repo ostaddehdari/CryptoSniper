@@ -155,6 +155,7 @@ CELERY_TASK_ROUTES = {
     "trading.monitor_paper_exits": {"queue": "trailing"},
     "trading.paper_feed_staleness": {"queue": "trailing"},
     "alerts.*": {"queue": "alerts"},
+    "reports.*": {"queue": "reports"},
 }
 CELERY_BEAT_SCHEDULER = "apps.operations.scheduler.LeasedScheduler"
 CELERY_BROKER_CONNECTION_TIMEOUT = 3
@@ -176,6 +177,11 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": 30.0,
         "options": {"queue": "maintenance", "expires": 25},
     },
+}
+CELERY_BEAT_SCHEDULE["refresh-performance-aggregates"] = {
+    "task": "reports.refresh_aggregates",
+    "schedule": 300.0,
+    "options": {"queue": "reports", "expires": 240},
 }
 CELERY_BEAT_SCHEDULE["paper-outbox-scan"] = {
     "task": "trading.scan_outbox",

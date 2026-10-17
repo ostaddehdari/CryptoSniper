@@ -48,6 +48,8 @@ def test_balance_total_available_wallet_scope_and_missing_rate(django_user_model
         asset=trade.market.base_asset,
         free_balance=10,
         locked_balance=5,
+        total_balance=15,
+        captured_at=timezone.now(),
         wallet_scope="margin",
     )
     cards, _ = balances_for([account], "USDT")

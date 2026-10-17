@@ -56,6 +56,8 @@ def request_close(owner, trade_id, *, request_key, revision, confirmed):
         raise ValidationError("نسخه صفحه قدیمی است؛ صفحه را تازه کنید.")
     if trade.state != Trade.State.OPEN or not _entry_settled(trade):
         raise ValidationError("ابتدا نتیجه ورود نامعلوم یا ناقص را در مرکز عملیات تطبیق دهید.")
+    if TradeProtection.objects.filter(trade=trade, coverage="cancelling").exists():
+        raise ValidationError("لغو خروج هنوز قطعی نیست؛ ابتدا تطبیق کنید.")
     pending = TradeAction.objects.filter(trade=trade, state__in=["pending", "waiting_feed"]).first()
     if pending:
         return pending, False
@@ -107,7 +109,12 @@ def _apply_close(action_id, quote):
     if trade.state == Trade.State.CLOSED and position.quantity == 0:
         action.state, action.code = "done", "already_closed"
         action.result = {"remaining": "0"}
-    elif not _supported(trade) or trade.state != Trade.State.OPEN or not _entry_settled(trade):
+    elif (
+        not _supported(trade)
+        or trade.state != Trade.State.OPEN
+        or not _entry_settled(trade)
+        or rule.coverage == TradeProtection.Coverage.CANCELLING
+    ):
         action.state, action.code = "rejected", "reconciliation_required"
     else:
         price = rule.last_price if rule.paper_scenario else (quote.price if quote else None)

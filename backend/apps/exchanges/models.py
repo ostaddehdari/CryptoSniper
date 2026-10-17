@@ -188,8 +188,8 @@ class BalanceSnapshot(models.Model):
         ordering = ("-captured_at", "asset__symbol")
         constraints = [
             models.UniqueConstraint(
-                fields=("exchange_account", "asset", "captured_at"),
-                name="balance_snapshot_account_asset_time_unique",
+                fields=("exchange_account", "asset", "wallet_scope", "captured_at"),
+                name="balance_snapshot_account_wallet_time_unique",
             ),
             models.CheckConstraint(
                 condition=(

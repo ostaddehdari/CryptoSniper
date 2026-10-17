@@ -223,6 +223,8 @@ def expire_inflight(seconds=30):
 @transaction.atomic
 def cancel_unsubmitted(owner, trade_id):
     trade = Trade.objects.select_for_update().get(pk=trade_id, owner=owner)
+    if trade.state == Trade.State.CANCELLED:
+        return trade
     if trade.state != Trade.State.QUEUED:
         raise ValidationError("لغو فقط پیش از ارسال سفارش مجاز است.")
     order = Order.objects.select_for_update().get(trade=trade)

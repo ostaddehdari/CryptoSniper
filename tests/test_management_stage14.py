@@ -162,3 +162,66 @@ def test_detail_redacts_event_payload_and_history_filters(client, django_user_mo
     execute_close(action.pk)
     assert client.get("/api/v1/paper/trades/?tab=history").json()["count"] == 1
     assert client.get("/api/v1/paper/trades/?tab=open").json()["count"] == 0
+
+
+@pytest.mark.django_db
+def test_cancel_replay_and_confirmation_for_protection_changes(client, django_user_model):
+    from apps.trading.execution import cancel_unsubmitted
+    from apps.trading.intent import queue_paper_trade
+
+    owner = django_user_model.objects.create_user(username="confirm14")
+    trade = paper_trade(owner)
+    queued, _ = queue_paper_trade(owner, trade.plan_id, request_key=uuid.uuid4())
+    assert cancel_unsubmitted(owner, queued.pk).state == "cancelled"
+    assert cancel_unsubmitted(owner, queued.pk).state == "cancelled"
+    client.force_login(owner)
+    rule = trade.protection
+    before = rule.version
+    client.post(
+        reverse("paper-stop", args=[trade.pk]),
+        {"version": before, "mode": "manual", "price": "61000", "reason": "بررسی تأیید"},
+    )
+    client.post(
+        reverse("paper-trailing", args=[trade.pk]),
+        {"version": before, "step_enabled": "on", "reason": "بررسی تأیید"},
+    )
+    rule.refresh_from_db()
+    assert rule.version == before
+    assert not rule.step_enabled
+    with pytest.raises(ValidationError):
+        request_close(owner, trade.pk, request_key=uuid.uuid4(), revision=999, confirmed=True)
+    TradeProtection.objects.filter(trade=trade).update(coverage="cancelling")
+    with pytest.raises(ValidationError):
+        request(owner, trade)
+
+
+@pytest.mark.django_db
+def test_pagination_owner_account_and_source_filters(client, django_user_model):
+    owner = django_user_model.objects.create_user(username="pages14")
+    other = django_user_model.objects.create_user(username="pages14-other")
+    trade = paper_trade(owner)
+    Trade.objects.bulk_create(
+        [
+            Trade(
+                owner=owner,
+                account=trade.account,
+                market=trade.market,
+                request_key=uuid.uuid4(),
+                request_hash="fixture",
+                state="queued",
+                quantity=trade.quantity,
+                entry_price=trade.entry_price,
+                capital_reserved=trade.capital_reserved,
+            )
+            for _ in range(24)
+        ]
+    )
+    client.force_login(owner)
+    first = client.get("/api/v1/paper/trades/?source=manual").json()
+    second = client.get("/api/v1/paper/trades/?source=manual&page=2").json()
+    assert first["count"] == 25 and len(first["trades"]) == 20 and len(second["trades"]) == 5
+    assert not {x["id"] for x in first["trades"]} & {x["id"] for x in second["trades"]}
+    assert client.get("/api/v1/paper/trades/?source=smart_paste").json()["count"] == 0
+    client.force_login(other)
+    assert client.get("/api/v1/paper/trades/").json()["count"] == 0
+    assert client.get(f"/api/v1/paper/trades/?account={trade.account_id}").json()["count"] == 0

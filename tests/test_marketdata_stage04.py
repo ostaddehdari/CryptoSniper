@@ -100,4 +100,4 @@ def test_refresh_task_guard_and_missing_market(client, django_user_model, monkey
     assert client.get(url).status_code == 405
     assert client.post(url).status_code == 302
     assert len(queued) == 1
-    assert queued[0]["queue"] == "maintenance"
+    assert queued[0]["queue"] == "market_data"

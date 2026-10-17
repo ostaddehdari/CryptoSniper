@@ -161,3 +161,64 @@ def test_operations_owner_scope_and_version(client, django_user_model):
     assert str(trade.account.label).encode() not in client.get(reverse("operations")).content
     with pytest.raises(ValidationError):
         set_paused(user, trade.account_id, paused=True, version=12)
+
+
+@pytest.mark.django_db
+def test_redis_outage_fails_before_claim(settings, django_user_model):
+    from redis.exceptions import ConnectionError
+
+    user = django_user_model.objects.create_user(username="outage11")
+    _, box = setup_trade(user)
+    settings.CELERY_BROKER_URL = "redis://127.0.0.1:1/0"
+    with pytest.raises(ConnectionError):
+        dispatch_paper(box.pk)
+    box.refresh_from_db()
+    assert box.state == "pending" and box.attempts == 0
+    assert not PaperProviderOrder.objects.exists()
+
+
+@pytest.mark.django_db
+def test_external_observations_are_readonly(monkeypatch, django_user_model):
+    """Fake Binance transport validates read contracts only, not a real account."""
+    from apps.exchanges.models import Exchange, UserExchangeAccount
+    from apps.exchanges.security import set_account_credentials
+    from apps.operations.external import observe_binance
+    from apps.operations.models import ExternalObservation
+    from test_binance_adapter import adapter_with
+
+    user = django_user_model.objects.create_user(username="external11")
+    account = UserExchangeAccount(
+        owner=user,
+        exchange=Exchange.objects.get(code="binance"),
+        label="External",
+        environment="live",
+        status="restricted",
+        permissions={"can_read": True},
+    )
+    set_account_credentials(account, {"api_key": "fake", "api_secret": "fake"})
+    account.save()
+    adapter = adapter_with(
+        {
+            "/sapi/v1/account/apiRestrictions": {
+                "enableReading": True,
+                "enableWithdrawals": False,
+                "enableSpotAndMarginTrading": False,
+            },
+            "/api/v3/account": {"balances": [{"asset": "USDT", "free": "100", "locked": "0"}]},
+            "/api/v3/openOrders": [
+                {
+                    "symbol": "BTCUSDT",
+                    "orderId": 1,
+                    "clientOrderId": "outside-cs",
+                    "origQty": ".001",
+                    "executedQty": "0",
+                    "status": "NEW",
+                }
+            ],
+        }
+    )
+    monkeypatch.setattr("apps.operations.external.get_adapter", lambda *args, **kwargs: adapter)
+    assert observe_binance(account) == "read_only_snapshot"
+    assert ExternalObservation.objects.filter(account=account).count() == 2
+    assert not Trade.objects.filter(account=account).exists()
+    assert all(call[0] == "GET" for call in adapter.transport.calls)

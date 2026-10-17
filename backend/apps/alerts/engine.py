@@ -65,7 +65,7 @@ def evaluate(alert_id, *, price, observed_at, source):
 
         Trade.objects.select_for_update().get(pk=trade_id)
     alert = (
-        PriceAlert.objects.select_for_update()
+        PriceAlert.objects.select_for_update(of=("self",))
         .select_related("trade", "market__exchange")
         .get(pk=alert_id)
     )

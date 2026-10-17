@@ -5,9 +5,9 @@
     "S01",
     "S02"
   ],
-  "current_stage": "S12",
-  "next_stage": "S13",
-  "last_completed_work": "S12-W05",
+  "current_stage": "S14",
+  "next_stage": "S15",
+  "last_completed_work": "S14-W05",
   "implementation_started": true,
   "stage_results": {
     "S01": {
@@ -484,14 +484,21 @@
           "name": "Release source/installer SHA256, safe paths, Ubuntu and --check",
           "status": "passed",
           "run_id": 39019202911
+        },
+        {
+          "name": "Operator Stage12 r1 successful VPS upgrade",
+          "status": "passed",
+          "date": "2026-10-17T15:11:00Z",
+          "verified_by": "User-provided terminal log",
+          "evidence": "SHA/check passed; private login and keyring preserved; migrations applied; seven queues healthy; Nginx origin readiness/login HTTP200; INSTALL_OK and DEPLOY_OK."
         }
       ],
       "commit_shas": [],
       "blockers": [
         "Real Binance account read/permissions verification remains pending; no real order writes or Margin/Short.",
-        "Stage12 cumulative installation and public-browser acceptance on operator VPS not yet verified."
+        "Public-browser acceptance on operator VPS remains pending; Stage12 r1 installation itself is confirmed by operator log."
       ],
-      "implementation": "All five workstreams implemented for Paper/read-only observations. 110 PostgreSQL tests, seven queues and Chromium browser smoke passed; exact cumulative release and CHECK_OK installer published. Real Binance credentials and VPS Stage12/public-browser acceptance remain pending.",
+      "implementation": "All five workstreams implemented for Paper/read-only observations. 110 PostgreSQL tests, seven queues and Chromium browser smoke passed; exact cumulative release and CHECK_OK installer published. Real Binance credentials and public-browser acceptance remain pending; Stage12 r1 VPS installation is confirmed by operator log.",
       "release_tag": "stage12-v0.12.0rc1-deploy",
       "release_commit": "21b8b520466b1c7e76b495bbbfefa81f24b8371e"
     },
@@ -532,30 +539,83 @@
           "run_id": 39041880098,
           "installer_sha256": "c2991fddebd65de18a1673f34f758f774e5fb042d2257e15f1a5ed3395c76740",
           "application_source_unchanged": true
+        },
+        {
+          "name": "Operator Stage12 r1 successful VPS upgrade",
+          "status": "passed",
+          "date": "2026-10-17T15:11:00Z",
+          "verified_by": "User-provided terminal log",
+          "evidence": "SHA/check passed; private login and keyring preserved; migrations applied; seven queues healthy; Nginx origin readiness/login HTTP200; INSTALL_OK and DEPLOY_OK."
         }
       ],
       "commit_shas": [],
       "blockers": [
         "Real Binance account read/permissions verification remains pending; no real order writes or Margin/Short.",
-        "Stage12 cumulative installation and public-browser acceptance on operator VPS not yet verified."
+        "Public-browser acceptance on operator VPS remains pending; Stage12 r1 installation itself is confirmed by operator log."
       ],
-      "implementation": "All five workstreams implemented for Paper/read-only observations. 110 PostgreSQL tests, seven queues and Chromium browser smoke passed; exact cumulative release and CHECK_OK installer published. Real Binance credentials and VPS Stage12/public-browser acceptance remain pending.",
+      "implementation": "All five workstreams implemented for Paper/read-only observations. 110 PostgreSQL tests, seven queues and Chromium browser smoke passed; exact cumulative release and CHECK_OK installer published. Real Binance credentials and public-browser acceptance remain pending; Stage12 r1 VPS installation is confirmed by operator log.",
       "release_tag": "stage12-v0.12.0rc1-deploy-r1",
       "release_commit": "21b8b520466b1c7e76b495bbbfefa81f24b8371e"
     },
     "S13": {
-      "status": "not_started",
-      "completed_works": [],
-      "checks": [],
+      "status": "partial",
+      "completed_works": [
+        "S13-W01",
+        "S13-W02",
+        "S13-W03",
+        "S13-W04",
+        "S13-W05"
+      ],
+      "checks": [
+        {
+          "name": "Exact-source PostgreSQL/Redis/seven Workers/Beat/Chromium integration",
+          "status": "passed",
+          "run_id": 39045862763,
+          "tested_commit": "83e3db394728c0e8b379165cf2ce53873106b561",
+          "pytest_passed": 137,
+          "dashboard_queries": 16,
+          "dashboard_build_ms": 25.76,
+          "workload": "one Paper trade with owner data; small CI workload, not production capacity"
+        }
+      ],
       "commit_shas": [],
-      "blockers": []
+      "blockers": [
+        "Stage14 VPS upgrade and public-browser acceptance not yet performed.",
+        "Real Binance credentials/provider acceptance and live/Margin/Short management are outside the verified Paper implementation.",
+        "Large-history performance acceptance pending; the dashboard currently reads all owner ledger rows and only measured small-workload budgets are reported."
+      ],
+      "implementation": "All five works implemented and verified for Paper Spot Long/read-only observations. 137 tests plus seven Workers/Beat and Chromium UI passed; formal provider/VPS and listed scope limitations remain partial.",
+      "release_tag": "stage14-v0.14.0rc1-deploy"
     },
     "S14": {
-      "status": "not_started",
-      "completed_works": [],
-      "checks": [],
+      "status": "partial",
+      "completed_works": [
+        "S14-W01",
+        "S14-W02",
+        "S14-W03",
+        "S14-W04",
+        "S14-W05"
+      ],
+      "checks": [
+        {
+          "name": "Exact-source PostgreSQL/Redis/seven Workers/Beat/Chromium integration",
+          "status": "passed",
+          "run_id": 39045862763,
+          "tested_commit": "83e3db394728c0e8b379165cf2ce53873106b561",
+          "pytest_passed": 137,
+          "dashboard_queries": 16,
+          "dashboard_build_ms": 25.76,
+          "workload": "one Paper trade with owner data; small CI workload, not production capacity"
+        }
+      ],
       "commit_shas": [],
-      "blockers": []
+      "blockers": [
+        "Stage14 VPS upgrade and public-browser acceptance not yet performed.",
+        "Real Binance credentials/provider acceptance and live/Margin/Short management are outside the verified Paper implementation.",
+        "Closing a partially filled or uncertain entry requires reconciliation first; automatic cancellation of an unfilled entry remainder is not implemented."
+      ],
+      "implementation": "All five works implemented and verified for Paper Spot Long/read-only observations. 137 tests plus seven Workers/Beat and Chromium UI passed; formal provider/VPS and listed scope limitations remain partial.",
+      "release_tag": "stage14-v0.14.0rc1-deploy"
     },
     "S15": {
       "status": "not_started",

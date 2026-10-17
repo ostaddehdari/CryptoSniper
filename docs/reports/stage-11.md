@@ -44,4 +44,4 @@ journalctl -u cryptosniper-orders -u cryptosniper-trailing -u cryptosniper-maint
 - سناریوی کامل UI هشدار، ثبت اعلان بعد از بستن صفحه، read receipt، موبایل/دسکتاپ و نبود overflow/خطای JS موفق بود. artifact: `12096156612`.
 - [انتشار تجمعی 0.12.0rc1](https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage12-v0.12.0rc1-deploy)، [ساخت و CHECK_OK نصب‌کننده](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39019202911).
 - ZIP SHA256: `71d3f3b9e789990a69e4680ddc726103c5d358bf2e2edd722540d210b8e9d7d1`؛ Installer SHA256: `cc1670dbacffab78408bafc1c44d516d8489c46844f7563e110cb0af62e3be2a`.
-- آخرین نصب تأییدشدهٔ VPS طبق لاگ کاربر 0.10.0rc1 است؛ نصب 0.12 روی VPS هنوز انجام/تأیید نشده است.
+- لاگ اپراتور در ۱۷ اکتبر ۲۰۲۶ ساعت ۱۵:۱۱ UTC نصب موفق Stage12 نسخه 0.12.0rc1 با r1 را تأیید کرد؛ کلید و ورود حفظ، migrationها اجرا، هفت Worker فعال و readiness/login از Nginx محلی HTTP 200 بودند. این شواهد نصب است؛ پذیرش مرورگر عمومی و حساب واقعی Binance جداگانه باز است.

@@ -724,7 +724,7 @@
       "depends_on": [
         "S12"
       ],
-      "status": "not_started",
+      "status": "partial",
       "source_sections": [
         28,
         33,
@@ -738,7 +738,7 @@
           "title": "Aggregation موجودی",
           "deliverables": "total/available balance و valuation با نرخ و زمان معلوم؛ جلوگیری از جمع ارزهای متفاوت بدون تبدیل.",
           "acceptance": "موجودی Spot/Margin و locked balance دوباره شمرده نشود.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S13-W02",
@@ -746,7 +746,7 @@
           "title": "شاخص‌های معاملاتی",
           "deliverables": "open trades، امروز، active signals، realized/unrealized P/L و win rate با تعریف مشترک گزارش.",
           "acceptance": "شاخص‌ها با fills/fees و timezone کاربر تطبیق داشته باشند.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S13-W03",
@@ -754,7 +754,7 @@
           "title": "رابط مستقل موبایل",
           "deliverables": "نمای روشن روزمره، اقدامات یک‌دستی و اولویت قیمت/P&L/status و اعلان‌های مهم.",
           "acceptance": "Dashboard در عرض موبایل فاقد scroll افقی و داده کلیدی قابل خواندن باشد.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S13-W04",
@@ -762,7 +762,7 @@
           "title": "Workspace دسکتاپ",
           "deliverables": "navigation، top bar، پنل وضعیت exchange و recent trades/signals/alerts با تراکم مناسب.",
           "acceptance": "فیلتر و لینک هر کارت به جزئیات واقعی وصل باشد؛ داده ساختگی production نمایش داده نشود.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S13-W05",
@@ -770,7 +770,7 @@
           "title": "Reactivity و کارایی",
           "deliverables": "refresh جزئی، skeleton/empty/error state و جلوگیری از stale display.",
           "acceptance": "قطع realtime با وضعیت واضح و reconnect صحیح؛ query count/latency اندازه‌گیری و ثبت شود.",
-          "status": "not_started"
+          "status": "done"
         }
       ]
     },
@@ -781,7 +781,7 @@
       "depends_on": [
         "S13"
       ],
-      "status": "not_started",
+      "status": "partial",
       "source_sections": [
         29,
         30,
@@ -794,7 +794,7 @@
           "title": "Open Trades و History",
           "deliverables": "Coin، exchange، market، direction، entry/current، quantity، leverage، TP، SL، trailing، P/L، duration و source.",
           "acceptance": "فیلتر و pagination و مالکیت داده روی موبایل/دسکتاپ صحیح باشند.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S14-W02",
@@ -802,7 +802,7 @@
           "title": "Trade Details و Timeline",
           "deliverables": "raw/parsed signal، plan، orders، fills، fees، exchange response پاک‌شده و trade_events.",
           "acceptance": "timeline از دریافت تا close قابل ردیابی و فاقد secret باشد.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S14-W03",
@@ -810,7 +810,7 @@
           "title": "اقدامات دستی",
           "deliverables": "cancel entry، close remaining، change SL و trailing، توقف اجرای جدید با تأیید داخل محصول و audit.",
           "acceptance": "frontend مستقیماً status را تغییر ندهد؛ درخواست دوباره اقدام مضاعف نسازد.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S14-W04",
@@ -818,7 +818,7 @@
           "title": "خطا و وضعیت نامعلوم",
           "deliverables": "نمای pending/unknown/reconciling/failed، محدودیت action در وضعیت نامعلوم و توضیح کاربردی.",
           "acceptance": "timeout به‌عنوان failed قطعی نمایش داده نشود؛ recovery نتیجه UI را اصلاح کند.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S14-W05",
@@ -826,7 +826,7 @@
           "title": "آزمون جریان مدیریت",
           "deliverables": "کاربر از فهرست به جزئیات و اقدام تا نتیجه Worker برسد.",
           "acceptance": "race close/SL/TP با کاربر دیگر و double click بدون خروج مضاعف کنترل شود.",
-          "status": "not_started"
+          "status": "done"
         }
       ]
     },

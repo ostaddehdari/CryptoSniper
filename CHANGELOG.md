@@ -1,3 +1,12 @@
+## 0.14.0rc1 — استیج‌های ۱۳ و ۱۴ (2026-10-17)
+
+- Dashboard با موجودی و ارزش‌گذاری دارای زمان/نرخ، P/L مشترک Fill/fee، شاخص‌های timezone، نمایش موبایل/دسکتاپ و refresh جزئی با خطای واضح.
+- Open Trades و History با فیلتر و صفحه‌بندی، جزئیات raw/parsed/Plan/Orders/Fills و timeline محدود و امن، External فقط‌خواندنی.
+- بستن باقی‌ماندهٔ Paper با تأیید، UUID و درخواست پایدار، orders Worker و قفل مشترک SL/TP؛ انتظار قیمت و منع اقدام روی نتیجه نامعلوم؛ audit و کنترل نسخهٔ SL/trailing و توقف ورود.
+- ۱۳۷ تست، PostgreSQL/Redis/هفت Worker/Beat/Chromium، بستن تأییدشده در Worker و offline/reconnect و UI موبایل/دسکتاپ پاس شدند؛ سنجه workload کوچک Dashboard: ۱۶ query و ۲۵٫۷۶ms.
+- نصب‌کننده تجمیعی Stage14، حفظ تنظیمات/داده/کلید و پشتیبانی headerهای دقیق Stage01–14؛ ۱۲ آزمون Nginx بدون تغییر سرویس واقعی.
+- نصب Stage12 r1 توسط لاگ اپراتور تأیید شد. نصب نسخه 0.14 و پذیرش Binance واقعی باز است؛ real orders و Margin/Short خاموش می‌مانند.
+
 ## v0.10.0rc1 — استیج‌های ۹ و ۱۰ (۱۶ اکتبر ۲۰۲۶)
 
 ## 0.12.0rc1 — installer r1 (2026-10-17)
@@ -5,14 +14,14 @@
 - Fixed Stage10-managed Nginx snippets being rejected during the Stage12 upgrade.
 - Recognize exact managed headers for Stage01–12, keep rejecting unmanaged/lookalike files, and refuse a snippet changed between plan and apply.
 - Six installer regression tests passed on temporary files: every managed version, Stage10 upgrade/rollback, fresh routing, unmanaged headers and concurrent edits. Application ZIP/source is unchanged.
-- Operator log confirms the original upgrade stopped before application/data replacement. VPS installation with r1 is still pending.
+- Operator log confirms the original upgrade stopped before application/data replacement. A subsequent operator log at 15:11 UTC confirms r1 installed successfully; public-browser acceptance remains pending.
 
 
 ## 0.12.0rc1 — 2026-10-17
 
 - S11: seven queues, leased Beat, durable Paper provider receipts, fenced recovery, bounded retry/dead-letter, reconciliation, read-only External observations and owner operations center.
 - S12: fixed-reference crossing/proximity/profit alerts, central in-app/browser notifications with permission and read receipts, Watchlist indicators and private UI/API.
-- Cumulative installer preserves managed settings/data and backs up systemd units; real Binance order writes remain disabled. 110 tests and real browser/Worker CI passed on 21b8b52; cumulative Release and installer --check published. VPS acceptance pending.
+- Cumulative installer preserves managed settings/data and backs up systemd units; real Binance order writes remain disabled. 110 tests and real browser/Worker CI passed on 21b8b52; cumulative Release and installer --check published. Stage12 installation confirmed by the subsequent operator log; public-browser acceptance pending.
 
 
 - مدل مستقل TP targets، توزیع Decimal و rounding به هدف آخر؛ دفتر Fill خروج و کنترل حد موجودی.

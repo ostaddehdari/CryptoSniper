@@ -5,6 +5,7 @@ import uuid
 from django.conf import settings
 from django.db import models
 from django.db.models import Q
+from django.utils import timezone
 
 
 class Trade(models.Model):
@@ -171,6 +172,9 @@ class ExecutionOutbox(models.Model):
     state = models.CharField(max_length=12, choices=State.choices, default=State.PENDING)
     attempts = models.PositiveIntegerField(default=0)
     last_error_code = models.CharField(max_length=50, blank=True)
+    fence = models.PositiveIntegerField(default=0)
+    next_attempt_at = models.DateTimeField(default=timezone.now)
+    dead_letter = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

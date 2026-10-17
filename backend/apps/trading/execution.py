@@ -7,7 +7,10 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
-from apps.exchanges.adapters import AdapterError, get_adapter
+from apps.exchanges.adapters import AdapterError
+from apps.operations import provider
+from apps.operations.leases import lease
+from apps.operations.models import AccountControl
 
 from .exits_plan import ensure_exits
 from .models import (
@@ -24,8 +27,9 @@ from .models import (
 @transaction.atomic
 def record_fill(order_id, *, exchange_fill_id, quantity, price, fee=Decimal("0")):
     """Idempotent fill ingestion with position calculated ONLY from unique fills."""
-    order = Order.objects.select_for_update().select_related("trade").get(pk=order_id)
-    trade = Trade.objects.select_for_update().get(pk=order.trade_id)
+    trade_id = Order.objects.values_list("trade_id", flat=True).get(pk=order_id)
+    trade = Trade.objects.select_for_update().get(pk=trade_id)
+    order = Order.objects.select_for_update().get(pk=order_id)
     quantity = Decimal(str(quantity))
     price = Decimal(str(price))
     fee = Decimal(str(fee))
@@ -96,16 +100,26 @@ def record_fill(order_id, *, exchange_fill_id, quantity, price, fee=Decimal("0")
 @transaction.atomic
 def claim_outbox(outbox_id):
     """Never resubmit a potentially sent order; uncertain requires reconciliation."""
-    box = ExecutionOutbox.objects.select_for_update().select_related("order").get(pk=outbox_id)
-    if box.state != ExecutionOutbox.State.PENDING:
+    info = ExecutionOutbox.objects.select_related("order").get(pk=outbox_id)
+    control, _ = AccountControl.objects.get_or_create(account_id=info.order.account_id)
+    control = AccountControl.objects.select_for_update().get(pk=control.pk)
+    if control.paused:
         return None
-    order = Order.objects.select_for_update().get(pk=box.order_id)
-    trade = Trade.objects.select_for_update().get(pk=order.trade_id)
+    trade = Trade.objects.select_for_update().get(pk=info.order.trade_id)
+    order = Order.objects.select_for_update().get(pk=info.order_id)
+    box = ExecutionOutbox.objects.select_for_update().get(pk=outbox_id)
+    if (
+        box.state != ExecutionOutbox.State.PENDING
+        or box.dead_letter
+        or box.next_attempt_at > timezone.now()
+    ):
+        return None
     if order.state != Order.State.QUEUED or trade.state != Trade.State.QUEUED:
         raise ValidationError("وضعیت سفارش قابل ارسال نیست.")
     box.state = ExecutionOutbox.State.INFLIGHT
     box.attempts += 1
-    box.save(update_fields=("state", "attempts", "updated_at"))
+    box.fence += 1
+    box.save(update_fields=("state", "attempts", "fence", "updated_at"))
     order.state = Order.State.SUBMITTING
     order.sent_at = timezone.now()
     order.save(update_fields=("state", "sent_at", "updated_at"))
@@ -119,11 +133,12 @@ def claim_outbox(outbox_id):
 
 @transaction.atomic
 def mark_uncertain(outbox_id, code="unknown_outcome"):
+    info = ExecutionOutbox.objects.select_related("order").get(pk=outbox_id)
+    trade = Trade.objects.select_for_update().get(pk=info.order.trade_id)
+    order = Order.objects.select_for_update().get(pk=info.order_id)
     box = ExecutionOutbox.objects.select_for_update().get(pk=outbox_id)
     if box.state != ExecutionOutbox.State.INFLIGHT:
         return
-    order = Order.objects.select_for_update().get(pk=box.order_id)
-    trade = Trade.objects.select_for_update().get(pk=order.trade_id)
     if order.state in {Order.State.FILLED, Order.State.PARTIAL}:
         box.state = ExecutionOutbox.State.DONE
         box.save(update_fields=("state", "updated_at"))
@@ -140,51 +155,57 @@ def mark_uncertain(outbox_id, code="unknown_outcome"):
     )
 
 
-def dispatch_paper(outbox_id):
-    """External simulator invocation outside DB transaction, after durable intent."""
-    order_id = claim_outbox(outbox_id)
-    if order_id is None:
+@transaction.atomic
+def consume_receipt(outbox_id, receipt, fence=None):
+    info = ExecutionOutbox.objects.select_related("order").get(pk=outbox_id)
+    trade = Trade.objects.select_for_update().get(pk=info.order.trade_id)
+    order = Order.objects.select_for_update().get(pk=info.order_id)
+    box = ExecutionOutbox.objects.select_for_update().get(pk=outbox_id)
+    if fence is not None and box.fence != fence:
+        return {"status": "fenced"}
+    if box.state == "done":
         return {"status": "already_claimed"}
-    order = Order.objects.select_related("trade", "account", "trade__market").get(pk=order_id)
-    if (
-        order.account.environment != "paper"
-        or order.account.exchange.adapter_code != "simulator"
-        or order.trade.market.market_type != "spot"
+    if (receipt.account_id, receipt.client_order_id, receipt.quantity, receipt.price) != (
+        order.account_id,
+        order.client_order_id,
+        order.quantity,
+        order.price,
     ):
-        mark_uncertain(outbox_id, "unsafe_provider")
-        return {"status": "uncertain"}
-    try:
-        adapter = get_adapter("simulator", credentials={}, environment="paper")
-        receipt = adapter.place_order(
-            client_order_id=order.client_order_id,
-            symbol=order.trade.market.symbol,
-            side="buy",
-            order_type="market",
-            amount=order.quantity,
-            price=order.price,
-        )
-        with transaction.atomic():
-            locked = Order.objects.select_for_update().get(pk=order.pk)
-            locked.external_order_id = receipt.order_id
-            locked.save(update_fields=("external_order_id", "updated_at"))
-        if receipt.filled_amount > 0:
-            record_fill(
-                order.pk,
-                exchange_fill_id=f"paper:{order.client_order_id}:1",
-                quantity=receipt.filled_amount,
-                price=receipt.average_price or order.price,
-                fee=receipt.filled_amount
-                * (receipt.average_price or order.price)
-                * (order.trade.market.taker_fee or Decimal("0")),
-            )
-        with transaction.atomic():
-            box = ExecutionOutbox.objects.select_for_update().get(pk=outbox_id)
-            box.state = ExecutionOutbox.State.DONE
-            box.save(update_fields=("state", "updated_at"))
-        return {"status": "filled", "order_id": order.pk}
-    except (AdapterError, ValidationError, ValueError, ArithmeticError):
-        mark_uncertain(outbox_id, "paper_adapter_error")
-        return {"status": "uncertain"}
+        raise ValidationError("Receipt با intent تطبیق ندارد.")
+    order.external_order_id = receipt.external_order_id
+    order.save(update_fields=("external_order_id", "updated_at"))
+    record_fill(
+        order.pk,
+        exchange_fill_id=f"paper:{order.client_order_id}:1",
+        quantity=receipt.quantity,
+        price=receipt.price,
+        fee=receipt.fee,
+    )
+    box.state = ExecutionOutbox.State.DONE
+    box.last_error_code = ""
+    box.save(update_fields=("state", "last_error_code", "updated_at"))
+    return {"status": "filled", "order_id": order.pk, "trade_id": trade.pk}
+
+
+def dispatch_paper(outbox_id):
+    """Commit intent, call durable simulator, then consume with fencing."""
+    with lease(f"order:{outbox_id}") as acquired:
+        if not acquired:
+            return {"status": "busy"}
+        order_id = claim_outbox(outbox_id)
+        if order_id is None:
+            return {"status": "already_claimed"}
+        fence = ExecutionOutbox.objects.get(pk=outbox_id).fence
+        order = Order.objects.select_related("trade__market", "account__exchange").get(pk=order_id)
+        try:
+            receipt = provider.submit(order)
+            return consume_receipt(outbox_id, receipt, fence=fence)
+        except (AdapterError, ValidationError, ValueError, ArithmeticError, TimeoutError) as error:
+            mark_uncertain(outbox_id, "paper_adapter_error")
+            from apps.operations.recovery import classify_failure
+
+            classify_failure(outbox_id, error)
+            return {"status": "uncertain"}
 
 
 def expire_inflight(seconds=30):

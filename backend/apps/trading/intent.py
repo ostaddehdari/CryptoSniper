@@ -45,12 +45,18 @@ def queue_paper_trade(owner, plan_id, *, request_key):
         .select_related("exchange")
         .get(pk=plan.exchange_account_id, owner=owner)
     )
+    from apps.operations.models import AccountControl
+
+    control, _ = AccountControl.objects.get_or_create(account=account)
+    control = AccountControl.objects.select_for_update().get(pk=control.pk)
     digest = _hash(plan)
     previous = Trade.objects.filter(owner=owner, request_key=request_key).first()
     if previous:
         if previous.request_hash != digest or previous.plan_id != plan.pk:
             raise ValidationError("کلید تکراری برای برنامه دیگری استفاده شده است.")
         return previous, False
+    if control.paused:
+        raise ValidationError("اجرای جدید این حساب متوقف است؛ مرکز عملیات را بررسی کنید.")
     if account.environment != "paper" or account.exchange.adapter_code != "simulator":
         raise ValidationError("این مرحله فقط برای حساب شبیه‌ساز Paper مجاز است.")
     if account.status != "connected" or not account.permissions.get("can_read"):

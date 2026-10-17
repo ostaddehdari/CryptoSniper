@@ -98,6 +98,8 @@ def launch_trade(request, plan_id):
 def cancel_trade(request, pk):
     _owned(request.user, pk)
     try:
+        if request.POST.get("confirmed") != "on":
+            raise ValidationError("تأیید صریح عملیات لازم است.")
         cancel_unsubmitted(request.user, pk)
         record_audit("paper_trade.cancelled", user=request.user, metadata={"trade_id": pk})
         messages.success(request, "درخواست Paper پیش از ارسال لغو شد.")
@@ -161,6 +163,8 @@ def api_trades(request):
 def move_stop(request, pk):
     trade = _owned(request.user, pk)
     try:
+        if request.POST.get("confirmed") != "on":
+            raise ValidationError("تأیید صریح عملیات لازم است.")
         adjust_stop(
             request.user,
             trade.pk,
@@ -184,6 +188,8 @@ def api_move_stop(request, pk):
         return JsonResponse({"error": "درخواست JSON معتبر لازم است."}, status=400)
     try:
         body = json.loads(request.body)
+        if not isinstance(body, dict) or body.get("confirmed") is not True:
+            raise ValidationError("تأیید صریح عملیات لازم است.")
         protection, moved = adjust_stop(
             request.user,
             pk,
@@ -257,6 +263,8 @@ def paper_price_event(request, pk):
 def set_trailing(request, pk):
     _owned(request.user, pk)
     try:
+        if request.POST.get("confirmed") != "on":
+            raise ValidationError("تأیید صریح عملیات لازم است.")
         configure_trailing(
             request.user,
             pk,
@@ -301,6 +309,8 @@ def api_trailing_update(request, pk):
         return JsonResponse({"error": "JSON معتبر لازم است."}, status=400)
     try:
         body = json.loads(request.body)
+        if not isinstance(body, dict) or body.get("confirmed") is not True:
+            raise ValidationError("تأیید صریح عملیات لازم است.")
         rule = configure_trailing(
             request.user,
             pk,
@@ -320,3 +330,25 @@ def api_trailing_update(request, pk):
         )
     except (ValueError, KeyError, TypeError, ValidationError) as error:
         return JsonResponse({"error": str(error)}, status=400)
+
+
+@login_required
+@require_POST
+def close_trade(request, pk):
+    _owned(request.user, pk)
+    from .actions import request_close
+
+    try:
+        action, _ = request_close(
+            request.user,
+            pk,
+            request_key=request.POST.get("request_key", ""),
+            revision=request.POST.get("revision", "0"),
+            confirmed=request.POST.get("confirmed") == "on",
+        )
+        messages.success(
+            request, f"درخواست بستن #{action.pk} ثبت شد؛ نتیجه را در وضعیت درخواست ببینید."
+        )
+    except (ValidationError, ValueError, TypeError) as error:
+        messages.error(request, str(error))
+    return redirect("paper-trade-detail", pk=pk)

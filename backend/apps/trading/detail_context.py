@@ -1,5 +1,7 @@
 """Owner-only evidence; arbitrary provider JSON is never sent to the browser."""
 
+from uuid import uuid4
+
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
 
@@ -46,6 +48,8 @@ def detail_context(user, pk, params):
         }
         events.append(event)
     return {
+        "request_key": str(uuid4()),
+        "actions": trade.actions.order_by("-pk")[:10],
         "trade": trade,
         "events": events,
         "event_page": page,

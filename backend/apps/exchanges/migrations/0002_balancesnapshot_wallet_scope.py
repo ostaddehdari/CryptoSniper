@@ -4,15 +4,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('exchanges', '0001_initial'),
+        ("exchanges", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='balancesnapshot',
-            name='wallet_scope',
-            field=models.CharField(choices=[('spot', 'Spot'), ('margin', 'Margin')], default='spot', max_length=12),
+            model_name="balancesnapshot",
+            name="wallet_scope",
+            field=models.CharField(
+                choices=[("spot", "Spot"), ("margin", "Margin")], default="spot", max_length=12
+            ),
         ),
     ]

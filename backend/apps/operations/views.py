@@ -119,6 +119,8 @@ def control(request, pk):
             reconcile_one.apply_async(args=[pk], queue="maintenance")
             messages.success(request, "تطبیق در صف قرار گرفت.")
         elif action in {"pause", "resume"}:
+            if request.POST.get("confirmed") != "on":
+                raise ValidationError("تأیید صریح تغییر ورود جدید لازم است.")
             set_paused(
                 request.user,
                 pk,

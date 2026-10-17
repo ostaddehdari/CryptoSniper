@@ -351,3 +351,35 @@ class PaperPriceEvent(models.Model):
 
     def __str__(self):
         return f"Paper tick {self.trade_id} {self.event_key}"
+
+
+class TradeAction(models.Model):
+    """Durable, idempotent operator close; committed with its resulting exit ledger."""
+
+    trade = models.ForeignKey(Trade, on_delete=models.CASCADE, related_name="actions")
+    request_key = models.UUIDField()
+    revision = models.PositiveIntegerField()
+    state = models.CharField(
+        max_length=16,
+        default="pending",
+        choices=[
+            ("pending", "در صف Worker"),
+            ("waiting_feed", "منتظر قیمت معتبر"),
+            ("done", "انجام‌شده"),
+            ("rejected", "نیازمند بررسی"),
+        ],
+    )
+    code = models.CharField(max_length=48, blank=True)
+    attempts = models.PositiveIntegerField(default=0)
+    result = models.JSONField(default=dict)
+    next_attempt_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=("trade", "request_key"), name="trade_action_request_unique"
+            )
+        ]
+        indexes = [models.Index(fields=("state", "next_attempt_at"))]

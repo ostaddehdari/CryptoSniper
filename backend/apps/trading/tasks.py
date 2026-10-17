@@ -35,4 +35,22 @@ def scan_outbox():
     )
     for pk in ids:
         process_paper.apply_async(args=[pk], queue="orders")
-    return {"queued": len(ids)}
+    from .models import TradeAction
+
+    action_ids = list(
+        TradeAction.objects.filter(
+            state__in=["pending", "waiting_feed"], next_attempt_at__lte=timezone.now()
+        )
+        .order_by("created_at")
+        .values_list("pk", flat=True)[:20]
+    )
+    for action_id in action_ids:
+        close_remaining.apply_async(args=[action_id], queue="orders")
+    return {"queued": len(ids), "actions": len(action_ids)}
+
+
+@shared_task(name="trading.close_remaining", acks_late=True, reject_on_worker_lost=True)
+def close_remaining(action_id):
+    from .actions import execute_close
+
+    return execute_close(action_id)

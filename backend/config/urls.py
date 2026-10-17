@@ -112,6 +112,7 @@ urlpatterns = [
     path("paper/", paper_views.list_trades, name="paper-trades"),
     path("paper/<int:pk>/", paper_views.trade_detail, name="paper-trade-detail"),
     path("paper/launch/<int:plan_id>/", paper_views.launch_trade, name="paper-launch"),
+    path("paper/<int:pk>/close/", paper_views.close_trade, name="paper-close"),
     path("paper/<int:pk>/cancel/", paper_views.cancel_trade, name="paper-cancel"),
     path("paper/risk/", paper_risk_views.paper_risk, name="paper-risk"),
     path("api/v1/paper/trades/", paper_views.api_trades, name="api-paper-trades"),

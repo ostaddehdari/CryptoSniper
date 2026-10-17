@@ -10,7 +10,7 @@ from django.db import IntegrityError, transaction
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from apps.accounts.audit import record_audit
 from apps.accounts.security import session_api_required
@@ -57,8 +57,9 @@ def _serialized(trade):
 @never_cache
 @require_GET
 def list_trades(request):
-    trades = Trade.objects.filter(owner=request.user).select_related("market", "account")[:100]
-    return render(request, "trading/list.html", {"trades": trades, "nav": "paper"})
+    from .catalogue import catalogue
+
+    return render(request, "trading/list.html", catalogue(request.user, request.GET))
 
 
 @login_required
@@ -126,8 +127,22 @@ def api_trade_detail(request, pk):
 
 @session_api_required
 @never_cache
-@require_POST
+@require_http_methods(["GET", "POST"])
 def api_trades(request):
+    if request.method == "GET":
+        from .catalogue import catalogue, trade_row
+
+        context = catalogue(request.user, request.GET)
+        page = context["page"]
+        return JsonResponse(
+            {
+                "trades": [trade_row(t) for t in context["trades"]],
+                "page": page.number,
+                "pages": page.paginator.num_pages,
+                "count": page.paginator.count,
+                "errors": context["filter_form"].errors,
+            }
+        )
     if request.content_type != "application/json":
         return JsonResponse({"error": "application/json لازم است"}, status=415)
     if len(request.body) > 16000:

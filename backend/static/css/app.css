@@ -130,3 +130,10 @@
 .dashboard-stale { border-inline-start:3px solid #d97706; padding-inline-start:.5rem; }
 @media(max-width:900px) { .dashboard-columns { grid-template-columns:1fr; } }
 @media(max-width:480px) { .dashboard-quick .button { flex:1 1 45%; } .dashboard-filter { width:100%; } .dashboard-filter select { flex:1; } .dashboard-skeleton { grid-template-columns:1fr; } }
+.trade-filter { display:flex; flex-wrap:wrap; gap:.7rem; align-items:end; }
+.trade-filter p { flex:1 1 140px; min-width:0; }
+.trade-filter .input { width:100%; min-width:0; }
+.trade-card-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr)); gap:1rem; margin-block:1rem; }
+.trade-card { min-width:0; overflow-wrap:anywhere; }
+.trade-card .manual-stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.pagination { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:1rem; margin-block:1rem; }

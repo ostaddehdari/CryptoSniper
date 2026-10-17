@@ -1,0 +1,94 @@
+name: Stage12 installer r1 - managed Nginx upgrade fix
+on:
+  push:
+    paths:
+      - .github/workflows/release-stage12-r1.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Installer upgrade, unmanaged config and rollback regression tests
+        run: python3 -m unittest discover -s tests -p test_installer_nginx.py -v
+      - name: Require successful integration checks for the exact source
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          PIN=21b8b520466b1c7e76b495bbbfefa81f24b8371e
+          export PIN
+          python3 - <<'PYCI'
+          import json,os,subprocess,time
+          pin=os.environ['PIN']
+          for attempt in range(120):
+              rows=json.loads(subprocess.check_output(['gh','run','list','--workflow','ci.yml','--commit',pin,'--json','conclusion,status,url'],text=True))
+              if any(r['status']=='completed' and r['conclusion']=='success' for r in rows):
+                  print('PASS: exact source completed CI.')
+                  break
+              if any(r['status']=='completed' and r['conclusion'] in ('failure','cancelled') for r in rows):
+                  raise SystemExit('Exact-source CI failed; no release is permitted.')
+              time.sleep(5)
+          else:
+              raise SystemExit('Timed out waiting for exact-source CI; no release.')
+          PYCI
+      - name: Assemble exact source and validated installer
+        shell: bash
+        run: |
+          set -euo pipefail
+          PIN=21b8b520466b1c7e76b495bbbfefa81f24b8371e
+          export PIN
+          mkdir -p dist
+          git archive --format=zip --prefix=CryptoSniper/ -o dist/CryptoSniper-Stage12-v0.12.0rc1.zip "$PIN"
+          cp scripts/cryptosniper-stage12-run.sh dist/cryptosniper-stage12-run.sh
+          python3 - <<'PY'
+          import hashlib,os,re,subprocess
+          from pathlib import Path
+          pin=os.environ['PIN']
+          def blob(path):
+              return subprocess.check_output(['git','rev-parse',pin+':'+path],text=True).strip()
+          archive=Path('dist/CryptoSniper-Stage12-v0.12.0rc1.zip')
+          substitutions={
+              '__SOURCE_COMMIT__':pin,
+              '__STAGE12_ARCHIVE_SHA256__':hashlib.file_digest(archive.open('rb'),'sha256').hexdigest(),
+              '__BLOB_PYPROJECT__':blob('pyproject.toml'),
+              '__BLOB_UVLOCK__':blob('uv.lock'),
+              '__BLOB_PROGRESS__':blob('docs/progress.json'),
+              '__BLOB_EXITS_ENGINE__':blob('backend/apps/trading/exits_engine.py'),
+              '__BLOB_RECOVERY__':blob('backend/apps/operations/recovery.py'),
+              '__BLOB_ALERT_ENGINE__':blob('backend/apps/alerts/engine.py'),
+          }
+          path=Path('dist/cryptosniper-stage12-run.sh')
+          text=path.read_text()
+          for old,new in substitutions.items():
+              if old not in text: raise SystemExit('Missing placeholder '+old)
+              text=text.replace(old,new)
+          if re.search(r'__[A-Z0-9_]+__',text): raise SystemExit('Unexpanded placeholders')
+          path.write_text(text)
+          PY
+          chmod +x dist/cryptosniper-stage12-run.sh
+          bash -n dist/cryptosniper-stage12-run.sh
+          printf 'SOURCE=%s\nCI=https://github.com/ostaddehdari/CryptoSniper/actions/runs/39019031643\nMODE=Paper Spot Long; no real exchange writes\nINSTALLER_BUILD_COMMIT=%s\n' "$PIN" "$(git rev-parse HEAD)" > dist/runlog.txt
+          bash dist/cryptosniper-stage12-run.sh --check dist/CryptoSniper-Stage12-v0.12.0rc1.zip
+          (cd dist && sha256sum CryptoSniper-Stage12-v0.12.0rc1.zip cryptosniper-stage12-run.sh runlog.txt > SHA256SUMS.txt)
+      - name: Publish immutable cumulative prerelease
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG=stage12-v0.12.0rc1-deploy-r1
+          PIN=21b8b520466b1c7e76b495bbbfefa81f24b8371e
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo 'Release already exists; assets are immutable. Verify the existing release.'
+          else
+            gh release create "$TAG" dist/* --target "$PIN" --prerelease \
+              --title "CryptoSniper Stage12 v0.12.0rc1 — installer r1 Nginx upgrade fix" \
+              --notes "Installer-only r1 fix: accept the existing managed Stage10 Nginx snippet and all known Stage01-12 headers; reject unmanaged/lookalike headers and refuse concurrent Nginx edits; preserve backup/rollback. Six routing regression tests passed. Application source remains the previously CI-verified cumulative Stages 01-12, v0.12.0rc1. Real Binance order writes and Margin/Short remain disabled; Binance read account and VPS acceptance pending. Exact-source CI: https://github.com/ostaddehdari/CryptoSniper/actions/runs/39019031643. Browser notification requires an open page, HTTPS and consent; in-app Worker recording continues after browser close."
+          fi
+          gh release view "$TAG" --json assets,url

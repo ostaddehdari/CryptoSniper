@@ -187,7 +187,7 @@ from pathlib import Path
 SNIPPET = Path('/etc/nginx/snippets/cryptosniper-location.conf')
 INCLUDE = f'include {SNIPPET};'
 MARKER = '# Managed by CryptoSniper Stage12 installer'
-KNOWN_MARKERS = ('# Managed by CryptoSniper Stage01 installer', '# Managed by CryptoSniper Stage02 installer', '# Managed by CryptoSniper Stage03 installer', '# Managed by CryptoSniper Stage04 installer', '# Managed by CryptoSniper Stage05 installer', '# Managed by CryptoSniper Stage06 installer', '# Managed by CryptoSniper Stage07 installer', '# Managed by CryptoSniper Stage08 installer', '# Managed by CryptoSniper Stage09 installer', MARKER)
+KNOWN_MARKERS = tuple(f'# Managed by CryptoSniper Stage{stage:02d} installer' for stage in range(1, 13))
 plan_path = Path(sys.argv[2])
 
 def digest(text):
@@ -269,7 +269,7 @@ if action == 'plan':
         candidates = [c for c in candidates if c['path'] == str(Path(selected).resolve())]
     if len(candidates) != 1:
         raise SystemExit('Expected exactly one active srun.ir HTTPS server block. Set NGINX_VHOST to its config path if ambiguous.')
-    if SNIPPET.exists() and not SNIPPET.read_text().startswith(KNOWN_MARKERS):
+    if SNIPPET.exists() and SNIPPET.read_text().splitlines()[:1] not in [[marker] for marker in KNOWN_MARKERS]:
         raise SystemExit('An unmanaged CryptoSniper Nginx snippet exists; it was not overwritten.')
     # Included snippets may also contain an old app route; refuse to shadow them.
     for filename in paths:
@@ -278,6 +278,7 @@ if action == 'plan':
             continue
         if re.search(r'\blocation\s+(?:[=~^*]+\s+)?[\"\']?/cryptosniper(?:/|\s|[\"\'])', path.read_text()):
             raise SystemExit('An unmanaged included /cryptosniper route exists; it was not overwritten.')
+    candidates[0]['snippet_hash'] = digest(SNIPPET.read_text()) if SNIPPET.exists() else None
     plan_path.write_text(json.dumps(candidates[0]))
     print('PASS: existing srun.ir HTTPS virtual host identified and configuration validated.')
 elif action == 'apply':
@@ -286,6 +287,9 @@ elif action == 'apply':
     original = path.read_text()
     if digest(original) != plan['hash']:
         raise SystemExit('Nginx config changed during installation; no automatic edit was made.')
+    current_snippet_hash = digest(SNIPPET.read_text()) if SNIPPET.exists() else None
+    if current_snippet_hash != plan['snippet_hash']:
+        raise SystemExit('Nginx snippet changed during installation; no automatic edit was made.')
     backup = Path(os.environ['CONFIG_DIR']) / 'backups' / (time.strftime('%Y%m%d-%H%M%S') + '-' + str(os.getpid()))
     backup.mkdir(parents=True, mode=0o700)
     shutil.copy2(path, backup / 'vhost.conf')

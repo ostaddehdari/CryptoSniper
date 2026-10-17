@@ -35,6 +35,8 @@ def ready(request):
 
 
 urlpatterns = [
+    path("manifest.webmanifest", views.web_manifest, name="web-manifest"),
+    path("service-worker.js", views.service_worker, name="service-worker"),
     path("reports/", report_views.center, name="reports"),
     path("reports/export.csv", report_views.export_csv, name="report-csv"),
     path("reports/chart.svg", report_views.export_chart, name="report-chart"),

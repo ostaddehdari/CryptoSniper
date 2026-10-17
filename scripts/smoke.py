@@ -134,6 +134,10 @@ def main():
                 context = browser.new_context(viewport={"width": 1440, "height": 1000})
                 page = context.new_page()
                 page.on("pageerror", lambda error: errors.append(str(error)))
+                manifest = page.request.get(base + "/manifest.webmanifest")
+                worker_script = page.request.get(base + "/service-worker.js")
+                assert manifest.ok and worker_script.ok
+                assert "/api/" not in worker_script.text()
                 page.goto(base + "/auth/login/")
                 page.screenshot(path=str(artifacts / "login-desktop.png"), full_page=True)
                 page.locator('[name="username"]').fill(username)
@@ -235,6 +239,28 @@ def main():
                 page.locator('.paper-price-form [name="price"]').fill("79100")
                 page.get_by_role("button", name="ارسال Tick آزمایشی به موتور Paper").click()
                 wait_for(lambda: Trade.objects.get(pk=paper.pk).state == "closed")
+                from apps.reports.models import PerformanceAggregate, ReportRefreshState
+                from apps.reports.tasks import rebuild_user
+
+                rebuild_user.apply_async(args=[user.pk], queue="reports")
+                wait_for(
+                    lambda: (
+                        ReportRefreshState.objects.filter(
+                            owner=user, dirty_at__isnull=True
+                        ).exists()
+                        and PerformanceAggregate.objects.filter(owner=user).exists()
+                    ),
+                    seconds=45,
+                )
+                page.goto(base + "/reports/?period=day&group=total")
+                page.get_by_role("heading", name="عملکرد و هزینه‌ها").wait_for()
+                page.get_by_role("link", name="خروجی CSV").wait_for()
+                page.set_viewport_size({"width": 390, "height": 844})
+                assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+                page.screenshot(path=str(artifacts / "reports16-mobile.png"), full_page=True)
+                page.set_viewport_size({"width": 1440, "height": 1000})
+                page.screenshot(path=str(artifacts / "reports16-desktop.png"), full_page=True)
+                page.goto(base + f"/paper/{paper.pk}/")
                 page.screenshot(
                     path=str(artifacts / "paper-trailing-closed-desktop.png"), full_page=True
                 )

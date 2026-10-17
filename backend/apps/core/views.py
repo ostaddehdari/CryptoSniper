@@ -1,10 +1,13 @@
 from datetime import timedelta
 
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.db import transaction
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.templatetags.static import static
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.cache import never_cache
@@ -19,6 +22,75 @@ from .tasks import infrastructure_probe
 
 def home(request):
     return redirect("dashboard" if request.user.is_authenticated else "login")
+
+
+@require_GET
+def web_manifest(request):
+    response = JsonResponse(
+        {
+            "id": reverse("home"),
+            "name": "CryptoSniper",
+            "short_name": "CryptoSniper",
+            "description": "فضای مدیریت معاملات Paper و گزارش عملکرد",
+            "lang": "fa",
+            "dir": "rtl",
+            "start_url": reverse("dashboard"),
+            "scope": reverse("home"),
+            "display": "standalone",
+            "background_color": "#f3f6f5",
+            "theme_color": "#087f73",
+            "icons": [
+                {
+                    "src": static("img/pwa-icon.svg"),
+                    "sizes": "any",
+                    "type": "image/svg+xml",
+                    "purpose": "any maskable",
+                }
+            ],
+        },
+        content_type="application/manifest+json",
+    )
+    response["Cache-Control"] = "public, max-age=3600"
+    return response
+
+
+@require_GET
+def service_worker(request):
+    assets = [
+        static("css/app.css"),
+        static("js/app.js"),
+        static("js/pwa.js"),
+        static("img/mark.svg"),
+        static("img/pwa-icon.svg"),
+        static("vendor/htmx-2.0.8.min.js"),
+        static("vendor/alpine-3.14.9.min.js"),
+    ]
+    source = (
+        "'use strict';\n"
+        "const CACHE='cryptosniper-static-v16';\n"
+        f"const ASSETS={assets!r};\n"
+        "self.addEventListener('install',event=>event.waitUntil("
+        "caches.open(CACHE).then(c=>c.addAll(ASSETS))));\n"
+        "self.addEventListener('activate',event=>event.waitUntil(caches.keys().then("
+        "keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))"
+        ".then(()=>self.clients.claim())));\n"
+        "self.addEventListener('fetch',event=>{\n"
+        "  const url=new URL(event.request.url);\n"
+        f"  const staticPrefix={settings.STATIC_URL!r};\n"
+        "  if(event.request.method!=='GET'||url.origin!==self.location.origin||"
+        "!url.pathname.startsWith(staticPrefix))return;\n"
+        "  event.respondWith(caches.match(event.request).then(hit=>hit||"
+        "fetch(event.request).then(response=>{\n"
+        "    if(response.ok){const copy=response.clone();caches.open(CACHE)"
+        ".then(cache=>cache.put(event.request,copy));}\n"
+        "    return response;\n"
+        "  })));\n"
+        "});\n"
+    )
+    response = HttpResponse(source, content_type="text/javascript; charset=utf-8")
+    response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response["Service-Worker-Allowed"] = reverse("home")
+    return response
 
 
 @login_required

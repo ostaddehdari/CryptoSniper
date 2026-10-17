@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="CryptoSniper">
+  <rect width="512" height="512" rx="112" fill="#087f73"/>
+  <circle cx="256" cy="256" r="145" fill="none" stroke="#d5f5e5" stroke-width="24"/>
+  <circle cx="256" cy="256" r="76" fill="#d5f5e5"/>
+  <path d="M256 32v98M256 382v98M32 256h98M382 256h98" stroke="#d5f5e5" stroke-width="24" stroke-linecap="round"/>
+  <path d="M219 278l28 28 58-77" fill="none" stroke="#087f73" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

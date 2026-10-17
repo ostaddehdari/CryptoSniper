@@ -161,3 +161,6 @@
 /* Stage16-W04: connected settings/source workspace. */
 .source-list{display:grid;gap:10px}.source-list article{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px;border:1px solid var(--line);border-radius:12px}.source-list article>div{display:grid}.source-list small{color:var(--muted)}.source-list form{display:flex;align-items:center;gap:12px}.source-planned{background:var(--bg)}
 @media(max-width:600px){.source-list article{align-items:flex-start;display:grid}.source-list form{justify-content:space-between}.settings-tabs{scroll-snap-type:x proximity}.settings-tabs a{scroll-snap-align:start}}
+
+/* Stage16-W05: explicit offline state and accessible PWA surfaces. */
+.offline-banner{position:sticky;top:0;z-index:43;padding:10px 18px;background:#7b4b12;color:#fff;text-align:center;font-size:11px}.offline-banner[hidden]{display:none}.button:focus-visible,.nav-link:focus-visible,.mobile-primary-nav a:focus-visible,.mobile-primary-nav button:focus-visible{outline:3px solid #54b9aa;outline-offset:3px}.button,.nav-link,.text-button,.inline-link{touch-action:manipulation}@media(max-width:800px){.text-button,.inline-link{min-height:44px;display:inline-flex;align-items:center}}@media(forced-colors:active){.status-dot,.trade-timeline li:before{forced-color-adjust:none}.button,.status-badge{border:1px solid currentColor}}

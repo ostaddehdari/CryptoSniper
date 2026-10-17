@@ -73,3 +73,26 @@ def test_settings_routes_are_linked_and_telegram_stays_deferred(client, django_u
     client.post(reverse("source-settings"), {"source_id": telegram.pk, "enabled": "on"})
     telegram.refresh_from_db()
     assert telegram.enabled is False
+
+
+def test_pwa_manifest_and_worker_cache_static_assets_only(client):
+    manifest = client.get(reverse("web-manifest"))
+    worker = client.get(reverse("service-worker"))
+    assert manifest.status_code == worker.status_code == 200
+    assert manifest["Content-Type"].startswith("application/manifest+json")
+    body = worker.content
+    assert b"cryptosniper-static-v16" in body
+    assert b"event.request.method!=='GET'" in body
+    assert b"startsWith(staticPrefix)" in body
+    assert b"Background Sync" not in body and b"indexedDB" not in body
+    assert b"/api/" not in body and b"/dashboard/" not in body
+
+
+@pytest.mark.django_db
+def test_private_pages_are_no_store_and_expose_offline_status(client, django_user_model):
+    user = django_user_model.objects.create_user(username="pwa16")
+    client.force_login(user)
+    page = client.get(reverse("dashboard"))
+    assert page.status_code == 200
+    assert b"offline-banner" in page.content and b"pwa.js" in page.content
+    assert "no-store" in page["Cache-Control"]

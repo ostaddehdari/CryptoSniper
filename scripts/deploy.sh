@@ -5,11 +5,11 @@
 set -Eeuo pipefail
 umask 077
 
-RELEASE_TAG='stage10-v0.10.0rc1-deploy'
-ZIP_NAME='CryptoSniper-Stage10-v0.10.0rc1.zip'
-INSTALLER_NAME='cryptosniper-stage10-run.sh'
-ZIP_SHA256='d582c227dac0b7fb68a460c4a2e030e117460fd849a525813ee2e1007c311be8'
-INSTALLER_SHA256='67844b2b4b7fff6c4ef24245078303c57949b9467ccd69de62532382f7627362'
+RELEASE_TAG='stage12-v0.12.0rc1-deploy'
+ZIP_NAME='CryptoSniper-Stage12-v0.12.0rc1.zip'
+INSTALLER_NAME='cryptosniper-stage12-run.sh'
+ZIP_SHA256='71d3f3b9e789990a69e4680ddc726103c5d358bf2e2edd722540d210b8e9d7d1'
+INSTALLER_SHA256='cc1670dbacffab78408bafc1c44d516d8489c46844f7563e110cb0af62e3be2a'
 RELEASE_BASE="https://github.com/ostaddehdari/CryptoSniper/releases/download/$RELEASE_TAG"
 MODE="${1:-install}"
 if [[ "$MODE" != 'install' && "$MODE" != '--check' ]]; then
@@ -45,7 +45,7 @@ if [[ "$MODE" == '--check' ]]; then
     exit 0
 fi
 
-echo 'Running the verified Stage10 installer; preserving existing managed installation data.'
-LOG_FILE=/root/cryptosniper-stage10-runlog.txt \
+echo 'Running the verified Stage12 installer; preserving existing managed installation data.'
+LOG_FILE=/root/cryptosniper-stage12-runlog.txt \
     bash "$WORKDIR/$INSTALLER_NAME" "$WORKDIR/$ZIP_NAME"
 echo 'DEPLOY_OK: https://srun.ir/cryptosniper/auth/login/'

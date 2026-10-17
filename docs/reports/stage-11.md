@@ -1,6 +1,6 @@
 # استیج ۱۱ — پردازش پس‌زمینه، بازیابی و تطبیق | 0.12.0rc1
 
-وضعیت: partial؛ پیاده‌سازی پنج ورک برای Paper Spot Long، در انتظار نتیجه CI نهایی و نصب نسخهٔ جدید روی VPS. درخواست صریح کاربر اجرای هم‌زمان S11 و S12 را مجاز کرد. اتصال حساب واقعی Binance در S03 همچنان تأیید نشده است.
+وضعیت: partial؛ پیاده‌سازی پنج ورک برای Paper Spot Long، CI نهایی موفق؛ پذیرش نصب نسخهٔ جدید روی VPS هنوز باز است. درخواست صریح کاربر اجرای هم‌زمان S11 و S12 را مجاز کرد. اتصال حساب واقعی Binance در S03 همچنان تأیید نشده است.
 
 | ورک | نتیجه |
 |---|---|
@@ -37,3 +37,11 @@ journalctl -u cryptosniper-orders -u cryptosniper-trailing -u cryptosniper-maint
 ## بررسی‌ها
 
 آزمون‌ها شامل PostgreSQL واقعی و دو Thread با اتصال جدا، Redis lease، crash-injection پس از ثبت provider receipt، timeout-injection با نتیجهٔ ثبت‌شده، fence قدیمی، backoff/dead-letter، repair ledger، توقف/ادامه، owner scope و اتصال واقعاً ناموجود Redis هستند. هیچ failure-injection ادعای آزمایش حساب واقعی Binance ندارد. نتیجهٔ نهایی CI در بخش شواهد انتشار ثبت می‌شود.
+
+## شواهد نهایی و انتشار
+
+- [CI منبع دقیق](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39019031643): commit `21b8b520466b1c7e76b495bbbfefa81f24b8371e`؛ **۱۱۰ تست موفق** در PostgreSQL واقعی، Redis، هفت Worker، Beat و Chromium.
+- سناریوی کامل UI هشدار، ثبت اعلان بعد از بستن صفحه، read receipt، موبایل/دسکتاپ و نبود overflow/خطای JS موفق بود. artifact: `12096156612`.
+- [انتشار تجمعی 0.12.0rc1](https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage12-v0.12.0rc1-deploy)، [ساخت و CHECK_OK نصب‌کننده](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39019202911).
+- ZIP SHA256: `71d3f3b9e789990a69e4680ddc726103c5d358bf2e2edd722540d210b8e9d7d1`؛ Installer SHA256: `cc1670dbacffab78408bafc1c44d516d8489c46844f7563e110cb0af62e3be2a`.
+- آخرین نصب تأییدشدهٔ VPS طبق لاگ کاربر 0.10.0rc1 است؛ نصب 0.12 روی VPS هنوز انجام/تأیید نشده است.

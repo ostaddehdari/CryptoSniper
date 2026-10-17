@@ -473,11 +473,17 @@
       ],
       "checks": [
         {
-          "name": "PostgreSQL/Redis/Workers/Beat/Chromium Stage11+12 CI",
+          "name": "Stages11+12 exact-source PostgreSQL/Redis/seven Workers/Beat/Chromium CI",
           "status": "passed",
-          "run_id": 39018777612,
-          "tested_commit": "9b2a9c109da0e2c1b03a6bfa2c186e778c0bf793",
-          "url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/39018777612"
+          "run_id": 39019031643,
+          "pytest_passed": 110,
+          "tested_commit": "21b8b520466b1c7e76b495bbbfefa81f24b8371e",
+          "evidence_artifact_id": 12096156612
+        },
+        {
+          "name": "Release source/installer SHA256, safe paths, Ubuntu and --check",
+          "status": "passed",
+          "run_id": 39019202911
         }
       ],
       "commit_shas": [],
@@ -485,7 +491,9 @@
         "Real Binance account read/permissions verification remains pending; no real order writes or Margin/Short.",
         "Stage12 cumulative installation and public-browser acceptance on operator VPS not yet verified."
       ],
-      "implementation": "Five workstreams implemented for Paper/read-only observations. CI passed on 9b2a9c1; final cumulative source, release and VPS acceptance pending."
+      "implementation": "All five workstreams implemented for Paper/read-only observations. 110 PostgreSQL tests, seven queues and Chromium browser smoke passed; exact cumulative release and CHECK_OK installer published. Real Binance credentials and VPS Stage12/public-browser acceptance remain pending.",
+      "release_tag": "stage12-v0.12.0rc1-deploy",
+      "release_commit": "21b8b520466b1c7e76b495bbbfefa81f24b8371e"
     },
     "S12": {
       "status": "partial",
@@ -498,11 +506,17 @@
       ],
       "checks": [
         {
-          "name": "PostgreSQL/Redis/Workers/Beat/Chromium Stage11+12 CI",
+          "name": "Stages11+12 exact-source PostgreSQL/Redis/seven Workers/Beat/Chromium CI",
           "status": "passed",
-          "run_id": 39018777612,
-          "tested_commit": "9b2a9c109da0e2c1b03a6bfa2c186e778c0bf793",
-          "url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/39018777612"
+          "run_id": 39019031643,
+          "pytest_passed": 110,
+          "tested_commit": "21b8b520466b1c7e76b495bbbfefa81f24b8371e",
+          "evidence_artifact_id": 12096156612
+        },
+        {
+          "name": "Release source/installer SHA256, safe paths, Ubuntu and --check",
+          "status": "passed",
+          "run_id": 39019202911
         }
       ],
       "commit_shas": [],
@@ -510,7 +524,9 @@
         "Real Binance account read/permissions verification remains pending; no real order writes or Margin/Short.",
         "Stage12 cumulative installation and public-browser acceptance on operator VPS not yet verified."
       ],
-      "implementation": "Five workstreams implemented for Paper/read-only observations. CI passed on 9b2a9c1; final cumulative source, release and VPS acceptance pending."
+      "implementation": "All five workstreams implemented for Paper/read-only observations. 110 PostgreSQL tests, seven queues and Chromium browser smoke passed; exact cumulative release and CHECK_OK installer published. Real Binance credentials and VPS Stage12/public-browser acceptance remain pending.",
+      "release_tag": "stage12-v0.12.0rc1-deploy",
+      "release_commit": "21b8b520466b1c7e76b495bbbfefa81f24b8371e"
     },
     "S13": {
       "status": "not_started",

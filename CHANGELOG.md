@@ -4,7 +4,7 @@
 
 - S11: seven queues, leased Beat, durable Paper provider receipts, fenced recovery, bounded retry/dead-letter, reconciliation, read-only External observations and owner operations center.
 - S12: fixed-reference crossing/proximity/profit alerts, central in-app/browser notifications with permission and read receipts, Watchlist indicators and private UI/API.
-- Cumulative installer preserves managed settings/data and backs up systemd units; real Binance order writes remain disabled. CI passed on 9b2a9c1; final cumulative build and VPS acceptance pending.
+- Cumulative installer preserves managed settings/data and backs up systemd units; real Binance order writes remain disabled. 110 tests and real browser/Worker CI passed on 21b8b52; cumulative Release and installer --check published. VPS acceptance pending.
 
 
 - مدل مستقل TP targets، توزیع Decimal و rounding به هدف آخر؛ دفتر Fill خروج و کنترل حد موجودی.

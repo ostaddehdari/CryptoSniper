@@ -1,6 +1,6 @@
 # استیج ۱۲ — Price Alert و اعلان‌ها | 0.12.0rc1
 
-وضعیت: partial تا نتیجهٔ CI و پذیرش نصب/رابط VPS؛ پنج ورک در محدوده Paper و هشدار عمومی پیاده شده‌اند. هشدار تنها اطلاع‌رسانی می‌کند و هیچ خرید، فروش، لغو سفارش یا تغییر معامله‌ای انجام نمی‌دهد.
+وضعیت: partial به دلیل پذیرش باز نصب/رابط VPS و پیش‌نیاز حساب واقعی Binance؛ پنج ورک در محدوده Paper و هشدار عمومی پیاده شده‌اند. هشدار تنها اطلاع‌رسانی می‌کند و هیچ خرید، فروش، لغو سفارش یا تغییر معامله‌ای انجام نمی‌دهد.
 
 | ورک | نتیجه |
 |---|---|
@@ -25,3 +25,11 @@
 ## بررسی‌ها
 
 آستانه/دو جهت/درصد ثابت، hysteresis، تکرار Tick، feed قدیمی، سود بعد fee، هر سه proximity، معامله بسته، owner isolation، CSRF، version و worker بدون مرورگر با PostgreSQL/Redis آزمایش می‌شوند. smoke رابط روی عرض‌های ۳۲۰/۳۹۰/۷۶۸ و دسکتاپ ساخت rule، دریافت بعد از بستن صفحه و read receipt را بررسی می‌کند. شواهد نهایی CI در بخش انتشار اضافه می‌شود.
+
+## شواهد نهایی و انتشار
+
+- [CI منبع دقیق](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39019031643): commit `21b8b520466b1c7e76b495bbbfefa81f24b8371e`؛ **۱۱۰ تست موفق** در PostgreSQL واقعی، Redis، هفت Worker، Beat و Chromium.
+- سناریوی کامل UI هشدار، ثبت اعلان بعد از بستن صفحه، read receipt، موبایل/دسکتاپ و نبود overflow/خطای JS موفق بود. artifact: `12096156612`.
+- [انتشار تجمعی 0.12.0rc1](https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage12-v0.12.0rc1-deploy)، [ساخت و CHECK_OK نصب‌کننده](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39019202911).
+- ZIP SHA256: `71d3f3b9e789990a69e4680ddc726103c5d358bf2e2edd722540d210b8e9d7d1`؛ Installer SHA256: `cc1670dbacffab78408bafc1c44d516d8489c46844f7563e110cb0af62e3be2a`.
+- آخرین نصب تأییدشدهٔ VPS طبق لاگ کاربر 0.10.0rc1 است؛ نصب 0.12 روی VPS هنوز انجام/تأیید نشده است.

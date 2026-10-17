@@ -32,4 +32,12 @@ Query count و build latency در CI و JUnit ثبت می‌شوند؛ این ا
 - بستن با تأیید UI تا Fill در orders Worker، رقابت close/SL/TP، replay و مالکیت پاس شد. داشبورد دارای داده و History روی موبایل، عرض‌های ۳۲۰/۳۹۰/۷۶۸، دسکتاپ، offline/reconnect و نبود خطای JS/overflow پاس شد. هشدار و ثبت مستقل پس از بستن مرورگر نیز همچنان پاس است.
 - بودجهٔ داشبورد در workload کوچک آزمون: **۱۶ query و ۲۵٫۷۶ میلی‌ثانیه** build سمت سرور؛ تضمین latency یا ظرفیت VPS نیست.
 - نصب‌کنندهٔ Stage14 دوازده آزمون regression مشترک Stage12/14 برای headerهای قبلی، unmanaged/تغییر هم‌زمان، نصب مسیر و rollback را پاس کرد. فایل‌های واقعی Nginx سرور در این آزمون‌ها تغییر نکردند.
-- Release تجمیعی هدف: [stage14-v0.14.0rc1-deploy](https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage14-v0.14.0rc1-deploy). SHA256SUMS و runlog همراه بسته منتشر می‌شوند؛ workflow انتشار فقط commit با CI موفق را بسته‌بندی و `--check` را پیش از انتشار اجرا می‌کند.
+- Release تجمیعی منتشرشده: [stage14-v0.14.0rc1-deploy](https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage14-v0.14.0rc1-deploy). SHA256SUMS و runlog همراه بسته منتشر می‌شوند؛ workflow انتشار فقط commit با CI موفق را بسته‌بندی و `--check` را پیش از انتشار اجرا می‌کند.
+
+## بستهٔ منتشرشده و کنترل مستقل
+
+[ساخت Release و CHECK_OK](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39046433819) از commit `aa22b995b70d5394f296ba387837ed4c4ee6427b` با [CI موفق همان منبع](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39046206076). ZIP، نصب‌کننده، runlog و SHA256SUMS منتشر شدند. bytes هر چهار فایل از artifact `12106335977` دوباره دانلود و با digest دارایی‌های GitHub Release تطبیق داده شدند؛ اجرای مستقل `--check` هم CHECK_OK داد و هیچ سرویسی نصب نشد.
+
+- ZIP SHA256: `4e16302de319c8277f96155e5f671e84df4acecec878db6d31963c9aeef96fd4`
+- Installer SHA256: `6136648196c48c714e25900965758c2b1a5ff97d054332e4fe878048c257254e`
+- `scripts/deploy.sh` همین tag و هر دو SHA را pin می‌کند. آخرین نصب VPS تأییدشده همان Stage12 است؛ Stage14 هنوز باید با لاگ اپراتور تأیید شود.

@@ -577,6 +577,22 @@
           "dashboard_build_ms": 25.76,
           "workload": "one Paper trade with owner data; small CI workload, not production capacity",
           "evidence_artifact_id": 12104864902
+        },
+        {
+          "name": "Release exact-source CI including metadata",
+          "status": "passed",
+          "run_id": 39046206076,
+          "tested_commit": "aa22b995b70d5394f296ba387837ed4c4ee6427b",
+          "pytest_passed": 137
+        },
+        {
+          "name": "Release build, 12 Nginx regressions, SHA256/Ubuntu/package --check and independent downloaded-byte verification",
+          "status": "passed",
+          "run_id": 39046433819,
+          "artifact_id": 12106335977,
+          "archive_sha256": "4e16302de319c8277f96155e5f671e84df4acecec878db6d31963c9aeef96fd4",
+          "installer_sha256": "6136648196c48c714e25900965758c2b1a5ff97d054332e4fe878048c257254e",
+          "server_installed": false
         }
       ],
       "commit_shas": [
@@ -592,7 +608,8 @@
         "Large-history performance acceptance pending; the dashboard currently reads all owner ledger rows and only measured small-workload budgets are reported."
       ],
       "implementation": "All five works implemented and verified for Paper Spot Long/read-only observations. 137 tests plus seven Workers/Beat and Chromium UI passed; formal provider/VPS and listed scope limitations remain partial.",
-      "release_tag": "stage14-v0.14.0rc1-deploy"
+      "release_tag": "stage14-v0.14.0rc1-deploy",
+      "release_commit": "aa22b995b70d5394f296ba387837ed4c4ee6427b"
     },
     "S14": {
       "status": "partial",
@@ -614,6 +631,22 @@
           "dashboard_build_ms": 25.76,
           "workload": "one Paper trade with owner data; small CI workload, not production capacity",
           "evidence_artifact_id": 12104864902
+        },
+        {
+          "name": "Release exact-source CI including metadata",
+          "status": "passed",
+          "run_id": 39046206076,
+          "tested_commit": "aa22b995b70d5394f296ba387837ed4c4ee6427b",
+          "pytest_passed": 137
+        },
+        {
+          "name": "Release build, 12 Nginx regressions, SHA256/Ubuntu/package --check and independent downloaded-byte verification",
+          "status": "passed",
+          "run_id": 39046433819,
+          "artifact_id": 12106335977,
+          "archive_sha256": "4e16302de319c8277f96155e5f671e84df4acecec878db6d31963c9aeef96fd4",
+          "installer_sha256": "6136648196c48c714e25900965758c2b1a5ff97d054332e4fe878048c257254e",
+          "server_installed": false
         }
       ],
       "commit_shas": [
@@ -629,7 +662,8 @@
         "Closing a partially filled or uncertain entry requires reconciliation first; automatic cancellation of an unfilled entry remainder is not implemented."
       ],
       "implementation": "All five works implemented and verified for Paper Spot Long/read-only observations. 137 tests plus seven Workers/Beat and Chromium UI passed; formal provider/VPS and listed scope limitations remain partial.",
-      "release_tag": "stage14-v0.14.0rc1-deploy"
+      "release_tag": "stage14-v0.14.0rc1-deploy",
+      "release_commit": "aa22b995b70d5394f296ba387837ed4c4ee6427b"
     },
     "S15": {
       "status": "not_started",

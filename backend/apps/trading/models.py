@@ -114,6 +114,14 @@ class OrderFill(models.Model):
     quantity = models.DecimalField(max_digits=32, decimal_places=16)
     price = models.DecimalField(max_digits=32, decimal_places=16)
     fee = models.DecimalField(max_digits=32, decimal_places=16, default=0)
+    fee_asset = models.ForeignKey(
+        "exchanges.Asset",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="entry_fee_fills",
+    )
+    fee_quote_rate = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
     occurred_at = models.DateTimeField()
 
     class Meta:
@@ -318,6 +326,14 @@ class PaperExitFill(models.Model):
     quantity = models.DecimalField(max_digits=32, decimal_places=16)
     price = models.DecimalField(max_digits=32, decimal_places=16)
     fee = models.DecimalField(max_digits=32, decimal_places=16, default=0)
+    fee_asset = models.ForeignKey(
+        "exchanges.Asset",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="exit_fee_fills",
+    )
+    fee_quote_rate = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
     occurred_at = models.DateTimeField()
 
     class Meta:
@@ -330,6 +346,45 @@ class PaperExitFill(models.Model):
 
     def __str__(self):
         return f"Paper exit {self.trade_id}: {self.reason}"
+
+
+class TradeFinanceEvent(models.Model):
+    """Provider/reconciliation finance ledger used by reports, never an order instruction."""
+
+    class Kind(models.TextChoices):
+        BORROW_INTEREST = "borrow_interest", "بهره وام Margin"
+        REPAYMENT = "repayment", "بازپرداخت اصل وام"
+
+    trade = models.ForeignKey(Trade, on_delete=models.CASCADE, related_name="finance_events")
+    asset = models.ForeignKey("exchanges.Asset", on_delete=models.PROTECT)
+    kind = models.CharField(max_length=24, choices=Kind.choices)
+    amount = models.DecimalField(max_digits=32, decimal_places=16)
+    quote_rate = models.DecimalField(
+        max_digits=32,
+        decimal_places=16,
+        null=True,
+        blank=True,
+        help_text="نرخ قطعی دارایی هزینه به ارز quote در زمان رویداد",
+    )
+    provider_reference = models.CharField(max_length=120)
+    occurred_at = models.DateTimeField()
+
+    class Meta:
+        ordering = ("occurred_at", "pk")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("trade", "provider_reference"),
+                name="trade_finance_provider_reference_unique",
+            ),
+            models.CheckConstraint(condition=Q(amount__gt=0), name="trade_finance_amount_positive"),
+            models.CheckConstraint(
+                condition=Q(quote_rate__isnull=True) | Q(quote_rate__gt=0),
+                name="trade_finance_quote_rate_positive",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.trade_id}:{self.kind}:{self.provider_reference}"
 
 
 class PaperPriceEvent(models.Model):

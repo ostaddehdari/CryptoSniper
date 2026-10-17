@@ -35,6 +35,7 @@ def trade_queryset(owner):
         .prefetch_related(
             Prefetch("orders", queryset=Order.objects.prefetch_related("fills")),
             "exit_fills",
+            "finance_events__asset",
             "targets",
         )
     )
@@ -69,31 +70,71 @@ def result_for(trade, quote=None, bounds=None):
     exits = list(trade.exit_fills.all())
     quantity = sum((f.quantity for f in entries), ZERO)
     cost = sum((f.quantity * f.price for f in entries), ZERO)
-    entry_fees = sum((f.fee for f in entries), ZERO)
+
+    def fee_value(fill):
+        if not fill.fee:
+            return ZERO
+        if fill.fee_asset_id is None or fill.fee_asset_id == trade.market.quote_asset_id:
+            return fill.fee
+        return fill.fee * fill.fee_quote_rate if fill.fee_quote_rate is not None else None
+
+    entry_fee_values = [fee_value(fill) for fill in entries]
+    exit_fee_values = [fee_value(fill) for fill in exits]
+    fees_known = all(value is not None for value in entry_fee_values + exit_fee_values)
+    entry_fees = sum((value for value in entry_fee_values if value is not None), ZERO)
     exit_qty = sum((f.quantity for f in exits), ZERO)
-    exit_fees = sum((f.fee for f in exits), ZERO)
+    exit_fees = sum((value for value in exit_fee_values if value is not None), ZERO)
+    interest_values = []
+    repaid = ZERO
+    for event in trade.finance_events.all():
+        value = (
+            event.amount
+            if event.asset_id == trade.market.quote_asset_id
+            else event.amount * event.quote_rate
+            if event.quote_rate is not None
+            else None
+        )
+        if event.kind == "borrow_interest":
+            interest_values.append(value)
+        elif value is not None:
+            repaid += value
+    interest_known = all(value is not None for value in interest_values)
+    interest = sum((value for value in interest_values if value is not None), ZERO)
     remaining = quantity - exit_qty
     avg = cost / quantity if quantity else None
-    valid = trade.mode == "paper" and trade.market.market_type == "spot" and remaining >= 0
-    realized = ZERO
+    valid = (
+        trade.mode == "paper"
+        and trade.market.market_type in {"spot", "margin"}
+        and trade.side == "buy"
+        and remaining >= 0
+    )
+    gross_realized = ZERO
+    realized = ZERO if fees_known and interest_known else None
     today_realized = ZERO
     if quantity and valid:
         for fill in exits:
-            value = (
-                fill.quantity * (fill.price - avg)
-                - fill.fee
-                - entry_fees * fill.quantity / quantity
-            )
-            realized += value
+            gross_value = fill.quantity * (fill.price - avg)
+            gross_realized += gross_value
+            value = None
+            converted_fee = fee_value(fill)
+            if realized is not None and converted_fee is not None:
+                value = (
+                    gross_value
+                    - converted_fee
+                    - entry_fees * fill.quantity / quantity
+                    - interest * fill.quantity / quantity
+                )
+                realized += value
             if bounds and bounds[0] <= fill.occurred_at < bounds[1]:
-                today_realized += value
+                today_realized += value or ZERO
     unrealized = None
     if not remaining:
         unrealized = ZERO
-    elif valid and quote and trade.market.taker_fee is not None:
+    elif valid and quote and trade.market.taker_fee is not None and fees_known and interest_known:
         unrealized = (
             remaining * (quote["price"] - avg)
             - entry_fees * remaining / quantity
+            - interest * remaining / quantity
             - remaining * quote["price"] * trade.market.taker_fee
         )
     closed_at = (
@@ -104,7 +145,11 @@ def result_for(trade, quote=None, bounds=None):
         "remaining": remaining,
         "average_entry": avg,
         "entry_cost": cost,
-        "paid_fees": entry_fees + exit_fees,
+        "gross_realized": gross_realized if valid else None,
+        "paid_fees": entry_fees + exit_fees if fees_known else None,
+        "margin_interest": interest if interest_known else None,
+        "margin_repaid": repaid,
+        "costs_known": fees_known and interest_known,
         "realized": realized if valid else None,
         "today_realized": today_realized,
         "unrealized": unrealized if valid else None,
@@ -115,7 +160,7 @@ def result_for(trade, quote=None, bounds=None):
             0, int(((closed_at or timezone.now()) - trade.created_at).total_seconds())
         ),
         "profit_percent": (realized + unrealized) / cost * 100
-        if valid and cost and unrealized is not None
+        if valid and cost and realized is not None and unrealized is not None
         else None,
     }
 

@@ -951,14 +951,14 @@
         {
           "name": "Exact-source GitHub CI: PostgreSQL, Redis, seven Workers/Beat and Chromium",
           "status": "passed",
-          "run_id": 39114964811,
-          "url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/39114964811",
-          "tested_commit": "bd1a892c7c008ce61a55ba77b01b137a505675b8",
-          "pytest_passed": 218,
+          "run_id": 39115544511,
+          "url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/39115544511",
+          "tested_commit": "3e938896d3cd82dfad16bc54c258d46031ce69be",
+          "pytest_passed": 227,
           "dashboard_queries": 17,
-          "dashboard_build_ms": 28.62,
-          "evidence_artifact_id": 12131533106,
-          "evidence_sha256": "7b320a3e77e7071e58d02d87d305cc4f909ae30a8b2f7a478ea7575e85007f2b"
+          "dashboard_build_ms": 20.94,
+          "evidence_artifact_id": 12132212170,
+          "evidence_sha256": "2eb2fe8835ffd15e62209d1f9cefaee3c1138265b66cb0ff31b0b20dce14ec2c"
         }
       ],
       "commit_shas": [
@@ -966,7 +966,8 @@
         "ff604c8c141e4cf20b5f9dcfdbd879655f3c5c37",
         "cb26b41de52dea8c8e44c2b625eea177c4facd32",
         "d43686c09b033ca3f38f00b2cccd37f6de070c98",
-        "d2a36c45366770040c2a5d281842116b9fcdd724"
+        "d2a36c45366770040c2a5d281842116b9fcdd724",
+        "3e938896d3cd82dfad16bc54c258d46031ce69be"
       ],
       "blockers": [
         "Stage20 immutable package has not yet been installed on the target VPS.",
@@ -993,14 +994,14 @@
         {
           "name": "Exact-source GitHub CI: PostgreSQL, Redis, seven Workers/Beat and Chromium",
           "status": "passed",
-          "run_id": 39114964811,
-          "url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/39114964811",
-          "tested_commit": "bd1a892c7c008ce61a55ba77b01b137a505675b8",
-          "pytest_passed": 218,
+          "run_id": 39115544511,
+          "url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/39115544511",
+          "tested_commit": "3e938896d3cd82dfad16bc54c258d46031ce69be",
+          "pytest_passed": 227,
           "dashboard_queries": 17,
-          "dashboard_build_ms": 28.62,
-          "evidence_artifact_id": 12131533106,
-          "evidence_sha256": "7b320a3e77e7071e58d02d87d305cc4f909ae30a8b2f7a478ea7575e85007f2b"
+          "dashboard_build_ms": 20.94,
+          "evidence_artifact_id": 12132212170,
+          "evidence_sha256": "2eb2fe8835ffd15e62209d1f9cefaee3c1138265b66cb0ff31b0b20dce14ec2c"
         }
       ],
       "commit_shas": [
@@ -1009,7 +1010,8 @@
         "55f7d4c48067ff30b854278ed17e2161ed0d4d52",
         "dcbcbd1acb62dee91bae9436418e3003ae6150bd",
         "2787cfc7ec5fd4a07d2670e2da2f46bfc00c98b2",
-        "bd1a892c7c008ce61a55ba77b01b137a505675b8"
+        "bd1a892c7c008ce61a55ba77b01b137a505675b8",
+        "3e938896d3cd82dfad16bc54c258d46031ce69be"
       ],
       "blockers": [
         "Target VPS installation and independent public-browser acceptance are pending.",

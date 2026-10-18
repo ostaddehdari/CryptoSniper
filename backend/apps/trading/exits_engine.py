@@ -142,7 +142,7 @@ def process_paper_price(
         or trade.side not in {"buy", "sell"}
         or (trade.market.market_type == "spot" and trade.side != "buy")
     ):
-        raise ValidationError("فقط شبیه‌ساز Spot Long مجاز است.")
+        raise ValidationError("فقط شبیه‌ساز Paper Spot Long یا Margin Long/Short مجاز است.")
     if trade.state not in {Trade.State.OPEN, Trade.State.PARTIAL}:
         return {
             "status": "inactive",
@@ -225,7 +225,7 @@ def process_paper_price(
         )
         fills.append(fill.pk)
     elif not protection.percentage_enabled:
-        # Low watermark is not used for Spot; margin-short execution is still disabled.
+        # Low watermark is used only by Percentage Margin Short; staged targets use direction.
         cap = _value(max_fill_quantity) if max_fill_quantity is not None else None
         for target in (
             TradeTarget.objects.select_for_update().filter(trade=trade).order_by("position")

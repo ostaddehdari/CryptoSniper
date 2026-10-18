@@ -1,6 +1,6 @@
 """Independent, immutable target allocations based on approved TradePlan snapshot.
 
-Stage09-10: Only Paper Spot Long is allowed to perform an exit.
+Paper Spot Long and Paper Margin Long/Short use the same locked exit ledger.
 """
 
 from decimal import ROUND_DOWN, Decimal

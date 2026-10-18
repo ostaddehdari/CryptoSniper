@@ -93,6 +93,8 @@ AUTH_LOGIN_MAX_ATTEMPTS = 5
 AUTH_LOGIN_WINDOW_SECONDS = 15 * 60
 X_FRAME_OPTIONS = "DENY"
 SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 TRADING_MODE = "paper"
 LIVE_TRADING_ENABLED = False
 # Enable only when using an ASGI web process; Gunicorn WSGI uses bounded polling.

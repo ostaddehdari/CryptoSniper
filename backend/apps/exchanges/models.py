@@ -6,6 +6,7 @@ from django.db import models
 from django.db.models import Q
 
 from apps.accounts.models import UserOwnedModel
+from apps.core.security import validate_public_https_url
 
 symbol_validator = RegexValidator(
     r"^[A-Z0-9]{2,20}$", "نماد باید فقط شامل حروف بزرگ لاتین و عدد باشد."
@@ -15,7 +16,7 @@ symbol_validator = RegexValidator(
 class Exchange(models.Model):
     code = models.SlugField(max_length=32, unique=True)
     name = models.CharField(max_length=80)
-    website = models.URLField(blank=True)
+    website = models.URLField(blank=True, validators=(validate_public_https_url,))
     adapter_code = models.SlugField(max_length=32, unique=True)
     spot_supported = models.BooleanField(default=True)
     margin_supported = models.BooleanField(default=False)
@@ -28,6 +29,10 @@ class Exchange(models.Model):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
     def supports_market(self, market_type):
         return {

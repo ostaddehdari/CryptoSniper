@@ -47,7 +47,7 @@ def test_host_capability_api_is_private_and_reports_fresh_queues(
             "redis_results": True,
         },
     )
-    assert client.get(reverse("api-host-capabilities")).status_code == 302
+    assert client.get(reverse("api-host-capabilities")).status_code == 401
     user = django_user_model.objects.create_user(username="host19")
     client.force_login(user)
     payload = client.get(reverse("api-host-capabilities")).json()

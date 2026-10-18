@@ -120,7 +120,7 @@ def test_crash_duplicate_recovery_and_owner_boundary_acceptance(client, django_u
     with inject_paper_failure("after_submit"):
         assert dispatch_paper(box.pk)["status"] == "uncertain"
     assert recover_outbox(box.pk) == "recovered"
-    assert dispatch_paper(box.pk)["status"] in {"already_done", "not_claimed"}
+    assert dispatch_paper(box.pk)["status"] == "already_claimed"
     assert PaperProviderOrder.objects.filter(account=account).count() == 1
     assert OrderFill.objects.filter(order__trade=trade).count() == 1
     client.force_login(stranger)

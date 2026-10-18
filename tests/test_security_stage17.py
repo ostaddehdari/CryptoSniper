@@ -70,7 +70,7 @@ def test_session_api_post_enforces_csrf(django_user_model):
     strict = Client(enforce_csrf_checks=True)
     strict.force_login(user)
     response = strict.post(
-        reverse("api-signal-smart-paste"),
+        reverse("api-smart-paste"),
         data=json.dumps({"text": "BTCUSDT Entry 1 TP 2 SL .5"}),
         content_type="application/json",
     )
@@ -152,6 +152,9 @@ def test_two_factor_readiness_is_honest_and_step_up_rotates_session(client, djan
 
 @pytest.mark.django_db
 def test_parser_api_rate_limit_and_global_payload_cap(client, django_user_model, settings):
+    from django.core.cache import cache
+
+    cache.clear()
     user = django_user_model.objects.create_user(username="limited-user")
     client.force_login(user)
     settings.PARSER_RATE_LIMIT_PER_MINUTE = 2

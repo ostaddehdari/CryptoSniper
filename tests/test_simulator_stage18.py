@@ -385,7 +385,7 @@ def test_smart_paste_origin_reaches_shared_paper_executor(django_user_model):
         {
             "account": account.pk,
             "market": market.pk,
-            "source": "smart_paste",
+            "source": "manual",
             "origin_signal": signal.pk,
             "side": "long",
             "entry_price": "65000",

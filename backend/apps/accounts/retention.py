@@ -18,9 +18,7 @@ def minimize_expired_security_data(*, now=None):
     """Remove ephemeral identifiers; append-only audit rows stay immutable."""
 
     now = now or timezone.now()
-    resets, _ = PasswordResetRequest.objects.filter(
-        expires_at__lt=now - timedelta(days=7)
-    ).delete()
+    resets, _ = PasswordResetRequest.objects.filter(expires_at__lt=now - timedelta(days=7)).delete()
     sessions, _ = UserSession.objects.filter(
         revoked_at__isnull=False, revoked_at__lt=now - timedelta(days=30)
     ).delete()

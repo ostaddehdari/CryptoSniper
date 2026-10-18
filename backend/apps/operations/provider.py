@@ -10,12 +10,19 @@ from .failures import fail_once
 from .models import PaperProviderOrder
 
 
-@transaction.atomic
 def submit(order):
+    fail_once("before_submit")
+    receipt = _submit_atomic(order)
+    # Outside the provider transaction: the receipt committed, but its response was lost.
+    fail_once("after_submit")
+    return receipt
+
+
+@transaction.atomic
+def _submit_atomic(order):
     from apps.trading.boundary import require_paper_simulator
     from apps.trading.models import Order, Trade
 
-    fail_once("before_submit")
     Trade.objects.select_for_update(of=("self",)).get(pk=order.trade_id)
     order = (
         Order.objects.select_for_update(of=("self",))
@@ -52,7 +59,6 @@ def submit(order):
         order.price,
     ):
         raise ValidationError("تعارض شناسه سفارش در دفتر شبیه‌ساز.")
-    fail_once("after_submit")
     return receipt
 
 

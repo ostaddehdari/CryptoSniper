@@ -31,4 +31,3 @@ def validate_public_https_url(value: str) -> None:
         return
     if not address.is_global:
         raise ValidationError("نشانی خصوصی، loopback یا link-local مجاز نیست.")
-

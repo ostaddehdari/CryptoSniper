@@ -103,6 +103,7 @@ HOSTING_EGRESS_PROBE_URL = env(
     "HOSTING_EGRESS_PROBE_URL", default="https://api.binance.com/api/v3/ping"
 )
 HOSTING_BACKUP_DIR = env("HOSTING_BACKUP_DIR", default="/var/lib/cryptosniper/backups")
+HOSTING_BACKUP_OFFSITE_DIR = env("HOSTING_BACKUP_OFFSITE_DIR", default="")
 X_FRAME_OPTIONS = "DENY"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"

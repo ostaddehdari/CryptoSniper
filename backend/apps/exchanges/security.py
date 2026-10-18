@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 
@@ -114,3 +115,58 @@ def rotate_account_credentials(account):
         )
     )
     return account.credential_key_version
+
+
+def revoke_account_credentials(account):
+    """Cryptographically revoke a connection and remove its recoverable secret."""
+
+    account.credentials_encrypted = ""
+    account.credential_hint = "حذف‌شده"
+    account.trading_enabled = False
+    account.status = account.Status.DISABLED
+    account.permissions = {}
+    account.save(
+        update_fields=(
+            "credentials_encrypted",
+            "credential_hint",
+            "trading_enabled",
+            "status",
+            "permissions",
+            "updated_at",
+        )
+    )
+
+
+def encrypted_credentials_backup(accounts, passphrase):
+    """Return a portable encrypted backup; plaintext and passphrase never leave memory."""
+
+    if not isinstance(passphrase, str) or len(passphrase) < 16:
+        raise ValidationError("عبارت پشتیبان باید دست‌کم ۱۶ نویسه باشد.")
+    records = []
+    for account in accounts.select_related("exchange").order_by("pk"):
+        records.append(
+            {
+                "exchange": account.exchange.code,
+                "label": account.label,
+                "environment": account.environment,
+                "credentials": get_account_credentials(account),
+            }
+        )
+    plaintext = json.dumps(
+        {"format": "cryptosniper-credentials-v1", "records": records},
+        ensure_ascii=False,
+        separators=(",", ":"),
+    ).encode()
+    salt, nonce = os.urandom(16), os.urandom(12)
+    key = Scrypt(salt=salt, length=32, n=2**15, r=8, p=1).derive(passphrase.encode())
+    ciphertext = AESGCM(key).encrypt(nonce, plaintext, b"cryptosniper-backup-v1")
+    return json.dumps(
+        {
+            "format": "cryptosniper-encrypted-backup-v1",
+            "kdf": "scrypt-n32768-r8-p1",
+            "salt": base64.urlsafe_b64encode(salt).decode(),
+            "nonce": base64.urlsafe_b64encode(nonce).decode(),
+            "ciphertext": base64.urlsafe_b64encode(ciphertext).decode(),
+        },
+        separators=(",", ":"),
+    ).encode()

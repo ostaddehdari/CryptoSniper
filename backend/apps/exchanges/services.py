@@ -1,4 +1,4 @@
-from dataclasses import asdict
+import hashlib
 
 from django.db import transaction
 from django.utils import timezone
@@ -15,14 +15,17 @@ def _credentials_for(account):
 
 
 def permission_payload(report):
+    reference_hint = ""
+    if report.account_reference:
+        reference_hint = hashlib.sha256(report.account_reference.encode()).hexdigest()[:12]
     return {
         "can_read": report.can_read,
         "can_trade_spot": report.can_trade_spot,
         "can_trade_margin": report.can_trade_margin,
         "can_withdraw": report.can_withdraw,
         "ip_restricted": report.ip_restricted,
-        "account_reference": report.account_reference,
-        "notes": list(report.notes),
+        "account_reference_hash": reference_hint,
+        "notes": [str(note)[:160] for note in report.notes[:10]],
     }
 
 
@@ -121,7 +124,7 @@ def sync_exchange_account(account):
         "status": locked.status,
         "market_count": len(synced_market_keys),
         "balance_count": len(balances),
-        "permissions": asdict(permission),
+        "permissions": permission_payload(permission),
         "synced_at": now.isoformat(),
     }
 

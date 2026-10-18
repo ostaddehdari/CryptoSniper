@@ -181,6 +181,16 @@ urlpatterns = [
         exchange_views.disable_exchange_account,
         name="exchange-account-disable",
     ),
+    path(
+        "exchanges/<int:pk>/rotate/",
+        exchange_views.rotate_exchange_account,
+        name="exchange-account-rotate",
+    ),
+    path(
+        "exchanges/<int:pk>/revoke/",
+        exchange_views.revoke_exchange_account,
+        name="exchange-account-revoke",
+    ),
     path("system/", views.system, name="system"),
     path("system/status/", views.system_status, name="system-status"),
     path("system/probe/", views.create_probe, name="create-probe"),

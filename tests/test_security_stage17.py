@@ -73,3 +73,57 @@ def test_session_api_post_enforces_csrf(django_user_model):
         content_type="application/json",
     )
     assert response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_rotation_redacts_permissions_and_revocation_stops_execution(client, django_user_model):
+    from apps.exchanges.services import permission_payload
+    from test_trading_stage08 import paper_account
+
+    owner = django_user_model.objects.create_user(username="credential-owner")
+    account, _ = paper_account(owner)
+    assert "paper-account" not in str(
+        permission_payload(
+            __import__("apps.exchanges.adapters", fromlist=["PermissionReport"]).PermissionReport(
+                True, True, True, False, True, "paper-account", ("safe",)
+            )
+        )
+    )
+    client.force_login(owner)
+    assert client.post(reverse("exchange-account-rotate", args=[account.pk])).status_code == 302
+    account.refresh_from_db()
+    assert account.status == "pending" and not account.trading_enabled
+    assert client.post(reverse("exchange-account-revoke", args=[account.pk])).status_code == 302
+    account.refresh_from_db()
+    assert account.status == "disabled" and not account.credentials_encrypted
+    assert account.permissions == {}
+
+
+@pytest.mark.django_db
+def test_credentials_backup_is_encrypted_and_owner_queryset_scoped(django_user_model):
+    from apps.exchanges.models import UserExchangeAccount
+    from apps.exchanges.security import encrypted_credentials_backup
+    from test_trading_stage08 import paper_account
+
+    owner = django_user_model.objects.create_user(username="backup-owner")
+    other = django_user_model.objects.create_user(username="backup-other")
+    account, _ = paper_account(owner)
+    other_account, _ = paper_account(other)
+    blob = encrypted_credentials_backup(
+        UserExchangeAccount.objects.for_user(owner), "correct horse battery staple"
+    )
+    assert b"cryptosniper-encrypted-backup-v1" in blob
+    assert account.label.encode() not in blob
+    assert other_account.label.encode() not in blob
+
+
+def test_log_redaction_removes_canary_secret(settings):
+    import logging
+
+    from apps.core.observability import RedactingJsonFormatter
+
+    formatter = RedactingJsonFormatter()
+    line = formatter.format(
+        logging.LogRecord("security", logging.ERROR, __file__, 1, "api_key=CANARY-SECRET", (), None)
+    )
+    assert "CANARY-SECRET" not in line and "[REDACTED]" in line

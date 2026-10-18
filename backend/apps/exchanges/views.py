@@ -10,6 +10,7 @@ from apps.accounts.security import session_api_required
 
 from .forms import ExchangeConnectionForm
 from .models import Exchange, UserExchangeAccount
+from .security import revoke_account_credentials, rotate_account_credentials
 from .services import latest_balances
 from .tasks import sync_exchange_account
 
@@ -110,6 +111,42 @@ def disable_exchange_account(request, pk):
         metadata={"exchange": account.exchange.code, "account_id": account.pk},
     )
     messages.success(request, "اتصال فوراً غیرفعال شد.")
+    return redirect("exchange-account-detail", pk=account.pk)
+
+
+@login_required
+@require_POST
+def rotate_exchange_account(request, pk):
+    account = _owned_account(request.user, pk)
+    if account.status == UserExchangeAccount.Status.DISABLED or not account.credentials_encrypted:
+        messages.error(request, "اتصال غیرفعال یا فاقد کلید قابل گردش است.")
+    else:
+        version = rotate_account_credentials(account)
+        account.trading_enabled = False
+        account.status = UserExchangeAccount.Status.PENDING
+        account.save(update_fields=("trading_enabled", "status", "updated_at"))
+        record_audit(
+            "exchange_account.credentials_rotated",
+            request=request,
+            user=request.user,
+            metadata={"account_id": account.pk, "key_version": version},
+        )
+        messages.success(request, "کلید رمزنگاری گردش یافت؛ اتصال تا بررسی مجدد غیرفعال است.")
+    return redirect("exchange-account-detail", pk=account.pk)
+
+
+@login_required
+@require_POST
+def revoke_exchange_account(request, pk):
+    account = _owned_account(request.user, pk)
+    revoke_account_credentials(account)
+    record_audit(
+        "exchange_account.credentials_revoked",
+        request=request,
+        user=request.user,
+        metadata={"account_id": account.pk, "exchange": account.exchange.code},
+    )
+    messages.success(request, "کلید اتصال حذف و اجرای آن فوراً متوقف شد.")
     return redirect("exchange-account-detail", pk=account.pk)
 
 

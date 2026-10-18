@@ -68,3 +68,11 @@ def test_restore_refuses_production_or_unscoped_database(target):
 
     with pytest.raises(ValueError, match="dedicated"):
         verify_restore("missing", "correct horse battery staple", target)
+
+
+def test_restore_requires_separate_admin_connection(settings):
+    from apps.operations.backups import verify_restore
+
+    settings.HOSTING_RESTORE_ADMIN_URL = ""
+    with pytest.raises(ValueError, match="HOSTING_RESTORE_ADMIN_URL"):
+        verify_restore("missing", "correct horse battery staple", "cryptosniper_restore_acceptance")

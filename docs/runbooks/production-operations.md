@@ -40,7 +40,7 @@ python backend/manage.py backup_deployment --weekly
 python backend/manage.py verify_backup /path/file.csbk --target cryptosniper_restore_YYYYMMDD
 ```
 
-backup با `pg_dump` custom، AES-256-GCM و Scrypt ساخته می‌شود. نگهداری پیش‌فرض ۱۴ daily و ۸ weekly است. restore فقط به نام `cryptosniper_restore_*` مجاز است، migration و تعداد audit row را می‌سنجد و DB آزمون را حذف می‌کند. rollback برنامه نباید audit دیتابیس را حذف یا migration برگشت‌ناپذیر را خودکار معکوس کند.
+backup با `pg_dump` custom، AES-256-GCM و Scrypt ساخته می‌شود. نگهداری پیش‌فرض ۱۴ daily و ۸ weekly است. restore فقط به نام `cryptosniper_restore_*` مجاز است، migration و تعداد audit row را می‌سنجد و DB آزمون را حذف می‌کند. `HOSTING_RESTORE_ADMIN_URL` باید secret اتصال ادمین محدودِ مخصوص ساخت/حذف DB آزمون باشد؛ DB بازیابی‌شده با مالکیت نقش برنامه ساخته می‌شود. rollback برنامه نباید audit دیتابیس را حذف یا migration برگشت‌ناپذیر را خودکار معکوس کند.
 
 ## Incident و rollback
 

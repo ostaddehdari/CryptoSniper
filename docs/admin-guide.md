@@ -11,7 +11,7 @@ Production به Python 3.12، PostgreSQL 16، Redis 7، HTTPS، فضای backup 
 
 ## Backup و بازیابی
 
-`backup_deployment` از `pg_dump`، Scrypt و AES-256-GCM استفاده می‌کند؛ passphrase باید فقط در secret manager یا فایل root-only خارج Git باشد. مقصد offsite مستقل را تنظیم کنید. `verify_backup` فقط دیتابیس جدا با پیشوند `cryptosniper_restore_` را می‌پذیرد و production target را رد می‌کند. نتیجه backup بدون restore drill مدرک بازیابی نیست.
+`backup_deployment` از `pg_dump`، Scrypt و AES-256-GCM استفاده می‌کند؛ passphrase باید فقط در secret manager یا فایل root-only خارج Git باشد. مقصد offsite مستقل را تنظیم کنید. `verify_backup` فقط دیتابیس جدا با پیشوند `cryptosniper_restore_` را می‌پذیرد و production target را رد می‌کند. برای ساخت/حذف همین DB جدا، `HOSTING_RESTORE_ADMIN_URL` باید به اتصال ادمین محدودِ مخصوص drill اشاره کند؛ DB بازیابی‌شده با مالکیت نقش برنامه ساخته می‌شود. نتیجه backup بدون restore drill مدرک بازیابی نیست.
 
 ## مانیتور و رخداد
 

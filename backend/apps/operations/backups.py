@@ -196,6 +196,9 @@ def verify_restore(
     database = _database()
     if target_database == database["name"]:
         raise ValueError("Restore verification cannot target the production database.")
+    admin_url = settings.HOSTING_RESTORE_ADMIN_URL
+    if not admin_url:
+        raise ValueError("HOSTING_RESTORE_ADMIN_URL is required for an isolated restore drill.")
     connection_info = {
         "host": database["host"],
         "port": database["port"],
@@ -207,15 +210,15 @@ def verify_restore(
     with tempfile.TemporaryDirectory(prefix="cryptosniper-restore-") as work:
         dump = Path(work) / "database.dump"
         header = decrypt_file(archive, dump, passphrase)
-        with psycopg.connect(**connection_info, autocommit=True) as admin:
+        with psycopg.connect(admin_url, autocommit=True) as admin:
             admin.execute(
                 sql.SQL("DROP DATABASE IF EXISTS {} WITH (FORCE)").format(
                     sql.Identifier(target_database)
                 )
             )
             admin.execute(
-                sql.SQL("CREATE DATABASE {} TEMPLATE template0").format(
-                    sql.Identifier(target_database)
+                sql.SQL("CREATE DATABASE {} OWNER {} TEMPLATE template0").format(
+                    sql.Identifier(target_database), sql.Identifier(database["user"])
                 )
             )
         try:
@@ -248,7 +251,7 @@ def verify_restore(
             return {"status": "verified", "migrations": migrations, "audit_rows": audit, **header}
         finally:
             if not keep_database:
-                with psycopg.connect(**connection_info, autocommit=True) as admin:
+                with psycopg.connect(admin_url, autocommit=True) as admin:
                     admin.execute(
                         sql.SQL("DROP DATABASE IF EXISTS {} WITH (FORCE)").format(
                             sql.Identifier(target_database)

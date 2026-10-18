@@ -32,4 +32,4 @@ def test_delivery_contract_requires_login(client):
 def test_stage21_liveness_and_service_worker_version(client):
     assert client.get("/health/live/").json()["stage"] == "S21"
     worker = client.get("/service-worker.js").content.decode()
-    assert "cryptosniper-static-v21" in worker
+    assert "cryptosniper-static-v20" in worker

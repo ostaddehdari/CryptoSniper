@@ -65,3 +65,49 @@ def test_simulator_enforces_min_notional_and_lot_step(amount):
             order_type="market",
             amount=amount,
         )
+
+
+@pytest.mark.django_db
+def test_paper_dispatch_uses_shared_engine_without_real_adapter(monkeypatch, django_user_model):
+    import uuid
+
+    from apps.trading.execution import dispatch_paper
+    from apps.trading.intent import queue_paper_trade
+    from test_trading_stage08 import paper_account, ready_plan
+
+    owner = django_user_model.objects.create_user(username="boundary18")
+    account, market = paper_account(owner)
+    trade, _ = queue_paper_trade(
+        owner, ready_plan(owner, account, market).pk, request_key=uuid.uuid4()
+    )
+
+    def external_adapter_forbidden(*args, **kwargs):
+        raise AssertionError("Paper execution attempted provider adapter selection")
+
+    monkeypatch.setattr("apps.exchanges.adapters.get_adapter", external_adapter_forbidden)
+    assert dispatch_paper(trade.orders.get().outbox.pk)["status"] == "filled"
+    trade.refresh_from_db()
+    assert trade.mode == "paper" and trade.state == "open"
+
+
+@pytest.mark.django_db
+def test_paper_boundary_rejects_revoked_or_live_account(django_user_model):
+    import uuid
+
+    from apps.trading.boundary import require_paper_simulator
+    from apps.trading.intent import queue_paper_trade
+    from test_trading_stage08 import paper_account, ready_plan
+
+    owner = django_user_model.objects.create_user(username="boundary-reject18")
+    account, market = paper_account(owner)
+    trade, _ = queue_paper_trade(
+        owner, ready_plan(owner, account, market).pk, request_key=uuid.uuid4()
+    )
+    order = trade.orders.select_related("trade", "account__exchange").get()
+    account.credentials_encrypted = ""
+    account.save(update_fields=("credentials_encrypted", "updated_at"))
+    order.account = account
+    from django.core.exceptions import ValidationError
+
+    with pytest.raises(ValidationError):
+        require_paper_simulator(order)

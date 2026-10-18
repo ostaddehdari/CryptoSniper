@@ -12,6 +12,7 @@ from apps.operations import provider
 from apps.operations.leases import lease
 from apps.operations.models import AccountControl
 
+from .boundary import require_paper_simulator
 from .exits_plan import ensure_exits
 from .models import (
     CapitalReservation,
@@ -198,6 +199,7 @@ def dispatch_paper(outbox_id):
         fence = ExecutionOutbox.objects.get(pk=outbox_id).fence
         order = Order.objects.select_related("trade__market", "account__exchange").get(pk=order_id)
         try:
+            require_paper_simulator(order)
             receipt = provider.submit(order)
             return consume_receipt(outbox_id, receipt, fence=fence)
         except (AdapterError, ValidationError, ValueError, ArithmeticError, TimeoutError) as error:

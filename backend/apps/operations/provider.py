@@ -11,6 +11,7 @@ from .models import PaperProviderOrder
 
 @transaction.atomic
 def submit(order):
+    from apps.trading.boundary import require_paper_simulator
     from apps.trading.models import Order, Trade
 
     Trade.objects.select_for_update(of=("self",)).get(pk=order.trade_id)
@@ -24,11 +25,9 @@ def submit(order):
         return existing
     if order.state not in {"submitting", "uncertain"}:
         raise ValidationError("سفارش برای ارسال مجاز نیست.")
-    account = order.account
-    if account.environment != "paper" or account.exchange.adapter_code != "simulator":
-        raise ValidationError("فقط Simulator Paper مجاز است.")
-    if order.trade.mode != "paper" or order.trade.market.market_type != "spot":
-        raise ValidationError("فقط Paper Spot مجاز است.")
+    account = require_paper_simulator(order)
+    if order.trade.market.market_type not in {"spot", "margin"}:
+        raise ValidationError("فقط بازار Spot یا Margin نسخه نخست مجاز است.")
     if order.trade.market.taker_fee is None:
         raise ValidationError("کارمزد بازار نامعلوم است.")
     key = hashlib.sha256(f"{account.pk}:{order.client_order_id}".encode()).hexdigest()[:40]

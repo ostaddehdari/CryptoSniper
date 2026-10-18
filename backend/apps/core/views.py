@@ -151,6 +151,18 @@ def api_engine_readiness(request):
 @login_required
 @never_cache
 @require_GET
+def api_deployment_readiness(request):
+    from .deployment import deployment_status
+
+    report = deployment_status()
+    response = JsonResponse(report, status=200 if report["status"] == "ready" else 503)
+    response["Cache-Control"] = "no-store"
+    return response
+
+
+@login_required
+@never_cache
+@require_GET
 def system_status(request):
     return render(request, "core/partials/status.html", system_context())
 

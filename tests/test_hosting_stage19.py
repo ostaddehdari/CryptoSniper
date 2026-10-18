@@ -66,3 +66,54 @@ def test_public_https_probe_rejects_private_destination(settings):
     settings.HOSTING_EGRESS_PROBE_URL = "https://127.0.0.1/private"
     with pytest.raises(ValidationError):
         _outbound_https()
+
+
+@pytest.mark.django_db
+def test_deployment_readiness_is_private_and_never_requires_node(
+    client, django_user_model, settings, monkeypatch, tmp_path
+):
+    static_root = tmp_path / "staticfiles"
+    static_root.mkdir()
+    (static_root / "staticfiles.json").write_text("{}")
+    settings.STATIC_ROOT = static_root
+    settings.RELEASE_VERSION = "0.20.0rc1"
+    settings.SOURCE_REVISION = "test-revision"
+    monkeypatch.setattr(
+        "apps.core.deployment.dependency_status",
+        lambda: {
+            "postgresql": True,
+            "redis_cache": True,
+            "redis_broker": True,
+            "redis_results": True,
+        },
+    )
+    assert client.get(reverse("api-deployment-readiness")).status_code == 302
+    client.force_login(django_user_model.objects.create_user(username="deploy19"))
+    payload = client.get(reverse("api-deployment-readiness")).json()
+    assert payload["status"] == "ready"
+    assert payload["release"] == "0.20.0rc1"
+    assert payload["source_revision"] == "test-revision"
+    assert payload["node_required"] is False
+    assert payload["static"]["collected"] is True
+
+
+@pytest.mark.django_db
+def test_exact_deployment_check_sees_no_pending_migrations(settings, monkeypatch, tmp_path):
+    from apps.core.deployment import deployment_status
+
+    static_root = tmp_path / "staticfiles"
+    static_root.mkdir()
+    (static_root / "staticfiles.json").write_text("{}")
+    settings.STATIC_ROOT = static_root
+    monkeypatch.setattr(
+        "apps.core.deployment.dependency_status",
+        lambda: {
+            "postgresql": True,
+            "redis_cache": True,
+            "redis_broker": True,
+            "redis_results": True,
+        },
+    )
+    status = deployment_status(include_migrations=True)
+    assert status["status"] == "ready"
+    assert status["migrations"] == {"current": True, "pending_count": 0}

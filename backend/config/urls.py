@@ -204,6 +204,11 @@ urlpatterns = [
     path("system/", views.system, name="system"),
     path("system/status/", views.system_status, name="system-status"),
     path("api/v1/engine/readiness/", views.api_engine_readiness, name="api-engine-readiness"),
+    path(
+        "api/v1/deployment/readiness/",
+        views.api_deployment_readiness,
+        name="api-deployment-readiness",
+    ),
     path("system/probe/", views.create_probe, name="create-probe"),
     path("system/probe/<uuid:probe_id>/", views.probe_status, name="probe-status"),
     path("paper/<int:pk>/stop/", paper_views.move_stop, name="paper-stop"),

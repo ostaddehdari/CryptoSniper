@@ -97,7 +97,7 @@ API_RATE_LIMIT_PER_MINUTE = 120
 PARSER_RATE_LIMIT_PER_MINUTE = 10
 SUBSCRIPTION_RATE_LIMIT_PER_MINUTE = 60
 AUDIT_RETENTION_DAYS = 365
-RELEASE_VERSION = env("CRYPTOSNIPER_RELEASE", default="0.20.0rc1")
+RELEASE_VERSION = env("CRYPTOSNIPER_RELEASE", default="0.21.0rc1")
 SOURCE_REVISION = env("CRYPTOSNIPER_SOURCE_REVISION", default="development")
 DEPLOYMENT_ENVIRONMENT = env("CRYPTOSNIPER_ENVIRONMENT", default="development")
 HOSTING_EGRESS_PROBE_URL = env(
@@ -111,12 +111,18 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 TRADING_MODE = "paper"
-LIVE_TRADING_ENABLED = False
+# A second, explicit switch protects direct Spot writes. It never enables
+# futures/margin and account permission checks still fail closed.
+LIVE_TRADING_ENABLED = env.bool("LIVE_TRADING_ENABLED", default=False)
 SECOND_FACTOR_PROVIDER = env("SECOND_FACTOR_PROVIDER", default="")
 # Enable only when using an ASGI web process; Gunicorn WSGI uses bounded polling.
 MARKETDATA_SSE_ENABLED = env.bool("MARKETDATA_SSE_ENABLED", default=False)
 ENABLED_MARKET_TYPES = ("spot", "margin")
 EXCHANGE_CREDENTIAL_KEYS = env.list("EXCHANGE_CREDENTIAL_KEYS", default=[])
+TELEGRAM_CREDENTIAL_KEYS = env.list("TELEGRAM_CREDENTIAL_KEYS", default=EXCHANGE_CREDENTIAL_KEYS)
+TELEGRAM_AI_BASE_URL = env("TELEGRAM_AI_BASE_URL", default="")
+TELEGRAM_AI_API_KEY = env("TELEGRAM_AI_API_KEY", default="")
+TELEGRAM_AI_MODEL = env("TELEGRAM_AI_MODEL", default="")
 
 DATABASES = {"default": env.db("DATABASE_URL")}
 if DATABASES["default"]["ENGINE"] != "django.db.backends.postgresql":
@@ -163,6 +169,7 @@ OPERATION_QUEUES = (
 )
 CELERY_TASK_QUEUES = {q: {"exchange": q, "routing_key": q} for q in OPERATION_QUEUES}
 CELERY_TASK_ROUTES = {
+    "exchanges.live_spot_order": {"queue": "orders"},
     "core.*": {"queue": "maintenance"},
     "operations.*": {"queue": "maintenance"},
     "exchanges.*": {"queue": "maintenance"},

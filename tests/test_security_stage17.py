@@ -186,3 +186,12 @@ def test_retention_removes_only_expired_ephemeral_records(django_user_model):
     assert not PasswordResetRequest.objects.filter(pk=reset.pk).exists()
     assert not UserSession.objects.filter(pk=session.pk).exists()
     assert retained_audit_events(user).filter(pk=audit.pk).exists()
+
+
+def test_security_release_gate_and_runbook_exist():
+    from scripts.security_scan import scan
+
+    assert scan() == []
+    runbook = open("docs/runbooks/security-incident.md", encoding="utf-8").read()
+    assert "یافته باز critical/high مانع Release است" in runbook
+    assert "withdrawal خاموش" in runbook

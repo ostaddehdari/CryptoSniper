@@ -14,8 +14,8 @@ from apps.trading.intent import queue_paper_trade
 from apps.trading.tasks import process_paper
 
 from .ai import analyze_signal
-from .channel_parser import apply_channel_template
-from .models import Signal, TelegramChannel, TelegramMessage
+from .channel_parser import select_channel_template
+from .models import Signal, TelegramChannel, TelegramChannelTemplate, TelegramMessage
 from .parsing import assess
 from .services import _revision, receive_signal, transition, update_parsed
 
@@ -25,10 +25,14 @@ def _current_text(signal):
     return revision.text if revision else signal.raw_signal.original_text
 
 
-def _suggestion(channel, signal):
+def _suggestion(channel, signal, template=None, template_result=None):
     result = None
     if channel.parse_mode in {TelegramChannel.ParseMode.TEMPLATE, TelegramChannel.ParseMode.HYBRID}:
-        result = assess(apply_channel_template(_current_text(signal), channel.template))
+        if template_result is None:
+            _, template_result = select_channel_template(
+                _current_text(signal), channel.templates.filter(enabled=True), channel.template
+            )
+        result = assess(template_result)
     incomplete = not result or result.get("warnings")
     if channel.parse_mode == TelegramChannel.ParseMode.AI or (
         channel.parse_mode == TelegramChannel.ParseMode.HYBRID and incomplete
@@ -44,6 +48,21 @@ def _suggestion(channel, signal):
                 result["technical_confidence"], int(ai_result.get("confidence", 0))
             )
     return result
+
+
+def _message_kind(text, template, parsed):
+    if template:
+        return template.message_kind
+    folded = text.casefold()
+    if any(marker in folded for marker in ("cancel", "لغو", "کنسل")):
+        return TelegramChannelTemplate.MessageKind.CANCEL
+    if any(marker in folded for marker in ("result", "نتیجه", "tp hit", "target hit")):
+        return TelegramChannelTemplate.MessageKind.RESULT
+    if any(marker in folded for marker in ("update", "آپدیت", "جابجایی حد ضرر")):
+        return TelegramChannelTemplate.MessageKind.UPDATE
+    if parsed.get("pair") or parsed.get("execution_targets"):
+        return TelegramChannelTemplate.MessageKind.SIGNAL
+    return TelegramChannelTemplate.MessageKind.NOISE
 
 
 @transaction.atomic
@@ -159,8 +178,34 @@ def ingest_telegram_message(
     advance_live_cursor=True,
     allow_automation=True,
 ):
-    channel = TelegramChannel.objects.select_related("owner", "source").get(pk=channel_id)
+    channel = (
+        TelegramChannel.objects.select_related("owner", "source")
+        .prefetch_related("templates")
+        .get(pk=channel_id)
+    )
+    matched_template, preliminary = select_channel_template(
+        text, channel.templates.filter(enabled=True), channel.template
+    )
+    kind = _message_kind(text, matched_template, preliminary)
     external_id = f"{channel.peer_id}:{message_id}"
+    checksum = hashlib.sha256(text.encode()).hexdigest()
+    if kind == TelegramChannelTemplate.MessageKind.NOISE:
+        event, created = TelegramMessage.objects.get_or_create(
+            channel=channel,
+            message_id=message_id,
+            defaults={
+                "owner": channel.owner,
+                "text_checksum": checksum,
+                "message_kind": kind,
+                "matched_template": matched_template,
+                "occurred_at": occurred_at,
+            },
+        )
+        if advance_live_cursor and message_id > channel.live_message_id:
+            TelegramChannel.objects.filter(pk=channel.pk).update(
+                last_message_id=message_id, live_message_id=message_id
+            )
+        return {"signal_id": None, "created": created, "revised": False, "kind": kind}
     signal, _, revised = receive_signal(
         channel.owner,
         channel.source,
@@ -174,7 +219,6 @@ def ingest_telegram_message(
         },
         external_id=external_id,
     )
-    checksum = hashlib.sha256(text.encode()).hexdigest()
     event, created = TelegramMessage.objects.get_or_create(
         channel=channel,
         message_id=message_id,
@@ -183,6 +227,8 @@ def ingest_telegram_message(
             "text_checksum": checksum,
             "raw_signal": signal.raw_signal,
             "occurred_at": occurred_at,
+            "message_kind": kind,
+            "matched_template": matched_template,
         },
     )
     if revised:
@@ -195,7 +241,7 @@ def ingest_telegram_message(
             last_message_id=message_id, live_message_id=message_id
         )
     if created or revised:
-        parsed = _suggestion(channel, signal)
+        parsed = _suggestion(channel, signal, matched_template, preliminary)
         if parsed:
             signal = _store_suggestion(
                 signal,
@@ -204,7 +250,7 @@ def ingest_telegram_message(
             )
             if allow_automation:
                 _try_full_auto_paper(channel, signal, parsed)
-    return {"signal_id": signal.pk, "created": created, "revised": revised}
+    return {"signal_id": signal.pk, "created": created, "revised": revised, "kind": kind}
 
 
 def mark_telegram_deleted(channel_id, message_ids):

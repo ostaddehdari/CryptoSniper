@@ -4,7 +4,8 @@ from django import forms
 
 from apps.exchanges.models import ExchangeMarket, UserExchangeAccount
 
-from .models import SignalSource, TelegramChannel
+from .channel_parser import apply_channel_template, template_matches
+from .models import SignalSource, TelegramChannel, TelegramChannelTemplate
 
 
 class ReceiveForm(forms.Form):
@@ -161,3 +162,28 @@ class TelegramChannelForm(forms.Form):
         self.fields["peer_id"].choices = list(channel_choices)
         for field in self.fields.values():
             field.widget.attrs["class"] = "input"
+
+
+class TelegramTemplateForm(forms.Form):
+    channel_id = forms.IntegerField(widget=forms.HiddenInput)
+    name = forms.CharField(label="نام قالب", max_length=80)
+    priority = forms.IntegerField(label="اولویت", min_value=1, max_value=1000, initial=100)
+    message_kind = forms.ChoiceField(
+        label="نوع پیام", choices=TelegramChannelTemplate.MessageKind.choices
+    )
+    definition = forms.JSONField(
+        label="تعریف JSON",
+        initial={"version": "1", "required_markers": [], "exclude_markers": [], "aliases": {}},
+        widget=forms.Textarea(attrs={"rows": 6}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs["class"] = "input"
+
+    def clean_definition(self):
+        definition = self.cleaned_data["definition"]
+        template_matches("preview", definition)
+        apply_channel_template("BTC/USDT ENTRY 10 TARGET 11 STOP LOSS 9 LONG", definition)
+        return definition

@@ -20,6 +20,7 @@ from .forms import (
     TelegramChannelForm,
     TelegramCodeForm,
     TelegramConnectForm,
+    TelegramTemplateForm,
 )
 from .models import (
     Signal,
@@ -27,6 +28,7 @@ from .models import (
     TelegramAccount,
     TelegramBackfillJob,
     TelegramChannel,
+    TelegramChannelTemplate,
 )
 from .parsing import parse_for_review
 from .services import receive_signal, snapshot, transition, update_parsed
@@ -238,6 +240,33 @@ def telegram_settings(request):
                 )
                 pause_backfill(job)
                 messages.success(request, "دریافت آرشیو متوقف شد؛ بعداً قابل ادامه است.")
+            elif action == "template_add":
+                template_form = TelegramTemplateForm(request.POST)
+                if not template_form.is_valid():
+                    raise ValidationError("تعریف قالب معتبر نیست.")
+                channel = get_object_or_404(
+                    TelegramChannel,
+                    owner=request.user,
+                    pk=template_form.cleaned_data["channel_id"],
+                )
+                TelegramChannelTemplate.objects.create(
+                    owner=request.user,
+                    channel=channel,
+                    name=template_form.cleaned_data["name"],
+                    priority=template_form.cleaned_data["priority"],
+                    message_kind=template_form.cleaned_data["message_kind"],
+                    definition=template_form.cleaned_data["definition"],
+                )
+                messages.success(request, "قالب نسخه‌دار کانال ذخیره شد.")
+            elif action == "template_toggle":
+                template = get_object_or_404(
+                    TelegramChannelTemplate,
+                    owner=request.user,
+                    pk=request.POST.get("template_id"),
+                )
+                template.enabled = not template.enabled
+                template.save(update_fields=("enabled", "updated_at"))
+                messages.success(request, "وضعیت قالب تغییر کرد.")
             elif action == "revoke":
                 revoke_telegram_credentials(account)
                 TelegramChannel.objects.filter(owner=request.user).update(enabled=False)

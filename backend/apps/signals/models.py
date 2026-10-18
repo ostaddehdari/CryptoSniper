@@ -310,6 +310,40 @@ class TelegramChannel(models.Model):
         return self.title
 
 
+class TelegramChannelTemplate(models.Model):
+    class MessageKind(models.TextChoices):
+        SIGNAL = "signal", "سیگنال"
+        UPDATE = "update", "به‌روزرسانی"
+        CANCEL = "cancel", "لغو"
+        RESULT = "result", "نتیجه"
+        NOISE = "noise", "غیرسیگنال"
+
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    channel = models.ForeignKey(TelegramChannel, on_delete=models.CASCADE, related_name="templates")
+    name = models.CharField(max_length=80)
+    version = models.PositiveIntegerField(default=1)
+    priority = models.PositiveSmallIntegerField(default=100)
+    message_kind = models.CharField(
+        max_length=12, choices=MessageKind.choices, default=MessageKind.SIGNAL
+    )
+    definition = models.JSONField(default=dict)
+    enabled = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("priority", "pk")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("channel", "name", "version"),
+                name="telegram_template_channel_name_version_unique",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.channel_id}:{self.name}:v{self.version}"
+
+
 class TelegramMessage(models.Model):
     """Durable cursor/dedup record; raw/edit history lives in RawSignal revisions."""
 
@@ -318,6 +352,18 @@ class TelegramMessage(models.Model):
     message_id = models.BigIntegerField()
     revision = models.PositiveIntegerField(default=1)
     text_checksum = models.CharField(max_length=64)
+    message_kind = models.CharField(
+        max_length=12,
+        choices=TelegramChannelTemplate.MessageKind.choices,
+        default=TelegramChannelTemplate.MessageKind.SIGNAL,
+    )
+    matched_template = models.ForeignKey(
+        TelegramChannelTemplate,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="messages",
+    )
     raw_signal = models.ForeignKey(
         RawSignal, on_delete=models.SET_NULL, null=True, blank=True, related_name="telegram_events"
     )

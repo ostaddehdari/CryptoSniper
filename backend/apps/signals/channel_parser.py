@@ -37,6 +37,39 @@ def apply_channel_template(text, template):
     return result
 
 
+def template_matches(text, template):
+    if not isinstance(template, dict):
+        return False
+    required = template.get("required_markers", [])
+    excluded = template.get("exclude_markers", [])
+    if not isinstance(required, list) or not isinstance(excluded, list):
+        raise ValidationError("markerهای قالب باید فهرست باشند.")
+    if len(required) > 10 or len(excluded) > 10:
+        raise ValidationError("تعداد markerهای قالب بیش از حد است.")
+    folded = text.casefold()
+    required = [str(value).strip().casefold() for value in required]
+    excluded = [str(value).strip().casefold() for value in excluded]
+    if any(not value or len(value) > 80 for value in required + excluded):
+        raise ValidationError("marker خالی یا بیش از حد طولانی است.")
+    return all(value in folded for value in required) and not any(
+        value in folded for value in excluded
+    )
+
+
+def select_channel_template(text, templates, fallback=None):
+    """Return the first priority-ordered matching template and deterministic extraction."""
+
+    for template in templates:
+        definition = template.definition
+        if not template_matches(text, definition):
+            continue
+        parsed = apply_channel_template(text, definition)
+        return template, parsed
+    if fallback:
+        return None, apply_channel_template(text, fallback)
+    return None, extract(text)
+
+
 def complete_extraction(result):
     return bool(
         result.get("pair")

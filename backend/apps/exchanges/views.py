@@ -6,7 +6,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from apps.accounts.audit import record_audit
-from apps.accounts.security import session_api_required
+from apps.accounts.security import session_api_required, step_up_required
 
 from .forms import ExchangeConnectionForm
 from .models import Exchange, UserExchangeAccount
@@ -116,6 +116,7 @@ def disable_exchange_account(request, pk):
 
 @login_required
 @require_POST
+@step_up_required
 def rotate_exchange_account(request, pk):
     account = _owned_account(request.user, pk)
     if account.status == UserExchangeAccount.Status.DISABLED or not account.credentials_encrypted:
@@ -137,6 +138,7 @@ def rotate_exchange_account(request, pk):
 
 @login_required
 @require_POST
+@step_up_required
 def revoke_exchange_account(request, pk):
     account = _owned_account(request.user, pk)
     revoke_account_credentials(account)

@@ -80,7 +80,7 @@ def test_rotation_redacts_permissions_and_revocation_stops_execution(client, dja
     from apps.exchanges.services import permission_payload
     from test_trading_stage08 import paper_account
 
-    owner = django_user_model.objects.create_user(username="credential-owner")
+    owner = django_user_model.objects.create_user(username="credential-owner", password="safe-pass")
     account, _ = paper_account(owner)
     assert "paper-account" not in str(
         permission_payload(
@@ -90,6 +90,9 @@ def test_rotation_redacts_permissions_and_revocation_stops_execution(client, dja
         )
     )
     client.force_login(owner)
+    blocked = client.post(reverse("exchange-account-rotate", args=[account.pk]))
+    assert blocked.status_code == 403 and blocked.json()["error"] == "step_up_required"
+    assert client.post(reverse("security-step-up"), {"password": "safe-pass"}).status_code == 302
     assert client.post(reverse("exchange-account-rotate", args=[account.pk])).status_code == 302
     account.refresh_from_db()
     assert account.status == "pending" and not account.trading_enabled
@@ -127,3 +130,19 @@ def test_log_redaction_removes_canary_secret(settings):
         logging.LogRecord("security", logging.ERROR, __file__, 1, "api_key=CANARY-SECRET", (), None)
     )
     assert "CANARY-SECRET" not in line and "[REDACTED]" in line
+
+
+@pytest.mark.django_db
+def test_two_factor_readiness_is_honest_and_step_up_rotates_session(client, django_user_model):
+    from apps.accounts.security import second_factor_status
+
+    user = django_user_model.objects.create_user(username="step-user", password="right-pass")
+    client.force_login(user)
+    old_key = client.session.session_key
+    page = client.get(reverse("security-step-up"))
+    assert page.status_code == 200
+    assert not second_factor_status()["configured"]
+    assert "اجرای Live غیرفعال" in page.content.decode()
+    assert client.post(reverse("security-step-up"), {"password": "wrong"}).status_code == 200
+    assert client.post(reverse("security-step-up"), {"password": "right-pass"}).status_code == 302
+    assert client.session.session_key != old_key

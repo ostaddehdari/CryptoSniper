@@ -25,7 +25,9 @@ from .models import AuditLog, PasswordResetRequest, TradingPreferences, User, Us
 from .security import (
     clear_login_failures,
     login_attempts,
+    mark_step_up,
     record_login_failure,
+    second_factor_status,
     session_api_required,
 )
 from .services import (
@@ -310,4 +312,23 @@ def audit_events(request):
         request,
         "accounts/audit_events.html",
         {"events": events, "nav": "settings"},
+    )
+
+
+@login_required
+@never_cache
+@require_http_methods(["GET", "POST"])
+def security_step_up(request):
+    if request.method == "POST":
+        if request.user.check_password(request.POST.get("password", "")):
+            mark_step_up(request)
+            record_audit("auth.step_up_succeeded", request=request, user=request.user)
+            messages.success(request, "هویت برای عملیات حساس تا ۱۰ دقیقه تأیید شد.")
+            return redirect("sessions")
+        record_audit("auth.step_up_failed", request=request, user=request.user)
+        messages.error(request, "رمز عبور صحیح نیست.")
+    return render(
+        request,
+        "accounts/security_step_up.html",
+        {"nav": "settings", "second_factor": second_factor_status()},
     )

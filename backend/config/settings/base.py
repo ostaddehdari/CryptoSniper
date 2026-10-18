@@ -97,6 +97,7 @@ SECURE_REFERRER_POLICY = "same-origin"
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 TRADING_MODE = "paper"
 LIVE_TRADING_ENABLED = False
+SECOND_FACTOR_PROVIDER = env("SECOND_FACTOR_PROVIDER", default="")
 # Enable only when using an ASGI web process; Gunicorn WSGI uses bounded polling.
 MARKETDATA_SSE_ENABLED = env.bool("MARKETDATA_SSE_ENABLED", default=False)
 ENABLED_MARKET_TYPES = ("spot", "margin")

@@ -355,7 +355,9 @@ def test_smart_paste_origin_reaches_shared_paper_executor(django_user_model):
     from apps.tradeplans.forms import ManualTradeForm
     from apps.tradeplans.service import approve_plan, create_draft
     from apps.trading.execution import dispatch_paper
+    from apps.trading.exits_engine import process_paper_price
     from apps.trading.intent import queue_paper_trade
+    from django.utils import timezone
     from test_trading_stage08 import paper_account
 
     owner = django_user_model.objects.create_user(username="e2e-smart18")
@@ -403,3 +405,11 @@ def test_smart_paste_origin_reaches_shared_paper_executor(django_user_model):
     trade, _ = queue_paper_trade(owner, plan.pk, request_key=uuid.uuid4())
     assert dispatch_paper(trade.orders.get().outbox.pk)["status"] == "filled"
     assert trade.signal_id == signal.pk and trade.plan.source == "smart_paste"
+    result = process_paper_price(
+        trade.pk,
+        price="70000",
+        observed_at=timezone.now(),
+        event_key="smart-paste-stage20-close",
+    )
+    trade.refresh_from_db()
+    assert result["status"] == "closed" and trade.state == "closed"

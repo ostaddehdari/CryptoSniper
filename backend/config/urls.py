@@ -20,7 +20,7 @@ from django.urls import path
 
 
 def live(request):
-    return JsonResponse({"status": "ok", "service": "cryptosniper", "stage": "S18"})
+    return JsonResponse({"status": "ok", "service": "cryptosniper", "stage": "S20"})
 
 
 def ready(request):
@@ -70,6 +70,7 @@ urlpatterns = [
     path("operations/", operation_views.center, name="operations"),
     path("operations/<int:pk>/control/", operation_views.control, name="operations-control"),
     path("api/v1/operations/health/", operation_views.api_health, name="api-operations-health"),
+    path("api/v1/acceptance/", operation_views.api_acceptance, name="api-acceptance"),
     path(
         "api/v1/operations/host-capabilities/",
         operation_views.api_host_capabilities,

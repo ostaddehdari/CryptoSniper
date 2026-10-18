@@ -1,4 +1,4 @@
-# راه‌اندازی CryptoSniper — نسخه تجمعی استیج ۱۴
+# راه‌اندازی CryptoSniper — نسخه تجمعی استیج ۲۰
 
 نیازها: Python 3.12 یا نسخه سازگار قفل وابستگی‌ها، PostgreSQL 16، Redis 7، uv و پردازش‌های مستقل Web، Worker و Beat. Node.js برای اجرا لازم نیست. وابستگی‌های دقیق در `uv.lock` ثبت شده‌اند. Django 5.2 LTS انتخاب شده است؛ نسخه patch نصب‌شده 5.2.18 است.
 
@@ -60,7 +60,7 @@ uv run --no-dev python backend/manage.py collectstatic --noinput
 uv run --no-dev gunicorn --chdir backend config.wsgi:application --bind 127.0.0.1:8000
 ```
 
-برای ASGI، `uvicorn config.asgi:application --app-dir backend` قابل استفاده است. TLS باید روی هاست یا reverse proxy تنظیم شود. فقط پشت proxy قابل اعتماد که هدر ورودی کاربر را حذف می‌کند `DJANGO_PROXY_SSL_HEADER=true` شود. مشخصات هاست و استقرار واقعی در S19 بررسی خواهند شد؛ این سند گواه استقرار روی سرور کاربر نیست.
+برای ASGI، `uvicorn config.asgi:application --app-dir backend` قابل استفاده است. TLS باید روی هاست یا reverse proxy تنظیم شود. فقط پشت proxy قابل اعتماد که هدر ورودی کاربر را حذف می‌کند `DJANGO_PROXY_SSL_HEADER=true` شود. ممیزی S19 با `check_hosting --strict` و readiness استقرار با `check_deployment --migrations` انجام می‌شود؛ این سند یا پاس‌شدن CI به‌تنهایی گواه استقرار روی سرور کاربر نیست.
 
 ## مرز تحویل
 
@@ -79,3 +79,9 @@ uv run --no-dev gunicorn --chdir backend config.wsgi:application --bind 127.0.0.
 Stage15 محاسبات Decimal و گزارش‌های aggregate/CSV/SVG را اضافه می‌کند و Stage16 رابط موبایل/دسکتاپ و PWA را تکمیل می‌کند. Service Worker فقط static assetهای عمومی را cache می‌کند؛ پاسخ خصوصی، API، navigation و عملیات POST هرگز برای اجرای آفلاین ذخیره نمی‌شوند. نصب‌کننده Stage16 نصب مدیریت‌شده Stage14 و headerهای دقیق Stage01–16 را می‌پذیرد، اما snippet ناشناس یا تغییر هم‌زمان Nginx را بدون بازنویسی رد می‌کند. deploy این نسخه ZIP و installer تأییدشده را از commit ثابت `104038e39090d2ba911ea1c7281ff39709270016` می‌گیرد؛ بنابراین تغییر بعدی شاخهٔ main bytes نصب را عوض نمی‌کند.
 
 لاگ اپراتور نصب موفق Stage14 را تأیید کرده است. برای Stage16 ابتدا `scripts/deploy.sh --check` و سپس نصب عادی را اجرا کنید؛ نتیجهٔ نصب 0.16 تا ارائهٔ لاگ جدید تأییدشده محسوب نمی‌شود.
+
+## عملیات و تحویل نسخه 0.20
+
+نسخه 0.20 هفت Worker دائمی، دقیقاً یک Beat، monitor صف/feed/exchange، هویت release/source/environment، backup رمزنگاری‌شده و restore فقط روی دیتابیس جدا را بررسی می‌کند. جزئیات روزمره در [راهنمای ادمین](admin-guide.md)، مسیر محصول در [راهنمای کاربر](user-guide.md) و مرز شواهد در [چک‌لیست پذیرش](acceptance/stage20-checklist.md) آمده است.
+
+پس از نصب، readiness عمومی و login باید 200 باشند و APIهای خصوصی deployment، host capabilities و acceptance با نشست معتبر بررسی شوند. نتیجهٔ CI جای restart، restore و مرورگر عمومی VPS را نمی‌گیرد. `CRYPTOSNIPER_BACKUP_PASSPHRASE` را در Git یا log قرار ندهید و مقصد offsite را روی storage مستقل تعریف کنید.

@@ -24,6 +24,17 @@ from .models import AccountControl, ExternalObservation, RecoveryIssue, WorkerHe
 @session_api_required
 @never_cache
 @require_GET
+def api_acceptance(request):
+    from .acceptance import base_product_acceptance
+
+    response = JsonResponse(base_product_acceptance())
+    response["Cache-Control"] = "no-store"
+    return response
+
+
+@session_api_required
+@never_cache
+@require_GET
 def api_host_capabilities(request):
     from .hosting import hosting_capabilities
 

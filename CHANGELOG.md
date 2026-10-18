@@ -1,3 +1,12 @@
+## 0.20.0rc1 — استیج‌های ۱۹ و ۲۰ (2026-10-18)
+
+- ممیزی ماشین‌خوان Python/PostgreSQL/Redis/HTTPS/storage، هویت release/source/environment و readiness migration/static بدون نیاز Node.
+- مانیتور هفت Worker، Beat، صف، outbox، feed و خطای حساب با هشدار؛ slot تلگرام فقط رزرو و پیاده‌سازی آن تا S21 موکول است.
+- backup `pg_dump` رمزنگاری‌شده AES-256-GCM/Scrypt، retention روزانه/هفتگی، offsite اختیاری و restore محدود به دیتابیس جدا.
+- پذیرش Manual و Smart Paste تا close، Spot/Margin Simulator، TP/SL/trailing، alerts/reports/timezone و recovery/security.
+- قرارداد تحویل خصوصی و راهنمای کاربر/ادمین؛ Binance write، Telegram، قالب کانال و AI در این نسخه غیرفعال/پیاده‌نشده‌اند.
+- CI دقیق، بسته immutable و نتیجه VPS پس از اجرای واقعی ثبت می‌شوند؛ تا آن زمان وضعیت استقرار `partial` است.
+
 ## 0.18.0rc1 — استیج‌های ۱۷ و ۱۸ (2026-10-18)
 
 - سخت‌سازی مالکیت/CSRF/XSS/SSRF، گردش و ابطال credential، backup رمزنگاری‌شده، step-up واقعی و readiness صادقانه 2FA.

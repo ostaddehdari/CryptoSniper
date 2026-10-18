@@ -48,13 +48,14 @@ def test_percentage_trailing_crosses_tp3_without_tp_sell_then_closes_once(django
     assert not fills.filter(reason__startswith="tp").exists()
 
 
-def test_acceptance_capability_matrix_never_claims_live_or_futures():
+def test_acceptance_capability_matrix_keeps_live_feature_gated_and_no_futures():
     from apps.operations.readiness import engine_readiness
 
     matrix = engine_readiness()
     assert matrix["adapters"]["simulator_margin_long_short"] == "implemented_and_tested"
     assert matrix["adapters"]["binance_live_write"] == "disabled_not_verified"
     assert matrix["real_order_writes"] is False
+    assert matrix["telegram"]["full_auto"] == "simulator_paper_only"
 
 
 @pytest.mark.django_db

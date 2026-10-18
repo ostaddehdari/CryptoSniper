@@ -1,3 +1,12 @@
+## 0.21.0rc1 — استیج ۲۱ (2026-10-18)
+
+- ورود Telethon با code/2FA، session رمزنگاری‌شده، listener دائمی و دریافت bounded/deduplicated پیام‌های new/edit/delete.
+- قالب ویژه کانال و AI اختیاری با structured output، validation، timeout و مرز prompt-injection؛ نبود provider صریحاً blocked است.
+- UI مدیریت کانال با Manual/Semi/Full-Auto Paper؛ Full-Auto به معامله واقعی متصل نمی‌شود.
+- adapterهای Spot برای Nobitex، LBank، WEEX، Ourbit و Bitunix: بازار/نوسان، موجودی شخصی و سفارش؛ Futures/Margin واقعی غیرفعال.
+- outbox پایدار سفارش Live با permission recheck و وضعیت `uncertain` بدون retry؛ `LIVE_TRADING_ENABLED=false` پیش‌فرض است.
+- آزمون قرارداد محلی پاس؛ Telegram/AI/credential صرافی و نصب VPS واقعی تا ارائه شواهد `partial` هستند.
+
 ## 0.20.0rc1 — استیج‌های ۱۹ و ۲۰ (2026-10-18)
 
 - ممیزی ماشین‌خوان Python/PostgreSQL/Redis/HTTPS/storage، هویت release/source/environment و readiness migration/static بدون نیاز Node.

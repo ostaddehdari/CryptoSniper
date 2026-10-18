@@ -5,9 +5,9 @@
     "S01",
     "S02"
   ],
-  "current_stage": "S20",
-  "next_stage": "S21",
-  "last_completed_work": "S20-W05",
+  "current_stage": "S21",
+  "next_stage": null,
+  "last_completed_work": "S21-W05",
   "implementation_started": true,
   "stage_results": {
     "S01": {
@@ -1048,11 +1048,35 @@
       "release_workflow_commit": "d6821af964e99fec89ac25bad66c10d9d86d3085"
     },
     "S21": {
-      "status": "not_started",
-      "completed_works": [],
-      "checks": [],
-      "commit_shas": [],
-      "blockers": []
+      "status": "partial",
+      "completed_works": [
+        "S21-W01",
+        "S21-W02",
+        "S21-W03",
+        "S21-W04",
+        "S21-W05"
+      ],
+      "checks": [
+        {
+          "name": "Local Ruff, compileall, Django checks and focused Telegram/exchange tests",
+          "status": "passed_local_fallback",
+          "tests_passed": 17,
+          "notes": "PostgreSQL was unavailable locally; exact-source PostgreSQL/Redis/Workers/Beat/Chromium evidence is pending GitHub CI."
+        }
+      ],
+      "commit_shas": [
+        "d9066a8",
+        "aa7d0ad",
+        "5685117",
+        "af87d22"
+      ],
+      "blockers": [
+        "No authorized real Telegram account/channel or AI provider key was supplied.",
+        "No restricted real credentials were supplied for Nobitex, LBank, WEEX, Ourbit or Bitunix; provider acceptance and real order writes are unverified.",
+        "Target VPS installation and public HTTPS acceptance are pending; LIVE_TRADING_ENABLED remains false.",
+        "Operator must confirm sanctions, jurisdiction and exchange eligibility before any live connection."
+      ],
+      "implementation": "All five code works are implemented: encrypted Telethon session/login, durable channel ingestion, bounded template parsing, structured AI analysis, UI/automation and five fail-closed Spot adapters with durable live-order outbox. External acceptance remains partial."
     }
   }
 }

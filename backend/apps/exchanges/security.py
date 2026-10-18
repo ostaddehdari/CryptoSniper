@@ -55,7 +55,13 @@ class CredentialVault:
         return f"cryptosniper:exchange:{account.owner_id}:{account.exchange.code}".encode()
 
     def encrypt(self, account, credentials):
-        allowed = {"api_key", "api_secret", "passphrase"}
+        allowed = {
+            "api_key",
+            "api_secret",
+            "passphrase",
+            "no_withdrawal_confirmed",
+            "ip_restricted_confirmed",
+        }
         if not isinstance(credentials, dict) or set(credentials) - allowed:
             raise ValidationError("ساختار اطلاعات اتصال معتبر نیست.")
         normalized = {
@@ -63,10 +69,14 @@ class CredentialVault:
             for key, value in credentials.items()
             if value is not None and str(value).strip()
         }
-        if account.exchange.adapter_code != "simulator" and not {
-            "api_key",
-            "api_secret",
-        }.issubset(normalized):
+        required = (
+            {"api_key"}
+            if account.exchange.adapter_code == "nobitex"
+            else {"api_key", "api_secret", "passphrase"}
+            if account.exchange.adapter_code == "weex"
+            else {"api_key", "api_secret"}
+        )
+        if account.exchange.adapter_code != "simulator" and not required.issubset(normalized):
             raise ValidationError("API Key و Secret برای این اتصال لازم است.")
         plaintext = json.dumps(normalized, sort_keys=True, separators=(",", ":")).encode()
         nonce = os.urandom(12)

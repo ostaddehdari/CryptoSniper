@@ -1,3 +1,4 @@
+import asyncio
 import json
 from datetime import datetime
 
@@ -10,13 +11,26 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from apps.accounts.audit import record_audit
-from apps.accounts.security import session_api_required
+from apps.accounts.security import has_recent_step_up, session_api_required
 
-from .forms import ReceiveForm, ReviewForm
-from .models import Signal, SignalSource
+from .forms import (
+    ReceiveForm,
+    ReviewForm,
+    TelegramChannelForm,
+    TelegramCodeForm,
+    TelegramConnectForm,
+)
+from .models import Signal, SignalSource, TelegramAccount, TelegramChannel
 from .parsing import parse_for_review
 from .services import receive_signal, snapshot, transition, update_parsed
 from .sources import get_default_source
+from .telegram_client import (
+    available_channels,
+    complete_login,
+    configure_channel,
+    request_login_code,
+)
+from .telegram_security import revoke_telegram_credentials
 
 
 def owned(user, pk):
@@ -101,6 +115,122 @@ def source_settings(request):
         {
             "nav": "settings",
             "sources": SignalSource.objects.filter(owner=request.user).order_by("method", "name"),
+        },
+    )
+
+
+@login_required
+@never_cache
+@require_http_methods(["GET", "POST"])
+def telegram_settings(request):
+    account, _ = TelegramAccount.objects.get_or_create(owner=request.user)
+    discovered = request.session.get("telegram_discovered_channels", [])
+    choices = [(str(row["peer_id"]), row["title"]) for row in discovered]
+    connect_form = TelegramConnectForm(prefix="connect")
+    code_form = TelegramCodeForm(prefix="code")
+    channel_form = TelegramChannelForm(
+        choices,
+        prefix="channel",
+        initial={"min_confidence": 80, "paper_capital": 100},
+    )
+    if request.method == "POST":
+        action = request.POST.get("action")
+        try:
+            if action in {"connect", "code", "revoke"} and not has_recent_step_up(request):
+                raise ValidationError(
+                    "برای تغییر credential ابتدا در /settings/security/step-up/ رمز را تأیید کنید."
+                )
+            if action == "connect":
+                connect_form = TelegramConnectForm(request.POST, prefix="connect")
+                if not connect_form.is_valid():
+                    raise ValidationError("اطلاعات اتصال Telegram معتبر نیست.")
+                asyncio.run(
+                    request_login_code(
+                        account,
+                        connect_form.cleaned_data["api_id"],
+                        connect_form.cleaned_data["api_hash"],
+                        connect_form.cleaned_data["phone"],
+                    )
+                )
+                messages.success(request, "کد ورود از Telegram درخواست شد.")
+            elif action == "code":
+                code_form = TelegramCodeForm(request.POST, prefix="code")
+                if not code_form.is_valid():
+                    raise ValidationError("کد ورود Telegram معتبر نیست.")
+                connected = asyncio.run(
+                    complete_login(
+                        account,
+                        code_form.cleaned_data["code"],
+                        code_form.cleaned_data["password"],
+                    )
+                )
+                messages.success(
+                    request,
+                    "Telegram متصل شد."
+                    if connected
+                    else "رمز دومرحله‌ای لازم است؛ آن را همراه کد دوباره وارد کنید.",
+                )
+            elif action == "refresh":
+                rows = asyncio.run(available_channels(account))
+                request.session["telegram_discovered_channels"] = rows
+                messages.success(request, f"{len(rows)} کانال/گروه قابل دسترس دریافت شد.")
+            elif action == "channel":
+                channel_form = TelegramChannelForm(choices, request.POST, prefix="channel")
+                if not channel_form.is_valid():
+                    raise ValidationError("سیاست کانال معتبر نیست.")
+                selected = next(
+                    row
+                    for row in discovered
+                    if str(row["peer_id"]) == channel_form.cleaned_data["peer_id"]
+                )
+                configure_channel(
+                    request.user,
+                    account,
+                    selected["peer_id"],
+                    selected["title"],
+                    selected.get("username", ""),
+                    parse_mode=channel_form.cleaned_data["parse_mode"],
+                    automation=channel_form.cleaned_data["automation"],
+                    template=channel_form.cleaned_data["template"] or {},
+                    min_confidence=channel_form.cleaned_data["min_confidence"],
+                    paper_capital=channel_form.cleaned_data["paper_capital"],
+                )
+                messages.success(request, "کانال با سیاست انتخابی ذخیره شد.")
+            elif action == "toggle":
+                channel = get_object_or_404(
+                    TelegramChannel, owner=request.user, pk=request.POST.get("channel_id")
+                )
+                channel.enabled = not channel.enabled
+                channel.source.enabled = channel.enabled
+                channel.source.save(update_fields=("enabled",))
+                channel.save(update_fields=("enabled", "updated_at"))
+                messages.success(request, "وضعیت کانال تغییر کرد.")
+            elif action == "revoke":
+                revoke_telegram_credentials(account)
+                TelegramChannel.objects.filter(owner=request.user).update(enabled=False)
+                messages.success(request, "Session و credential تلگرام حذف شد.")
+            else:
+                raise ValidationError("عملیات Telegram نامعتبر است.")
+            record_audit(
+                "telegram.settings",
+                request=request,
+                user=request.user,
+                metadata={"action": action, "status": account.status},
+            )
+            return redirect("telegram-settings")
+        except (ValidationError, ValueError, StopIteration) as error:
+            messages.error(request, "; ".join(getattr(error, "messages", [str(error)])))
+    return render(
+        request,
+        "signals/telegram_settings.html",
+        {
+            "nav": "settings",
+            "account": account,
+            "connect_form": connect_form,
+            "code_form": code_form,
+            "channel_form": channel_form,
+            "channels": TelegramChannel.objects.filter(owner=request.user),
+            "discovered": discovered,
         },
     )
 

@@ -9,7 +9,7 @@ def require_paper_simulator(order):
 
     account = order.account
     trade = order.trade
-    if settings.TRADING_MODE != "paper" or settings.LIVE_TRADING_ENABLED:
+    if settings.TRADING_MODE != "paper":
         raise ValidationError("این build فقط با مرز Paper ایمن اجرا می‌شود.")
     if trade.mode != "paper" or account.environment != "paper":
         raise ValidationError("حساب و معامله باید هر دو Paper باشند.")

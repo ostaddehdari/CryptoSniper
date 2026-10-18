@@ -1,0 +1,22 @@
+{% extends "shell.html" %}
+{% block title %}Telegram · CryptoSniper{% endblock %}
+{% block breadcrumb %}تنظیمات / Telegram{% endblock %}
+{% block content %}
+{% for message in messages %}<div class="notice {% if message.tags == 'error' %}form-error{% else %}notice-success{% endif %}" role="status">{{ message }}</div>{% endfor %}
+<div class="page-heading">
+  <div><span class="eyebrow">STAGE 21 · TELETHON</span><h1>اتصال امن کانال‌های Telegram</h1><p>Session و API Hash رمزنگاری می‌شوند؛ Full-Auto فقط روی Simulator Paper اجرا می‌شود.</p></div>
+  <span class="status-badge">{{ account.get_status_display }}</span>
+</div>
+<div class="settings-layout">{% include 'accounts/_settings_tabs.html' %}<div class="settings-panel"><div class="settings-grid">
+  <section class="panel"><h2>۱. درخواست کد ورود</h2><p class="muted">API ID و API Hash را از my.telegram.org بگیرید. این مقادیر در صفحه بازنمایش داده نمی‌شوند.</p><form method="post" class="settings-form">{% csrf_token %}{{ connect_form.as_p }}<button class="button" name="action" value="connect">ارسال کد</button></form></section>
+  <section class="panel"><h2>۲. تکمیل ورود</h2><form method="post" class="settings-form">{% csrf_token %}{{ code_form.as_p }}<button class="button" name="action" value="code">تأیید ورود</button></form></section>
+</div>
+{% if account.status == 'connected' %}
+<section class="panel">
+  <div class="panel-heading"><div><h2>۳. کانال‌های مجاز حساب</h2><p class="muted">فقط کانال‌هایی فهرست می‌شوند که همین حساب به آن‌ها دسترسی دارد.</p></div><form method="post">{% csrf_token %}<button class="button button-secondary" name="action" value="refresh">دریافت فهرست</button></form></div>
+  {% if discovered %}<form method="post" class="settings-form">{% csrf_token %}{{ channel_form.as_p }}<button class="button" name="action" value="channel">افزودن کانال</button></form>{% endif %}
+</section>
+{% endif %}
+<section class="panel"><h2>کانال‌های تنظیم‌شده</h2>{% if channels %}<div class="market-table-wrap"><table class="market-table"><thead><tr><th>کانال</th><th>تحلیل</th><th>اتوماسیون</th><th>Cursor</th><th>وضعیت</th></tr></thead><tbody>{% for channel in channels %}<tr><td>{{ channel.title }}</td><td>{{ channel.get_parse_mode_display }}</td><td>{{ channel.get_automation_display }}</td><td>{{ channel.last_message_id }}</td><td><form method="post">{% csrf_token %}<input type="hidden" name="channel_id" value="{{ channel.pk }}"><button class="button button-secondary" name="action" value="toggle">{% if channel.enabled %}توقف{% else %}فعال‌سازی{% endif %}</button></form></td></tr>{% endfor %}</tbody></table></div>{% else %}<p class="muted">هنوز کانالی افزوده نشده است.</p>{% endif %}</section>
+<section class="panel danger-zone"><h2>ابطال فوری Session</h2><form method="post">{% csrf_token %}<button class="button button-danger-soft" name="action" value="revoke">حذف Session و توقف همه کانال‌ها</button></form></section></div></div>
+{% endblock %}

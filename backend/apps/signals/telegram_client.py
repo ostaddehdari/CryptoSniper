@@ -134,7 +134,7 @@ async def listen_account(account_id):
 
     @client.on(events.NewMessage(chats=list(by_peer)))
     async def on_new(event):
-        row = by_peer.get(int(event.chat_id))
+        row = by_peer.get(int(event.chat_id)) if event.chat_id is not None else None
         text = event.raw_text or ""
         if row and text.strip():
             await sync_to_async(ingest_telegram_message)(
@@ -143,7 +143,7 @@ async def listen_account(account_id):
 
     @client.on(events.MessageEdited(chats=list(by_peer)))
     async def on_edit(event):
-        row = by_peer.get(int(event.chat_id))
+        row = by_peer.get(int(event.chat_id)) if event.chat_id is not None else None
         text = event.raw_text or ""
         if row and text.strip():
             await sync_to_async(ingest_telegram_message)(
@@ -152,7 +152,7 @@ async def listen_account(account_id):
 
     @client.on(events.MessageDeleted(chats=list(by_peer)))
     async def on_delete(event):
-        row = by_peer.get(int(event.chat_id))
+        row = by_peer.get(int(event.chat_id)) if event.chat_id is not None else None
         if row:
             await sync_to_async(mark_telegram_deleted)(row["id"], event.deleted_ids)
 

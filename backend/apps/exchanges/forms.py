@@ -1,6 +1,11 @@
-from django import forms
+import uuid
+from decimal import Decimal
 
-from .models import Exchange, UserExchangeAccount
+from django import forms
+from django.conf import settings
+from django.core.exceptions import ValidationError
+
+from .models import Exchange, ExchangeMarket, UserExchangeAccount
 from .security import set_account_credentials
 
 
@@ -44,6 +49,14 @@ class ExchangeConnectionForm(forms.Form):
             attrs={"class": "input", "autocomplete": "new-password", "spellcheck": "false"}
         ),
     )
+    no_withdrawal_confirmed = forms.BooleanField(
+        label="تأیید می‌کنم مجوز برداشت این کلید خاموش است",
+        required=False,
+    )
+    ip_restricted_confirmed = forms.BooleanField(
+        label="کلید را به IP ثابت سرور محدود کرده‌ام",
+        required=False,
+    )
 
     def __init__(self, owner, *args, **kwargs):
         self.owner = owner
@@ -68,8 +81,14 @@ class ExchangeConnectionForm(forms.Form):
             and not exchange.sandbox_supported
         ):
             self.add_error("environment", "این Adapter هنوز Sandbox تأییدشده ندارد.")
-        elif not cleaned.get("api_key") or not cleaned.get("api_secret"):
-            self.add_error("api_key", "API Key و Secret برای صرافی واقعی لازم است.")
+        elif not cleaned.get("api_key"):
+            self.add_error("api_key", "API Key یا Token برای صرافی واقعی لازم است.")
+        elif exchange.adapter_code != "nobitex" and not cleaned.get("api_secret"):
+            self.add_error("api_secret", "API Secret برای این صرافی لازم است.")
+        elif exchange.adapter_code == "weex" and not cleaned.get("passphrase"):
+            self.add_error("passphrase", "Passphrase برای WEEX لازم است.")
+        elif not cleaned.get("no_withdrawal_confirmed"):
+            self.add_error("no_withdrawal_confirmed", "کلید واقعی نباید مجوز برداشت داشته باشد.")
         label = cleaned.get("label", "").strip()
         if (
             exchange
@@ -93,7 +112,60 @@ class ExchangeConnectionForm(forms.Form):
                 "api_key": self.cleaned_data.get("api_key", ""),
                 "api_secret": self.cleaned_data.get("api_secret", ""),
                 "passphrase": self.cleaned_data.get("passphrase", ""),
+                "no_withdrawal_confirmed": (
+                    "true" if self.cleaned_data.get("no_withdrawal_confirmed") else ""
+                ),
+                "ip_restricted_confirmed": (
+                    "true" if self.cleaned_data.get("ip_restricted_confirmed") else ""
+                ),
             },
         )
         account.save()
         return account
+
+
+class LiveSpotOrderForm(forms.Form):
+    market = forms.ModelChoiceField(label="بازار Spot", queryset=ExchangeMarket.objects.none())
+    side = forms.ChoiceField(label="جهت", choices=(("buy", "خرید"), ("sell", "فروش")))
+    amount = forms.DecimalField(label="مقدار ارز پایه", min_value=Decimal("0.0000000000000001"))
+    price = forms.DecimalField(label="قیمت Limit", min_value=Decimal("0.0000000000000001"))
+    request_key = forms.UUIDField(widget=forms.HiddenInput)
+    confirmed = forms.BooleanField(label="ریسک سفارش واقعی را تأیید می‌کنم")
+
+    def __init__(self, owner, account, *args, **kwargs):
+        self.owner, self.account = owner, account
+        super().__init__(*args, **kwargs)
+        self.fields["market"].queryset = ExchangeMarket.objects.filter(
+            exchange=account.exchange, market_type="spot", active=True
+        ).select_related("base_asset", "quote_asset")
+        self.fields["market"].widget.attrs["class"] = "input"
+        for name in ("side", "amount", "price"):
+            self.fields[name].widget.attrs["class"] = "input"
+        self.initial.setdefault("request_key", uuid.uuid4())
+
+    def clean(self):
+        cleaned = super().clean()
+        account = self.account
+        if not settings.LIVE_TRADING_ENABLED:
+            raise ValidationError("ارسال سفارش واقعی در تنظیمات سرور خاموش است.")
+        if account.owner_id != self.owner.pk or account.environment != "live":
+            raise ValidationError("حساب Live متعلق به کاربر لازم است.")
+        if account.status != "connected" or not account.trading_enabled:
+            raise ValidationError("ابتدا مجوز Read+Spot و نبود مجوز برداشت را همگام‌سازی کنید.")
+        if account.permissions.get("can_withdraw") is not False:
+            raise ValidationError("مجوز برداشت باید صریحاً خاموش و توسط API گزارش شود.")
+        market = cleaned.get("market")
+        amount, price = cleaned.get("amount"), cleaned.get("price")
+        if not market or amount is None or price is None:
+            return cleaned
+        if market.exchange_id != account.exchange_id:
+            raise ValidationError("بازار با حساب صرافی هم‌خوان نیست.")
+        if market.amount_step and amount % market.amount_step:
+            self.add_error("amount", "مقدار با Lot Step صرافی سازگار نیست.")
+        if market.price_step and price % market.price_step:
+            self.add_error("price", "قیمت با Tick Size صرافی سازگار نیست.")
+        if market.min_amount and amount < market.min_amount:
+            self.add_error("amount", "مقدار از حداقل بازار کمتر است.")
+        if market.min_notional and amount * price < market.min_notional:
+            self.add_error("amount", "ارزش سفارش از Min Notional کمتر است.")
+        return cleaned

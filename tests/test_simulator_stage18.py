@@ -302,7 +302,7 @@ def test_readiness_api_reports_provider_limits_without_claiming_live(client, dja
     assert payload["release_mode"] == "paper"
     assert payload["real_order_writes"] is False
     assert payload["adapters"]["binance_live_write"] == "disabled_not_verified"
-    assert payload["inputs"]["telegram"] == "deferred_to_s21"
+    assert payload["inputs"]["telegram"] == "implemented_not_real_account_verified"
 
 
 @pytest.mark.django_db

@@ -1,0 +1,129 @@
+name: Build Stage21 cumulative deployment
+on:
+  push:
+    paths:
+      - .github/workflows/release-stage21.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Installer upgrade, unmanaged config and rollback regression tests
+        run: |
+          bash -n scripts/cryptosniper-stage21-run.sh
+          python3 -m unittest discover -s tests -p test_installer_nginx.py -v
+      - name: Require successful integration checks for the exact source
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          PIN=$(git rev-parse HEAD)
+          export PIN
+          python3 - <<'PYCI'
+          import json, os, subprocess, time
+          pin = os.environ['PIN']
+          for _ in range(180):
+              rows = json.loads(subprocess.check_output(
+                  ['gh', 'run', 'list', '--workflow', 'ci.yml', '--commit', pin,
+                   '--json', 'conclusion,status,url'], text=True
+              ))
+              if any(row['status'] == 'completed' and row['conclusion'] == 'success' for row in rows):
+                  print('PASS: exact source completed CI.')
+                  break
+              if any(row['status'] == 'completed' and row['conclusion'] in ('failure', 'cancelled') for row in rows):
+                  raise SystemExit('Exact-source CI failed; no release is permitted.')
+              time.sleep(5)
+          else:
+              raise SystemExit('Timed out waiting for exact-source CI; no release.')
+          PYCI
+      - name: Assemble exact source and validated installer
+        shell: bash
+        run: |
+          set -euo pipefail
+          PIN=$(git rev-parse HEAD)
+          export PIN
+          mkdir -p dist
+          git archive --format=zip --prefix=CryptoSniper/ -o dist/CryptoSniper-Stage21-v0.21.0rc1.zip "$PIN"
+          git show "$PIN":scripts/cryptosniper-stage21-run.sh > dist/cryptosniper-stage21-run.sh
+          python3 - <<'PY'
+          import hashlib, os, re, subprocess
+          from pathlib import Path
+          pin = os.environ['PIN']
+          def blob(path):
+              return subprocess.check_output(['git', 'rev-parse', pin + ':' + path], text=True).strip()
+          archive = Path('dist/CryptoSniper-Stage21-v0.21.0rc1.zip')
+          substitutions = {
+              '__SOURCE_COMMIT__': pin,
+              '__STAGE21_ARCHIVE_SHA256__': hashlib.file_digest(archive.open('rb'), 'sha256').hexdigest(),
+              '__BLOB_PYPROJECT__': blob('pyproject.toml'),
+              '__BLOB_UVLOCK__': blob('uv.lock'),
+              '__BLOB_PROGRESS__': blob('docs/progress.json'),
+              '__BLOB_EXITS_ENGINE__': blob('backend/apps/trading/exits_engine.py'),
+              '__BLOB_RECOVERY__': blob('backend/apps/operations/recovery.py'),
+              '__BLOB_ALERT_ENGINE__': blob('backend/apps/alerts/engine.py'),
+              '__BLOB_TRADE_ACTIONS__': blob('backend/apps/trading/actions.py'),
+              '__BLOB_PORTFOLIO_METRICS__': blob('backend/apps/portfolio/metrics.py'),
+              '__BLOB_REPORT_SERVICE__': blob('backend/apps/reports/service.py'),
+              '__BLOB_REPORT_TASKS__': blob('backend/apps/reports/tasks.py'),
+              '__BLOB_CORE_VIEWS__': blob('backend/apps/core/views.py'),
+              '__BLOB_CORE_SECURITY__': blob('backend/apps/core/security.py'),
+              '__BLOB_MARGIN__': blob('backend/apps/trading/margin.py'),
+              '__BLOB_BOUNDARY__': blob('backend/apps/trading/boundary.py'),
+              '__BLOB_HOSTING__': blob('backend/apps/operations/hosting.py'),
+              '__BLOB_BACKUPS__': blob('backend/apps/operations/backups.py'),
+              '__BLOB_MONITORING__': blob('backend/apps/operations/monitoring.py'),
+              '__BLOB_ACCEPTANCE__': blob('backend/apps/operations/acceptance.py'),
+              '__BLOB_TELEGRAM_CLIENT__': blob('backend/apps/signals/telegram_client.py'),
+              '__BLOB_TELEGRAM_INGESTION__': blob('backend/apps/signals/telegram_ingestion.py'),
+              '__BLOB_LIVE_ORDERS__': blob('backend/apps/exchanges/live_orders.py'),
+              '__BLOB_NOBITEX__': blob('backend/apps/exchanges/nobitex.py'),
+              '__BLOB_LBANK__': blob('backend/apps/exchanges/lbank.py'),
+              '__BLOB_SPOT_V3__': blob('backend/apps/exchanges/spot_v3.py'),
+              '__BLOB_BITUNIX__': blob('backend/apps/exchanges/bitunix.py'),
+              '__BLOB_SECURITY_SCAN__': blob('scripts/security_scan.py'),
+          }
+          path = Path('dist/cryptosniper-stage21-run.sh')
+          text = path.read_text()
+          for old, new in substitutions.items():
+              if old not in text:
+                  raise SystemExit('Missing placeholder ' + old)
+              text = text.replace(old, new)
+          if re.search(r'__[A-Z0-9_]+__', text):
+              raise SystemExit('Unexpanded placeholders')
+          path.write_text(text)
+          PY
+          chmod +x dist/cryptosniper-stage21-run.sh
+          bash -n dist/cryptosniper-stage21-run.sh
+          printf 'SOURCE=%s\nCI=https://github.com/ostaddehdari/CryptoSniper/commit/%s/checks\nMODE=Telegram and five Spot adapters; live writes default OFF and provider acceptance pending\n' "$PIN" "$PIN" > dist/runlog.txt
+          bash dist/cryptosniper-stage21-run.sh --check dist/CryptoSniper-Stage21-v0.21.0rc1.zip | tee -a dist/runlog.txt
+          (cd dist && sha256sum CryptoSniper-Stage21-v0.21.0rc1.zip cryptosniper-stage21-run.sh runlog.txt > SHA256SUMS.txt)
+      - name: Save exact deployment bytes for independent verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage21-deployment
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 7
+      - name: Publish immutable cumulative prerelease
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG=stage21-v0.21.0rc1-deploy
+          PIN=$(git rev-parse HEAD)
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo 'Release already exists; immutable assets were not replaced.'
+          else
+            gh release create "$TAG" dist/* --target "$PIN" --prerelease \
+              --title "CryptoSniper Stage21 — cumulative v0.21.0rc1" \
+              --notes "Cumulative Stages 01-21: encrypted Telethon login/session, durable channel ingestion, bounded template/AI parsing and five Spot adapters for Nobitex, LBank, WEEX, Ourbit and Bitunix. Live writes remain disabled by default; real credentials, provider acceptance, sanctions/legal eligibility and public-host acceptance remain operator responsibilities. Exact-source checks: https://github.com/ostaddehdari/CryptoSniper/commit/$PIN/checks."
+          fi
+          cat dist/SHA256SUMS.txt
+          gh release view "$TAG" --json assets,url

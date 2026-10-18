@@ -424,3 +424,7 @@ def get_adapter(code, *, credentials=None, environment="paper"):
 
 # Load built-in provider registrations after the base contract is defined.
 from . import binance as _binance  # noqa: E402, F401
+from . import bitunix as _bitunix  # noqa: E402, F401
+from . import lbank as _lbank  # noqa: E402, F401
+from . import nobitex as _nobitex  # noqa: E402, F401
+from . import spot_v3 as _spot_v3  # noqa: E402, F401

@@ -1,4 +1,4 @@
-"""Machine-readable Stage20 base-product delivery contract."""
+"""Machine-readable Stage21 product delivery contract."""
 
 from django.conf import settings
 
@@ -12,9 +12,9 @@ def base_product_acceptance():
         "source_revision": settings.SOURCE_REVISION,
         "environment": settings.DEPLOYMENT_ENVIRONMENT,
         "status": "base_product_ready_for_operator_acceptance",
-        "paper_only": True,
-        "real_order_writes": False,
-        "accepted_inputs": ["manual", "smart_paste"],
+        "paper_only": not settings.LIVE_TRADING_ENABLED,
+        "real_order_writes": bool(settings.LIVE_TRADING_ENABLED),
+        "accepted_inputs": ["manual", "smart_paste", "telegram_feature_gated"],
         "accepted_markets": ["spot_long", "margin_long", "margin_short"],
         "accepted_pipeline": [
             "preview",
@@ -32,10 +32,10 @@ def base_product_acceptance():
             "checklist": "docs/acceptance/stage20-checklist.md",
         },
         "deferred": {
-            "telegram": "stage21",
-            "channel_templates": "stage21",
-            "channel_ai": "stage21",
+            "telegram_real_account_validation": "credentials_required",
+            "channel_ai_provider_validation": "provider_credentials_required",
             "real_binance_writes": "disabled_not_verified",
+            "five_exchange_live_validation": "credentials_required",
         },
         "operator_checks_required": [
             "install immutable package on the target host",

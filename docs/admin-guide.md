@@ -1,6 +1,6 @@
-# راهنمای ادمین نسخه پایه 0.20
+# راهنمای ادمین نسخه 0.21
 
-Production به Python 3.12، PostgreSQL 16، Redis 7، HTTPS، فضای backup و هفت Worker دائمی برای `orders,reports,signals,market_data,trailing,alerts,maintenance` به‌علاوه دقیقاً یک Beat نیاز دارد. Node.js در runtime لازم نیست.
+Production به Python 3.12، PostgreSQL 16، Redis 7، HTTPS، فضای backup، هفت Worker دائمی برای `orders,reports,signals,market_data,trailing,alerts,maintenance`، یک Beat و سرویس مستقل `cryptosniper-telegram` نیاز دارد. Node.js در runtime لازم نیست.
 
 ## پیش از انتشار
 
@@ -17,4 +17,10 @@ Production به Python 3.12، PostgreSQL 16، Redis 7، HTTPS، فضای backup 
 
 freshness هر هفت Worker، Beat، عمق صف، قدیمی‌ترین outbox، feed lag، dead-letter و خطای حساب را پایش کنید. در رخداد، ورود جدید را pause کنید، وضعیت receipt/provider را reconcile کنید و نتیجه نامعلوم را موفق فرض نکنید. rollback باید با سازگاری migration و حفظ audit انجام شود.
 
-اجرای واقعی Binance عمداً غیرفعال است. فعال‌کردن آن، افزودن Telethon یا ذخیره secret در مخزن خارج از دامنه این انتشار است.
+## Telegram، AI و صرافی‌های Spot
+
+ورود Telegram از UI محافظت‌شده با step-up انجام می‌شود؛ session/API hash رمزنگاری‌شده‌اند. سلامت `cryptosniper-telegram` و heartbeat آن را پایش کنید. AI اختیاری است و بدون endpoint/model/key پیکربندی‌شده صریحاً blocked می‌ماند؛ کلید را فقط در secret store محیط قرار دهید.
+
+پنج provider `nobitex,lbank,weex,ourbit,bitunix` حاضرند. برای هر حساب کلید Read+Spot بدون Withdrawal و IP allowlist بسازید. ابتدا اتصال و sync بدون پول را بررسی کنید. `LIVE_TRADING_ENABLED=false` پیش‌فرض است؛ تنها پس از بررسی حقوقی، permission واقعی، limits/precision و سفارش کم‌ریسک کنترل‌شده آن را در `.env` به `true` تغییر و سرویس‌های Web/Orders را restart کنید. این متغیر Full-Auto Telegram را Live نمی‌کند؛ آن مسیر همیشه Paper است.
+
+Futures/Perpetual و Margin واقعی غیرفعال‌اند. هر `uncertain` باید با client/exchange order ID در provider reconcile شود و هرگز خودکار retry نشود. Nobitex و هر provider دیگر فقط پس از بررسی تحریم، حوزه قضایی و eligibility کاربر استفاده شود.

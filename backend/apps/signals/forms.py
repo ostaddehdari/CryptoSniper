@@ -4,7 +4,7 @@ from django import forms
 
 from apps.exchanges.models import ExchangeMarket, UserExchangeAccount
 
-from .models import SignalSource
+from .models import SignalSource, TelegramChannel
 
 
 class ReceiveForm(forms.Form):
@@ -91,3 +91,62 @@ class ReviewForm(forms.Form):
                 {"price": data[key]} for key in ("tp1", "tp2", "tp3") if data.get(key) is not None
             ],
         }
+
+
+class TelegramConnectForm(forms.Form):
+    api_id = forms.IntegerField(label="Telegram API ID", min_value=1)
+    api_hash = forms.CharField(
+        label="Telegram API Hash",
+        max_length=128,
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+    )
+    phone = forms.CharField(
+        label="شماره با کد کشور",
+        max_length=32,
+        widget=forms.TextInput(attrs={"placeholder": "+98…", "autocomplete": "tel"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs["class"] = "input"
+
+
+class TelegramCodeForm(forms.Form):
+    code = forms.CharField(label="کد ورود Telegram", max_length=20)
+    password = forms.CharField(
+        label="رمز دومرحله‌ای (اگر فعال است)",
+        max_length=256,
+        required=False,
+        widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs["class"] = "input"
+
+
+class TelegramChannelForm(forms.Form):
+    peer_id = forms.ChoiceField(label="کانال قابل دسترس")
+    parse_mode = forms.ChoiceField(label="روش تحلیل", choices=TelegramChannel.ParseMode.choices)
+    automation = forms.ChoiceField(label="اتوماسیون", choices=TelegramChannel.Automation.choices)
+    template = forms.JSONField(
+        label="قالب JSON",
+        required=False,
+        initial={"version": "1", "aliases": {}},
+        widget=forms.Textarea(attrs={"rows": 5}),
+    )
+    min_confidence = forms.IntegerField(label="حداقل اطمینان فنی", min_value=0, max_value=100)
+    paper_capital = forms.DecimalField(
+        label="سرمایه Full-Auto Paper",
+        max_digits=32,
+        decimal_places=16,
+        min_value=Decimal("0.00000001"),
+    )
+
+    def __init__(self, channel_choices=(), *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["peer_id"].choices = list(channel_choices)
+        for field in self.fields.values():
+            field.widget.attrs["class"] = "input"

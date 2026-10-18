@@ -1,5 +1,7 @@
+import uuid
 from decimal import Decimal
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
@@ -216,3 +218,59 @@ class BalanceSnapshot(models.Model):
         super().clean()
         if self.total_balance != self.free_balance + self.locked_balance:
             raise ValidationError("موجودی کل باید برابر مجموع آزاد و قفل‌شده باشد.")
+
+
+class LiveSpotOrder(models.Model):
+    """Durable direct Spot order. Unknown outcomes are never auto-retried."""
+
+    class State(models.TextChoices):
+        PENDING = "pending", "در صف"
+        SUBMITTING = "submitting", "در حال ارسال"
+        OPEN = "open", "باز"
+        PARTIAL = "partial", "بخشی اجرا شده"
+        FILLED = "filled", "تکمیل‌شده"
+        CANCELLED = "cancelled", "لغوشده"
+        UNCERTAIN = "uncertain", "نتیجه نامعلوم"
+        FAILED = "failed", "ناموفق"
+
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    account = models.ForeignKey(UserExchangeAccount, on_delete=models.PROTECT)
+    market = models.ForeignKey(ExchangeMarket, on_delete=models.PROTECT)
+    request_key = models.UUIDField(default=uuid.uuid4)
+    client_order_id = models.CharField(max_length=80)
+    external_order_id = models.CharField(max_length=120, blank=True)
+    side = models.CharField(max_length=4, choices=(("buy", "خرید"), ("sell", "فروش")))
+    order_type = models.CharField(max_length=8, choices=(("limit", "Limit"), ("market", "Market")))
+    amount = models.DecimalField(max_digits=32, decimal_places=16)
+    price = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
+    filled_amount = models.DecimalField(max_digits=32, decimal_places=16, default=0)
+    average_price = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
+    state = models.CharField(max_length=16, choices=State.choices, default=State.PENDING)
+    error_code = models.CharField(max_length=50, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        constraints = [
+            models.UniqueConstraint(
+                fields=("owner", "request_key"), name="live_spot_order_owner_request_unique"
+            ),
+            models.UniqueConstraint(
+                fields=("account", "client_order_id"),
+                name="live_spot_order_account_client_unique",
+            ),
+            models.CheckConstraint(
+                condition=Q(amount__gt=0), name="live_spot_order_amount_positive"
+            ),
+            models.CheckConstraint(
+                condition=Q(price__isnull=True) | Q(price__gt=0),
+                name="live_spot_order_price_positive",
+            ),
+            models.CheckConstraint(
+                condition=Q(filled_amount__gte=0), name="live_spot_order_filled_nonnegative"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.account.exchange.code}:{self.client_order_id}"

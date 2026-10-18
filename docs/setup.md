@@ -87,3 +87,9 @@ Stage15 محاسبات Decimal و گزارش‌های aggregate/CSV/SVG را ا�
 پس از نصب، readiness عمومی و login باید 200 باشند و APIهای خصوصی deployment، host capabilities و acceptance با نشست معتبر بررسی شوند. نتیجهٔ CI جای restart، restore و مرورگر عمومی VPS را نمی‌گیرد. `CRYPTOSNIPER_BACKUP_PASSPHRASE` را در Git یا log قرار ندهید و مقصد offsite را روی storage مستقل تعریف کنید.
 
 Release رسمی `stage20-v0.20.0rc1-deploy` از commit ثابت `89bb6653a5b24b062373b5ee0ed4539c18c6c1c8` ساخته شده است. `scripts/deploy.sh` فقط ZIP و installer دارای SHA ثابت همین Release را اجرا می‌کند. نصب‌کننده پس از migration یک backup رمزنگاری‌شده اولیه می‌سازد و timerهای روزانه/هفتگی را فعال می‌کند؛ offsite و `HOSTING_RESTORE_ADMIN_URL` همچنان باید متناسب با هاست و خارج Git تنظیم شوند.
+
+## استیج 0.21: Telegram و پنج صرافی Spot
+
+نصب‌کننده 0.21 سرویس `cryptosniper-telegram` را کنار هفت Worker و Beat می‌سازد و `LIVE_TRADING_ENABLED=false` را برای نصب تازه ثبت می‌کند. ارتقا `.env`، keyring، دیتابیس و ورود موجود را حفظ می‌کند. پس از نصب، تنظیمات Telegram و اتصال Nobitex/LBank/WEEX/Ourbit/Bitunix از UI انجام می‌شود؛ secret را در shell history یا مستندات وارد نکنید.
+
+Release 0.21 فقط پس از exact-source CI و `--check` منتشر و سپس `scripts/deploy.sh` به SHA ثابت آن pin می‌شود. تا قبل از آن، دستور deploy جاری هنوز نسخه رسمی قبلی را نصب می‌کند و نباید موفقیت 0.21 تلقی شود.

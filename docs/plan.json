@@ -1176,11 +1176,11 @@
     {
       "id": "S21",
       "number": 21,
-      "title": "Telethon، خواندن کانال‌ها و تحلیل قالبی یا هوش مصنوعی — آخرین استیج",
+      "title": "Telethon، تحلیل کانال و اتصال امن پنج صرافی Spot — آخرین استیج",
       "depends_on": [
         "S20"
       ],
-      "status": "not_started",
+      "status": "partial",
       "source_sections": [
         7,
         23,
@@ -1197,7 +1197,7 @@
           "title": "اتصال Telethon و session امن",
           "deliverables": "اتصال حساب مجاز با API ID/hash و login flow؛ session رمزنگاری‌شده خارج git، disconnect/reconnect و listener دائمی.",
           "acceptance": "کد ورود/رمز دومرحله‌ای/session در log یا پاسخ عمومی افشا نشود؛ اتصال با حساب واقعی مجاز آزمون شود.",
-          "status": "not_started"
+          "status": "partial"
         },
         {
           "id": "S21-W02",
@@ -1205,7 +1205,7 @@
           "title": "کانال‌ها و دریافت پایدار پیام",
           "deliverables": "انتخاب کانال‌های قابل دسترس حساب، history bounded، new/edit/delete، cursor/catch-up، FloodWait و dedup با account+peer+message+revision.",
           "acceptance": "restart پیام را گم/تکرار نکند؛ edit سیگنال معامله‌شده را خودکار تغییر ندهد و delete audit را حذف نکند.",
-          "status": "not_started"
+          "status": "partial"
         },
         {
           "id": "S21-W03",
@@ -1213,7 +1213,7 @@
           "title": "Parser قالبی ویژه کانال",
           "deliverables": "قالب قابل تعریف برای هر کانال، preview روی نمونه‌ها، استخراج pair/entry/≤۳TP/SL/leverage با raw و range محفوظ.",
           "acceptance": "قالب اشتباه و پیام غیرسیگنال Needs Review شوند؛ quality extraction با نمونه برچسب‌خورده سنجیده شود.",
-          "status": "not_started"
+          "status": "partial"
         },
         {
           "id": "S21-W04",
@@ -1221,15 +1221,15 @@
           "title": "تحلیل AI و ارزیابی کانال",
           "deliverables": "انتخاب template/AI/hybrid؛ provider قابل تنظیم، structured output validated، timeout/cost/privacy controls؛ تحلیل قالب، خطا، پوشش، duplicate و آمار کانال.",
           "acceptance": "prompt injection دستور معامله اجرا نکند؛ خروجی AI فقط داده ورودی باشد؛ نبود کلید/provider صریحاً block شود و سود تاریخی بدون داده معتبر ادعا نشود.",
-          "status": "not_started"
+          "status": "partial"
         },
         {
           "id": "S21-W05",
           "number": 5,
-          "title": "UI کانال و automation و پذیرش نهایی",
-          "deliverables": "مدیریت کانال، raw-vs-parsed، تحلیل و Manual/Semi-Auto/Full-Auto با source rules، amount/market/risk limits و اجرای همان موتور.",
-          "acceptance": "Telethon→template یا AI→Inbox/approval یا full-auto→paper trade→TP/SL/trailing→alerts/reports با dedup پاس شود؛ full-auto پیش‌فرض OFF و live فقط با فعال‌سازی صریح محصول.",
-          "status": "not_started"
+          "title": "UI، پنج صرافی Spot و پذیرش نهایی",
+          "deliverables": "مدیریت کانال و raw-vs-parsed؛ Manual/Semi/Full-Auto Paper؛ اتصال Nobitex، LBank، WEEX، Ourbit و Bitunix برای بازار/موجودی و سفارش Spot با outbox پایدار و دروازه صریح Live.",
+          "acceptance": "مسیر Telegram تا Paper با dedup پاس شود؛ adapterها با قرارداد رسمی و پاسخ‌های fixture آزمون شوند؛ Full-Auto و Live پیش‌فرض OFF بمانند و اتصال/سفارش واقعی فقط با کلید محدود و آزمون provider اعلام شود.",
+          "status": "partial"
         }
       ]
     }

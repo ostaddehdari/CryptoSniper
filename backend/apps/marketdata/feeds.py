@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 FRESH_SECONDS = 25
 CACHE_SECONDS = 90
 LOCK_SECONDS = 12
-SUPPORTED_FEEDS = {"simulator", "binance"}
+SUPPORTED_FEEDS = {"simulator", "binance", "nobitex", "lbank", "weex", "ourbit", "bitunix"}
 
 
 def _key(market_id):

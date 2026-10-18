@@ -36,10 +36,10 @@ def release_candidate_status(*, probe_host=False):
         "operations": operations,
         "trading_mode": "paper",
         "real_order_writes": False,
-        "telegram": "deferred_to_stage21",
+        "telegram": "implemented_requires_authorized_account",
         "limitations": [
             "Host/VPS evidence exists only after this command runs on the target host.",
-            "Binance sandbox/live order writes are disabled and unverified.",
-            "Telegram listener and AI/channel analysis are Stage21 scope.",
+            "All real exchange writes remain disabled by default and unverified.",
+            "Telegram and AI require operator-supplied credentials and provider validation.",
         ],
     }

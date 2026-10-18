@@ -1,5 +1,8 @@
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
@@ -8,11 +11,12 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 from apps.accounts.audit import record_audit
 from apps.accounts.security import session_api_required, step_up_required
 
-from .forms import ExchangeConnectionForm
-from .models import Exchange, UserExchangeAccount
+from .forms import ExchangeConnectionForm, LiveSpotOrderForm
+from .live_orders import queue_live_spot_order
+from .models import Exchange, LiveSpotOrder, UserExchangeAccount
 from .security import revoke_account_credentials, rotate_account_credentials
 from .services import latest_balances
-from .tasks import sync_exchange_account
+from .tasks import live_spot_order, sync_exchange_account
 
 
 def _owned_account(user, pk):
@@ -74,9 +78,44 @@ def exchange_account_detail(request, pk):
             "account": account,
             "balances": latest_balances(account),
             "markets": markets,
+            "live_enabled": settings.LIVE_TRADING_ENABLED,
+            "live_order_form": LiveSpotOrderForm(request.user, account),
+            "live_orders": LiveSpotOrder.objects.filter(owner=request.user, account=account)[:20],
             "nav": "exchanges",
         },
     )
+
+
+@login_required
+@require_POST
+@step_up_required
+def submit_live_spot_order(request, pk):
+    account = _owned_account(request.user, pk)
+    form = LiveSpotOrderForm(request.user, account, request.POST)
+    try:
+        if not form.is_valid():
+            errors = [str(item) for values in form.errors.values() for item in values]
+            raise ValidationError("؛ ".join(errors))
+        order, created = queue_live_spot_order(request.user, account, form.cleaned_data)
+        if created:
+            record_audit(
+                "live_spot_order.queued",
+                request=request,
+                user=request.user,
+                metadata={
+                    "order_id": order.pk,
+                    "exchange": account.exchange.code,
+                    "market_id": order.market_id,
+                    "side": order.side,
+                },
+            )
+            live_spot_order.apply_async(args=[order.pk], queue="orders")
+            messages.success(request, "سفارش واقعی با شناسه یکتا در صف امن orders ثبت شد.")
+        else:
+            messages.info(request, "این درخواست قبلاً ثبت شده و دوباره ارسال نشد.")
+    except (ValidationError, IntegrityError, ValueError) as error:
+        messages.error(request, str(error))
+    return redirect("exchange-account-detail", pk=account.pk)
 
 
 @login_required

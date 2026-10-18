@@ -3,6 +3,7 @@
 <a {% if request.resolver_match.url_name == 'sessions' %}class="active" aria-current="page"{% endif %} href="{% url 'sessions' %}">امنیت و نشست‌ها</a>
 <a {% if request.resolver_match.url_name == 'trading-preferences' %}class="active" aria-current="page"{% endif %} href="{% url 'trading-preferences' %}">پیش‌فرض‌های معامله</a>
 <a {% if request.resolver_match.url_name == 'source-settings' %}class="active" aria-current="page"{% endif %} href="{% url 'source-settings' %}">منابع سیگنال</a>
+<a {% if request.resolver_match.url_name == 'telegram-settings' %}class="active" aria-current="page"{% endif %} href="{% url 'telegram-settings' %}">Telegram</a>
 <a href="{% url 'exchange-center' %}">اتصال صرافی‌ها</a>
 <a href="{% url 'alerts' %}">هشدارها</a>
 <a href="{% url 'reports' %}">گزارش عملکرد</a>

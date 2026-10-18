@@ -135,7 +135,7 @@ def test_monitor_requires_every_queue_and_single_beat_receipt(settings, monkeypa
     snapshot = service_snapshot()
     assert snapshot["status"] == "healthy"
     assert snapshot["scheduler"] == {"fresh": True, "single_instance_lease": True}
-    assert snapshot["telegram_listener"] == "reserved_disabled_until_stage21"
+    assert snapshot["telegram_listener"]["status"] == "not_configured"
     WorkerHeartbeat.objects.filter(queue="orders").delete()
     assert service_snapshot()["status"] == "degraded"
 
@@ -173,6 +173,6 @@ def test_release_candidate_keeps_environment_and_live_boundary_explicit(settings
     assert result["status"] == "ready"
     assert result["environment"] == "staging"
     assert result["real_order_writes"] is False
-    assert result["telegram"] == "deferred_to_stage21"
+    assert result["telegram"] == "implemented_requires_authorized_account"
     settings.DEPLOYMENT_ENVIRONMENT = "development"
     assert release_candidate_status()["status"] == "partial"

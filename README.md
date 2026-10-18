@@ -2,7 +2,7 @@
 
 سامانه پایتونی دریافت، اجرای و مدیریت سیگنال رمزارز با Django، PostgreSQL، Redis و Celery، رابط Mobile-First و حالت روشن پیش‌فرض.
 
-**برنامه: ۲۱ استیج × ۵ ورک = ۱۰۵ ورک.** نسخهٔ تجمعی آزمایشی **0.20.0rc1** کد استیج‌های ۱ تا ۲۰ را دارد: ممیزی صادقانه هاست، readiness، مانیتور مستقل، backup رمزنگاری‌شده و پذیرش نسخه پایه Manual/Smart Paste روی Paper Simulator. [CI منبع دقیق](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39115544511) با ۲۲۷ تست و PostgreSQL/Redis/هفت Worker/Beat/Chromium پاس شده و [Release رسمی 0.20](https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage20-v0.20.0rc1-deploy) نیز `CHECK_OK` دارد. اجرای Margin فقط دفتر شبیه‌ساز است؛ ارسال واقعی Binance همچنان غیرفعال و حساب واقعی بررسی‌نشده است. نصب VPS، مرورگر عمومی، restore جدا و offsite تا ارائهٔ لاگ اپراتور باز می‌مانند.
+**برنامه: ۲۱ استیج × ۵ ورک = ۱۰۵ ورک.** کد آزمایشی **0.21.0rc1** همهٔ استیج‌ها را دارد: Telethon و تحلیل کانال، و adapterهای Spot برای Nobitex، LBank، WEEX، Ourbit و Bitunix. دریافت بازار/نوسان، موجودی شخصی و سفارش Spot پیاده شده، اما credential واقعی هیچ provider آزمون نشده و `LIVE_TRADING_ENABLED=false` است. Full-Auto Telegram فقط Paper/Simulator می‌ماند؛ Futures/Perpetual و Margin واقعی غیرفعال‌اند. Release 0.21 و پذیرش VPS فقط پس از exact-source CI و شواهد اپراتور معتبر خواهند بود.
 
 - [گزارش تحویل و شواهد استیج ۱](docs/reports/stage-01.md)
 - [گزارش تحویل و شواهد استیج ۲](docs/reports/stage-02.md)
@@ -15,6 +15,7 @@
 - [شبیه‌ساز کامل و اعتبارسنجی Paper استیج ۱۸](docs/reports/stage-18.md)
 - [استقرار و عملیات استیج ۱۹](docs/reports/stage-19.md)
 - [پذیرش نسخه پایه استیج ۲۰](docs/reports/stage-20.md)
+- [Telethon، تحلیل کانال و پنج صرافی Spot در استیج ۲۱](docs/reports/stage-21.md)
 - [راهنمای کاربر](docs/user-guide.md) و [راهنمای ادمین](docs/admin-guide.md)
 - [راهنمای نصب و اجرا](docs/setup.md)
 - [بررسی خودکار در GitHub Actions](https://github.com/ostaddehdari/CryptoSniper/actions)
@@ -26,11 +27,11 @@
 - [برنامه ماشینی](docs/plan.json) و [وضعیت اجرا](docs/progress.json)
 - [متن اصلی پروپوزال](docs/source/proposal-original.txt)
 
-نسخه نخست: Spot و Margin؛ Futures و Perpetual برای آینده. Manual Entry و Smart Paste در نسخه پایه آماده می‌شوند. **اتصال Telethon، خواندن کانال‌ها و تحلیل قالبی یا هوش مصنوعی فقط آخرین استیج، S21، هستند.**
+نسخه نخست: Paper Spot/Margin و Live Spot محدود؛ Futures و Perpetual برای آینده. Manual Entry، Smart Paste و اتصال Telethon/کانال در S21 حاضرند. Live فقط با کلید Read+Spot بدون برداشت، IP allowlist و فعال‌سازی صریح ادمین مجاز است.
 
 برای ادامه:
 
-> نسخهٔ تجمعی 0.20 را با `--check` بررسی و سپس روی VPS نصب کن. مرحله بعد S21 است و فقط با درخواست جدید اجرا می‌شود؛ تأیید حساب واقعی Binance همچنان باز است.
+> Release 0.21 را پس از سبزشدن CI با `--check` بررسی و سپس روی VPS نصب کن؛ بعد credentialها را فقط در UI رمزنگاری‌شده وارد و اتصال خواندنی را پیش از Live تأیید کن.
 
 پس از اتمام، همین دستور با شماره استیج بعد اجرا می‌شود. درخواست یک استیج مجوز رفتن خودکار به استیج بعد نیست. ثبت کد در GitHub به‌معنی مجوز اجرای معامله با پول واقعی یا استقرار روی سرور تعیین‌نشده نیست.
 

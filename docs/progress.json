@@ -1065,10 +1065,11 @@
         }
       ],
       "commit_shas": [
-        "d9066a8",
-        "aa7d0ad",
-        "5685117",
-        "af87d22"
+        "7250057728c917a04adca9273cbf4f3b6d4051fc",
+        "89d350faa5bab102efe6ac1f2dd40bf4a97269b5",
+        "7846b3314cf35f280ff677d3bd4a36d13683d9b6",
+        "320178995dee83f9c3aed5e6b1ecaa7cfee1986e",
+        "a8e520bd2af28646889303e4e2ef07578682a743"
       ],
       "blockers": [
         "No authorized real Telegram account/channel or AI provider key was supplied.",

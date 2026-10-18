@@ -31,6 +31,6 @@
 - secretها رمزنگاری می‌شوند و در log، URL یا HTML بازگردانده نمی‌شوند.
 - task پیش از write مجوز provider را دوباره می‌سنجد؛ کلید برداشت‌دار رد می‌شود.
 - نتیجه نامعلوم سفارش retry نمی‌شود. Live و Full-Auto پیش‌فرض خاموش‌اند؛ Full-Auto فقط Paper است.
-- Ruff، compileall، Django system check و migration drift پاس شدند؛ ۱۷ آزمون خالص adapter/Telegram پاس شدند.
+- Ruff، compileall، Django system check و migration drift پاس شدند؛ ۱۷ آزمون adapter/Telegram و ۲ آزمون قرارداد نصب‌کننده پاس شدند.
 - PostgreSQL محلی حاضر نبود؛ مجموعه کامل PostgreSQL/Redis/Workers/Beat/Chromium باید در exact-source CI ثبت شود.
 - نصب VPS و اتصال‌های واقعی هنوز شواهد ندارند، بنابراین استیج `partial` می‌ماند.

@@ -1,12 +1,14 @@
 """Stage 17 security regressions; deliberately uses hostile inputs."""
 
 import json
+from datetime import timedelta
 
 import pytest
 from apps.core.security import validate_public_https_url
 from apps.exchanges.models import Exchange
 from django.core.exceptions import ValidationError
 from django.urls import reverse
+from django.utils import timezone
 
 
 @pytest.mark.parametrize(
@@ -146,3 +148,41 @@ def test_two_factor_readiness_is_honest_and_step_up_rotates_session(client, djan
     assert client.post(reverse("security-step-up"), {"password": "wrong"}).status_code == 200
     assert client.post(reverse("security-step-up"), {"password": "right-pass"}).status_code == 302
     assert client.session.session_key != old_key
+
+
+@pytest.mark.django_db
+def test_parser_api_rate_limit_and_global_payload_cap(client, django_user_model, settings):
+    user = django_user_model.objects.create_user(username="limited-user")
+    client.force_login(user)
+    settings.PARSER_RATE_LIMIT_PER_MINUTE = 2
+    endpoint = reverse("api-smart-paste")
+    payload = json.dumps({"text": "BTCUSDT Entry 65000 TP 70000 SL 60000"})
+    assert client.post(endpoint, payload, content_type="application/json").status_code in {200, 201}
+    assert client.post(endpoint, payload, content_type="application/json").status_code in {200, 201}
+    limited = client.post(endpoint, payload, content_type="application/json")
+    assert limited.status_code == 429 and limited["Retry-After"] == "60"
+    oversized = client.post(endpoint, b"x" * 300000, content_type="application/json")
+    assert oversized.status_code == 413
+
+
+@pytest.mark.django_db
+def test_retention_removes_only_expired_ephemeral_records(django_user_model):
+    from apps.accounts.models import AuditLog, PasswordResetRequest, UserSession
+    from apps.accounts.retention import minimize_expired_security_data, retained_audit_events
+
+    user = django_user_model.objects.create_user(username="retention-user")
+    reset = PasswordResetRequest.objects.create(
+        owner=user, token_digest="a" * 64, expires_at=timezone.now() - timedelta(days=10)
+    )
+    session = UserSession.objects.create(
+        owner=user,
+        session_key="r" * 40,
+        expires_at=timezone.now() - timedelta(days=40),
+        revoked_at=timezone.now() - timedelta(days=31),
+    )
+    audit = AuditLog.objects.create(owner=user, event_type="security.retained", metadata={})
+    result = minimize_expired_security_data()
+    assert result["password_resets"] and result["sessions"]
+    assert not PasswordResetRequest.objects.filter(pk=reset.pk).exists()
+    assert not UserSession.objects.filter(pk=session.pk).exists()
+    assert retained_audit_events(user).filter(pk=audit.pk).exists()

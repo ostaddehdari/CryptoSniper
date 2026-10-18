@@ -21,7 +21,8 @@ from .forms import (
     SignInForm,
     TradingPreferencesForm,
 )
-from .models import AuditLog, PasswordResetRequest, TradingPreferences, User, UserSession
+from .models import PasswordResetRequest, TradingPreferences, User, UserSession
+from .retention import retained_audit_events
 from .security import (
     clear_login_failures,
     login_attempts,
@@ -307,7 +308,7 @@ def api_trading_preferences(request):
 @never_cache
 @require_http_methods(["GET"])
 def audit_events(request):
-    events = AuditLog.objects.filter(owner=request.user)[:100]
+    events = retained_audit_events(request.user)[:100]
     return render(
         request,
         "accounts/audit_events.html",

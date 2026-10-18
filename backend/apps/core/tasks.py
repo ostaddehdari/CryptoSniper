@@ -39,3 +39,10 @@ def worker_heartbeat():
     cache.set(
         "worker_heartbeat", {"seen_at": timezone.now().isoformat(), "pid": os.getpid()}, timeout=90
     )
+
+
+@shared_task(name="core.minimize_private_data")
+def minimize_private_data():
+    from apps.accounts.retention import minimize_expired_security_data
+
+    return minimize_expired_security_data()

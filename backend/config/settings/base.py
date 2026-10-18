@@ -39,6 +39,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.core.rate_limits.RequestLimitMiddleware",
     "apps.accounts.middleware.SessionTrackingMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -91,6 +92,11 @@ PASSWORD_RESET_TIMEOUT = 60 * 30
 DEFAULT_FROM_EMAIL = "CryptoSniper <noreply@localhost>"
 AUTH_LOGIN_MAX_ATTEMPTS = 5
 AUTH_LOGIN_WINDOW_SECONDS = 15 * 60
+REQUEST_BODY_MAX_BYTES = 256 * 1024
+API_RATE_LIMIT_PER_MINUTE = 120
+PARSER_RATE_LIMIT_PER_MINUTE = 10
+SUBSCRIPTION_RATE_LIMIT_PER_MINUTE = 60
+AUDIT_RETENTION_DAYS = 365
 X_FRAME_OPTIONS = "DENY"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
@@ -239,4 +245,9 @@ CELERY_BEAT_SCHEDULE["portfolio-display-refresh"] = {
     "task": "marketdata.refresh_portfolio",
     "schedule": 20.0,
     "options": {"queue": "market_data", "expires": 18},
+}
+CELERY_BEAT_SCHEDULE["private-data-retention"] = {
+    "task": "core.minimize_private_data",
+    "schedule": 86400.0,
+    "options": {"queue": "maintenance", "expires": 3600},
 }

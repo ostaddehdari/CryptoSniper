@@ -1,15 +1,5 @@
 name: Build Stage22 cumulative deployment
 on:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/release-stage22.yml
-      - backend/**
-      - docs/**
-      - scripts/**
-      - tests/**
-      - pyproject.toml
-      - uv.lock
   workflow_dispatch:
 permissions:
   contents: write

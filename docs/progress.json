@@ -1106,7 +1106,9 @@
       "status": "partial",
       "completed_works": ["S22-W01", "S22-W02", "S22-W03", "S22-W04", "S22-W05"],
       "checks": [
-        {"name": "Local Ruff, Django schema checks and focused Stage22 tests", "status": "passed_local_fallback", "notes": "PostgreSQL/Redis were unavailable in the local build container; exact-source CI and release evidence remain pending."}
+        {"name": "Local Ruff, Django schema checks and focused Stage22 tests", "status": "passed"},
+        {"name": "Exact-source PostgreSQL/Redis/Workers/Beat/Chromium CI", "status": "passed", "tested_commit": "cfce4d3a19f0bc2df56aae15175b80255a940f51", "tests_passed": 260, "run_url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/39136150786"},
+        {"name": "Immutable Stage22 package and CHECK_OK release", "status": "passed", "source_commit": "cfce4d3a19f0bc2df56aae15175b80255a940f51", "archive_sha256": "8614ebae00367167dbe1f3144db559e194304783b185f1fd3a59dc324e91563a", "installer_sha256": "5ce7a432df677af03ff910df0e9ba39a93d4c53530d388a686fb358621c3b251", "release_url": "https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage22-v0.22.0rc1-deploy"}
       ],
       "commit_shas": [
         "5212df1def772a6ec1a061e3fe3bab59c31cf9cd",
@@ -1118,12 +1120,12 @@
       "blockers": [
         "No authorized real Telegram account/channel was supplied, so code delivery, full archive and FloodWait behavior need operator acceptance.",
         "Historical evaluation currently uses Binance public one-hour OHLC evidence; provider-specific candles for the five connected exchanges are not claimed.",
-        "Target VPS installation, public HTTPS acceptance and exact-source CI/release are pending.",
+        "Target VPS installation and public HTTPS acceptance are pending.",
         "Live trading remains disabled by default and historical imports never create trades."
       ],
-      "implementation": "Five Stage22 works implemented: secure verification lifecycle, resumable first-message archive, versioned multi-template classification, conservative OHLC outcome evaluation, owner-scoped analytics/API and cumulative deployment preparation.",
+      "implementation": "Five Stage22 works implemented and exact-source CI/release completed: secure verification lifecycle, resumable first-message archive, versioned multi-template classification, conservative OHLC outcome evaluation, owner-scoped analytics/API and cumulative verified deployment.",
       "release_tag": "stage22-v0.22.0rc1-deploy",
-      "release_commit": null
+      "release_commit": "cfce4d3a19f0bc2df56aae15175b80255a940f51"
     }
   }
 }

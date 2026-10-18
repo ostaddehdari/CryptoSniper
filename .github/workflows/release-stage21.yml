@@ -1,13 +1,5 @@
 name: Build Stage21 cumulative deployment
 on:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/release-stage21.yml
-      - backend/**
-      - tests/**
-      - pyproject.toml
-      - uv.lock
   workflow_dispatch:
 permissions:
   contents: write

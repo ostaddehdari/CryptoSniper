@@ -1067,7 +1067,7 @@
       "depends_on": [
         "S18"
       ],
-      "status": "not_started",
+      "status": "partial",
       "source_sections": [
         59,
         60,
@@ -1081,7 +1081,7 @@
           "title": "بررسی قابلیت هاست",
           "deliverables": "Python پشتیبانی‌شده، PostgreSQL، Redis، outbound HTTPS، Worker دائمی، scheduler، HTTPS و storage؛ WSGI/ASGI.",
           "acceptance": "checklist قابلیت واقعی هاست ثبت شود؛ نبود Worker با process/browser workaround پنهان نشود.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S19-W02",
@@ -1089,7 +1089,7 @@
           "title": "بسته استقرار Web و assets",
           "deliverables": "production settings، static collect، migrations، HTTPS/reverse proxy یا دستورالعمل panel؛ Node runtime لازم نیست.",
           "acceptance": "استقرار آزمایشی از نسخه مشخص و readiness API/UI موفق شود.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S19-W03",
@@ -1097,7 +1097,7 @@
           "title": "Worker/Beat/Monitor دائمی",
           "deliverables": "process supervision، shutdown امن، تنها یک Beat، queue routing و آماده‌سازی process slot تلگرام برای استیج ۲۱.",
           "acceptance": "restart خودکار و health/alert عملکرد مستقل از مرورگر را اثبات کند.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S19-W04",
@@ -1105,7 +1105,7 @@
           "title": "Backup و Restore و rollback",
           "deliverables": "backup روزانه/هفتگی، encrypted offsite، retention، restore test و rollback سازگار با migration.",
           "acceptance": "restore در DB جدا و rollback آزمایشی بدون ازبین‌بردن audit قابل انجام باشد.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S19-W05",
@@ -1113,7 +1113,7 @@
           "title": "Runbook و release candidate",
           "deliverables": "monitoring Worker/queue/feed/exchange، نصب/ارتقا، ظرفیت measured و تفکیک staging/live.",
           "acceptance": "URL/checks واقعی و محدودیت هاست گزارش شوند؛ بدون دسترسی هاست استقرار واقعی done نشود.",
-          "status": "not_started"
+          "status": "done"
         }
       ]
     },
@@ -1124,7 +1124,7 @@
       "depends_on": [
         "S19"
       ],
-      "status": "not_started",
+      "status": "partial",
       "source_sections": [
         64,
         69,
@@ -1137,7 +1137,7 @@
           "title": "پذیرش Manual و Smart Paste",
           "deliverables": "کاربر غیرتوسعه‌دهنده ورود، source، exchange، amount، parse/preview و trade را با رابط اجرا کند.",
           "acceptance": "دو مسیر تا position close بدون دخالت shell توسعه‌دهنده کامل شوند.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S20-W02",
@@ -1145,7 +1145,7 @@
           "title": "پذیرش Spot/Margin و exits",
           "deliverables": "TP ۱۰/۱۰/۸۰، SL، step trailing و Percentage با لغو TP و عبور TP3.",
           "acceptance": "سناریوهای long/short مجاز و capability blocked با شواهد واقعی پاس شوند.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S20-W03",
@@ -1153,7 +1153,7 @@
           "title": "پذیرش Alerts/Reports/UI",
           "deliverables": "هشدارهای عمومی/مرتبط، notification، P/L/fee، history و تمام صفحات موبایل/دسکتاپ.",
           "acceptance": "اعداد و timeline با داده مرجع و تنظیم timezone تطبیق داشته باشند.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S20-W04",
@@ -1161,7 +1161,7 @@
           "title": "پذیرش recovery و امنیت",
           "deliverables": "crash/retry/duplicate، restart سرور، قطع مرورگر، اختلاف exchange، backup restore و access control.",
           "acceptance": "داده/سفارش مضاعف و نشت اطلاعات رخ ندهد؛ findings بحرانی صفر باشند.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S20-W05",
@@ -1169,7 +1169,7 @@
           "title": "تحویل نسخه پایه",
           "deliverables": "راهنمای کاربر/ادمین، فهرست تست و limitations، changelog و release tag فقط برای معیارهای پاس‌شده.",
           "acceptance": "نسخه بدون تلگرام کامل اعلام شود؛ قابلیت Telethon و AI هنوز promised/done معرفی نشود.",
-          "status": "not_started"
+          "status": "done"
         }
       ]
     },

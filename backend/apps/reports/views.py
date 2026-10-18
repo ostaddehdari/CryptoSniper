@@ -39,6 +39,7 @@ def api_report(request):
     return JsonResponse(
         {
             "errors": form.errors,
+            "timezone": request.user.timezone,
             "period": dataset["period"],
             "group": dataset["group"],
             "total": dataset["total"],

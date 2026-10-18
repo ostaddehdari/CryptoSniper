@@ -260,6 +260,8 @@ def main():
                 page.screenshot(path=str(artifacts / "reports16-mobile.png"), full_page=True)
                 page.set_viewport_size({"width": 1440, "height": 1000})
                 page.screenshot(path=str(artifacts / "reports16-desktop.png"), full_page=True)
+                assert user.timezone in page.content()
+                print("PASS S20 alerts, notification, fee/P&L report and account timezone UI")
                 page.goto(base + f"/paper/{paper.pk}/")
                 page.screenshot(
                     path=str(artifacts / "paper-trailing-closed-desktop.png"), full_page=True

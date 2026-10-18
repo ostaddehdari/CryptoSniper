@@ -55,3 +55,44 @@ def test_acceptance_capability_matrix_never_claims_live_or_futures():
     assert matrix["adapters"]["simulator_margin_long_short"] == "implemented_and_tested"
     assert matrix["adapters"]["binance_live_write"] == "disabled_not_verified"
     assert matrix["real_order_writes"] is False
+
+
+@pytest.mark.django_db
+def test_alert_notification_report_fee_timeline_and_timezone_acceptance(client, django_user_model):
+    from apps.alerts.engine import evaluate
+    from apps.alerts.models import Notification, PriceAlert
+    from apps.reports.aggregation import rebuild_user_reports
+    from apps.trading.models import TradeEvent
+    from django.utils import timezone
+
+    owner = django_user_model.objects.create_user(
+        username="accept-report20", timezone="Asia/Tehran"
+    )
+    trade = paper_trade(owner)
+    alert = PriceAlert.objects.create(
+        owner=owner,
+        market=trade.market,
+        title="پذیرش هشدار Stage20",
+        kind="price",
+        direction="above",
+        threshold="66000",
+        reference_price="65000",
+        reference_at=timezone.now(),
+        reference_source="paper",
+    )
+    assert (
+        evaluate(alert.pk, price="67000", observed_at=timezone.now(), source="simulator") == "fired"
+    )
+    assert Notification.objects.filter(owner=owner, event__alert=alert).count() == 1
+    process_paper_price(trade.pk, price="70000", event_key="accept-report-close")
+    rebuild_user_reports(owner.pk)
+    client.force_login(owner)
+    response = client.get("/api/v1/reports/?period=day&group=total")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["timezone"] == "Asia/Tehran" and payload["rows"]
+    assert Decimal(payload["rows"][0]["fees"]) > 0
+    assert Decimal(payload["rows"][0]["net_realized"]) != Decimal(0)
+    assert TradeEvent.objects.filter(trade=trade, event_type="PAPER_CLOSED").count() == 1
+    for url in ("/alerts/", "/notifications/", "/reports/", f"/paper/{trade.pk}/"):
+        assert client.get(url).status_code == 200

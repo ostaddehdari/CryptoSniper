@@ -74,6 +74,20 @@ def revoke_telegram_credentials(account):
     account.phone_hint = ""
     account.status = account.Status.DISCONNECTED
     account.last_error = ""
+    account.verification_sent_at = None
+    account.verification_expires_at = None
+    account.verification_resend_at = None
+    account.verification_attempts = 0
     account.save(
-        update_fields=("credentials_encrypted", "phone_hint", "status", "last_error", "updated_at")
+        update_fields=(
+            "credentials_encrypted",
+            "phone_hint",
+            "status",
+            "last_error",
+            "verification_sent_at",
+            "verification_expires_at",
+            "verification_resend_at",
+            "verification_attempts",
+            "updated_at",
+        )
     )

@@ -136,7 +136,8 @@ def telegram_settings(request):
     if request.method == "POST":
         action = request.POST.get("action")
         try:
-            if action in {"connect", "code", "revoke"} and not has_recent_step_up(request):
+            sensitive_actions = {"connect", "resend", "code", "revoke"}
+            if action in sensitive_actions and not has_recent_step_up(request):
                 raise ValidationError(
                     "برای تغییر credential ابتدا در /settings/security/step-up/ رمز را تأیید کنید."
                 )
@@ -153,6 +154,16 @@ def telegram_settings(request):
                     )
                 )
                 messages.success(request, "کد ورود از Telegram درخواست شد.")
+            elif action == "resend":
+                from .telegram_security import get_telegram_credentials
+
+                values = get_telegram_credentials(account)
+                asyncio.run(
+                    request_login_code(
+                        account, int(values["api_id"]), values["api_hash"], values["phone"]
+                    )
+                )
+                messages.success(request, "کد تازه از Telegram درخواست شد.")
             elif action == "code":
                 code_form = TelegramCodeForm(request.POST, prefix="code")
                 if not code_form.is_valid():

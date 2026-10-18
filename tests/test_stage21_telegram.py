@@ -69,3 +69,29 @@ def test_telegram_credentials_are_encrypted_and_owner_bound(settings):
     account.owner_id = 8
     with pytest.raises(ValidationError):
         get_telegram_credentials(account)
+
+
+def test_telegram_verification_code_is_never_persisted(settings):
+    settings.TELEGRAM_CREDENTIAL_KEYS = ["1:MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA="]
+    account = SimpleNamespace(
+        owner_id=9,
+        credential_key_version=1,
+        credentials_encrypted="",
+        phone_hint="",
+    )
+    set_telegram_credentials(
+        account,
+        {
+            "api_id": "123",
+            "api_hash": "secret-hash",
+            "phone": "+989121234567",
+            "session": "session",
+            "phone_code_hash": "telegram-challenge",
+            "code": "91827",
+            "password": "should-not-persist",
+        },
+    )
+    stored = get_telegram_credentials(account)
+    assert "code" not in stored
+    assert "password" not in stored
+    assert "91827" not in account.credentials_encrypted

@@ -113,7 +113,12 @@ class TelegramConnectForm(forms.Form):
 
 
 class TelegramCodeForm(forms.Form):
-    code = forms.CharField(label="کد ورود Telegram", max_length=20)
+    code = forms.CharField(
+        label="کد ورود Telegram",
+        max_length=20,
+        required=False,
+        widget=forms.TextInput(attrs={"inputmode": "numeric", "autocomplete": "one-time-code"}),
+    )
     password = forms.CharField(
         label="رمز دومرحله‌ای (اگر فعال است)",
         max_length=256,
@@ -125,6 +130,12 @@ class TelegramCodeForm(forms.Form):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs["class"] = "input"
+
+    def clean_code(self):
+        code = "".join(str(self.cleaned_data.get("code", "")).split())
+        if code and (not code.isdigit() or not 3 <= len(code) <= 20):
+            raise forms.ValidationError("کد ورود باید فقط شامل رقم باشد.")
+        return code
 
 
 class TelegramChannelForm(forms.Form):

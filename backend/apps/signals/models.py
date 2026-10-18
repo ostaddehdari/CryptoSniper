@@ -238,6 +238,10 @@ class TelegramAccount(models.Model):
     credentials_encrypted = models.TextField(blank=True)
     status = models.CharField(max_length=24, choices=Status.choices, default=Status.DISCONNECTED)
     last_error = models.CharField(max_length=80, blank=True)
+    verification_sent_at = models.DateTimeField(null=True, blank=True)
+    verification_expires_at = models.DateTimeField(null=True, blank=True)
+    verification_resend_at = models.DateTimeField(null=True, blank=True)
+    verification_attempts = models.PositiveSmallIntegerField(default=0)
     connected_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 

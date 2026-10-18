@@ -1,6 +1,7 @@
 """Telethon authorization and listener orchestration with sanitized failures."""
 
 import asyncio
+from datetime import timedelta
 
 from asgiref.sync import sync_to_async
 from django.core.cache import cache
@@ -28,6 +29,10 @@ def _client(values):
 
 
 async def request_login_code(account, api_id, api_hash, phone):
+    now = timezone.now()
+    if account.verification_resend_at and account.verification_resend_at > now:
+        seconds = int((account.verification_resend_at - now).total_seconds()) + 1
+        raise ValidationError(f"برای ارسال دوباره کد {seconds} ثانیه صبر کنید.")
     values = {"api_id": api_id, "api_hash": api_hash, "phone": phone}
     client = _client(values)
     try:
@@ -37,6 +42,10 @@ async def request_login_code(account, api_id, api_hash, phone):
         set_telegram_credentials(account, values)
         account.status = TelegramAccount.Status.AWAITING_CODE
         account.last_error = ""
+        account.verification_sent_at = now
+        account.verification_expires_at = now + timedelta(minutes=10)
+        account.verification_resend_at = now + timedelta(seconds=60)
+        account.verification_attempts = 0
         account.save()
     except FloodWaitError as error:
         raise ValidationError(
@@ -49,29 +58,53 @@ async def request_login_code(account, api_id, api_hash, phone):
 
 
 async def complete_login(account, code, password=""):
+    now = timezone.now()
+    if account.verification_expires_at and account.verification_expires_at <= now:
+        account.status = TelegramAccount.Status.ERROR
+        account.last_error = "verification_expired"
+        account.save(update_fields=("status", "last_error", "updated_at"))
+        raise ValidationError("مهلت کد تمام شده است؛ کد تازه درخواست کنید.")
+    if account.verification_attempts >= 5:
+        raise ValidationError("تعداد تلاش بیش از حد است؛ کد تازه درخواست کنید.")
     values = get_telegram_credentials(account)
     client = _client(values)
     try:
         await client.connect()
-        try:
-            await client.sign_in(
-                phone=values["phone"], code=code, phone_code_hash=values["phone_code_hash"]
-            )
-        except SessionPasswordNeededError:
+        if account.status == TelegramAccount.Status.AWAITING_PASSWORD:
             if not password:
-                account.status = TelegramAccount.Status.AWAITING_PASSWORD
-                account.save(update_fields=("status", "updated_at"))
-                return False
+                raise ValidationError("رمز دومرحله‌ای Telegram لازم است.")
             await client.sign_in(password=password)
+        else:
+            if not code:
+                raise ValidationError("کد ورود Telegram لازم است.")
+            try:
+                await client.sign_in(
+                    phone=values["phone"], code=code, phone_code_hash=values["phone_code_hash"]
+                )
+            except SessionPasswordNeededError:
+                values["session"] = client.session.save()
+                set_telegram_credentials(account, values)
+                account.status = TelegramAccount.Status.AWAITING_PASSWORD
+                account.save(update_fields=("status", "credentials_encrypted", "updated_at"))
+                return False
         values["session"] = client.session.save()
         values.pop("phone_code_hash", None)
         set_telegram_credentials(account, values)
         account.status = TelegramAccount.Status.CONNECTED
         account.connected_at = timezone.now()
         account.last_error = ""
+        account.verification_expires_at = None
+        account.verification_resend_at = None
+        account.verification_attempts = 0
         account.save()
         return True
+    except ValidationError:
+        raise
     except Exception as error:
+        TelegramAccount.objects.filter(pk=account.pk).update(
+            verification_attempts=account.verification_attempts + 1,
+            last_error="verification_rejected",
+        )
         raise ValidationError("کد یا رمز Telegram پذیرفته نشد.") from error
     finally:
         await client.disconnect()

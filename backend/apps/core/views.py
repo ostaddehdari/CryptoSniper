@@ -15,6 +15,8 @@ from django.views.decorators.http import require_GET, require_POST
 from kombu.exceptions import OperationalError
 from redis.exceptions import RedisError
 
+from apps.operations.readiness import engine_readiness
+
 from .health import dependency_status
 from .models import ServiceProbe
 from .tasks import infrastructure_probe
@@ -134,7 +136,16 @@ def system_context():
 @never_cache
 @require_GET
 def system(request):
-    return render(request, "core/system.html", {"nav": "system"})
+    return render(request, "core/system.html", {"nav": "system", "engine": engine_readiness()})
+
+
+@login_required
+@never_cache
+@require_GET
+def api_engine_readiness(request):
+    response = JsonResponse(engine_readiness())
+    response["Cache-Control"] = "no-store"
+    return response
 
 
 @login_required

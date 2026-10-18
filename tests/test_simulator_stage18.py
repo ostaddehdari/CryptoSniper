@@ -290,3 +290,116 @@ def test_cancel_fill_race_cannot_reopen_cancelled_trade(django_user_model):
             price=order.price,
         )
     assert not Position.objects.filter(trade=trade).exists()
+
+
+@pytest.mark.django_db
+def test_readiness_api_reports_provider_limits_without_claiming_live(client, django_user_model):
+    from django.urls import reverse
+
+    user = django_user_model.objects.create_user(username="readiness18")
+    client.force_login(user)
+    payload = client.get(reverse("api-engine-readiness")).json()
+    assert payload["release_mode"] == "paper"
+    assert payload["real_order_writes"] is False
+    assert payload["adapters"]["binance_live_write"] == "disabled_not_verified"
+    assert payload["inputs"]["telegram"] == "deferred_to_s21"
+
+
+@pytest.mark.django_db
+def test_manual_trade_reaches_alert_shutdown_and_financial_report(django_user_model):
+    import uuid
+
+    from apps.alerts.models import PriceAlert
+    from apps.reports.stats import report_statistics
+    from apps.trading.execution import dispatch_paper
+    from apps.trading.exits_engine import process_paper_price
+    from apps.trading.intent import queue_paper_trade
+    from django.utils import timezone
+    from test_trading_stage08 import paper_account, ready_plan
+
+    owner = django_user_model.objects.create_user(username="e2e-manual18")
+    account, market = paper_account(owner)
+    trade, _ = queue_paper_trade(
+        owner, ready_plan(owner, account, market).pk, request_key=uuid.uuid4()
+    )
+    assert dispatch_paper(trade.orders.get().outbox.pk)["status"] == "filled"
+    alert = PriceAlert.objects.create(
+        owner=owner,
+        market=market,
+        trade=trade,
+        title="E2E",
+        kind="price",
+        direction="above",
+        threshold="70000",
+        reference_price="65000",
+        reference_at=timezone.now(),
+        reference_source="paper",
+    )
+    result = process_paper_price(
+        trade.pk, price="70000", observed_at=timezone.now(), event_key="manual-e2e-close"
+    )
+    assert result["status"] == "closed"
+    alert.refresh_from_db()
+    assert not alert.enabled and alert.status == "trade_closed"
+    report = report_statistics(owner)
+    assert report["buckets"][0]["closed_trades"] == 1
+
+
+@pytest.mark.django_db
+def test_smart_paste_origin_reaches_shared_paper_executor(django_user_model):
+    import uuid
+
+    from apps.signals.parsing import parse_for_review
+    from apps.signals.services import receive_signal, transition, update_parsed
+    from apps.signals.sources import get_default_source
+    from apps.tradeplans.forms import ManualTradeForm
+    from apps.tradeplans.service import approve_plan, create_draft
+    from apps.trading.execution import dispatch_paper
+    from apps.trading.intent import queue_paper_trade
+    from test_trading_stage08 import paper_account
+
+    owner = django_user_model.objects.create_user(username="e2e-smart18")
+    account, market = paper_account(owner)
+    source = get_default_source(owner, "smart_paste")
+    raw, _, _ = receive_signal(
+        owner, source, text="BTC/USDT LONG\nEntry: 65000\nTP1: 70000\nSL: 60000"
+    )
+    parsed = parse_for_review(owner, raw.pk)
+    reviewed = update_parsed(
+        owner,
+        raw.pk,
+        expected_revision=parsed.revision,
+        data={
+            "account_id": account.pk,
+            "market_id": market.pk,
+            "side": "long",
+            "entry_price": Decimal("65000"),
+            "stop_loss": Decimal("60000"),
+            "targets": [{"price": Decimal("70000")}],
+        },
+        reason="تأیید E2E Stage18",
+    )
+    signal = transition(owner, raw.pk, expected_revision=reviewed.revision, action="approve")
+    form = ManualTradeForm(
+        owner,
+        {
+            "account": account.pk,
+            "market": market.pk,
+            "source": "smart_paste",
+            "origin_signal": signal.pk,
+            "side": "long",
+            "entry_price": "65000",
+            "stop_loss": "60000",
+            "tp1": "70000",
+            "capital": "50",
+            "leverage": "1",
+            "trailing_distance": "1",
+            "client_token": str(uuid.uuid4()),
+        },
+    )
+    assert form.is_valid(), form.errors
+    plan, _ = create_draft(owner, form.cleaned_data)
+    approve_plan(owner, plan.pk, plan.revision)
+    trade, _ = queue_paper_trade(owner, plan.pk, request_key=uuid.uuid4())
+    assert dispatch_paper(trade.orders.get().outbox.pk)["status"] == "filled"
+    assert trade.signal_id == signal.pk and trade.plan.source == "smart_paste"

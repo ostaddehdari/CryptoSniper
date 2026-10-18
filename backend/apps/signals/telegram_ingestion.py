@@ -148,7 +148,17 @@ def _try_full_auto_paper(channel, signal, parsed):
         return None
 
 
-def ingest_telegram_message(channel_id, message_id, text, *, edited=False, occurred_at=None):
+def ingest_telegram_message(
+    channel_id,
+    message_id,
+    text,
+    *,
+    edited=False,
+    occurred_at=None,
+    ingestion_kind="live",
+    advance_live_cursor=True,
+    allow_automation=True,
+):
     channel = TelegramChannel.objects.select_related("owner", "source").get(pk=channel_id)
     external_id = f"{channel.peer_id}:{message_id}"
     signal, _, revised = receive_signal(
@@ -160,6 +170,7 @@ def ingest_telegram_message(channel_id, message_id, text, *, edited=False, occur
             "message_id": message_id,
             "edited": bool(edited),
             "occurred_at": occurred_at.isoformat() if occurred_at else None,
+            "ingestion_kind": ingestion_kind,
         },
         external_id=external_id,
     )
@@ -171,6 +182,7 @@ def ingest_telegram_message(channel_id, message_id, text, *, edited=False, occur
             "owner": channel.owner,
             "text_checksum": checksum,
             "raw_signal": signal.raw_signal,
+            "occurred_at": occurred_at,
         },
     )
     if revised:
@@ -178,8 +190,10 @@ def ingest_telegram_message(channel_id, message_id, text, *, edited=False, occur
         event.text_checksum = checksum
         event.edited_at = occurred_at or timezone.now()
         event.save(update_fields=("revision", "text_checksum", "edited_at"))
-    if message_id > channel.last_message_id:
-        TelegramChannel.objects.filter(pk=channel.pk).update(last_message_id=message_id)
+    if advance_live_cursor and message_id > channel.live_message_id:
+        TelegramChannel.objects.filter(pk=channel.pk).update(
+            last_message_id=message_id, live_message_id=message_id
+        )
     if created or revised:
         parsed = _suggestion(channel, signal)
         if parsed:
@@ -188,7 +202,8 @@ def ingest_telegram_message(channel_id, message_id, text, *, edited=False, occur
                 parsed,
                 "پیام Telegram تحلیل شد؛ تا عبور سیاست کانال نیازمند بازبینی است.",
             )
-            _try_full_auto_paper(channel, signal, parsed)
+            if allow_automation:
+                _try_full_auto_paper(channel, signal, parsed)
     return {"signal_id": signal.pk, "created": created, "revised": revised}
 
 

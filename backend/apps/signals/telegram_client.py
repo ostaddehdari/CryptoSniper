@@ -157,7 +157,7 @@ async def listen_account(account_id):
     values = await sync_to_async(get_telegram_credentials)(account)
     channels = await sync_to_async(list)(
         TelegramChannel.objects.filter(account=account, enabled=True).values(
-            "id", "peer_id", "last_message_id", "max_catchup"
+            "id", "peer_id", "live_message_id", "max_catchup"
         )
     )
     if not channels:
@@ -201,7 +201,7 @@ async def listen_account(account_id):
         messages = []
         async for message in client.iter_messages(
             entity,
-            min_id=row["last_message_id"],
+            min_id=row["live_message_id"],
             limit=row["max_catchup"],
             reverse=True,
         ):

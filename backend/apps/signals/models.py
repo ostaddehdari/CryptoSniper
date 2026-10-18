@@ -279,6 +279,7 @@ class TelegramChannel(models.Model):
     )
     enabled = models.BooleanField(default=True)
     last_message_id = models.BigIntegerField(default=0)
+    live_message_id = models.BigIntegerField(default=0)
     max_catchup = models.PositiveSmallIntegerField(default=100)
     min_confidence = models.PositiveSmallIntegerField(default=80)
     paper_capital = models.DecimalField(max_digits=32, decimal_places=16, default=Decimal("100"))
@@ -322,6 +323,7 @@ class TelegramMessage(models.Model):
     )
     edited_at = models.DateTimeField(null=True, blank=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
+    occurred_at = models.DateTimeField(null=True, blank=True)
     received_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -334,6 +336,47 @@ class TelegramMessage(models.Model):
 
     def __str__(self):
         return f"{self.channel_id}:{self.message_id}:r{self.revision}"
+
+
+class TelegramBackfillJob(models.Model):
+    """Resumable archive import bounded by the latest message seen when the job starts."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "در صف"
+        RUNNING = "running", "در حال دریافت"
+        PAUSED = "paused", "متوقف"
+        COMPLETED = "completed", "کامل"
+        FAILED = "failed", "ناموفق"
+
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    channel = models.ForeignKey(
+        TelegramChannel, on_delete=models.CASCADE, related_name="backfill_jobs"
+    )
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING)
+    upper_message_id = models.BigIntegerField(default=0)
+    cursor_message_id = models.BigIntegerField(default=0)
+    scanned_messages = models.PositiveBigIntegerField(default=0)
+    imported_messages = models.PositiveBigIntegerField(default=0)
+    skipped_messages = models.PositiveBigIntegerField(default=0)
+    batch_size = models.PositiveSmallIntegerField(default=100)
+    last_error = models.CharField(max_length=80, blank=True)
+    retry_at = models.DateTimeField(null=True, blank=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(batch_size__gte=20) & models.Q(batch_size__lte=500),
+                name="telegram_backfill_batch_range",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.channel_id}:{self.status}:{self.cursor_message_id}"
 
 
 class SignalAIAnalysis(models.Model):

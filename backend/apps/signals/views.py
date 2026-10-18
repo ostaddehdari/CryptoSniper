@@ -13,6 +13,7 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 from apps.accounts.audit import record_audit
 from apps.accounts.security import has_recent_step_up, session_api_required
 
+from .backfill import pause_backfill, process_backfill_batch, start_backfill
 from .forms import (
     ReceiveForm,
     ReviewForm,
@@ -20,7 +21,13 @@ from .forms import (
     TelegramCodeForm,
     TelegramConnectForm,
 )
-from .models import Signal, SignalSource, TelegramAccount, TelegramChannel
+from .models import (
+    Signal,
+    SignalSource,
+    TelegramAccount,
+    TelegramBackfillJob,
+    TelegramChannel,
+)
 from .parsing import parse_for_review
 from .services import receive_signal, snapshot, transition, update_parsed
 from .sources import get_default_source
@@ -216,6 +223,21 @@ def telegram_settings(request):
                 channel.source.save(update_fields=("enabled",))
                 channel.save(update_fields=("enabled", "updated_at"))
                 messages.success(request, "وضعیت کانال تغییر کرد.")
+            elif action == "archive_start":
+                channel = get_object_or_404(
+                    TelegramChannel, owner=request.user, pk=request.POST.get("channel_id")
+                )
+                job, _ = start_backfill(channel)
+                process_backfill_batch.apply_async(args=[job.pk], queue="signals")
+                messages.success(request, "دریافت آرشیو از اولین پیام در صف قرار گرفت.")
+            elif action == "archive_pause":
+                job = get_object_or_404(
+                    TelegramBackfillJob,
+                    owner=request.user,
+                    pk=request.POST.get("job_id"),
+                )
+                pause_backfill(job)
+                messages.success(request, "دریافت آرشیو متوقف شد؛ بعداً قابل ادامه است.")
             elif action == "revoke":
                 revoke_telegram_credentials(account)
                 TelegramChannel.objects.filter(owner=request.user).update(enabled=False)
@@ -240,7 +262,9 @@ def telegram_settings(request):
             "connect_form": connect_form,
             "code_form": code_form,
             "channel_form": channel_form,
-            "channels": TelegramChannel.objects.filter(owner=request.user),
+            "channels": TelegramChannel.objects.filter(owner=request.user).prefetch_related(
+                "backfill_jobs"
+            ),
             "discovered": discovered,
         },
     )

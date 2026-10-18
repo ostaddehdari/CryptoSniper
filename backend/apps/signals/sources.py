@@ -1,4 +1,4 @@
-"""Versioned ingestion contract; no network, Telethon, AI, or parser is invoked."""
+"""Versioned ingestion contract shared by local and final-stage Telegram sources."""
 
 from dataclasses import dataclass
 from typing import Protocol
@@ -35,5 +35,5 @@ def get_default_source(user, method=SignalSource.Method.MANUAL):
 
 
 def ensure_ingress_allowed(source):
-    if not source.enabled or source.method == SignalSource.Method.TELEGRAM:
-        raise ValidationError("این منبع در Stage 06 اجازه دریافت مستقیم ندارد.")
+    if not source.enabled:
+        raise ValidationError("این منبع غیرفعال است.")

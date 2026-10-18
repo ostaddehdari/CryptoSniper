@@ -1,0 +1,199 @@
+"""Telegram dedup/edit/delete handling and optional Paper-only automation."""
+
+import hashlib
+import uuid
+from decimal import Decimal
+
+from django.core.exceptions import ValidationError
+from django.db import transaction
+from django.utils import timezone
+
+from apps.exchanges.models import ExchangeMarket, UserExchangeAccount
+from apps.tradeplans.service import approve_plan, create_draft
+from apps.trading.intent import queue_paper_trade
+from apps.trading.tasks import process_paper
+
+from .ai import analyze_signal
+from .channel_parser import apply_channel_template
+from .models import Signal, TelegramChannel, TelegramMessage
+from .parsing import assess
+from .services import _revision, receive_signal, transition, update_parsed
+
+
+def _current_text(signal):
+    revision = signal.raw_signal.revisions.order_by("-version").first()
+    return revision.text if revision else signal.raw_signal.original_text
+
+
+def _suggestion(channel, signal):
+    result = None
+    if channel.parse_mode in {TelegramChannel.ParseMode.TEMPLATE, TelegramChannel.ParseMode.HYBRID}:
+        result = assess(apply_channel_template(_current_text(signal), channel.template))
+    incomplete = not result or result.get("warnings")
+    if channel.parse_mode == TelegramChannel.ParseMode.AI or (
+        channel.parse_mode == TelegramChannel.ParseMode.HYBRID and incomplete
+    ):
+        ai_result = analyze_signal(signal)
+        if ai_result:
+            ai_result.setdefault("all_targets", ai_result.get("execution_targets", []))
+            ai_result.setdefault("extra_targets", [])
+            ai_result.setdefault("entry_range", None)
+            ai_result.setdefault("futures_mentioned", False)
+            result = assess(ai_result)
+            result["technical_confidence"] = min(
+                result["technical_confidence"], int(ai_result.get("confidence", 0))
+            )
+    return result
+
+
+@transaction.atomic
+def _store_suggestion(signal, parsed, reason):
+    locked = Signal.objects.select_for_update().select_related("raw_signal").get(pk=signal.pk)
+    locked.parsed_payload = {
+        **parsed,
+        "last_parsed_raw_revision": locked.raw_signal.revision_number,
+    }
+    locked.parser_version = str(parsed.get("parser_version", "telegram-v1"))[:40]
+    locked.technical_confidence = int(parsed.get("technical_confidence", 0))
+    locked.status = Signal.Status.NEEDS_REVIEW
+    locked.review_reason = reason
+    locked.revision += 1
+    locked.save()
+    _revision(locked, owner=locked.owner, reason=reason)
+    return locked
+
+
+def _paper_account_and_market(channel, pair):
+    account = (
+        UserExchangeAccount.objects.for_user(channel.owner)
+        .select_related("exchange")
+        .filter(
+            environment="paper",
+            exchange__adapter_code="simulator",
+            status="connected",
+            trading_enabled=True,
+        )
+        .first()
+    )
+    if not account:
+        return None, None
+    market = ExchangeMarket.objects.filter(
+        exchange=account.exchange, symbol=pair, market_type="spot", active=True
+    ).first()
+    return account, market
+
+
+def _try_full_auto_paper(channel, signal, parsed):
+    if channel.automation != TelegramChannel.Automation.FULL_AUTO:
+        return None
+    if (
+        parsed.get("futures_mentioned")
+        or parsed.get("technical_confidence", 0) < channel.min_confidence
+    ):
+        return None
+    account, market = _paper_account_and_market(channel, parsed.get("pair"))
+    if not account or not market or parsed.get("side") != "long":
+        return None
+    targets = [{"price": Decimal(value)} for value in parsed.get("execution_targets", [])[:3]]
+    try:
+        structured = {
+            "account_id": account.pk,
+            "market_id": market.pk,
+            "side": "long",
+            "entry_price": Decimal(parsed["entry"]),
+            "stop_loss": Decimal(parsed["stop_loss"]),
+            "targets": targets,
+        }
+        signal = update_parsed(
+            channel.owner,
+            signal.pk,
+            expected_revision=signal.revision,
+            data=structured,
+            reason="تأیید خودکار محدود به Simulator Paper طبق سیاست کانال",
+        )
+        signal = transition(
+            channel.owner,
+            signal.pk,
+            expected_revision=signal.revision,
+            action="approve",
+            reason="سیاست Full-Auto فقط Paper",
+        )
+        prices = [row["price"] for row in targets]
+        plan, _ = create_draft(
+            channel.owner,
+            {
+                "client_token": uuid.uuid4(),
+                "account": account,
+                "market": market,
+                "origin_signal": signal,
+                "side": "long",
+                "entry_price": Decimal(parsed["entry"]),
+                "stop_loss": Decimal(parsed["stop_loss"]),
+                "tp1": prices[0],
+                "tp2": prices[1] if len(prices) > 1 else None,
+                "tp3": prices[2] if len(prices) > 2 else None,
+                "capital": channel.paper_capital,
+                "leverage": Decimal("1"),
+                "trailing_sl": True,
+                "percentage_trailing": True,
+                "trailing_distance": Decimal("1"),
+            },
+        )
+        plan = approve_plan(channel.owner, plan.pk, plan.revision)
+        trade, created = queue_paper_trade(channel.owner, plan.pk, request_key=uuid.uuid4())
+        if created:
+            process_paper.apply_async(args=[trade.orders.get().outbox.pk], queue="orders")
+        return trade
+    except (ValidationError, ValueError, ArithmeticError, KeyError, IndexError):
+        return None
+
+
+def ingest_telegram_message(channel_id, message_id, text, *, edited=False, occurred_at=None):
+    channel = TelegramChannel.objects.select_related("owner", "source").get(pk=channel_id)
+    external_id = f"{channel.peer_id}:{message_id}"
+    signal, _, revised = receive_signal(
+        channel.owner,
+        channel.source,
+        text=text,
+        payload={
+            "peer_id": channel.peer_id,
+            "message_id": message_id,
+            "edited": bool(edited),
+            "occurred_at": occurred_at.isoformat() if occurred_at else None,
+        },
+        external_id=external_id,
+    )
+    checksum = hashlib.sha256(text.encode()).hexdigest()
+    event, created = TelegramMessage.objects.get_or_create(
+        channel=channel,
+        message_id=message_id,
+        defaults={
+            "owner": channel.owner,
+            "text_checksum": checksum,
+            "raw_signal": signal.raw_signal,
+        },
+    )
+    if revised:
+        event.revision += 1
+        event.text_checksum = checksum
+        event.edited_at = occurred_at or timezone.now()
+        event.save(update_fields=("revision", "text_checksum", "edited_at"))
+    if message_id > channel.last_message_id:
+        TelegramChannel.objects.filter(pk=channel.pk).update(last_message_id=message_id)
+    if created or revised:
+        parsed = _suggestion(channel, signal)
+        if parsed:
+            signal = _store_suggestion(
+                signal,
+                parsed,
+                "پیام Telegram تحلیل شد؛ تا عبور سیاست کانال نیازمند بازبینی است.",
+            )
+            _try_full_auto_paper(channel, signal, parsed)
+    return {"signal_id": signal.pk, "created": created, "revised": revised}
+
+
+def mark_telegram_deleted(channel_id, message_ids):
+    now = timezone.now()
+    return TelegramMessage.objects.filter(
+        channel_id=channel_id, message_id__in=list(message_ids), deleted_at__isnull=True
+    ).update(deleted_at=now)

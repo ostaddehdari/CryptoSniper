@@ -10,6 +10,7 @@ from redis import Redis
 from redis.exceptions import RedisError
 
 from apps.exchanges.models import UserExchangeAccount
+from apps.signals.models import TelegramAccount, TelegramChannel
 from apps.trading.models import ExecutionOutbox, TradeProtection
 
 from .models import WorkerHeartbeat
@@ -43,8 +44,10 @@ def service_snapshot():
         )
     try:
         beat = cache.get("worker_heartbeat")
+        telegram_heartbeat = cache.get("telegram_listener_heartbeat")
     except RedisError:
         beat = None
+        telegram_heartbeat = None
     beat_seen = parse_datetime(beat.get("seen_at", "")) if isinstance(beat, dict) else None
     protections = TradeProtection.objects.filter(coverage=TradeProtection.Coverage.MONITORED)
     ticks = [row.last_tick_at for row in protections.only("last_tick_at") if row.last_tick_at]
@@ -52,11 +55,20 @@ def service_snapshot():
     pending = ExecutionOutbox.objects.exclude(state="done")
     oldest = pending.order_by("created_at").values_list("created_at", flat=True).first()
     errors = UserExchangeAccount.objects.filter(status=UserExchangeAccount.Status.ERROR).count()
+    telegram_accounts = TelegramAccount.objects.filter(status="connected").count()
+    telegram_channels = TelegramChannel.objects.filter(enabled=True).count()
+    telegram_seen = (
+        parse_datetime(telegram_heartbeat.get("seen_at", ""))
+        if isinstance(telegram_heartbeat, dict)
+        else None
+    )
+    telegram_fresh = bool(telegram_seen and now - telegram_seen < timedelta(seconds=60))
     healthy = (
         all(item["fresh"] and item["depth"] is not None for item in queues)
         and bool(beat_seen and now - beat_seen < timedelta(seconds=95))
         and not pending.filter(dead_letter=True).exists()
         and errors == 0
+        and (telegram_accounts == 0 or telegram_fresh)
     )
     return {
         "status": "healthy" if healthy else "degraded",
@@ -69,6 +81,17 @@ def service_snapshot():
         "oldest_pending_seconds": int((now - oldest).total_seconds()) if oldest else 0,
         "feed_lag_seconds": feed_lag,
         "exchange_accounts_in_error": errors,
-        "telegram_listener": "reserved_disabled_until_stage21",
-        "real_order_writes": False,
+        "telegram_listener": {
+            "status": (
+                "not_configured"
+                if telegram_accounts == 0
+                else "healthy"
+                if telegram_fresh
+                else "degraded"
+            ),
+            "fresh": telegram_fresh,
+            "connected_accounts": telegram_accounts,
+            "enabled_channels": telegram_channels,
+        },
+        "real_order_writes": bool(settings.LIVE_TRADING_ENABLED),
     }

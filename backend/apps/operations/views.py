@@ -20,6 +20,18 @@ from apps.trading.models import ExecutionOutbox, TradeProtection
 from .models import AccountControl, ExternalObservation, RecoveryIssue, WorkerHeartbeat
 
 
+@session_api_required
+@never_cache
+@require_GET
+def api_host_capabilities(request):
+    from .hosting import hosting_capabilities
+
+    report = hosting_capabilities()
+    response = JsonResponse(report, status=200 if report["status"] == "ready" else 503)
+    response["Cache-Control"] = "no-store"
+    return response
+
+
 def health_context(user):
     accounts = UserExchangeAccount.objects.filter(owner=user).select_related(
         "exchange", "accountcontrol"

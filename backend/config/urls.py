@@ -70,6 +70,11 @@ urlpatterns = [
     path("operations/", operation_views.center, name="operations"),
     path("operations/<int:pk>/control/", operation_views.control, name="operations-control"),
     path("api/v1/operations/health/", operation_views.api_health, name="api-operations-health"),
+    path(
+        "api/v1/operations/host-capabilities/",
+        operation_views.api_host_capabilities,
+        name="api-host-capabilities",
+    ),
     path("", views.home, name="home"),
     path("auth/login/", account_views.SignInView.as_view(), name="login"),
     path("auth/logout/", account_views.sign_out, name="logout"),

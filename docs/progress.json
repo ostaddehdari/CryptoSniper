@@ -1108,7 +1108,13 @@
       "checks": [
         {"name": "Local Ruff, Django schema checks and focused Stage22 tests", "status": "passed_local_fallback", "notes": "PostgreSQL/Redis were unavailable in the local build container; exact-source CI and release evidence remain pending."}
       ],
-      "commit_shas": ["9892838", "b0737b8", "03d0f57", "c5cfce9"],
+      "commit_shas": [
+        "5212df1def772a6ec1a061e3fe3bab59c31cf9cd",
+        "160aea9176a70cd4332283899122eba53c95f01b",
+        "fa3ad7db6c880ee3e37135303e2456006fa7e0e0",
+        "3320a79859c59c4c9c067f0b979978b15c292b1a",
+        "13c07913184cafbfbcff320300f0421d73cb2590"
+      ],
       "blockers": [
         "No authorized real Telegram account/channel was supplied, so code delivery, full archive and FloodWait behavior need operator acceptance.",
         "Historical evaluation currently uses Binance public one-hour OHLC evidence; provider-specific candles for the five connected exchanges are not claimed.",

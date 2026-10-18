@@ -1,13 +1,13 @@
 {
   "schema_version": "cryptosniper.progress.v1",
-  "plan_version": "1.0.0",
+  "plan_version": "1.1.0",
   "completed_stages": [
     "S01",
     "S02"
   ],
-  "current_stage": "S21",
+  "current_stage": "S22",
   "next_stage": null,
-  "last_completed_work": "S21-W05",
+  "last_completed_work": "S22-W05",
   "implementation_started": true,
   "stage_results": {
     "S01": {
@@ -1101,6 +1101,23 @@
       "implementation": "All five code works are implemented: encrypted Telethon session/login, durable channel ingestion, bounded template parsing, structured AI analysis, UI/automation and five fail-closed Spot adapters with durable live-order outbox. External acceptance remains partial.",
       "release_tag": "stage21-v0.21.0rc1-deploy",
       "release_commit": "e315e1983bb916ed8867a721b583e9b2c55eb93a"
+    },
+    "S22": {
+      "status": "partial",
+      "completed_works": ["S22-W01", "S22-W02", "S22-W03", "S22-W04", "S22-W05"],
+      "checks": [
+        {"name": "Local Ruff, Django schema checks and focused Stage22 tests", "status": "passed_local_fallback", "notes": "PostgreSQL/Redis were unavailable in the local build container; exact-source CI and release evidence remain pending."}
+      ],
+      "commit_shas": ["9892838", "b0737b8", "03d0f57", "c5cfce9"],
+      "blockers": [
+        "No authorized real Telegram account/channel was supplied, so code delivery, full archive and FloodWait behavior need operator acceptance.",
+        "Historical evaluation currently uses Binance public one-hour OHLC evidence; provider-specific candles for the five connected exchanges are not claimed.",
+        "Target VPS installation, public HTTPS acceptance and exact-source CI/release are pending.",
+        "Live trading remains disabled by default and historical imports never create trades."
+      ],
+      "implementation": "Five Stage22 works implemented: secure verification lifecycle, resumable first-message archive, versioned multi-template classification, conservative OHLC outcome evaluation, owner-scoped analytics/API and cumulative deployment preparation.",
+      "release_tag": "stage22-v0.22.0rc1-deploy",
+      "release_commit": null
     }
   }
 }

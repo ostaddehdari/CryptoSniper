@@ -1,4 +1,4 @@
-"""Machine-readable Stage21 product delivery contract."""
+"""Machine-readable Stage22 product delivery contract."""
 
 from django.conf import settings
 
@@ -33,7 +33,9 @@ def base_product_acceptance():
         },
         "deferred": {
             "telegram_real_account_validation": "credentials_required",
+            "telegram_full_archive_validation": "authorized_channel_required",
             "channel_ai_provider_validation": "provider_credentials_required",
+            "provider_specific_historical_candles": "not_implemented_binance_public_only",
             "real_binance_writes": "disabled_not_verified",
             "five_exchange_live_validation": "credentials_required",
         },

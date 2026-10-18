@@ -1,8 +1,10 @@
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
-from apps.signals.models import SignalOutcome
+import pytest
+from apps.signals.models import SignalOutcome, SignalSource, TelegramAccount, TelegramChannel
 from apps.signals.outcomes import evaluate_path
+from django.urls import reverse
 
 
 def candle(at, low, high):
@@ -55,3 +57,32 @@ def test_historical_short_path_hits_ordered_targets():
     )
     assert result["status"] == SignalOutcome.Status.TARGET
     assert result["targets_hit"] == 2
+
+
+@pytest.mark.django_db
+def test_channel_analytics_is_owner_scoped(client, django_user_model):
+    owner = django_user_model.objects.create_user(username="channel-owner")
+    stranger = django_user_model.objects.create_user(username="channel-stranger")
+    account = TelegramAccount.objects.create(owner=owner)
+    source = SignalSource.objects.create(
+        owner=owner,
+        method=SignalSource.Method.TELEGRAM,
+        name="Telegram · Test",
+    )
+    channel = TelegramChannel.objects.create(
+        owner=owner,
+        account=account,
+        source=source,
+        peer_id=-100123,
+        title="Test",
+    )
+    client.force_login(owner)
+    assert client.get(reverse("telegram-channel-analytics", args=[channel.pk])).status_code == 200
+    payload = client.get(reverse("api-telegram-channel-analytics", args=[channel.pk]))
+    assert payload.status_code == 200
+    assert payload.json()["metrics"]["total_messages"] == 0
+    client.force_login(stranger)
+    assert client.get(reverse("telegram-channel-analytics", args=[channel.pk])).status_code == 404
+    assert (
+        client.get(reverse("api-telegram-channel-analytics", args=[channel.pk])).status_code == 404
+    )

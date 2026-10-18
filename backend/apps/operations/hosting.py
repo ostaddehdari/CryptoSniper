@@ -131,5 +131,5 @@ def hosting_capabilities(*, probe_outbound=False, probe_storage=False):
         "environment": os.environ.get("DJANGO_SETTINGS_MODULE", "unknown").rsplit(".", 1)[-1],
         "capabilities": rows,
         "missing": [row["key"] for row in required if not row["ok"]],
-        "telegram_listener": "reserved_for_stage21_not_running",
+        "telegram_listener": "implemented_requires_persistent_process",
     }

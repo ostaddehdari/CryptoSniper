@@ -25,7 +25,7 @@ def test_host_capability_report_does_not_hide_missing_workers(monkeypatch):
     report = hosting_capabilities()
     assert report["status"] == "incomplete"
     assert {"workers", "scheduler", "outbound_https", "storage"} <= set(report["missing"])
-    assert report["telegram_listener"] == "reserved_for_stage21_not_running"
+    assert report["telegram_listener"] == "implemented_requires_persistent_process"
 
 
 @pytest.mark.django_db

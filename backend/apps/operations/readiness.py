@@ -1,4 +1,4 @@
-"""Honest Stage21 capability matrix; code is not provider/account evidence."""
+"""Honest Stage22 capability matrix; code is not provider/account evidence."""
 
 from django.conf import settings
 
@@ -33,7 +33,10 @@ def engine_readiness():
         },
         "telegram": {
             "telethon": "implemented_not_real_account_verified",
-            "template_parser": "implemented_and_unit_tested",
+            "verification_flow": "implemented_not_real_code_verified",
+            "full_archive": "implemented_not_real_channel_verified",
+            "template_parser": "versioned_multi_template_unit_tested",
+            "historical_outcomes": "binance_public_ohlc_conservative",
             "ai": "implemented_provider_not_configured",
             "full_auto": "simulator_paper_only",
         },
@@ -42,5 +45,6 @@ def engine_readiness():
             "کلید واقعی هیچ‌یک از پنج صرافی جدید بررسی نشده است.",
             "ارسال سفارش واقعی به‌صورت پیش‌فرض در تنظیمات غیرفعال است.",
             "Telegram/AI بدون API ID، session و provider واقعی تأییدشده محسوب نمی‌شوند.",
+            "کندل تاریخی providerهای پنج صرافی پیاده نشده و ارزیابی فعلی Binance عمومی است.",
         ],
     }

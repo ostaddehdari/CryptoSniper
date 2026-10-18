@@ -2,7 +2,7 @@
 
 سامانه پایتونی دریافت، اجرای و مدیریت سیگنال رمزارز با Django، PostgreSQL، Redis و Celery، رابط Mobile-First و حالت روشن پیش‌فرض.
 
-**برنامه: ۲۱ استیج × ۵ ورک = ۱۰۵ ورک.** کد آزمایشی **0.21.0rc1** همهٔ استیج‌ها را دارد: Telethon و تحلیل کانال، و adapterهای Spot برای Nobitex، LBank، WEEX، Ourbit و Bitunix. دریافت بازار/نوسان، موجودی شخصی و سفارش Spot پیاده شده، اما credential واقعی هیچ provider آزمون نشده و `LIVE_TRADING_ENABLED=false` است. Full-Auto Telegram فقط Paper/Simulator می‌ماند؛ Futures/Perpetual و Margin واقعی غیرفعال‌اند. Release 0.21 و پذیرش VPS فقط پس از exact-source CI و شواهد اپراتور معتبر خواهند بود.
+**برنامه: ۲۲ استیج × ۵ ورک = ۱۱۰ ورک.** کد آزمایشی **0.22.0rc1** جریان کامل وریفای حساب Telegram، آرشیو قابل‌ادامه از نخستین پیام، قالب‌های چندگانه و سنجش تاریخی محافظه‌کارانه را همراه adapterهای Spot برای Nobitex، LBank، WEEX، Ourbit و Bitunix دارد. credential واقعی هیچ provider آزمون نشده و `LIVE_TRADING_ENABLED=false` است. Full-Auto Telegram فقط Paper/Simulator می‌ماند؛ Futures/Perpetual و Margin واقعی غیرفعال‌اند.
 
 - [گزارش تحویل و شواهد استیج ۱](docs/reports/stage-01.md)
 - [گزارش تحویل و شواهد استیج ۲](docs/reports/stage-02.md)
@@ -16,6 +16,7 @@
 - [استقرار و عملیات استیج ۱۹](docs/reports/stage-19.md)
 - [پذیرش نسخه پایه استیج ۲۰](docs/reports/stage-20.md)
 - [Telethon، تحلیل کانال و پنج صرافی Spot در استیج ۲۱](docs/reports/stage-21.md)
+- [تکمیل Telegram و ارزیابی تاریخی در استیج ۲۲](docs/reports/stage-22.md)
 - [راهنمای کاربر](docs/user-guide.md) و [راهنمای ادمین](docs/admin-guide.md)
 - [راهنمای نصب و اجرا](docs/setup.md)
 - [بررسی خودکار در GitHub Actions](https://github.com/ostaddehdari/CryptoSniper/actions)
@@ -27,7 +28,7 @@
 - [برنامه ماشینی](docs/plan.json) و [وضعیت اجرا](docs/progress.json)
 - [متن اصلی پروپوزال](docs/source/proposal-original.txt)
 
-نسخه نخست: Paper Spot/Margin و Live Spot محدود؛ Futures و Perpetual برای آینده. Manual Entry، Smart Paste و اتصال Telethon/کانال در S21 حاضرند. Live فقط با کلید Read+Spot بدون برداشت، IP allowlist و فعال‌سازی صریح ادمین مجاز است.
+نسخه نخست: Paper Spot/Margin و Live Spot محدود؛ Futures و Perpetual برای آینده. Manual Entry، Smart Paste و اتصال/آرشیو Telegram حاضرند. Live فقط با کلید Read+Spot بدون برداشت، IP allowlist و فعال‌سازی صریح ادمین مجاز است.
 
 برای ادامه:
 

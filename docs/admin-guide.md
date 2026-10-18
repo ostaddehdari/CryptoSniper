@@ -21,6 +21,8 @@ freshness هر هفت Worker، Beat، عمق صف، قدیمی‌ترین outbox
 
 ورود Telegram از UI محافظت‌شده با step-up انجام می‌شود؛ session/API hash رمزنگاری‌شده‌اند. سلامت `cryptosniper-telegram` و heartbeat آن را پایش کنید. AI اختیاری است و بدون endpoint/model/key پیکربندی‌شده صریحاً blocked می‌ماند؛ کلید را فقط در secret store محیط قرار دهید.
 
+Backfill در صف `signals` به بسته‌های محدود اجرا می‌شود و cursor آن از listener زنده مستقل است. آرشیو با `allow_automation=false` هرگز معامله ایجاد نمی‌کند. ارزیابی تاریخچه نیز در همان صف، هر بار سه سیگنال را با داده عمومی یک‌ساعته پردازش می‌کند؛ `ambiguous` را برد یا باخت حساب نکنید. مصرف شبکه، FloodWait و رشد جدول `HistoricalCandle` را پایش کنید.
+
 پنج provider `nobitex,lbank,weex,ourbit,bitunix` حاضرند. برای هر حساب کلید Read+Spot بدون Withdrawal و IP allowlist بسازید. ابتدا اتصال و sync بدون پول را بررسی کنید. `LIVE_TRADING_ENABLED=false` پیش‌فرض است؛ تنها پس از بررسی حقوقی، permission واقعی، limits/precision و سفارش کم‌ریسک کنترل‌شده آن را در `.env` به `true` تغییر و سرویس‌های Web/Orders را restart کنید. این متغیر Full-Auto Telegram را Live نمی‌کند؛ آن مسیر همیشه Paper است.
 
 Futures/Perpetual و Margin واقعی غیرفعال‌اند. هر `uncertain` باید با client/exchange order ID در provider reconcile شود و هرگز خودکار retry نشود. Nobitex و هر provider دیگر فقط پس از بررسی تحریم، حوزه قضایی و eligibility کاربر استفاده شود.

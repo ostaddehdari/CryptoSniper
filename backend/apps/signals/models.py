@@ -488,3 +488,32 @@ class SignalOutcome(models.Model):
 
     def __str__(self):
         return f"{self.signal_id}:{self.status}:{self.targets_hit}"
+
+
+class TelegramEvaluationJob(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "در صف"
+        RUNNING = "running", "در حال ارزیابی"
+        COMPLETED = "completed", "کامل"
+        FAILED = "failed", "ناموفق"
+
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    channel = models.ForeignKey(
+        TelegramChannel, on_delete=models.CASCADE, related_name="evaluation_jobs"
+    )
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING)
+    cursor_signal_id = models.BigIntegerField(default=0)
+    total_signals = models.PositiveBigIntegerField(default=0)
+    evaluated_signals = models.PositiveBigIntegerField(default=0)
+    skipped_signals = models.PositiveBigIntegerField(default=0)
+    last_error = models.CharField(max_length=80, blank=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        return f"{self.channel_id}:{self.status}:{self.evaluated_signals}"

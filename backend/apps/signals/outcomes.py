@@ -10,7 +10,12 @@ from django.utils import timezone
 from apps.marketdata.history import fetch_binance_history
 from apps.marketdata.models import HistoricalCandle
 
-from .models import Signal, SignalOutcome, TelegramMessage
+from .models import (
+    Signal,
+    SignalOutcome,
+    TelegramEvaluationJob,
+    TelegramMessage,
+)
 
 
 def evaluate_path(*, side, entry, stop, targets, candles):
@@ -124,3 +129,58 @@ def evaluate_historical_signal(signal_id, *, fetch=True):
         },
     )
     return {"outcome_id": outcome.pk, "status": outcome.status}
+
+
+def start_channel_evaluation(channel):
+    active = channel.evaluation_jobs.filter(status__in=("pending", "running")).first()
+    if active:
+        return active, False
+    total = Signal.objects.filter(source=channel.source).count()
+    return (
+        TelegramEvaluationJob.objects.create(
+            owner=channel.owner,
+            channel=channel,
+            total_signals=total,
+        ),
+        True,
+    )
+
+
+@shared_task(name="signals.evaluate_channel_batch")
+def evaluate_channel_batch(job_id):
+    job = TelegramEvaluationJob.objects.select_related("channel__source").get(pk=job_id)
+    if job.status not in {
+        TelegramEvaluationJob.Status.PENDING,
+        TelegramEvaluationJob.Status.RUNNING,
+    }:
+        return {"status": job.status}
+    job.status = TelegramEvaluationJob.Status.RUNNING
+    job.started_at = job.started_at or timezone.now()
+    job.save(update_fields=("status", "started_at", "updated_at"))
+    signals = list(
+        Signal.objects.filter(
+            source=job.channel.source,
+            pk__gt=job.cursor_signal_id,
+        ).order_by("pk")[:1]
+    )
+    evaluated = skipped = 0
+    cursor = job.cursor_signal_id
+    for signal in signals:
+        cursor = signal.pk
+        try:
+            evaluate_historical_signal(signal.pk)
+            evaluated += 1
+        except ValidationError:
+            skipped += 1
+    job.cursor_signal_id = cursor
+    job.evaluated_signals += evaluated
+    job.skipped_signals += skipped
+    if not signals or job.evaluated_signals + job.skipped_signals >= job.total_signals:
+        job.status = TelegramEvaluationJob.Status.COMPLETED
+        job.completed_at = timezone.now()
+    else:
+        job.status = TelegramEvaluationJob.Status.PENDING
+    job.save()
+    if job.status == TelegramEvaluationJob.Status.PENDING:
+        evaluate_channel_batch.apply_async(args=[job.pk], queue="signals")
+    return {"status": job.status, "evaluated": evaluated, "skipped": skipped}

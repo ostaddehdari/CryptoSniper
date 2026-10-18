@@ -20,7 +20,7 @@ from django.urls import path
 
 
 def live(request):
-    return JsonResponse({"status": "ok", "service": "cryptosniper", "stage": "S21"})
+    return JsonResponse({"status": "ok", "service": "cryptosniper", "stage": "S22"})
 
 
 def ready(request):
@@ -139,6 +139,16 @@ urlpatterns = [
     path("inbox/", inbox_views.inbox, name="inbox"),
     path("settings/sources/", inbox_views.source_settings, name="source-settings"),
     path("settings/telegram/", inbox_views.telegram_settings, name="telegram-settings"),
+    path(
+        "settings/telegram/channels/<int:pk>/",
+        inbox_views.telegram_channel_analytics,
+        name="telegram-channel-analytics",
+    ),
+    path(
+        "api/v1/telegram/channels/<int:pk>/analytics/",
+        inbox_views.api_telegram_channel_analytics,
+        name="api-telegram-channel-analytics",
+    ),
     path("inbox/receive/", inbox_views.receive, name="inbox-receive"),
     path("smart-paste/", inbox_views.smart_paste, name="smart-paste"),
     path("api/v1/smart-paste/", inbox_views.api_smart_paste, name="api-smart-paste"),

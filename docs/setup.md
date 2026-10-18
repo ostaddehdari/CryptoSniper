@@ -93,3 +93,5 @@ Release رسمی `stage20-v0.20.0rc1-deploy` از commit ثابت `89bb6653a5b24
 نصب‌کننده 0.21 سرویس `cryptosniper-telegram` را کنار هفت Worker و Beat می‌سازد و `LIVE_TRADING_ENABLED=false` را برای نصب تازه ثبت می‌کند. ارتقا `.env`، keyring، دیتابیس و ورود موجود را حفظ می‌کند. پس از نصب، تنظیمات Telegram و اتصال Nobitex/LBank/WEEX/Ourbit/Bitunix از UI انجام می‌شود؛ secret را در shell history یا مستندات وارد نکنید.
 
 Release رسمی `stage21-v0.21.0rc1-deploy` از commit ثابت `e315e1983bb916ed8867a721b583e9b2c55eb93a` پس از ۲۴۵ آزمون exact-source ساخته شد. `scripts/deploy.sh` به ZIP با SHA-256 برابر `8a44ba2e8e1d61806a122d93bf92f6e3eccc85fa291fc3f51c327469141e0d41` و installer با SHA-256 برابر `5d9a4f5e9cf1783ce7ad57a58c39a63b632c7d22611ba6833ccff6757a3cb41c` pin است. این شواهد جای نصب و پذیرش واقعی VPS/provider را نمی‌گیرد.
+
+Stage22 همان نصب مدیریت‌شده را ارتقا می‌دهد و داده، keyring، session تلگرام و login موجود را حفظ می‌کند. پس از انتشار exact-source، `scripts/deploy.sh` فقط به ZIP و installer با SHA-256 ثابت Stage22 تغییر می‌کند. Backfill تاریخی از UI شروع می‌شود؛ پیام‌های تاریخی هرگز سفارش ایجاد نمی‌کنند و ارزیابی فعلی از کندل عمومی یک‌ساعته Binance استفاده می‌کند.

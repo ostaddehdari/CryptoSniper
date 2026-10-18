@@ -5,6 +5,7 @@ from datetime import datetime
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.db.models import Count
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
@@ -24,12 +25,14 @@ from .forms import (
 )
 from .models import (
     Signal,
+    SignalOutcome,
     SignalSource,
     TelegramAccount,
     TelegramBackfillJob,
     TelegramChannel,
     TelegramChannelTemplate,
 )
+from .outcomes import evaluate_channel_batch, start_channel_evaluation
 from .parsing import parse_for_review
 from .services import receive_signal, snapshot, transition, update_parsed
 from .sources import get_default_source
@@ -296,6 +299,90 @@ def telegram_settings(request):
             ),
             "discovered": discovered,
         },
+    )
+
+
+def _channel_metrics(channel):
+    kinds = {
+        row["message_kind"]: row["count"]
+        for row in channel.messages.values("message_kind").annotate(count=Count("pk"))
+    }
+    outcomes = {
+        row["status"]: row["count"]
+        for row in SignalOutcome.objects.filter(signal__source=channel.source)
+        .values("status")
+        .annotate(count=Count("pk"))
+    }
+    wins = outcomes.get(SignalOutcome.Status.TARGET, 0)
+    losses = outcomes.get(SignalOutcome.Status.STOPPED, 0)
+    resolved = wins + losses
+    return {
+        "message_kinds": kinds,
+        "outcomes": outcomes,
+        "total_messages": sum(kinds.values()),
+        "signals": kinds.get("signal", 0),
+        "resolved": resolved,
+        "win_rate": round(wins * 100 / resolved, 2) if resolved else None,
+        "ambiguous": outcomes.get(SignalOutcome.Status.AMBIGUOUS, 0),
+    }
+
+
+@login_required
+@never_cache
+@require_http_methods(["GET", "POST"])
+def telegram_channel_analytics(request, pk):
+    channel = get_object_or_404(
+        TelegramChannel.objects.select_related("source").prefetch_related(
+            "backfill_jobs", "evaluation_jobs"
+        ),
+        owner=request.user,
+        pk=pk,
+    )
+    if request.method == "POST":
+        job, _ = start_channel_evaluation(channel)
+        evaluate_channel_batch.apply_async(args=[job.pk], queue="signals")
+        record_audit(
+            "telegram.history_evaluation",
+            request=request,
+            user=request.user,
+            metadata={"channel_id": channel.pk, "job_id": job.pk},
+        )
+        messages.success(request, "ارزیابی تاریخی محافظه‌کارانه در صف قرار گرفت.")
+        return redirect("telegram-channel-analytics", pk=channel.pk)
+    return render(
+        request,
+        "signals/telegram_channel_analytics.html",
+        {
+            "nav": "settings",
+            "channel": channel,
+            "metrics": _channel_metrics(channel),
+            "outcomes": SignalOutcome.objects.filter(signal__source=channel.source)
+            .select_related("signal")
+            .order_by("-evaluated_from")[:100],
+            "evaluation_job": channel.evaluation_jobs.first(),
+            "backfill_job": channel.backfill_jobs.first(),
+        },
+    )
+
+
+@session_api_required
+@require_GET
+def api_telegram_channel_analytics(request, pk):
+    channel = get_object_or_404(TelegramChannel, owner=request.user, pk=pk)
+    job = channel.evaluation_jobs.first()
+    return JsonResponse(
+        {
+            "channel_id": channel.pk,
+            "metrics": _channel_metrics(channel),
+            "evaluation": None
+            if not job
+            else {
+                "status": job.status,
+                "total": job.total_signals,
+                "evaluated": job.evaluated_signals,
+                "skipped": job.skipped_signals,
+            },
+        }
     )
 
 

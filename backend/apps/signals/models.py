@@ -1,4 +1,6 @@
-"""The three canonical signal ingress methods, no Telegram or AI adapter in S06."""
+"""Canonical signal ingress, including the final-stage Telegram boundary."""
+
+from decimal import Decimal
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -9,7 +11,7 @@ class SignalSource(models.Model):
     class Method(models.TextChoices):
         MANUAL = "manual", "ورود دستی"
         SMART_PASTE = "smart_paste", "چسباندن هوشمند"
-        TELEGRAM = "telegram", "تلگرام (فقط Stage21)"
+        TELEGRAM = "telegram", "تلگرام"
 
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="signal_sources"
@@ -215,3 +217,145 @@ class SignalRevision(models.Model):
 
     def __str__(self):
         return f"Signal {self.signal_id} revision {self.revision}"
+
+
+class TelegramAccount(models.Model):
+    """Encrypted Telethon session and API identity; plaintext never reaches logs/UI."""
+
+    class Status(models.TextChoices):
+        DISCONNECTED = "disconnected", "قطع"
+        AWAITING_CODE = "awaiting_code", "منتظر کد"
+        AWAITING_PASSWORD = "awaiting_password", "منتظر رمز دومرحله‌ای"
+        CONNECTED = "connected", "متصل"
+        ERROR = "error", "خطا"
+
+    owner = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="telegram_account"
+    )
+    label = models.CharField(max_length=80, default="Telegram")
+    phone_hint = models.CharField(max_length=32, blank=True)
+    credential_key_version = models.PositiveIntegerField(default=1)
+    credentials_encrypted = models.TextField(blank=True)
+    status = models.CharField(max_length=24, choices=Status.choices, default=Status.DISCONNECTED)
+    last_error = models.CharField(max_length=80, blank=True)
+    connected_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.owner_id}:{self.label}"
+
+
+class TelegramChannel(models.Model):
+    class ParseMode(models.TextChoices):
+        TEMPLATE = "template", "قالب"
+        AI = "ai", "هوش مصنوعی"
+        HYBRID = "hybrid", "ترکیبی"
+
+    class Automation(models.TextChoices):
+        MANUAL = "manual", "دستی"
+        SEMI_AUTO = "semi_auto", "نیمه‌خودکار"
+        FULL_AUTO = "full_auto", "تمام‌خودکار Paper"
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="telegram_channels"
+    )
+    account = models.ForeignKey(TelegramAccount, on_delete=models.CASCADE, related_name="channels")
+    source = models.OneToOneField(
+        SignalSource, on_delete=models.CASCADE, related_name="telegram_channel"
+    )
+    peer_id = models.BigIntegerField()
+    username = models.CharField(max_length=80, blank=True)
+    title = models.CharField(max_length=160)
+    parse_mode = models.CharField(
+        max_length=12, choices=ParseMode.choices, default=ParseMode.TEMPLATE
+    )
+    template = models.JSONField(default=dict, blank=True)
+    automation = models.CharField(
+        max_length=12, choices=Automation.choices, default=Automation.MANUAL
+    )
+    enabled = models.BooleanField(default=True)
+    last_message_id = models.BigIntegerField(default=0)
+    max_catchup = models.PositiveSmallIntegerField(default=100)
+    min_confidence = models.PositiveSmallIntegerField(default=80)
+    paper_capital = models.DecimalField(max_digits=32, decimal_places=16, default=Decimal("100"))
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("title",)
+        constraints = [
+            models.UniqueConstraint(
+                fields=("owner", "peer_id"), name="telegram_channel_owner_peer_unique"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(max_catchup__gte=1) & models.Q(max_catchup__lte=500),
+                name="telegram_channel_catchup_range",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(min_confidence__lte=100),
+                name="telegram_channel_confidence_lte_100",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(paper_capital__gt=0),
+                name="telegram_channel_capital_positive",
+            ),
+        ]
+
+    def __str__(self):
+        return self.title
+
+
+class TelegramMessage(models.Model):
+    """Durable cursor/dedup record; raw/edit history lives in RawSignal revisions."""
+
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    channel = models.ForeignKey(TelegramChannel, on_delete=models.CASCADE, related_name="messages")
+    message_id = models.BigIntegerField()
+    revision = models.PositiveIntegerField(default=1)
+    text_checksum = models.CharField(max_length=64)
+    raw_signal = models.ForeignKey(
+        RawSignal, on_delete=models.SET_NULL, null=True, blank=True, related_name="telegram_events"
+    )
+    edited_at = models.DateTimeField(null=True, blank=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    received_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("channel", "message_id")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("channel", "message_id"), name="telegram_message_channel_id_unique"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.channel_id}:{self.message_id}:r{self.revision}"
+
+
+class SignalAIAnalysis(models.Model):
+    class Status(models.TextChoices):
+        COMPLETE = "complete", "کامل"
+        INVALID = "invalid", "نامعتبر"
+        ERROR = "error", "خطا"
+
+    signal = models.ForeignKey(Signal, on_delete=models.CASCADE, related_name="ai_analyses")
+    provider = models.CharField(max_length=40)
+    model = models.CharField(max_length=100)
+    prompt_version = models.CharField(max_length=40, default="telegram-signal-v1")
+    input_hash = models.CharField(max_length=64)
+    output = models.JSONField(default=dict, blank=True)
+    status = models.CharField(max_length=12, choices=Status.choices)
+    error_code = models.CharField(max_length=80, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        constraints = [
+            models.UniqueConstraint(
+                fields=("signal", "input_hash", "prompt_version"),
+                name="signal_ai_analysis_input_unique",
+            )
+        ]
+
+    def __str__(self):
+        return f"Signal {self.signal_id} · {self.model} · {self.status}"

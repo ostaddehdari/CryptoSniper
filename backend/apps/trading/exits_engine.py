@@ -97,6 +97,10 @@ def _payout(*, trade, position, protection, price, quantity, reason, key, target
             event_type="PAPER_CLOSED",
             payload={"reason": reason, "final_exit": str(price)},
         )
+        if trade.market.market_type == "margin":
+            from .margin import repay_margin_loan
+
+            repay_margin_loan(trade.pk)
     return fill
 
 
@@ -134,8 +138,9 @@ def process_paper_price(
         trade.mode != "paper"
         or trade.account.environment != "paper"
         or trade.account.exchange.adapter_code != "simulator"
-        or trade.market.market_type != "spot"
-        or trade.side != "buy"
+        or trade.market.market_type not in {"spot", "margin"}
+        or trade.side not in {"buy", "sell"}
+        or (trade.market.market_type == "spot" and trade.side != "buy")
     ):
         raise ValidationError("فقط شبیه‌ساز Spot Long مجاز است.")
     if trade.state not in {Trade.State.OPEN, Trade.State.PARTIAL}:
@@ -172,22 +177,43 @@ def process_paper_price(
     fills = []
     # Percentage ON from start makes all targets activation/display markers only.
     # Trailing activation preempts staged sell, and never weakens the stop.
+    long_side = trade.side == "buy"
     if protection.percentage_enabled:
-        if not protection.percentage_active and price >= protection.trigger_price:
+        reached_trigger = (
+            price >= protection.trigger_price if long_side else price <= protection.trigger_price
+        )
+        if not protection.percentage_active and reached_trigger:
             protection.percentage_active = True
-            protection.high_water = price
+            if long_side:
+                protection.high_water = price
+            else:
+                protection.low_water = price
             TradeEvent.objects.create(
                 trade=trade,
                 event_type="PERCENTAGE_ACTIVATED",
                 payload={"price": str(price), "distance": str(protection.distance_percent)},
             )
         if protection.percentage_active:
-            protection.high_water = max(protection.high_water or price, price)
-            derived = percentage_stop(
-                side="long", high=protection.high_water, distance=protection.distance_percent
-            )
-            protection.effective_stop = monotonic_stop("long", protection.effective_stop, derived)
-    if price <= protection.effective_stop:
+            if long_side:
+                protection.high_water = max(protection.high_water or price, price)
+                derived = percentage_stop(
+                    side="long", high=protection.high_water, distance=protection.distance_percent
+                )
+                protection.effective_stop = monotonic_stop(
+                    "long", protection.effective_stop, derived
+                )
+            else:
+                protection.low_water = min(protection.low_water or price, price)
+                derived = percentage_stop(
+                    side="short", low=protection.low_water, distance=protection.distance_percent
+                )
+                protection.effective_stop = monotonic_stop(
+                    "short", protection.effective_stop, derived
+                )
+    stop_hit = (
+        price <= protection.effective_stop if long_side else price >= protection.effective_stop
+    )
+    if stop_hit:
         fill = _payout(
             trade=trade,
             position=position,
@@ -204,7 +230,8 @@ def process_paper_price(
         for target in (
             TradeTarget.objects.select_for_update().filter(trade=trade).order_by("position")
         ):
-            if price < target.price or target.state in {
+            target_hit = price >= target.price if long_side else price <= target.price
+            if not target_hit or target.state in {
                 TradeTarget.State.CANCELLED,
                 TradeTarget.State.FILLED,
             }:
@@ -228,7 +255,12 @@ def process_paper_price(
             fills.append(fill.pk)
             if protection.step_enabled and target.state == TradeTarget.State.FILLED:
                 stop = _new_step_stop(trade, target.position)
-                if stop > protection.effective_stop:
+                improves_stop = (
+                    stop > protection.effective_stop
+                    if long_side
+                    else stop < protection.effective_stop
+                )
+                if improves_stop:
                     protection.effective_stop = stop
                     TradeEvent.objects.create(
                         trade=trade,

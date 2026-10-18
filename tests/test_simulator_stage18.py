@@ -111,3 +111,93 @@ def test_paper_boundary_rejects_revoked_or_live_account(django_user_model):
 
     with pytest.raises(ValidationError):
         require_paper_simulator(order)
+
+
+def _margin_plan(owner, account, *, side="short"):
+    import uuid
+
+    from apps.exchanges.models import ExchangeMarket
+    from apps.tradeplans.forms import ManualTradeForm
+    from apps.tradeplans.service import approve_plan, create_draft
+
+    market = ExchangeMarket.objects.get(
+        exchange=account.exchange, symbol="BTC/USDT", market_type="margin"
+    )
+    short = side == "short"
+    form = ManualTradeForm(
+        owner,
+        {
+            "account": str(account.pk),
+            "market": str(market.pk),
+            "source": "manual",
+            "side": side,
+            "entry_price": "65000",
+            "tp1": "60000" if short else "70000",
+            "tp2": "",
+            "tp3": "",
+            "stop_loss": "70000" if short else "60000",
+            "capital": "100",
+            "leverage": "2",
+            "trailing_distance": "1",
+            "client_token": str(uuid.uuid4()),
+        },
+    )
+    assert form.is_valid(), form.errors
+    plan, _ = create_draft(owner, form.cleaned_data)
+    return approve_plan(owner, plan.pk, 1)
+
+
+@pytest.mark.django_db
+def test_margin_short_borrow_interest_tp_repay_and_no_dust(django_user_model):
+    import uuid
+
+    from apps.trading.execution import dispatch_paper
+    from apps.trading.exits_engine import process_paper_price
+    from apps.trading.intent import queue_paper_trade
+    from apps.trading.margin import accrue_margin_interest
+    from apps.trading.models import PaperMarginLoan, Position, TradeFinanceEvent
+    from django.utils import timezone
+    from test_trading_stage08 import paper_account
+
+    owner = django_user_model.objects.create_user(username="margin-short18")
+    account, _ = paper_account(owner)
+    trade, _ = queue_paper_trade(owner, _margin_plan(owner, account).pk, request_key=uuid.uuid4())
+    assert trade.side == "sell" and trade.margin_loan.asset.symbol == "BTC"
+    assert dispatch_paper(trade.orders.get().outbox.pk)["status"] == "filled"
+    assert accrue_margin_interest(trade.pk, hours=2) > 0
+    result = process_paper_price(
+        trade.pk,
+        price="60000",
+        observed_at=timezone.now(),
+        event_key="margin-short-tp",
+    )
+    assert result["status"] == "closed"
+    assert Position.objects.get(trade=trade).quantity == 0
+    loan = PaperMarginLoan.objects.get(trade=trade)
+    assert loan.state == "repaid" and loan.repaid_amount > loan.principal
+    assert set(TradeFinanceEvent.objects.filter(trade=trade).values_list("kind", flat=True)) == {
+        "borrow_interest",
+        "repayment",
+    }
+
+
+@pytest.mark.django_db
+def test_two_margin_trades_have_isolated_loans_and_positions(django_user_model):
+    import uuid
+
+    from apps.trading.execution import dispatch_paper
+    from apps.trading.intent import queue_paper_trade
+    from apps.trading.models import PaperMarginLoan, Position
+    from test_trading_stage08 import paper_account
+
+    owner = django_user_model.objects.create_user(username="margin-concurrent18")
+    account, _ = paper_account(owner)
+    trades = []
+    for side in ("long", "short"):
+        trade, _ = queue_paper_trade(
+            owner, _margin_plan(owner, account, side=side).pk, request_key=uuid.uuid4()
+        )
+        assert dispatch_paper(trade.orders.get().outbox.pk)["status"] == "filled"
+        trades.append(trade)
+    assert PaperMarginLoan.objects.filter(trade__in=trades, state="active").count() == 2
+    assert Position.objects.filter(trade__in=trades, quantity__gt=0).count() == 2

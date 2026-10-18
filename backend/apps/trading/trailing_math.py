@@ -1,4 +1,4 @@
-"""Deterministic trailing math; Short is math-only until margin borrow/repay is supported."""
+"""Deterministic trailing math shared by Paper Spot and Paper Margin."""
 
 from decimal import Decimal
 

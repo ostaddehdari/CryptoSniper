@@ -168,6 +168,39 @@ class CapitalReservation(models.Model):
         return f"Paper reservation {self.trade_id}"
 
 
+class PaperMarginLoan(models.Model):
+    """Deterministic Paper-only borrow ledger; never represents provider debt."""
+
+    class State(models.TextChoices):
+        ACTIVE = "active", "فعال"
+        REPAID = "repaid", "بازپرداخت‌شده"
+
+    trade = models.OneToOneField(Trade, on_delete=models.CASCADE, related_name="margin_loan")
+    account = models.ForeignKey("exchanges.UserExchangeAccount", on_delete=models.CASCADE)
+    asset = models.ForeignKey("exchanges.Asset", on_delete=models.PROTECT)
+    principal = models.DecimalField(max_digits=32, decimal_places=16)
+    accrued_interest = models.DecimalField(max_digits=32, decimal_places=16, default=0)
+    repaid_amount = models.DecimalField(max_digits=32, decimal_places=16, default=0)
+    hourly_rate = models.DecimalField(max_digits=16, decimal_places=12, default="0.0001")
+    state = models.CharField(max_length=12, choices=State.choices, default=State.ACTIVE)
+    opened_at = models.DateTimeField(default=timezone.now)
+    repaid_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(principal__gt=0), name="paper_margin_principal_positive"
+            ),
+            models.CheckConstraint(
+                condition=Q(accrued_interest__gte=0) & Q(repaid_amount__gte=0),
+                name="paper_margin_settlement_nonnegative",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Paper Margin loan {self.trade_id} [{self.state}]"
+
+
 class ExecutionOutbox(models.Model):
     class State(models.TextChoices):
         PENDING = "pending", "در صف"

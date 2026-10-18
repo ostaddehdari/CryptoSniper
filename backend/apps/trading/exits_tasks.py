@@ -24,7 +24,7 @@ def monitor_paper_exits():
             state__in=["open", "partially_filled"],
             account__environment="paper",
             account__exchange__adapter_code="simulator",
-            market__market_type="spot",
+            market__market_type__in=("spot", "margin"),
         )
         .order_by("pk")
         .values_list("pk", flat=True)[:100]

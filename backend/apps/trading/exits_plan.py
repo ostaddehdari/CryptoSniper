@@ -30,10 +30,12 @@ def ensure_exits(trade_id):
     )
     if trade.mode != "paper" or trade.account.environment != "paper":
         raise ValidationError("ایجاد خروج فقط برای حساب Paper مجاز است.")
-    if trade.account.exchange.adapter_code != "simulator" or trade.side != "buy":
-        raise ValidationError("خروج Paper فقط برای Spot Long شبیه‌ساز مجاز است.")
-    if trade.market.market_type != "spot":
-        raise ValidationError("Margin/Futures در این مرحله پشتیبانی نمی‌شوند.")
+    if trade.account.exchange.adapter_code != "simulator" or trade.side not in {"buy", "sell"}:
+        raise ValidationError("خروج Paper فقط برای شبیه‌ساز مجاز است.")
+    if trade.market.market_type not in {"spot", "margin"}:
+        raise ValidationError("بازار خروج Paper معتبر نیست.")
+    if trade.market.market_type == "spot" and trade.side != "buy":
+        raise ValidationError("Spot Paper فقط Long است.")
     existing = TradeProtection.objects.filter(trade=trade).first()
     if existing:
         return existing, False
@@ -47,7 +49,15 @@ def ensure_exits(trade_id):
     stop = _decimal(source.get("stop_loss"))
     entry = _decimal(source.get("entry_price"))
     prices = [_decimal(t["price"]) for t in raw_targets]
-    if stop >= entry or any(price <= entry for price in prices) or prices != sorted(set(prices)):
+    long_side = trade.side == "buy"
+    prices_valid = (
+        stop < entry and all(price > entry for price in prices) and prices == sorted(set(prices))
+        if long_side
+        else stop > entry
+        and all(price < entry for price in prices)
+        and prices == sorted(set(prices), reverse=True)
+    )
+    if not prices_valid:
         raise ValidationError("ترتیب اهداف یا Stop در طرح نامعتبر است.")
     step = trade.market.amount_step
     if step is None or step <= 0:

@@ -62,10 +62,17 @@ def queue_paper_trade(owner, plan_id, *, request_key):
     if account.status != "connected" or not account.permissions.get("can_read"):
         raise ValidationError("حساب Paper فعال و تأییدشده نیست.")
     market = plan.market
-    if market.market_type != "spot" or plan.side != "long" or not market.active:
-        raise ValidationError("در Stage08 فقط Spot Long آزمایشی مجاز است.")
-    if plan.leverage != Decimal("1"):
-        raise ValidationError("اهرم باید دقیقاً ۱ باشد.")
+    if not market.active or market.market_type not in {"spot", "margin"}:
+        raise ValidationError("بازار Paper فعال Spot یا Margin لازم است.")
+    if market.market_type == "spot" and (plan.side != "long" or plan.leverage != Decimal("1")):
+        raise ValidationError("Spot Paper فقط Long با اهرم ۱ است.")
+    if market.market_type == "margin" and (
+        plan.side not in {"long", "short"}
+        or not account.permissions.get("can_trade_margin")
+        or plan.leverage <= Decimal("1")
+        or plan.leverage > market.max_leverage
+    ):
+        raise ValidationError("جهت، مجوز یا اهرم Margin Paper معتبر نیست.")
     snap = plan.approved_snapshot
     if snap.get("execution_enabled") is not False or snap.get("market_id") != market.pk:
         raise ValidationError("Snapshot معتبر نیست.")
@@ -118,7 +125,7 @@ def queue_paper_trade(owner, plan_id, *, request_key):
         entry_price=entry_price,
         capital_reserved=capital,
         snapshot=dict(snap),
-        side="buy",
+        side="buy" if plan.side == "long" else "sell",
     )
     CapitalReservation.objects.create(
         trade=trade,
@@ -137,4 +144,8 @@ def queue_paper_trade(owner, plan_id, *, request_key):
     TradeEvent.objects.create(
         trade=trade, event_type="QUEUED", payload={"mode": "paper", "order_id": order.pk}
     )
+    if market.market_type == "margin":
+        from .margin import create_margin_loan
+
+        create_margin_loan(trade.pk)
     return trade, True

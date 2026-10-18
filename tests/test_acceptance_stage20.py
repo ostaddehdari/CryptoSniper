@@ -96,3 +96,53 @@ def test_alert_notification_report_fee_timeline_and_timezone_acceptance(client, 
     assert TradeEvent.objects.filter(trade=trade, event_type="PAPER_CLOSED").count() == 1
     for url in ("/alerts/", "/notifications/", "/reports/", f"/paper/{trade.pk}/"):
         assert client.get(url).status_code == 200
+
+
+@pytest.mark.django_db
+def test_crash_duplicate_recovery_and_owner_boundary_acceptance(client, django_user_model):
+    import uuid
+
+    from apps.operations.failures import inject_paper_failure
+    from apps.operations.models import PaperProviderOrder
+    from apps.operations.recovery import recover_outbox
+    from apps.trading.execution import dispatch_paper
+    from apps.trading.intent import queue_paper_trade
+    from apps.trading.models import OrderFill
+    from test_trading_stage08 import paper_account, ready_plan
+
+    owner = django_user_model.objects.create_user(username="accept-recovery20")
+    stranger = django_user_model.objects.create_user(username="accept-stranger20")
+    account, market = paper_account(owner)
+    trade, _ = queue_paper_trade(
+        owner, ready_plan(owner, account, market).pk, request_key=uuid.uuid4()
+    )
+    box = trade.orders.get().outbox
+    with inject_paper_failure("after_submit"):
+        assert dispatch_paper(box.pk)["status"] == "uncertain"
+    assert recover_outbox(box.pk) == "recovered"
+    assert dispatch_paper(box.pk)["status"] in {"already_done", "not_claimed"}
+    assert PaperProviderOrder.objects.filter(account=account).count() == 1
+    assert OrderFill.objects.filter(order__trade=trade).count() == 1
+    client.force_login(stranger)
+    assert client.get(f"/paper/{trade.pk}/").status_code == 404
+    assert client.get("/api/v1/operations/health/").json()["live_execution"] is False
+
+
+def test_release_security_gate_detects_live_mode_and_committed_backup_secret():
+    from scripts.security_scan import scan, scan_text
+
+    assert scan() == []
+    unsafe = (
+        "TRADING_MODE = "
+        + '"live"\n'
+        + "CRYPTOSNIPER_BACKUP_"
+        + "PASSPHRASE=committed-secret-value\n"
+    )
+    findings = scan_text(
+        unsafe,
+        "unsafe.env",
+    )
+    assert {item["code"] for item in findings} == {
+        "high_live_mode",
+        "critical_backup_passphrase",
+    }

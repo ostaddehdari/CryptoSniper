@@ -852,13 +852,13 @@
         {
           "name": "Exact-source GitHub CI: PostgreSQL, Redis, security gates, Workers/Beat and Chromium",
           "status": "passed",
-          "run_id": 39107786569,
-          "url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/39107786569",
-          "tested_commit": "0230456ada42d6309cf5c2d4ace9e433e979f9c2",
+          "run_id": 39108227433,
+          "url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/39108227433",
+          "tested_commit": "647e1cb1621b9379fb241f5c29aee399bac58ac6",
           "pytest_passed": 194,
           "dashboard_queries": 17,
-          "dashboard_build_ms": 27.21,
-          "evidence_artifact_id": 12128808194
+          "dashboard_build_ms": 29.58,
+          "evidence_artifact_id": 12129815401
         }
       ],
       "commit_shas": [
@@ -895,13 +895,23 @@
         {
           "name": "Exact-source GitHub CI: PostgreSQL, Redis, seven Workers/Beat and Chromium",
           "status": "passed",
-          "run_id": 39107786569,
-          "url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/39107786569",
-          "tested_commit": "0230456ada42d6309cf5c2d4ace9e433e979f9c2",
+          "run_id": 39108227433,
+          "url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/39108227433",
+          "tested_commit": "647e1cb1621b9379fb241f5c29aee399bac58ac6",
           "pytest_passed": 194,
           "dashboard_queries": 17,
-          "dashboard_build_ms": 27.21,
-          "evidence_artifact_id": 12128808194
+          "dashboard_build_ms": 29.58,
+          "evidence_artifact_id": 12129815401
+        },
+        {
+          "name": "Stage18 package build, 24 Nginx regressions, CHECK_OK and immutable asset verification",
+          "status": "passed_with_release_page_blocked",
+          "run_id": 39108525039,
+          "artifact_id": 12129233187,
+          "archive_sha256": "fc097c2cad84f7e014c01db69d39852ca4999d08bfef2bdc7d1fc9045b5b856d",
+          "installer_sha256": "62735789f52832fea017e552a9868c37761a3f16b733d99c2e9ed869853defa5",
+          "asset_commit": "3b031e210560c0085b71909808f9a30aa480a4c2",
+          "release_page": "blocked: GitHub Actions POST /releases returned HTTP 403"
         }
       ],
       "commit_shas": [
@@ -915,9 +925,13 @@
       ],
       "blockers": [
         "Simulator results do not verify Binance sandbox/live; real writes remain disabled.",
-        "Stage18 VPS installation and public-browser acceptance are pending."
+        "Stage18 VPS installation and public-browser acceptance are pending.",
+        "GitHub Actions cannot create the Release page (HTTP 403); verified assets are pinned in the repository instead."
       ],
-      "implementation": "Five Paper validation works implemented: seeded price/order paths with partial fills and faults, a shared fail-closed Paper boundary, Margin Long/Short borrow-interest-repay ledger, failure injection/recovery and an honest readiness matrix with Manual and Smart Paste end-to-end coverage."
+      "implementation": "Five Paper validation works implemented: seeded price/order paths with partial fills and faults, a shared fail-closed Paper boundary, Margin Long/Short borrow-interest-repay ledger, failure injection/recovery and an honest readiness matrix with Manual and Smart Paste end-to-end coverage.",
+      "release_tag": "stage18-v0.18.0rc1-deploy",
+      "release_commit": "647e1cb1621b9379fb241f5c29aee399bac58ac6",
+      "asset_commit": "3b031e210560c0085b71909808f9a30aa480a4c2"
     },
     "S19": {
       "status": "not_started",

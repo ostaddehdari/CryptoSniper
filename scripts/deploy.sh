@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # CryptoSniper: single-command, pinned verified deployment artifact.
 # Usage: curl -fsSL https://raw.githubusercontent.com/ostaddehdari/CryptoSniper/main/scripts/deploy.sh -o /tmp/cryptosniper-deploy.sh && sudo bash /tmp/cryptosniper-deploy.sh
-# Only the SHA256-verified Stage16 ZIP and installer at an immutable Git commit are executed.
+# Only the SHA256-verified Stage18 ZIP and installer at an immutable Git commit are executed.
 set -Eeuo pipefail
 umask 077
 
-RELEASE_TAG='stage16-v0.16.0rc1-deploy'
-ZIP_NAME='CryptoSniper-Stage16-v0.16.0rc1.zip'
-INSTALLER_NAME='cryptosniper-stage16-run.sh'
-ZIP_SHA256='a550681ec25a7ae933c8af751bf5adadf4ef2316fd44e71778854bef4105982a'
-INSTALLER_SHA256='3d8360a292b4d579a06dc1aefffa67160b150a9fe4cd7de2209f238b4053b754'
-ASSET_COMMIT='104038e39090d2ba911ea1c7281ff39709270016'
+RELEASE_TAG='stage18-v0.18.0rc1-deploy'
+ZIP_NAME='CryptoSniper-Stage18-v0.18.0rc1.zip'
+INSTALLER_NAME='cryptosniper-stage18-run.sh'
+ZIP_SHA256='fc097c2cad84f7e014c01db69d39852ca4999d08bfef2bdc7d1fc9045b5b856d'
+INSTALLER_SHA256='62735789f52832fea017e552a9868c37761a3f16b733d99c2e9ed869853defa5'
+ASSET_COMMIT='3b031e210560c0085b71909808f9a30aa480a4c2'
 RELEASE_BASE="https://raw.githubusercontent.com/ostaddehdari/CryptoSniper/$ASSET_COMMIT/release-assets/$RELEASE_TAG"
 MODE="${1:-install}"
 if [[ "$MODE" != 'install' && "$MODE" != '--check' ]]; then
@@ -46,7 +46,7 @@ if [[ "$MODE" == '--check' ]]; then
     exit 0
 fi
 
-echo 'Running the verified Stage16 installer; preserving existing managed installation data.'
-LOG_FILE=/root/cryptosniper-stage16-runlog.txt \
+echo 'Running the verified Stage18 installer; preserving existing managed installation data.'
+LOG_FILE=/root/cryptosniper-stage18-runlog.txt \
     bash "$WORKDIR/$INSTALLER_NAME" "$WORKDIR/$ZIP_NAME"
 echo 'DEPLOY_OK: https://srun.ir/cryptosniper/auth/login/'

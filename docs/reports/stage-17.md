@@ -13,7 +13,7 @@
 ## شواهد فعلی
 
 - Ruff، format، Django check، migration drift، security scan و dependency audit پاس شدند.
-- [CI منبع دقیق](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39107786569) روی commit `0230456ada42d6309cf5c2d4ace9e433e979f9c2` با ۱۹۴ تست، PostgreSQL 16، Redis 7، Worker/Beat مستقل و Chromium کامل پاس شد؛ artifact شواهد `12128808194` است.
+- [CI منبع دقیق](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39108227433) روی commit `647e1cb1621b9379fb241f5c29aee399bac58ac6` با ۱۹۴ تست، PostgreSQL 16، Redis 7، Worker/Beat مستقل و Chromium کامل پاس شد؛ artifact شواهد `12129815401` است.
 - لاگ ارائه‌شده اپراتور نشان می‌دهد Stage16 در ۱۸ اکتبر ۲۰۲۶ با migrationها، ده سرویس، هفت صف، readiness و HTTPS origin 200 نصب شده است. این شواهد دسترسی مرورگر عمومی مستقل نیست.
 
 ## محدودیت‌های واقعی

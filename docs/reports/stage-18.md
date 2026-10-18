@@ -20,4 +20,4 @@
 | Binance sandbox/live write | غیرفعال و بررسی‌نشده |
 | Telegram/channel/AI | طبق برنامه تا S21 معوق |
 
-[CI منبع دقیق](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39107786569) روی commit `0230456ada42d6309cf5c2d4ace9e433e979f9c2` با ۱۹۴ تست، PostgreSQL 16، Redis 7، صف‌های مستقل Worker/Beat و Chromium پاس شد. داشبورد ۱۷ query و ۲۷٫۲۱ms زمان build داشت و artifact شواهد `12128808194` است. نتیجه Simulator شاهد sandbox/live یا سودآوری نیست. نصب Stage18 روی VPS و پذیرش مرورگر عمومی نیز پس از بسته تأییدشده باقی می‌ماند.
+[CI منبع دقیق](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39108227433) روی commit `647e1cb1621b9379fb241f5c29aee399bac58ac6` با ۱۹۴ تست، PostgreSQL 16، Redis 7، صف‌های مستقل Worker/Beat و Chromium پاس شد. داشبورد ۱۷ query و ۲۹٫۵۸ms زمان build داشت و artifact شواهد `12129815401` است. [ساخت بسته](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39108525039) نیز ۲۴ regression نصب‌کننده و `CHECK_OK` را پاس کرد؛ ZIP و installer در commit غیرقابل‌تغییر `3b031e210560c0085b71909808f9a30aa480a4c2` نگهداری می‌شوند. نتیجه Simulator شاهد sandbox/live یا سودآوری نیست. نصب Stage18 روی VPS و پذیرش مرورگر عمومی باقی می‌ماند.

@@ -2,7 +2,7 @@
 
 سامانه پایتونی دریافت، اجرای و مدیریت سیگنال رمزارز با Django، PostgreSQL، Redis و Celery، رابط Mobile-First و حالت روشن پیش‌فرض.
 
-**برنامه: ۲۱ استیج × ۵ ورک = ۱۰۵ ورک.** نسخهٔ تجمعی آزمایشی **0.18.0rc1** شامل کد استیج‌های ۱ تا ۱۸ است: سخت‌سازی امنیت/اسرار و اعتبارسنجی کامل Paper با Simulator قطعی Spot و Margin Long/Short. [CI منبع دقیق Stage18](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39107786569) با ۱۹۴ تست و PostgreSQL/Redis/Workers/Beat/Chromium پاس شده است. اجرای Margin این نسخه فقط دفتر شبیه‌ساز است؛ ارسال واقعی Binance همچنان غیرفعال و حساب واقعی بررسی‌نشده است. لاگ اپراتور نصب موفق Stage16، ده سرویس، هفت صف و HTTPS origin را تأیید می‌کند؛ پذیرش مرورگر عمومی مستقل و نصب Stage18 هنوز باز است.
+**برنامه: ۲۱ استیج × ۵ ورک = ۱۰۵ ورک.** نسخهٔ تجمعی آزمایشی **0.18.0rc1** شامل کد استیج‌های ۱ تا ۱۸ است: سخت‌سازی امنیت/اسرار و اعتبارسنجی کامل Paper با Simulator قطعی Spot و Margin Long/Short. [CI منبع دقیق Stage18](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39108227433) با ۱۹۴ تست و PostgreSQL/Redis/Workers/Beat/Chromium پاس شده و [بستهٔ تجمعی](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39108525039) نیز `CHECK_OK` دارد. اجرای Margin این نسخه فقط دفتر شبیه‌ساز است؛ ارسال واقعی Binance همچنان غیرفعال و حساب واقعی بررسی‌نشده است. لاگ اپراتور نصب موفق Stage16، ده سرویس، هفت صف و HTTPS origin را تأیید می‌کند؛ پذیرش مرورگر عمومی مستقل و نصب Stage18 هنوز باز است.
 
 - [گزارش تحویل و شواهد استیج ۱](docs/reports/stage-01.md)
 - [گزارش تحویل و شواهد استیج ۲](docs/reports/stage-02.md)

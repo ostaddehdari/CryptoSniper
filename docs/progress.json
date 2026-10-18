@@ -1062,6 +1062,27 @@
           "status": "passed_local_fallback",
           "tests_passed": 17,
           "notes": "PostgreSQL was unavailable locally; exact-source PostgreSQL/Redis/Workers/Beat/Chromium evidence is pending GitHub CI."
+        },
+        {
+          "name": "Exact-source CI: PostgreSQL, Redis, seven Workers/Beat and Chromium",
+          "status": "passed",
+          "run_id": 39127451081,
+          "url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/39127451081",
+          "tested_commit": "e315e1983bb916ed8867a721b583e9b2c55eb93a",
+          "pytest_passed": 245,
+          "evidence_artifact_id": 12136578010,
+          "evidence_sha256": "e6959cd8ef2753419017d34eb54fefda2f59b781d451af7512df375639fd3a6d"
+        },
+        {
+          "name": "Stage21 cumulative package, 36 Nginx regressions, CHECK_OK and immutable Release",
+          "status": "passed",
+          "run_id": 39127451087,
+          "url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/39127451087",
+          "artifact_id": 12136254888,
+          "source_commit": "e315e1983bb916ed8867a721b583e9b2c55eb93a",
+          "archive_sha256": "8a44ba2e8e1d61806a122d93bf92f6e3eccc85fa291fc3f51c327469141e0d41",
+          "installer_sha256": "5d9a4f5e9cf1783ce7ad57a58c39a63b632c7d22611ba6833ccff6757a3cb41c",
+          "release_url": "https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage21-v0.21.0rc1-deploy"
         }
       ],
       "commit_shas": [
@@ -1077,7 +1098,9 @@
         "Target VPS installation and public HTTPS acceptance are pending; LIVE_TRADING_ENABLED remains false.",
         "Operator must confirm sanctions, jurisdiction and exchange eligibility before any live connection."
       ],
-      "implementation": "All five code works are implemented: encrypted Telethon session/login, durable channel ingestion, bounded template parsing, structured AI analysis, UI/automation and five fail-closed Spot adapters with durable live-order outbox. External acceptance remains partial."
+      "implementation": "All five code works are implemented: encrypted Telethon session/login, durable channel ingestion, bounded template parsing, structured AI analysis, UI/automation and five fail-closed Spot adapters with durable live-order outbox. External acceptance remains partial.",
+      "release_tag": "stage21-v0.21.0rc1-deploy",
+      "release_commit": "e315e1983bb916ed8867a721b583e9b2c55eb93a"
     }
   }
 }

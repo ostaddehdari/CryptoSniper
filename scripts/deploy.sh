@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # CryptoSniper: single-command, pinned verified deployment artifact.
 # Usage: curl -fsSL https://raw.githubusercontent.com/ostaddehdari/CryptoSniper/main/scripts/deploy.sh -o /tmp/cryptosniper-deploy.sh && sudo bash /tmp/cryptosniper-deploy.sh
-# Only the SHA256-verified Stage20 ZIP and installer from the official release are executed.
+# Only the SHA256-verified Stage21 ZIP and installer from the official release are executed.
 set -Eeuo pipefail
 umask 077
 
-RELEASE_TAG='stage20-v0.20.0rc1-deploy'
-ZIP_NAME='CryptoSniper-Stage20-v0.20.0rc1.zip'
-INSTALLER_NAME='cryptosniper-stage20-run.sh'
-ZIP_SHA256='a7264790d9f26d3d8cdb9727603b3d44982c7a040db1154edabef0f5bb83ce55'
-INSTALLER_SHA256='fa1d8dac77191921f6f8a178eeeb6d62e6093d4792b59aa6501d04b9617896ed'
-SOURCE_COMMIT='89bb6653a5b24b062373b5ee0ed4539c18c6c1c8'
+RELEASE_TAG='stage21-v0.21.0rc1-deploy'
+ZIP_NAME='CryptoSniper-Stage21-v0.21.0rc1.zip'
+INSTALLER_NAME='cryptosniper-stage21-run.sh'
+ZIP_SHA256='8a44ba2e8e1d61806a122d93bf92f6e3eccc85fa291fc3f51c327469141e0d41'
+INSTALLER_SHA256='5d9a4f5e9cf1783ce7ad57a58c39a63b632c7d22611ba6833ccff6757a3cb41c'
+SOURCE_COMMIT='e315e1983bb916ed8867a721b583e9b2c55eb93a'
 RELEASE_BASE="https://github.com/ostaddehdari/CryptoSniper/releases/download/$RELEASE_TAG"
 MODE="${1:-install}"
 if [[ "$MODE" != 'install' && "$MODE" != '--check' ]]; then
@@ -46,7 +46,7 @@ if [[ "$MODE" == '--check' ]]; then
     exit 0
 fi
 
-echo 'Running the verified Stage20 installer; preserving existing managed installation data.'
-LOG_FILE=/root/cryptosniper-stage20-runlog.txt \
+echo 'Running the verified Stage21 installer; preserving existing managed installation data.'
+LOG_FILE=/root/cryptosniper-stage21-runlog.txt \
     bash "$WORKDIR/$INSTALLER_NAME" "$WORKDIR/$ZIP_NAME"
 echo 'DEPLOY_OK: https://srun.ir/cryptosniper/auth/login/'

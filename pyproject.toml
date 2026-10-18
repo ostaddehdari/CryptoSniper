@@ -1,7 +1,7 @@
 [project]
 name = "cryptosniper"
-version = "0.16.0rc1"
-description = "Python trading management platform — Stages 15-16 reports and responsive PWA"
+version = "0.18.0rc1"
+description = "Python trading management platform — Stages 17-18 security and Paper validation"
 requires-python = ">=3.12,<3.15"
 dependencies = [
   "Django>=5.2.18,<5.3",

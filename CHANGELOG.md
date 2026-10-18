@@ -1,3 +1,12 @@
+## 0.18.0rc1 — استیج‌های ۱۷ و ۱۸ (2026-10-18)
+
+- سخت‌سازی مالکیت/CSRF/XSS/SSRF، گردش و ابطال credential، backup رمزنگاری‌شده، step-up واقعی و readiness صادقانه 2FA.
+- rate limit جدا برای API/parser/subscription، محدودیت body، retention داده موقت و دروازه secret/dependency scan با runbook رخداد.
+- Simulator seedدار با مسیر قیمت، partial fill، latency مجازی، rejection، rate limit و قواعد lot/min-notional.
+- مرز مشترک Paper و موتور Spot/Margin Long/Short با دفتر وام، بهره و بازپرداخت؛ Binance write همچنان غیرفعال است.
+- تزریق timeout قبل/بعد submit، recovery از receipt پایدار، duplicate/fence و cancel/fill race؛ نتیجه نامعلوم موفق فرض نمی‌شود.
+- ماتریس readiness برای Manual و Smart Paste تا alerts/reports؛ نتیجه Simulator مدرک sandbox/live نیست. CI دقیق و بسته نصب پس از push ثبت می‌شوند.
+
 ## 0.16.0rc1 — استیج‌های ۱۵ و ۱۶ (2026-10-17)
 
 - P/L مالی Decimal با gross/net، تبدیل fee asset، بهره/بازپرداخت Margin و policy صریح unknown؛ آمار با breakeven ثابت و win-rate مستند.

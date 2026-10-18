@@ -952,7 +952,7 @@
       "depends_on": [
         "S16"
       ],
-      "status": "not_started",
+      "status": "partial",
       "source_sections": [
         19,
         52,
@@ -968,7 +968,7 @@
           "title": "مرور تهدیدها و دسترسی",
           "deliverables": "تست مالکیت objectها، CSRF/XSS، permission و SSRF در تنظیمات خارجی.",
           "acceptance": "کاربر دوم، payload مخرب و URL نامعتبر به اطلاعات و اجرا دسترسی نگیرد.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S17-W02",
@@ -976,7 +976,7 @@
           "title": "اسرار و rotation",
           "deliverables": "ممیزی redaction، credential rotation، revocation و پاک‌سازی پاسخ exchange و backup رمزنگاری‌شده.",
           "acceptance": "secret canary در API/log/static/export/git ظاهر نشود و disable اجرا را قطع کند.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S17-W03",
@@ -984,7 +984,7 @@
           "title": "عملیات حساس و 2FA readiness",
           "deliverables": "interface مرحله دوم احراز، step-up برای کلید و live mode؛ پیاده‌سازی واقعی در صورت مشخص‌شدن provider.",
           "acceptance": "بدون provider فقط readiness اعلام شود؛ کنترل حساس نباید ظاهراً فعال ولی بی‌اثر باشد.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S17-W04",
@@ -992,7 +992,7 @@
           "title": "Rate limits و سیاست retention",
           "deliverables": "limit ورود، parser، API، subscription و audit retention با کمینه‌سازی اطلاعات خصوصی.",
           "acceptance": "درخواست پرتکرار محدود و متن/فایل سنگین به‌صورت کنترل‌شده رد شود.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S17-W05",
@@ -1000,7 +1000,7 @@
           "title": "Security regression و runbook",
           "deliverables": "dependency scan، security tests و راهنمای پاسخ به نشت/خرابی اتصال.",
           "acceptance": "یافته‌ها با شدت و وضعیت واقعی گزارش و مورد بحرانی باز مانع release شود.",
-          "status": "not_started"
+          "status": "done"
         }
       ]
     },
@@ -1011,7 +1011,7 @@
       "depends_on": [
         "S17"
       ],
-      "status": "not_started",
+      "status": "partial",
       "source_sections": [
         64,
         65,
@@ -1024,7 +1024,7 @@
           "title": "سناریوهای قیمت و سفارش",
           "deliverables": "توسعه simulator استیج ۳: paths deterministic، fills جزئی، latency، rate limit و rejection.",
           "acceptance": "seed تکراری نتایج یکسان و قواعد min order/fees مشابه contract واقعی بدهد.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S18-W02",
@@ -1032,7 +1032,7 @@
           "title": "Paper با موتور مشترک",
           "deliverables": "همان risk/state/executor/exits با adapter simulator و جداسازی کامل از live credentials/accounts.",
           "acceptance": "در paper هیچ درخواست معاملاتی به provider واقعی ارسال نشود.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S18-W03",
@@ -1040,7 +1040,7 @@
           "title": "سناریوهای Spot و Margin",
           "deliverables": "borrow/repay/interest در margin simulator، TP/SL، dust و دو معامله همزمان.",
           "acceptance": "balance و position بعد close و repayment با fixture تطبیق داشته باشند.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S18-W04",
@@ -1048,7 +1048,7 @@
           "title": "Failure injection و recovery",
           "deliverables": "timeout-after-submit، restart، duplicate tasks، cancel/fill race، قطع feed/Redis و reconciliation.",
           "acceptance": "سفارش/خروج مضاعف رخ ندهد و هیچ نتیجه نامعلوم به موفقیت قطعی تبدیل نشود.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S18-W05",
@@ -1056,7 +1056,7 @@
           "title": "گزارش آمادگی موتور",
           "deliverables": "ماتریس پوشش واقعی، limitations هر adapter و نتایج end-to-end برای دو ورودی فعلی.",
           "acceptance": "manual و smart paste تا reports/alerts کامل شوند؛ sandbox/live بررسی‌نشده صریحاً مشخص بماند.",
-          "status": "not_started"
+          "status": "done"
         }
       ]
     },

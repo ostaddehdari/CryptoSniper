@@ -21,6 +21,6 @@ Service Worker تنها درخواست `GET` هم‌مبدأ زیر static prefi
 - CI اولیه **۱۴۹ تست** را گذراند و خطای browser را آشکار کرد. [CI موفق پس از اصلاح](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39055497955) روی commit `e1d376b75b329d8b80016da17a4811951faf0a59`: **۱۵۰ تست**، PostgreSQL/Redis، هفت Worker/Beat و Chromium؛ artifact شواهد `12109002649`.
 - [CI منبع دقیق نهایی](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39057096349) روی `10158473f4504275814232e4db5b4506135e1685`: **۱۵۶ تست**، Chromium و artifact `12110585867`. سنجهٔ همان اجرای موفق: `dashboard_queries=17` و `dashboard_build_ms=20.4` برای workload کوچک CI؛ تضمین ظرفیت production نیست.
 - Workflow بسته‌ساز، ۱۸ آزمون Nginx و `CHECK_OK` را پاس کرد و artifact `12110062971` ساخت. ایجاد صفحهٔ Release با GitHub Actions به خطای permission 403 خورد؛ ZIP و installer عیناً در commit ثابت `104038e39090d2ba911ea1c7281ff39709270016` ذخیره و دانلود مستقل آن‌ها با SHA256 تطبیق داده شد.
-- نصب Stage14 با لاگ اپراتور، حفظ داده/کلید/login، سلامت ده سرویس و HTTP 200 محلی Nginx تأیید شده است. نصب Stage16 و پذیرش مرورگر عمومی هنوز باید توسط اپراتور انجام شود.
-- اجرای واقعی Binance، Margin/Short و External management خاموش است؛ Telegram/AI تنها در S21 اجرا می‌شود.
+- لاگ اپراتور در ۱۸ اکتبر ۲۰۲۶ نصب موفق Stage16 را با حفظ داده/کلید/login، migrationهای reports/trading، ده سرویس فعال، هفت صف تازه و HTTP 200 محلی Nginx تأیید می‌کند. پذیرش مرورگر عمومی مستقل هنوز باز است.
+- اجرای واقعی Binance و External management خاموش است؛ Margin/Short از Stage18 فقط در Simulator Paper فعال می‌شود و Telegram/AI تنها در S21 اجرا می‌شود.
 

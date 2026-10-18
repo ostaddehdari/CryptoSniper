@@ -5,9 +5,9 @@
     "S01",
     "S02"
   ],
-  "current_stage": "S16",
-  "next_stage": "S17",
-  "last_completed_work": "S16-W05",
+  "current_stage": "S18",
+  "next_stage": "S19",
+  "last_completed_work": "S18-W05",
   "implementation_started": true,
   "stage_results": {
     "S01": {
@@ -728,6 +728,19 @@
           "installer_sha256": "3d8360a292b4d579a06dc1aefffa67160b150a9fe4cd7de2209f238b4053b754",
           "asset_commit": "104038e39090d2ba911ea1c7281ff39709270016",
           "release_page": "blocked: GitHub Actions POST /releases returned HTTP 403"
+        },
+        {
+          "name": "Operator-provided Stage16 VPS installation and local HTTPS origin checks",
+          "status": "passed",
+          "verified_by": "user-supplied installer output only; no independent VPS access",
+          "date": "2026-10-18",
+          "installed_version": "0.16.0rc1",
+          "installer_result": "INSTALL_OK and DEPLOY_OK",
+          "migrations": "reports.0001, reports.0002 and trading.0005 applied",
+          "services_active": 10,
+          "queues_fresh": 7,
+          "https_origin_readiness_http_code": 200,
+          "https_origin_login_http_code": 200
         }
       ],
       "commit_shas": [
@@ -809,29 +822,81 @@
         "e1d376b75b329d8b80016da17a4811951faf0a59"
       ],
       "blockers": [
-        "Stage16 VPS installation and public-browser acceptance remain pending.",
-        "Real Binance order writes and Margin/Short execution remain disabled.",
+        "Stage16 public-browser acceptance remains pending; VPS installation is confirmed by the operator log.",
+        "Real Binance order writes remain disabled; Margin/Short are simulator-only from Stage18.",
         "Telegram/channel ingestion and AI analysis remain explicitly deferred to S21.",
         "GitHub Actions cannot create the Release page (HTTP 403); verified assets are pinned in the repository instead."
       ],
-      "implementation": "All five experience works are implemented: mobile navigation/cards, keyboard-safe form drafts, responsive trades/timeline, unified settings/source surfaces and a static-assets-only PWA with explicit offline transaction blocking. Exact-source CI passed 156 tests; the verified deploy bytes are pinned in an immutable repository commit because GitHub Actions release creation returned permission 403.",
+      "implementation": "All five experience works are implemented: mobile navigation/cards, keyboard-safe form drafts, responsive trades/timeline, unified settings/source surfaces and a static-assets-only PWA with explicit offline transaction blocking. Exact-source CI passed 156 tests. The operator-provided 2026-10-18 log confirms migration, ten active services, seven fresh queues, readiness and local HTTPS HTTP 200 while preserving data/keyring/login.",
       "release_tag": "stage16-v0.16.0rc1-deploy",
       "release_commit": "10158473f4504275814232e4db5b4506135e1685",
       "asset_commit": "104038e39090d2ba911ea1c7281ff39709270016"
     },
     "S17": {
-      "status": "not_started",
-      "completed_works": [],
-      "checks": [],
-      "commit_shas": [],
-      "blockers": []
+      "status": "partial",
+      "completed_works": [
+        "S17-W01",
+        "S17-W02",
+        "S17-W03",
+        "S17-W04",
+        "S17-W05"
+      ],
+      "checks": [
+        {
+          "name": "Local security, simulator and related regression fallback checks",
+          "status": "passed_local_fallback",
+          "stage_tests_passed": 32,
+          "related_regressions_passed": 30,
+          "notes": "Ruff, format, Django check, migration drift, secret scan and dependency audit passed; exact PostgreSQL/Redis/Workers/Chromium CI is pending."
+        }
+      ],
+      "commit_shas": [
+        "b762f60",
+        "9a43ee1",
+        "79161d3",
+        "dac4ed3",
+        "46ef347",
+        "aba67e6"
+      ],
+      "blockers": [
+        "Exact-source PostgreSQL/Redis/Workers/Chromium CI is pending.",
+        "A real second-factor provider is not selected; only readiness and password step-up are active.",
+        "Real Binance credentials and permissions remain unverified; write execution is disabled."
+      ],
+      "implementation": "Five security works implemented: hostile-input ownership/CSRF/XSS/SSRF regressions, credential rotation/revocation/encrypted backup, password step-up and honest 2FA readiness, central rate/body limits, retention, release gate and incident runbook."
     },
     "S18": {
-      "status": "not_started",
-      "completed_works": [],
-      "checks": [],
-      "commit_shas": [],
-      "blockers": []
+      "status": "partial",
+      "completed_works": [
+        "S18-W01",
+        "S18-W02",
+        "S18-W03",
+        "S18-W04",
+        "S18-W05"
+      ],
+      "checks": [
+        {
+          "name": "Local deterministic simulator and connected engine regressions",
+          "status": "passed_local_fallback",
+          "stage_tests_passed": 32,
+          "related_regressions_passed": 30,
+          "notes": "PostgreSQL/Redis were unavailable in the build container; authoritative GitHub integration CI is pending."
+        }
+      ],
+      "commit_shas": [
+        "e17d7cd",
+        "5fef18a",
+        "4a841e1",
+        "2d8587c",
+        "20675e5",
+        "aba67e6"
+      ],
+      "blockers": [
+        "Exact-source PostgreSQL/Redis/seven Workers/Beat/Chromium CI is pending.",
+        "Simulator results do not verify Binance sandbox/live; real writes remain disabled.",
+        "Stage18 VPS installation and public-browser acceptance are pending."
+      ],
+      "implementation": "Five Paper validation works implemented: seeded price/order paths with partial fills and faults, a shared fail-closed Paper boundary, Margin Long/Short borrow-interest-repay ledger, failure injection/recovery and an honest readiness matrix with Manual and Smart Paste end-to-end coverage."
     },
     "S19": {
       "status": "not_started",

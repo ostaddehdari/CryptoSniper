@@ -166,5 +166,10 @@ class Stage16NginxUpgradeTests(NginxUpgradeTests):
     stage = 16
 
 
+class Stage18NginxUpgradeTests(NginxUpgradeTests):
+    installer = ROOT / "scripts/cryptosniper-stage18-run.sh"
+    stage = 18
+
+
 if __name__ == "__main__":
     unittest.main()

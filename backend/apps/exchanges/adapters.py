@@ -1,10 +1,11 @@
+import hashlib
+import random
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
 from threading import Lock
-from uuid import uuid4
 
 from django.utils import timezone
 
@@ -31,6 +32,7 @@ class InvalidProviderResponse(AdapterError):
 
 class OrderStatus(StrEnum):
     OPEN = "open"
+    PARTIAL = "partial"
     FILLED = "filled"
     CANCELLED = "cancelled"
 
@@ -105,6 +107,37 @@ class Order:
     created_at: datetime
 
 
+@dataclass(frozen=True)
+class SimulationScenario:
+    """Seeded virtual-time conditions for reproducible adapter contract tests."""
+
+    seed: int = 1
+    steps: int = 20
+    volatility_bps: int = 25
+    partial_fill_ratio: Decimal = Decimal("1")
+    virtual_latency_ms: int = 0
+    reject_every: int = 0
+    rate_limit_per_step: int = 100
+
+    def __post_init__(self):
+        if self.steps < 1 or self.volatility_bps < 0:
+            raise ValueError("Simulation steps and volatility are invalid.")
+        if not Decimal("0") < self.partial_fill_ratio <= Decimal("1"):
+            raise ValueError("Partial fill ratio must be in (0, 1].")
+        if self.virtual_latency_ms < 0 or self.reject_every < 0 or self.rate_limit_per_step < 1:
+            raise ValueError("Simulation failure controls are invalid.")
+
+    def price_path(self, start):
+        rng = random.Random(self.seed)
+        value = Decimal(str(start))
+        path = []
+        for _ in range(self.steps):
+            move = Decimal(rng.randint(-self.volatility_bps, self.volatility_bps)) / Decimal(10000)
+            value = (value * (Decimal(1) + move)).quantize(Decimal("0.01"))
+            path.append(value)
+        return tuple(path)
+
+
 class ExchangeAdapter(ABC):
     code: str
 
@@ -169,10 +202,31 @@ class SimulatorAdapter(ExchangeAdapter):
     code = "simulator"
     _prices = {"BTC/USDT": Decimal("65000"), "ETH/USDT": Decimal("3500")}
 
-    def __init__(self, credentials=None, environment="paper"):
+    def __init__(self, credentials=None, environment="paper", scenario=None):
         super().__init__(credentials, environment)
         self._lock = Lock()
         self._orders = {}
+        self.scenario = scenario or SimulationScenario(volatility_bps=0)
+        self._paths = {
+            symbol: self.scenario.price_path(price) for symbol, price in self._prices.items()
+        }
+        self._step = 0
+        self._requests_at_step = 0
+        self._order_attempts = 0
+        self.virtual_clock_ms = 0
+
+    def advance(self, steps=1):
+        if steps < 1:
+            raise ValueError("Simulation step must be positive.")
+        self._step = min(self._step + steps, self.scenario.steps - 1)
+        self._requests_at_step = 0
+        return self._step
+
+    def _consume_request(self):
+        self._requests_at_step += 1
+        if self._requests_at_step > self.scenario.rate_limit_per_step:
+            raise AdapterError("simulated_rate_limit")
+        self.virtual_clock_ms += self.scenario.virtual_latency_ms
 
     def validate_credentials(self):
         return PermissionReport(
@@ -227,8 +281,9 @@ class SimulatorAdapter(ExchangeAdapter):
         ]
 
     def fetch_ticker(self, symbol):
+        self._consume_request()
         try:
-            price = self._prices[symbol.upper()]
+            price = self._paths[symbol.upper()][self._step]
         except KeyError as error:
             raise UnsupportedOperationError("بازار در شبیه‌ساز موجود نیست.") from error
         return Ticker(symbol.upper(), price, timezone.now())
@@ -261,19 +316,47 @@ class SimulatorAdapter(ExchangeAdapter):
             for order in self._orders.values():
                 if order.client_order_id == client_order_id:
                     return order
-            price = Decimal(str(intent.get("price") or self.fetch_ticker(intent["symbol"]).price))
+            self._order_attempts += 1
+            should_reject = (
+                self.scenario.reject_every
+                and self._order_attempts % self.scenario.reject_every == 0
+            )
+            if should_reject:
+                raise AdapterError("simulated_rejection")
+            symbol = str(intent["symbol"]).upper()
+            market = next((item for item in self.fetch_markets() if item.symbol == symbol), None)
+            if not market:
+                raise UnsupportedOperationError("بازار در شبیه‌ساز موجود نیست.")
+            price = Decimal(str(intent.get("price") or self.fetch_ticker(symbol).price))
+            if market.amount_step and amount % market.amount_step:
+                raise ValueError("Order amount violates lot step.")
+            if market.min_notional and amount * price < market.min_notional:
+                raise ValueError("Order notional is below market minimum.")
             market_order = intent["order_type"] == "market"
+            filled = (
+                (amount * self.scenario.partial_fill_ratio).quantize(market.amount_step)
+                if market_order
+                else Decimal("0")
+            )
+            status = (
+                OrderStatus.FILLED
+                if filled == amount
+                else (OrderStatus.PARTIAL if filled else OrderStatus.OPEN)
+            )
+            order_digest = hashlib.sha256(
+                f"{self.scenario.seed}:{client_order_id}".encode()
+            ).hexdigest()[:24]
             order = Order(
-                order_id="sim-" + uuid4().hex,
+                order_id="sim-" + order_digest,
                 client_order_id=client_order_id,
-                symbol=str(intent["symbol"]).upper(),
+                symbol=symbol,
                 side=intent["side"],
                 order_type=intent["order_type"],
                 amount=amount,
                 price=price,
-                filled_amount=amount if market_order else Decimal("0"),
-                average_price=price if market_order else None,
-                status=OrderStatus.FILLED if market_order else OrderStatus.OPEN,
+                filled_amount=filled,
+                average_price=price if filled else None,
+                status=status,
                 created_at=timezone.now(),
             )
             self._orders[order.order_id] = order

@@ -452,3 +452,39 @@ class SignalAIAnalysis(models.Model):
 
     def __str__(self):
         return f"Signal {self.signal_id} · {self.model} · {self.status}"
+
+
+class SignalOutcome(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "منتظر داده"
+        NO_DATA = "no_data", "بدون داده"
+        NOT_TRIGGERED = "not_triggered", "ورود فعال نشد"
+        OPEN = "open", "فعال"
+        TARGET = "target", "هدف محقق شد"
+        STOPPED = "stopped", "حد ضرر"
+        AMBIGUOUS = "ambiguous", "مبهم"
+        EXPIRED = "expired", "منقضی"
+
+    signal = models.OneToOneField(Signal, on_delete=models.CASCADE, related_name="outcome")
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
+    provider = models.CharField(max_length=32, default="binance_public")
+    symbol = models.CharField(max_length=32)
+    interval = models.CharField(max_length=8, default="1h")
+    entry_hit_at = models.DateTimeField(null=True, blank=True)
+    stop_hit_at = models.DateTimeField(null=True, blank=True)
+    targets_hit = models.PositiveSmallIntegerField(default=0)
+    last_target_price = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
+    evaluated_from = models.DateTimeField()
+    evaluated_until = models.DateTimeField(null=True, blank=True)
+    policy_version = models.CharField(max_length=32, default="ohlc-conservative-v1")
+    evidence = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-evaluated_from",)
+        indexes = [models.Index(fields=("owner", "status", "evaluated_from"))]
+
+    def __str__(self):
+        return f"{self.signal_id}:{self.status}:{self.targets_hit}"

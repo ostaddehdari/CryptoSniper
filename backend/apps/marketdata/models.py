@@ -38,3 +38,42 @@ class WatchlistItem(models.Model):
 
     def __str__(self):
         return f"{self.watchlist_id}:{self.market_id}"
+
+
+class HistoricalCandle(models.Model):
+    """Normalized public OHLC data used only for historical evidence."""
+
+    provider = models.CharField(max_length=32)
+    symbol = models.CharField(max_length=32)
+    interval = models.CharField(max_length=8, default="1h")
+    open_time = models.DateTimeField()
+    close_time = models.DateTimeField()
+    open_price = models.DecimalField(max_digits=32, decimal_places=16)
+    high_price = models.DecimalField(max_digits=32, decimal_places=16)
+    low_price = models.DecimalField(max_digits=32, decimal_places=16)
+    close_price = models.DecimalField(max_digits=32, decimal_places=16)
+    volume = models.DecimalField(max_digits=40, decimal_places=16, default=0)
+    fetched_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("open_time",)
+        constraints = [
+            models.UniqueConstraint(
+                fields=("provider", "symbol", "interval", "open_time"),
+                name="historical_candle_provider_symbol_time_unique",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(high_price__gte=models.F("low_price"))
+                    & models.Q(open_price__gte=models.F("low_price"))
+                    & models.Q(open_price__lte=models.F("high_price"))
+                    & models.Q(close_price__gte=models.F("low_price"))
+                    & models.Q(close_price__lte=models.F("high_price"))
+                ),
+                name="historical_candle_valid_ohlc",
+            ),
+        ]
+        indexes = [models.Index(fields=("symbol", "interval", "open_time"))]
+
+    def __str__(self):
+        return f"{self.provider}:{self.symbol}:{self.interval}:{self.open_time.isoformat()}"

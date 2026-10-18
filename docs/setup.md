@@ -85,3 +85,5 @@ Stage15 محاسبات Decimal و گزارش‌های aggregate/CSV/SVG را ا�
 نسخه 0.20 هفت Worker دائمی، دقیقاً یک Beat، monitor صف/feed/exchange، هویت release/source/environment، backup رمزنگاری‌شده و restore فقط روی دیتابیس جدا را بررسی می‌کند. جزئیات روزمره در [راهنمای ادمین](admin-guide.md)، مسیر محصول در [راهنمای کاربر](user-guide.md) و مرز شواهد در [چک‌لیست پذیرش](acceptance/stage20-checklist.md) آمده است.
 
 پس از نصب، readiness عمومی و login باید 200 باشند و APIهای خصوصی deployment، host capabilities و acceptance با نشست معتبر بررسی شوند. نتیجهٔ CI جای restart، restore و مرورگر عمومی VPS را نمی‌گیرد. `CRYPTOSNIPER_BACKUP_PASSPHRASE` را در Git یا log قرار ندهید و مقصد offsite را روی storage مستقل تعریف کنید.
+
+Release رسمی `stage20-v0.20.0rc1-deploy` از commit ثابت `89bb6653a5b24b062373b5ee0ed4539c18c6c1c8` ساخته شده است. `scripts/deploy.sh` فقط ZIP و installer دارای SHA ثابت همین Release را اجرا می‌کند. نصب‌کننده پس از migration یک backup رمزنگاری‌شده اولیه می‌سازد و timerهای روزانه/هفتگی را فعال می‌کند؛ offsite و `HOSTING_RESTORE_ADMIN_URL` همچنان باید متناسب با هاست و خارج Git تنظیم شوند.

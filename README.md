@@ -2,7 +2,7 @@
 
 سامانه پایتونی دریافت، اجرای و مدیریت سیگنال رمزارز با Django، PostgreSQL، Redis و Celery، رابط Mobile-First و حالت روشن پیش‌فرض.
 
-**برنامه: ۲۱ استیج × ۵ ورک = ۱۰۵ ورک.** نسخهٔ تجمعی آزمایشی **0.20.0rc1** کد استیج‌های ۱ تا ۲۰ را دارد: ممیزی صادقانه هاست، readiness، مانیتور مستقل، backup رمزنگاری‌شده و پذیرش نسخه پایه Manual/Smart Paste روی Paper Simulator. [CI منبع دقیق](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39115544511) با ۲۲۷ تست و PostgreSQL/Redis/هفت Worker/Beat/Chromium پاس شده است. اجرای Margin فقط دفتر شبیه‌ساز است؛ ارسال واقعی Binance همچنان غیرفعال و حساب واقعی بررسی‌نشده است. بستهٔ تغییرناپذیر 0.20 پس از gate انتشار ثبت می‌شود؛ نصب VPS، مرورگر عمومی، restore جدا و offsite تا ارائهٔ لاگ اپراتور باز می‌مانند.
+**برنامه: ۲۱ استیج × ۵ ورک = ۱۰۵ ورک.** نسخهٔ تجمعی آزمایشی **0.20.0rc1** کد استیج‌های ۱ تا ۲۰ را دارد: ممیزی صادقانه هاست، readiness، مانیتور مستقل، backup رمزنگاری‌شده و پذیرش نسخه پایه Manual/Smart Paste روی Paper Simulator. [CI منبع دقیق](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39115544511) با ۲۲۷ تست و PostgreSQL/Redis/هفت Worker/Beat/Chromium پاس شده و [Release رسمی 0.20](https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage20-v0.20.0rc1-deploy) نیز `CHECK_OK` دارد. اجرای Margin فقط دفتر شبیه‌ساز است؛ ارسال واقعی Binance همچنان غیرفعال و حساب واقعی بررسی‌نشده است. نصب VPS، مرورگر عمومی، restore جدا و offsite تا ارائهٔ لاگ اپراتور باز می‌مانند.
 
 - [گزارش تحویل و شواهد استیج ۱](docs/reports/stage-01.md)
 - [گزارش تحویل و شواهد استیج ۲](docs/reports/stage-02.md)
@@ -39,7 +39,7 @@
 
 ## استقرار و به‌روزرسانی از GitHub با یک دستور
 
-از این به بعد تمام نسخه‌ها ابتدا در GitHub ثبت می‌شوند. فایل `scripts/deploy.sh` ZIP و نصب‌کنندهٔ pin‌شده به یک commit تغییرناپذیر را دانلود می‌کند، SHA-256 هر دو را با مقادیر ثابت بررسی می‌کند، سپس صحت بسته را سنجیده و نصب/ارتقا را انجام می‌دهد. رمزهای خصوصی و دیتابیس موجود در ارتقای مدیریت‌شده محفوظ می‌مانند. ساخت صفحهٔ GitHub Release این نسخه با محدودیت دسترسی GitHub Actions (`403`) روبه‌رو شد؛ همان bytes تأییدشدهٔ artifact در `release-assets/` مخزن نگهداری و با commit ثابت دریافت می‌شوند.
+از این به بعد تمام نسخه‌ها ابتدا در GitHub ثبت می‌شوند. فایل `scripts/deploy.sh` ZIP و نصب‌کنندهٔ Release رسمی 0.20 را دانلود می‌کند، SHA-256 هر دو را با مقادیر ثابت بررسی می‌کند، سپس صحت بسته را سنجیده و نصب/ارتقا را انجام می‌دهد. رمزهای خصوصی، دیتابیس، keyring و ورود موجود در ارتقای مدیریت‌شده محفوظ می‌مانند. Release از commit منبع ثابت `89bb6653a5b24b062373b5ee0ed4539c18c6c1c8` ساخته و با ZIP SHA-256 برابر `a7264790d9f26d3d8cdb9727603b3d44982c7a040db1154edabef0f5bb83ce55` منتشر شده است.
 
 دستور سرور Ubuntu (دسترسی sudo/root لازم است):
 

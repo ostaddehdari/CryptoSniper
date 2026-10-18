@@ -959,6 +959,17 @@
           "dashboard_build_ms": 20.94,
           "evidence_artifact_id": 12132212170,
           "evidence_sha256": "2eb2fe8835ffd15e62209d1f9cefaee3c1138265b66cb0ff31b0b20dce14ec2c"
+        },
+        {
+          "name": "Stage20 cumulative package, 30 Nginx regressions and immutable Release assets",
+          "status": "passed",
+          "run_id": 39116144489,
+          "url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/39116144489",
+          "artifact_id": 12132466967,
+          "source_commit": "89bb6653a5b24b062373b5ee0ed4539c18c6c1c8",
+          "archive_sha256": "a7264790d9f26d3d8cdb9727603b3d44982c7a040db1154edabef0f5bb83ce55",
+          "installer_sha256": "fa1d8dac77191921f6f8a178eeeb6d62e6093d4792b59aa6501d04b9617896ed",
+          "release_url": "https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage20-v0.20.0rc1-deploy"
         }
       ],
       "commit_shas": [
@@ -974,7 +985,9 @@
         "Public HTTPS browser acceptance, service restart and separate-database restore drill require operator evidence.",
         "Independent encrypted offsite storage is not configured in repository settings."
       ],
-      "implementation": "Five hosting operations works implemented: measured host/deployment gates, seven-queue monitor, encrypted backup/restore safety and production runbook. Host-dependent acceptance remains partial."
+      "implementation": "Five hosting operations works implemented: measured host/deployment gates, seven-queue monitor, encrypted backup/restore safety and production runbook. Host-dependent acceptance remains partial.",
+      "release_tag": "stage20-v0.20.0rc1-deploy",
+      "release_commit": "89bb6653a5b24b062373b5ee0ed4539c18c6c1c8"
     },
     "S20": {
       "status": "partial",
@@ -1002,6 +1015,17 @@
           "dashboard_build_ms": 20.94,
           "evidence_artifact_id": 12132212170,
           "evidence_sha256": "2eb2fe8835ffd15e62209d1f9cefaee3c1138265b66cb0ff31b0b20dce14ec2c"
+        },
+        {
+          "name": "Stage20 cumulative package, 30 Nginx regressions and immutable Release assets",
+          "status": "passed",
+          "run_id": 39116144489,
+          "url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/39116144489",
+          "artifact_id": 12132466967,
+          "source_commit": "89bb6653a5b24b062373b5ee0ed4539c18c6c1c8",
+          "archive_sha256": "a7264790d9f26d3d8cdb9727603b3d44982c7a040db1154edabef0f5bb83ce55",
+          "installer_sha256": "fa1d8dac77191921f6f8a178eeeb6d62e6093d4792b59aa6501d04b9617896ed",
+          "release_url": "https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage20-v0.20.0rc1-deploy"
         }
       ],
       "commit_shas": [
@@ -1018,7 +1042,10 @@
         "Simulator results do not verify Binance sandbox/live; real writes remain disabled.",
         "Telegram, channel templates and AI are intentionally deferred to Stage21."
       ],
-      "implementation": "Five base-delivery works implemented: Manual/Smart Paste close, Spot/Margin exits, alerts/reports/timezone, recovery/security and honest user/admin delivery contract."
+      "implementation": "Five base-delivery works implemented: Manual/Smart Paste close, Spot/Margin exits, alerts/reports/timezone, recovery/security and honest user/admin delivery contract.",
+      "release_tag": "stage20-v0.20.0rc1-deploy",
+      "release_commit": "89bb6653a5b24b062373b5ee0ed4539c18c6c1c8",
+      "release_workflow_commit": "d6821af964e99fec89ac25bad66c10d9d86d3085"
     },
     "S21": {
       "status": "not_started",

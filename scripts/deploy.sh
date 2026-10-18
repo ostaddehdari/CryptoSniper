@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # CryptoSniper: single-command, pinned verified deployment artifact.
 # Usage: curl -fsSL https://raw.githubusercontent.com/ostaddehdari/CryptoSniper/main/scripts/deploy.sh -o /tmp/cryptosniper-deploy.sh && sudo bash /tmp/cryptosniper-deploy.sh
-# Only the SHA256-verified Stage18 ZIP and installer at an immutable Git commit are executed.
+# Only the SHA256-verified Stage20 ZIP and installer from the official release are executed.
 set -Eeuo pipefail
 umask 077
 
-RELEASE_TAG='stage18-v0.18.0rc1-deploy'
-ZIP_NAME='CryptoSniper-Stage18-v0.18.0rc1.zip'
-INSTALLER_NAME='cryptosniper-stage18-run.sh'
-ZIP_SHA256='fc097c2cad84f7e014c01db69d39852ca4999d08bfef2bdc7d1fc9045b5b856d'
-INSTALLER_SHA256='62735789f52832fea017e552a9868c37761a3f16b733d99c2e9ed869853defa5'
-ASSET_COMMIT='3b031e210560c0085b71909808f9a30aa480a4c2'
-RELEASE_BASE="https://raw.githubusercontent.com/ostaddehdari/CryptoSniper/$ASSET_COMMIT/release-assets/$RELEASE_TAG"
+RELEASE_TAG='stage20-v0.20.0rc1-deploy'
+ZIP_NAME='CryptoSniper-Stage20-v0.20.0rc1.zip'
+INSTALLER_NAME='cryptosniper-stage20-run.sh'
+ZIP_SHA256='a7264790d9f26d3d8cdb9727603b3d44982c7a040db1154edabef0f5bb83ce55'
+INSTALLER_SHA256='fa1d8dac77191921f6f8a178eeeb6d62e6093d4792b59aa6501d04b9617896ed'
+SOURCE_COMMIT='89bb6653a5b24b062373b5ee0ed4539c18c6c1c8'
+RELEASE_BASE="https://github.com/ostaddehdari/CryptoSniper/releases/download/$RELEASE_TAG"
 MODE="${1:-install}"
 if [[ "$MODE" != 'install' && "$MODE" != '--check' ]]; then
     echo 'Usage: bash cryptosniper-deploy.sh [--check]' >&2
@@ -27,7 +27,7 @@ done
 
 WORKDIR="$(mktemp -d /tmp/cryptosniper-release.XXXXXXXX)"
 trap 'rm -rf -- "$WORKDIR"' EXIT
-echo "Downloading the verified $RELEASE_TAG artifact from immutable commit $ASSET_COMMIT..."
+echo "Downloading the official $RELEASE_TAG assets built from source $SOURCE_COMMIT..."
 curl --fail --location --show-error --silent --retry 3 \
     --output "$WORKDIR/$ZIP_NAME" "$RELEASE_BASE/$ZIP_NAME"
 curl --fail --location --show-error --silent --retry 3 \
@@ -46,7 +46,7 @@ if [[ "$MODE" == '--check' ]]; then
     exit 0
 fi
 
-echo 'Running the verified Stage18 installer; preserving existing managed installation data.'
-LOG_FILE=/root/cryptosniper-stage18-runlog.txt \
+echo 'Running the verified Stage20 installer; preserving existing managed installation data.'
+LOG_FILE=/root/cryptosniper-stage20-runlog.txt \
     bash "$WORKDIR/$INSTALLER_NAME" "$WORKDIR/$ZIP_NAME"
 echo 'DEPLOY_OK: https://srun.ir/cryptosniper/auth/login/'

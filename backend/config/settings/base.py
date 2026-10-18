@@ -257,3 +257,8 @@ CELERY_BEAT_SCHEDULE["private-data-retention"] = {
     "schedule": 86400.0,
     "options": {"queue": "maintenance", "expires": 3600},
 }
+CELERY_BEAT_SCHEDULE["operations-monitor"] = {
+    "task": "operations.monitor",
+    "schedule": 60.0,
+    "options": {"queue": "maintenance", "expires": 50},
+}

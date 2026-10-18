@@ -4,6 +4,7 @@ from datetime import timedelta
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.http import JsonResponse
@@ -66,6 +67,10 @@ def health_context(user):
     feed_lags = [
         (timezone.now() - p.last_tick_at).total_seconds() for p in protections if p.last_tick_at
     ]
+    try:
+        service_snapshot = cache.get("operations:service-snapshot")
+    except Exception:
+        service_snapshot = None
     return {
         "accounts": accounts,
         "workers": workers,
@@ -80,6 +85,7 @@ def health_context(user):
             order__trade__owner=user, dead_letter=True
         ).exclude(state="done"),
         "external": ExternalObservation.objects.filter(account__owner=user)[:50],
+        "service_snapshot": service_snapshot,
     }
 
 
@@ -161,6 +167,7 @@ def api_health(request):
             "feed_lag_seconds": data["feed_lag_seconds"],
             "unresolved_issues": data["issues"].count(),
             "live_execution": False,
+            "service_snapshot": data["service_snapshot"],
         }
     )
 

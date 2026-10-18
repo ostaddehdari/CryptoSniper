@@ -1,5 +1,6 @@
 """Maintenance stays independent of price, protective-exit and report queues."""
 
+import logging
 import os
 
 from celery import shared_task
@@ -14,6 +15,7 @@ from apps.trading.models import ExecutionOutbox
 
 from .leases import lease
 from .models import WorkerHeartbeat
+from .monitoring import service_snapshot
 from .recovery import raise_issue, reconcile_account, recover_outbox
 
 
@@ -68,3 +70,18 @@ def recover():
 @shared_task(name="operations.reconcile_one", acks_late=True, time_limit=120)
 def reconcile_one(account_id):
     return reconcile_account(account_id)
+
+
+logger = logging.getLogger(__name__)
+
+
+@shared_task(name="operations.monitor", ignore_result=True)
+def monitor_services():
+    with lease("operations-monitor", seconds=55) as acquired:
+        if not acquired:
+            return {"status": "busy"}
+        snapshot = service_snapshot()
+        cache.set("operations:service-snapshot", snapshot, timeout=125)
+        if snapshot["status"] != "healthy":
+            logger.warning("Operational service snapshot is degraded")
+        return snapshot

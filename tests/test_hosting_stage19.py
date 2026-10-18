@@ -117,3 +117,42 @@ def test_exact_deployment_check_sees_no_pending_migrations(settings, monkeypatch
     status = deployment_status(include_migrations=True)
     assert status["status"] == "ready"
     assert status["migrations"] == {"current": True, "pending_count": 0}
+
+
+@pytest.mark.django_db
+def test_monitor_requires_every_queue_and_single_beat_receipt(settings, monkeypatch):
+    from apps.operations.models import WorkerHeartbeat
+    from apps.operations.monitoring import service_snapshot
+
+    now = timezone.now()
+    for queue in settings.OPERATION_QUEUES:
+        WorkerHeartbeat.objects.create(queue=queue, seen_at=now, worker=f"{queue}@host")
+    cache.set("worker_heartbeat", {"seen_at": now.isoformat()}, 95)
+    monkeypatch.setattr(
+        "apps.operations.monitoring._queue_depths",
+        lambda: {queue: 0 for queue in settings.OPERATION_QUEUES},
+    )
+    snapshot = service_snapshot()
+    assert snapshot["status"] == "healthy"
+    assert snapshot["scheduler"] == {"fresh": True, "single_instance_lease": True}
+    assert snapshot["telegram_listener"] == "reserved_disabled_until_stage21"
+    WorkerHeartbeat.objects.filter(queue="orders").delete()
+    assert service_snapshot()["status"] == "degraded"
+
+
+@pytest.mark.django_db
+def test_monitor_task_persists_snapshot_without_running_in_browser(settings, monkeypatch):
+    from apps.operations.models import WorkerHeartbeat
+    from apps.operations.tasks import monitor_services
+
+    now = timezone.now()
+    for queue in settings.OPERATION_QUEUES:
+        WorkerHeartbeat.objects.create(queue=queue, seen_at=now, worker=f"{queue}@host")
+    cache.set("worker_heartbeat", {"seen_at": now.isoformat()}, 95)
+    monkeypatch.setattr(
+        "apps.operations.monitoring._queue_depths",
+        lambda: {queue: 0 for queue in settings.OPERATION_QUEUES},
+    )
+    result = monitor_services.run()
+    assert result["status"] == "healthy"
+    assert cache.get("operations:service-snapshot")["real_order_writes"] is False

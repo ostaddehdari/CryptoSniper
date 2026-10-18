@@ -1,0 +1,16 @@
+SOURCE=647e1cb1621b9379fb241f5c29aee399bac58ac6
+CI=https://github.com/ostaddehdari/CryptoSniper/actions/runs/39108227433
+MODE=Hardened deterministic Paper Spot/Margin; no real exchange writes
+INSTALLER_BUILD_COMMIT=007970d1f3e20221220fc52bb987f149e94b46eb
+
+===== VERIFY PACKAGE AND SETTINGS | 2026-10-18T07:40:24+00:00 =====
+
+===== VERIFY PACKAGE AND SETTINGS | 2026-10-18T07:40:24+00:00 =====
+PASS: pinned Stage18 source blobs, safe paths and version 0.18.0rc1.
+HTTPS URL: https://srun.ir/cryptosniper/auth/login/
+PASS: pinned Stage18 source blobs, safe paths and version 0.18.0rc1.
+HTTPS URL: https://srun.ir/cryptosniper/auth/login/
+
+CHECK_OK: archive and Ubuntu version validated; nothing was installed.
+
+CHECK_OK: archive and Ubuntu version validated; nothing was installed.

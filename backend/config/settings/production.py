@@ -2,6 +2,8 @@ from django.core.exceptions import ImproperlyConfigured
 
 from .base import *
 
+DEPLOYMENT_ENVIRONMENT = "production"
+
 if not ALLOWED_HOSTS or "*" in ALLOWED_HOSTS:
     raise ImproperlyConfigured("Production requires explicit DJANGO_ALLOWED_HOSTS.")
 if SECRET_KEY.startswith("django-insecure-"):

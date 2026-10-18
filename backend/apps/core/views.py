@@ -136,7 +136,19 @@ def system_context():
 @never_cache
 @require_GET
 def system(request):
-    return render(request, "core/system.html", {"nav": "system", "engine": engine_readiness()})
+    return render(
+        request,
+        "core/system.html",
+        {
+            "nav": "system",
+            "engine": engine_readiness(),
+            "deployment": {
+                "release": settings.RELEASE_VERSION,
+                "source_revision": settings.SOURCE_REVISION,
+                "environment": settings.DEPLOYMENT_ENVIRONMENT,
+            },
+        },
+    )
 
 
 @login_required

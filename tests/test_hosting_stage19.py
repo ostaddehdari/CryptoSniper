@@ -156,3 +156,23 @@ def test_monitor_task_persists_snapshot_without_running_in_browser(settings, mon
     result = monitor_services.run()
     assert result["status"] == "healthy"
     assert cache.get("operations:service-snapshot")["real_order_writes"] is False
+
+
+def test_release_candidate_keeps_environment_and_live_boundary_explicit(settings, monkeypatch):
+    from apps.operations.release import release_candidate_status
+
+    settings.DEPLOYMENT_ENVIRONMENT = "staging"
+    monkeypatch.setattr(
+        "apps.operations.release.deployment_status", lambda **kwargs: {"status": "ready"}
+    )
+    monkeypatch.setattr(
+        "apps.operations.release.hosting_capabilities", lambda **kwargs: {"status": "ready"}
+    )
+    monkeypatch.setattr("apps.operations.release.service_snapshot", lambda: {"status": "healthy"})
+    result = release_candidate_status(probe_host=True)
+    assert result["status"] == "ready"
+    assert result["environment"] == "staging"
+    assert result["real_order_writes"] is False
+    assert result["telegram"] == "deferred_to_stage21"
+    settings.DEPLOYMENT_ENVIRONMENT = "development"
+    assert release_candidate_status()["status"] == "partial"

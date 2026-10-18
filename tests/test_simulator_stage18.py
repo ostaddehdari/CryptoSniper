@@ -201,3 +201,92 @@ def test_two_margin_trades_have_isolated_loans_and_positions(django_user_model):
         trades.append(trade)
     assert PaperMarginLoan.objects.filter(trade__in=trades, state="active").count() == 2
     assert Position.objects.filter(trade__in=trades, quantity__gt=0).count() == 2
+
+
+@pytest.mark.django_db
+def test_timeout_after_submit_restart_and_duplicate_recovery_never_double_fills(
+    django_user_model,
+):
+    import uuid
+
+    from apps.operations.failures import inject_paper_failure
+    from apps.operations.models import PaperProviderOrder
+    from apps.operations.recovery import recover_outbox
+    from apps.trading.execution import dispatch_paper
+    from apps.trading.intent import queue_paper_trade
+    from apps.trading.models import OrderFill
+    from test_trading_stage08 import paper_account, ready_plan
+
+    owner = django_user_model.objects.create_user(username="fault-after18")
+    account, market = paper_account(owner)
+    trade, _ = queue_paper_trade(
+        owner, ready_plan(owner, account, market).pk, request_key=uuid.uuid4()
+    )
+    box = trade.orders.get().outbox
+    with inject_paper_failure("after_submit"):
+        assert dispatch_paper(box.pk)["status"] == "uncertain"
+    assert PaperProviderOrder.objects.filter(account=account).count() == 1
+    assert not OrderFill.objects.exists()
+    assert recover_outbox(box.pk) == "recovered"
+    assert recover_outbox(box.pk) in {"recovered", "unchanged"}
+    assert dispatch_paper(box.pk)["status"] == "already_claimed"
+    assert OrderFill.objects.count() == 1
+
+
+@pytest.mark.django_db
+def test_timeout_before_submit_stays_unknown_until_authoritative_absence(django_user_model):
+    import uuid
+
+    from apps.operations.failures import inject_paper_failure
+    from apps.operations.models import PaperProviderOrder
+    from apps.operations.recovery import recover_outbox
+    from apps.trading.execution import dispatch_paper
+    from apps.trading.intent import queue_paper_trade
+    from apps.trading.models import Trade
+    from django.utils import timezone
+    from test_trading_stage08 import paper_account, ready_plan
+
+    owner = django_user_model.objects.create_user(username="fault-before18")
+    account, market = paper_account(owner)
+    trade, _ = queue_paper_trade(
+        owner, ready_plan(owner, account, market).pk, request_key=uuid.uuid4()
+    )
+    box = trade.orders.get().outbox
+    with inject_paper_failure("before_submit"):
+        assert dispatch_paper(box.pk)["status"] == "uncertain"
+    trade.refresh_from_db()
+    assert trade.state == Trade.State.UNCERTAIN
+    assert not PaperProviderOrder.objects.exists()
+    box.refresh_from_db()
+    box.next_attempt_at = timezone.now()
+    box.save(update_fields=("next_attempt_at",))
+    assert recover_outbox(box.pk) == "retry_pending"
+    trade.refresh_from_db()
+    assert trade.state == Trade.State.QUEUED
+
+
+@pytest.mark.django_db
+def test_cancel_fill_race_cannot_reopen_cancelled_trade(django_user_model):
+    import uuid
+
+    from apps.trading.execution import cancel_unsubmitted, record_fill
+    from apps.trading.intent import queue_paper_trade
+    from apps.trading.models import Position
+    from django.core.exceptions import ValidationError
+    from test_trading_stage08 import paper_account, ready_plan
+
+    owner = django_user_model.objects.create_user(username="cancel-race18")
+    account, market = paper_account(owner)
+    trade, _ = queue_paper_trade(
+        owner, ready_plan(owner, account, market).pk, request_key=uuid.uuid4()
+    )
+    order = trade.orders.get()
+    cancel_unsubmitted(owner, trade.pk)
+    with pytest.raises(ValidationError):
+        record_fill(
+            order.pk,
+            exchange_fill_id="late-after-cancel",
+            quantity=order.quantity,
+            price=order.price,
+        )
+    assert not Position.objects.filter(trade=trade).exists()

@@ -6,6 +6,7 @@ from decimal import Decimal
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
+from .failures import fail_once
 from .models import PaperProviderOrder
 
 
@@ -14,6 +15,7 @@ def submit(order):
     from apps.trading.boundary import require_paper_simulator
     from apps.trading.models import Order, Trade
 
+    fail_once("before_submit")
     Trade.objects.select_for_update(of=("self",)).get(pk=order.trade_id)
     order = (
         Order.objects.select_for_update(of=("self",))
@@ -50,6 +52,7 @@ def submit(order):
         order.price,
     ):
         raise ValidationError("تعارض شناسه سفارش در دفتر شبیه‌ساز.")
+    fail_once("after_submit")
     return receipt
 
 

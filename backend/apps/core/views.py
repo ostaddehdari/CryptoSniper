@@ -69,7 +69,7 @@ def service_worker(request):
     ]
     source = (
         "'use strict';\n"
-        "const CACHE='cryptosniper-static-v20';\n"
+        "const CACHE='cryptosniper-static-v21';\n"
         f"const ASSETS={assets!r};\n"
         "self.addEventListener('install',event=>event.waitUntil("
         "caches.open(CACHE).then(c=>c.addAll(ASSETS))));\n"

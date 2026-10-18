@@ -299,7 +299,7 @@ def test_readiness_api_reports_provider_limits_without_claiming_live(client, dja
     user = django_user_model.objects.create_user(username="readiness18")
     client.force_login(user)
     payload = client.get(reverse("api-engine-readiness")).json()
-    assert payload["release_mode"] == "paper"
+    assert payload["release_mode"] == "paper_default_live_spot_feature_gated"
     assert payload["real_order_writes"] is False
     assert payload["adapters"]["binance_live_write"] == "disabled_not_verified"
     assert payload["inputs"]["telegram"] == "implemented_not_real_account_verified"

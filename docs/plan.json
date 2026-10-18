@@ -952,7 +952,7 @@
       "depends_on": [
         "S16"
       ],
-      "status": "partial",
+      "status": "done",
       "source_sections": [
         19,
         52,
@@ -1011,7 +1011,7 @@
       "depends_on": [
         "S17"
       ],
-      "status": "partial",
+      "status": "done",
       "source_sections": [
         64,
         65,

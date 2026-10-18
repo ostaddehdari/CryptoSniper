@@ -14,10 +14,10 @@
 
 | مسیر | وضعیت |
 |---|---|
-| Simulator Spot Long | پیاده‌سازی و تست محلی |
-| Simulator Margin Long/Short | پیاده‌سازی و تست محلی؛ debt واقعی نیست |
+| Simulator Spot Long | پیاده‌سازی و CI یکپارچه پاس |
+| Simulator Margin Long/Short | پیاده‌سازی و CI یکپارچه پاس؛ debt واقعی نیست |
 | Binance read | پیاده‌سازی قبلی، بدون تأیید حساب واقعی |
 | Binance sandbox/live write | غیرفعال و بررسی‌نشده |
 | Telegram/channel/AI | طبق برنامه تا S21 معوق |
 
-CI دقیق PostgreSQL/Redis، هفت Worker/Beat و Chromium هنوز باید روی commit نهایی GitHub پاس شود. نتیجه Simulator شاهد sandbox/live یا سودآوری نیست. نصب Stage18 روی VPS و پذیرش مرورگر عمومی نیز پس از بسته تأییدشده باقی می‌ماند.
+[CI منبع دقیق](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39107786569) روی commit `0230456ada42d6309cf5c2d4ace9e433e979f9c2` با ۱۹۴ تست، PostgreSQL 16، Redis 7، صف‌های مستقل Worker/Beat و Chromium پاس شد. داشبورد ۱۷ query و ۲۷٫۲۱ms زمان build داشت و artifact شواهد `12128808194` است. نتیجه Simulator شاهد sandbox/live یا سودآوری نیست. نصب Stage18 روی VPS و پذیرش مرورگر عمومی نیز پس از بسته تأییدشده باقی می‌ماند.

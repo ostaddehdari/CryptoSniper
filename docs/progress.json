@@ -847,19 +847,29 @@
           "status": "passed_local_fallback",
           "stage_tests_passed": 32,
           "related_regressions_passed": 30,
-          "notes": "Ruff, format, Django check, migration drift, secret scan and dependency audit passed; exact PostgreSQL/Redis/Workers/Chromium CI is pending."
+          "notes": "Ruff, format, Django check, migration drift, secret scan and dependency audit passed locally; authoritative CI evidence is recorded below."
+        },
+        {
+          "name": "Exact-source GitHub CI: PostgreSQL, Redis, security gates, Workers/Beat and Chromium",
+          "status": "passed",
+          "run_id": 39107786569,
+          "url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/39107786569",
+          "tested_commit": "0230456ada42d6309cf5c2d4ace9e433e979f9c2",
+          "pytest_passed": 194,
+          "dashboard_queries": 17,
+          "dashboard_build_ms": 27.21,
+          "evidence_artifact_id": 12128808194
         }
       ],
       "commit_shas": [
-        "b762f60",
-        "9a43ee1",
-        "79161d3",
-        "dac4ed3",
-        "46ef347",
-        "aba67e6"
+        "f026cdceede67ff2708c721c1191494e82312dd7",
+        "5d0f1e847d785f3fa1f2fe2f95565b3a2ea8b239",
+        "0d73eb60bdbefc133d16ee8e476acf4e7544c488",
+        "331d3124cb3cbe5fd1029afaca92bf0efc8e4e1f",
+        "af1e62412d0c17abb2163c4ce5917f247cca0c6c",
+        "1c1b3a902b841f63f366f956dc184e60626c2a81"
       ],
       "blockers": [
-        "Exact-source PostgreSQL/Redis/Workers/Chromium CI is pending.",
         "A real second-factor provider is not selected; only readiness and password step-up are active.",
         "Real Binance credentials and permissions remain unverified; write execution is disabled."
       ],
@@ -880,19 +890,30 @@
           "status": "passed_local_fallback",
           "stage_tests_passed": 32,
           "related_regressions_passed": 30,
-          "notes": "PostgreSQL/Redis were unavailable in the build container; authoritative GitHub integration CI is pending."
+          "notes": "PostgreSQL/Redis were unavailable in the local build container; authoritative GitHub integration evidence is recorded below."
+        },
+        {
+          "name": "Exact-source GitHub CI: PostgreSQL, Redis, seven Workers/Beat and Chromium",
+          "status": "passed",
+          "run_id": 39107786569,
+          "url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/39107786569",
+          "tested_commit": "0230456ada42d6309cf5c2d4ace9e433e979f9c2",
+          "pytest_passed": 194,
+          "dashboard_queries": 17,
+          "dashboard_build_ms": 27.21,
+          "evidence_artifact_id": 12128808194
         }
       ],
       "commit_shas": [
-        "e17d7cd",
-        "5fef18a",
-        "4a841e1",
-        "2d8587c",
-        "20675e5",
-        "aba67e6"
+        "2e771905faab7143332b3fb6637b7bff2538eeba",
+        "3a9bdddd0c2255b6076890a89ecb1129746508e9",
+        "0db9da5e68c51c24e41dd57a96f4c0beb9f3b565",
+        "c51f6ccfaf9d910649b10d09ac55011cbeba8056",
+        "3364d5e2b6bb1f51e3a800887fd12656081470b1",
+        "1c1b3a902b841f63f366f956dc184e60626c2a81",
+        "0230456ada42d6309cf5c2d4ace9e433e979f9c2"
       ],
       "blockers": [
-        "Exact-source PostgreSQL/Redis/seven Workers/Beat/Chromium CI is pending.",
         "Simulator results do not verify Binance sandbox/live; real writes remain disabled.",
         "Stage18 VPS installation and public-browser acceptance are pending."
       ],

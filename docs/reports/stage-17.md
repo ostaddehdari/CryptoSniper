@@ -12,10 +12,10 @@
 
 ## شواهد فعلی
 
-- Ruff، format، Django check، migration drift، security scan و dependency audit محلی پاس شدند.
-- ۳۲ آزمون Stage17/18 و ۳۰ regression مرتبط روی fallback محلی پاس شدند. پذیرش نهایی PostgreSQL/Redis/Worker/Chromium باید روی GitHub CI منبع دقیق ثبت شود؛ تا آن زمان وضعیت این گزارش `partial` است.
+- Ruff، format، Django check، migration drift، security scan و dependency audit پاس شدند.
+- [CI منبع دقیق](https://github.com/ostaddehdari/CryptoSniper/actions/runs/39107786569) روی commit `0230456ada42d6309cf5c2d4ace9e433e979f9c2` با ۱۹۴ تست، PostgreSQL 16، Redis 7، Worker/Beat مستقل و Chromium کامل پاس شد؛ artifact شواهد `12128808194` است.
 - لاگ ارائه‌شده اپراتور نشان می‌دهد Stage16 در ۱۸ اکتبر ۲۰۲۶ با migrationها، ده سرویس، هفت صف، readiness و HTTPS origin 200 نصب شده است. این شواهد دسترسی مرورگر عمومی مستقل نیست.
 
 ## محدودیت‌های واقعی
 
-Provider مرحله دوم انتخاب نشده است. کلید واقعی Binance بررسی نشده و Binance write خاموش است. secret scan مکمل review و dependency audit است، نه تضمین نبود همه آسیب‌پذیری‌ها.
+Provider مرحله دوم انتخاب نشده است. کلید واقعی Binance بررسی نشده و Binance write خاموش است. secret scan مکمل review و dependency audit است، نه تضمین نبود همه آسیب‌پذیری‌ها. نصب Stage18 روی VPS هنوز باید توسط اپراتور اجرا شود.

@@ -22,7 +22,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          PIN=d85438435c3395d55700ad777e2009beb2e61391
+          PIN=647e1cb1621b9379fb241f5c29aee399bac58ac6
           export PIN
           python3 - <<'PYCI'
           import json,os,subprocess,time
@@ -42,7 +42,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          PIN=d85438435c3395d55700ad777e2009beb2e61391
+          PIN=647e1cb1621b9379fb241f5c29aee399bac58ac6
           export PIN
           mkdir -p dist
           git archive --format=zip --prefix=CryptoSniper/ -o dist/CryptoSniper-Stage18-v0.18.0rc1.zip "$PIN"
@@ -82,7 +82,7 @@ jobs:
           PY
           chmod +x dist/cryptosniper-stage18-run.sh
           bash -n dist/cryptosniper-stage18-run.sh
-          printf 'SOURCE=%s\nCI=https://github.com/ostaddehdari/CryptoSniper/actions/runs/39108160196\nMODE=Hardened deterministic Paper Spot/Margin; no real exchange writes\nINSTALLER_BUILD_COMMIT=%s\n' "$PIN" "$(git rev-parse HEAD)" > dist/runlog.txt
+          printf 'SOURCE=%s\nCI=https://github.com/ostaddehdari/CryptoSniper/actions/runs/39108227433\nMODE=Hardened deterministic Paper Spot/Margin; no real exchange writes\nINSTALLER_BUILD_COMMIT=%s\n' "$PIN" "$(git rev-parse HEAD)" > dist/runlog.txt
           bash dist/cryptosniper-stage18-run.sh --check dist/CryptoSniper-Stage18-v0.18.0rc1.zip | tee -a dist/runlog.txt
           (cd dist && sha256sum CryptoSniper-Stage18-v0.18.0rc1.zip cryptosniper-stage18-run.sh runlog.txt > SHA256SUMS.txt)
       - name: Save exact deployment bytes for independent verification
@@ -99,13 +99,13 @@ jobs:
         run: |
           set -euo pipefail
           TAG=stage18-v0.18.0rc1-deploy
-          PIN=d85438435c3395d55700ad777e2009beb2e61391
+          PIN=647e1cb1621b9379fb241f5c29aee399bac58ac6
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo 'Release already exists; assets are immutable. Verify the existing release.'
           else
             gh release create "$TAG" dist/* --target "$PIN" --prerelease \
               --title "CryptoSniper Stages 17+18 — cumulative v0.18.0rc1" \
-              --notes "Cumulative Stages 01-18: hardened ownership, CSRF/XSS/SSRF controls, credential rotation/revocation/encrypted backup, password step-up and honest 2FA readiness, rate/retention controls; deterministic Paper Spot/Margin Long/Short with partial fills, latency, rejection, borrow/interest/repay, failure injection and recovery. Exact-source CI passed 194 tests plus PostgreSQL/Redis/Workers/Beat/Chromium. Binance writes remain disabled and sandbox/live is unverified. Telegram/channel/AI remains Stage21. Exact-source CI: https://github.com/ostaddehdari/CryptoSniper/actions/runs/39108160196."
+              --notes "Cumulative Stages 01-18: hardened ownership, CSRF/XSS/SSRF controls, credential rotation/revocation/encrypted backup, password step-up and honest 2FA readiness, rate/retention controls; deterministic Paper Spot/Margin Long/Short with partial fills, latency, rejection, borrow/interest/repay, failure injection and recovery. Exact-source CI passed 194 tests plus PostgreSQL/Redis/Workers/Beat/Chromium. Binance writes remain disabled and sandbox/live is unverified. Telegram/channel/AI remains Stage21. Exact-source CI: https://github.com/ostaddehdari/CryptoSniper/actions/runs/39108227433."
           fi
           cat dist/SHA256SUMS.txt
           gh release view "$TAG" --json assets,url

@@ -1,3 +1,5 @@
+import json
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -5,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
@@ -13,7 +16,8 @@ from apps.accounts.security import session_api_required, step_up_required
 
 from .forms import ExchangeConnectionForm, LiveSpotOrderForm
 from .live_orders import queue_live_spot_order
-from .models import Exchange, LiveSpotOrder, UserExchangeAccount
+from .guides import SUPPORTED_CONNECTION_GUIDES
+from .models import Exchange, ExchangeConnectionLog, LiveSpotOrder, UserExchangeAccount
 from .security import revoke_account_credentials, rotate_account_credentials
 from .services import latest_balances
 from .tasks import live_spot_order, sync_exchange_account
@@ -30,12 +34,7 @@ def _owned_account(user, pk):
 @require_GET
 def exchange_center(request):
     accounts = UserExchangeAccount.objects.for_user(request.user).select_related("exchange")
-    catalog = Exchange.objects.filter(enabled=True)
-    return render(
-        request,
-        "exchanges/center.html",
-        {"accounts": accounts, "catalog": catalog, "nav": "exchanges"},
-    )
+    return render(request, "exchanges/center.html", {"accounts": accounts, "nav": "exchanges"})
 
 
 @login_required
@@ -195,6 +194,9 @@ def _account_payload(account):
     return {
         "id": account.pk,
         "exchange": account.exchange.code,
+        "exchange_code": account.exchange.code,
+        "exchange_id": account.exchange_id,
+        "exchange_name": account.exchange.name,
         "label": account.label,
         "environment": account.environment,
         "status": account.status,
@@ -203,6 +205,18 @@ def _account_payload(account):
         "permissions": account.permissions,
         "last_verified_at": account.last_verified_at,
         "last_sync_at": account.last_sync_at,
+        "archived_at": account.archived_at,
+        "latest_connection_log": (
+            {
+                "stage": log.stage,
+                "status": log.status,
+                "code": log.code,
+                "message": log.message,
+                "created_at": log.created_at,
+            }
+            if (log := account.connection_logs.first())
+            else None
+        ),
     }
 
 
@@ -216,10 +230,11 @@ def api_exchanges(request):
             "name": exchange.name,
             "spot": exchange.spot_supported,
             "margin": exchange.margin_supported,
-            "futures": False,
-            "sandbox": exchange.sandbox_supported,
         }
-        for exchange in Exchange.objects.filter(enabled=True)
+        for exchange in Exchange.objects.filter(enabled=True).exclude(
+            adapter_code__in=("simulator", "binance")
+        )
+        if exchange.code.lower() != "binance"
     ]
     accounts = [
         _account_payload(account)
@@ -238,3 +253,108 @@ def api_exchange_account(request, pk):
     response = JsonResponse({"account": _account_payload(account)})
     response["Cache-Control"] = "no-store"
     return response
+
+
+
+@session_api_required
+@never_cache
+@require_POST
+def api_add_exchange_account(request):
+    try:
+        body = json.loads(request.body)
+    except (ValueError, UnicodeDecodeError):
+        return JsonResponse({"error": "JSON نامعتبر است."}, status=400)
+    code = str(body.get("exchange", "")).lower().strip()
+    exchange = (
+        Exchange.objects.filter(enabled=True, code__iexact=code)
+        .exclude(adapter_code__in=("simulator", "binance"))
+        .first()
+    )
+    if exchange is None or code == "binance":
+        return JsonResponse({"error": "این صرافی در اتصال‌های اصلی قابل انتخاب نیست."}, status=400)
+    data = {
+        "exchange": exchange.pk,
+        "label": str(body.get("label", "")).strip() or exchange.name,
+        "environment": "live",
+        "api_key": str(body.get("api_key", "")),
+        "api_secret": str(body.get("api_secret", "")),
+        "passphrase": str(body.get("passphrase", "")),
+        "no_withdrawal_confirmed": bool(body.get("no_withdrawal_confirmed")),
+        "ip_restricted_confirmed": bool(body.get("ip_restricted_confirmed")),
+    }
+    form = ExchangeConnectionForm(request.user, data)
+    if not form.is_valid():
+        return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
+    account = form.save()
+    ExchangeConnectionLog.objects.create(
+        account=account, stage="queued", status=ExchangeConnectionLog.Status.RUNNING,
+        message="اتصال ذخیره شد و منتظر Worker بررسی است."
+    )
+    sync_exchange_account.apply_async(args=[account.pk], queue="maintenance")
+    record_audit(
+        "exchange_account.added", request=request, user=request.user,
+        metadata={"exchange": exchange.code, "environment": "live", "account_id": account.pk},
+    )
+    return JsonResponse({"account": _account_payload(account)}, status=201)
+
+
+@session_api_required
+@never_cache
+@require_POST
+def api_sync_exchange_account(request, pk):
+    account = _owned_account(request.user, pk)
+    if account.status == UserExchangeAccount.Status.DISABLED:
+        return JsonResponse({"error": "اتصال غیرفعال است."}, status=400)
+    ExchangeConnectionLog.objects.create(
+        account=account, stage="queued", status=ExchangeConnectionLog.Status.RUNNING,
+        message="بررسی مجدد در صف maintenance قرار گرفت."
+    )
+    sync_exchange_account.apply_async(args=[account.pk], queue="maintenance")
+    return JsonResponse({"queued": True})
+
+
+@session_api_required
+@never_cache
+@require_GET
+def api_connection_logs(request, pk):
+    account = _owned_account(request.user, pk)
+    return JsonResponse({"items": [
+        {"stage": item.stage, "status": item.status, "code": item.code,
+         "message": item.message, "created_at": item.created_at}
+        for item in account.connection_logs.all()[:80]
+    ]})
+
+
+@session_api_required
+@never_cache
+@require_GET
+def api_connection_guides(request):
+    enabled = {
+        exchange.adapter_code: exchange
+        for exchange in Exchange.objects.filter(enabled=True).exclude(
+            adapter_code__in=("simulator", "binance")
+        )
+    }
+    return JsonResponse({"items": [
+        {"code": code, **guide}
+        for code, guide in SUPPORTED_CONNECTION_GUIDES.items()
+        if code in enabled
+    ]})
+
+
+@login_required
+@require_POST
+@step_up_required
+def archive_exchange_account(request, pk):
+    account = _owned_account(request.user, pk)
+    revoke_account_credentials(account)
+    account.archived_at = timezone.now()
+    account.status = UserExchangeAccount.Status.DISABLED
+    account.trading_enabled = False
+    account.save(update_fields=("archived_at", "status", "trading_enabled", "updated_at"))
+    record_audit(
+        "exchange_account.archived", request=request, user=request.user,
+        metadata={"account_id": account.pk, "exchange": account.exchange.code},
+    )
+    messages.success(request, "اتصال از فهرست فعال حذف و کلید آن باطل شد.")
+    return redirect("exchange-center")

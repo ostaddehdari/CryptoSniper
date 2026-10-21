@@ -10,9 +10,10 @@ from django.views.decorators.http import require_GET
 
 from apps.accounts.security import session_api_required
 from apps.alerts.models import Notification, PriceAlert
-from apps.exchanges.models import UserExchangeAccount
+from apps.exchanges.models import LiveSpotOrder, UserExchangeAccount
 from apps.operations.models import ExternalObservation
 from apps.signals.models import Signal
+from apps.reports.models import PerformanceAggregate
 
 from .balances import balances_for
 from .metrics import summarize, trade_queryset
@@ -109,26 +110,150 @@ def api_dashboard(request):
         data = dashboard_context(request.user, request.GET)
     except DatabaseError:
         return JsonResponse({"error": "dependencies_unavailable"}, status=503)
+    month = timezone.localdate().replace(day=1)
+    monthly = (
+        PerformanceAggregate.objects.filter(
+            owner=request.user,
+            period_kind="month",
+            period_start=month,
+            dimension_kind="total",
+            dimension_value="all",
+            currency=request.user.base_currency,
+        )
+        .order_by("-updated_at")
+        .first()
+    )
+    account_rows = []
+    for c in data["account_cards"]:
+        usdt = next((row for row in c["rows"] if row["asset"] == "USDT" and row["wallet"] == "spot"), None)
+        account_rows.append(
+            {
+                "id": c["account"].pk,
+                "label": c["account"].label,
+                "exchange": c["account"].exchange.name,
+                "status": c["account"].status,
+                "base_currency": c["base_currency"],
+                "known_valuation": c["valuation"],
+                "known_available_valuation": c["available_valuation"],
+                "complete": c["complete"],
+                "unvalued_assets": c["unknown"],
+                "free_usdt": usdt["free"] if usdt else None,
+                "balances": c["rows"],
+            }
+        )
+    recent_live = (
+        LiveSpotOrder.objects.filter(owner=request.user)
+        .select_related("account__exchange", "market")
+        .order_by("-updated_at")[:6]
+    )
     return JsonResponse(
         {
             "as_of": data["as_of"],
-            "open_trades": data["open_count"],
+            "open_trades": sum(1 for item in recent_live if item.state in {"pending", "submitting", "open", "partial"}),
             "today_trades": data["today_count"],
             "active_signals": data["active_signals"],
+            "connected_accounts": sum(1 for item in data["accounts"] if item.status == "connected"),
             "pnl": data["buckets"],
+            "monthly_net_pnl": monthly.net_realized if monthly else None,
+            "monthly_net_complete": bool(monthly and monthly.unknown_count == 0),
             "cache_ok": data["cache_ok"],
-            "accounts": [
+            "accounts": account_rows,
+            "recent_orders": [_live_order_payload(item) for item in recent_live],
+            "recent_signals": [
                 {
-                    "id": c["account"].pk,
-                    "base_currency": c["base_currency"],
-                    "known_valuation": c["valuation"],
-                    "known_available_valuation": c["available_valuation"],
-                    "complete": c["complete"],
-                    "unvalued_assets": c["unknown"],
-                    "balances": c["rows"],
+                    "id": item.pk,
+                    "status": item.status,
+                    "source": item.source.name,
+                    "side": item.side,
+                    "entry": item.entry_price,
+                    "created_at": item.created_at,
                 }
-                for c in data["account_cards"]
+                for item in data["recent_signals"]
             ],
+            "recent_alerts": [
+                {
+                    "id": item.pk,
+                    "market": item.market.symbol,
+                    "enabled": item.enabled,
+                    "updated_at": item.updated_at,
+                }
+                for item in data["recent_alerts"]
+            ],
+            "recent_external": [_safe_external(item) for item in data["external"]],
             "build_ms": data["build_ms"],
+        }
+    )
+
+
+SAFE_EXTERNAL_FIELDS = {
+    "symbol", "orderId", "clientOrderId", "status", "origQty", "executedQty",
+    "price", "side", "type", "time", "updateTime", "id", "qty",
+    "commission", "commissionAsset", "isBuyer", "free", "locked",
+}
+
+
+def _safe_external(item):
+    payload = item.payload if isinstance(item.payload, dict) else {}
+    return {
+        "id": item.pk,
+        "account_id": item.account_id,
+        "exchange": item.account.exchange.name,
+        "kind": item.kind,
+        "external_id": item.external_id,
+        "observed_at": item.observed_at,
+        "payload": {
+            key: payload[key]
+            for key in SAFE_EXTERNAL_FIELDS
+            if key in payload and isinstance(payload[key], (str, int, float, bool, type(None)))
+        },
+    }
+
+
+def _live_order_payload(order):
+    return {
+        "id": order.pk,
+        "account_id": order.account_id,
+        "exchange": order.account.exchange.name,
+        "market": order.market.symbol,
+        "side": order.side,
+        "order_type": order.order_type,
+        "amount": order.amount,
+        "price": order.price,
+        "filled_amount": order.filled_amount,
+        "average_price": order.average_price,
+        "state": order.state,
+        "created_at": order.created_at,
+        "updated_at": order.updated_at,
+        "source": "cryptosniper",
+    }
+
+
+@login_required
+@never_cache
+@require_GET
+def trades(request):
+    return render(request, "portfolio/trades.html", {"nav": "trades"})
+
+
+@session_api_required
+@never_cache
+@require_GET
+def api_trades(request):
+    accounts = UserExchangeAccount.objects.for_user(request.user).select_related("exchange")
+    account_ids = list(accounts.values_list("pk", flat=True))
+    live_orders = (
+        LiveSpotOrder.objects.filter(owner=request.user, account_id__in=account_ids)
+        .select_related("account__exchange", "market")
+        .order_by("-updated_at")[:100]
+    )
+    external = (
+        ExternalObservation.objects.filter(account_id__in=account_ids)
+        .select_related("account__exchange")
+        .order_by("-observed_at")[:100]
+    )
+    return JsonResponse(
+        {
+            "orders": [_live_order_payload(item) for item in live_orders],
+            "external": [_safe_external(item) for item in external],
         }
     )

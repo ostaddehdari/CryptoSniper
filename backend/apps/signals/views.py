@@ -5,6 +5,7 @@ from datetime import datetime
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.db import models
 from django.db.models import Count
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -31,6 +32,7 @@ from .models import (
     TelegramBackfillJob,
     TelegramChannel,
     TelegramChannelTemplate,
+    TelegramMessage,
 )
 from .outcomes import evaluate_channel_batch, start_channel_evaluation
 from .parsing import parse_for_review
@@ -528,6 +530,9 @@ def api_list(request):
                     "status": item.status,
                     "source_method": item.source.method,
                     "revision": item.revision,
+                    "created_at": item.created_at,
+                    "raw_text": item.raw_signal.original_text[:2000],
+                    "structured": snapshot(item),
                 }
                 for item in rows
             ],
@@ -643,3 +648,52 @@ def api_action(request, pk):
         return JsonResponse({"signal": _serialize(signal)})
     except (ValidationError, ValueError, TypeError) as error:
         return JsonResponse({"error": str(error)}, status=400)
+
+
+
+@session_api_required
+@never_cache
+@require_GET
+def api_telegram_messages(request):
+    query = str(request.GET.get("q", "")).strip()
+    channel = str(request.GET.get("channel", "")).strip()
+    try:
+        limit = max(1, min(int(request.GET.get("limit", "80")), 200))
+    except (TypeError, ValueError):
+        limit = 80
+    rows = TelegramMessage.objects.filter(owner=request.user).select_related(
+        "channel", "raw_signal", "matched_template"
+    )
+    if channel.isdigit():
+        rows = rows.filter(channel_id=int(channel))
+    if query:
+        rows = rows.filter(
+            models.Q(raw_signal__original_text__icontains=query)
+            | models.Q(channel__title__icontains=query)
+            | models.Q(channel__username__icontains=query)
+        )
+    rows = rows.order_by("-occurred_at", "-received_at", "-message_id")[:limit]
+    channels = TelegramChannel.objects.filter(owner=request.user).order_by("title")
+    return JsonResponse(
+        {
+            "channels": [
+                {"id": item.pk, "title": item.title, "username": item.username}
+                for item in channels
+            ],
+            "items": [
+                {
+                    "id": item.pk,
+                    "channel_id": item.channel_id,
+                    "channel": item.channel.title,
+                    "message_id": item.message_id,
+                    "message_kind": item.message_kind,
+                    "template": item.matched_template.name if item.matched_template else None,
+                    "text": item.raw_signal.original_text if item.raw_signal else "",
+                    "edited_at": item.edited_at,
+                    "deleted_at": item.deleted_at,
+                    "occurred_at": item.occurred_at or item.received_at,
+                }
+                for item in rows
+            ],
+        }
+    )

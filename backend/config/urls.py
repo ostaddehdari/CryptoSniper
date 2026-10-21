@@ -44,6 +44,8 @@ urlpatterns = [
     path("external/<int:pk>/", external_views.detail, name="external-detail"),
     path("dashboard/panels/", portfolio_views.fragment, name="dashboard-fragment"),
     path("api/v1/dashboard/", portfolio_views.api_dashboard, name="api-dashboard"),
+    path("trades/", portfolio_views.trades, name="trades"),
+    path("api/v1/trades/", portfolio_views.api_trades, name="api-trades"),
     path(
         "operations/dead-letter/<int:pk>/resolve/",
         operation_views.resolve_dead_letter,
@@ -113,6 +115,8 @@ urlpatterns = [
     ),
     path("api/v1/me/", account_views.api_me, name="api-me"),
     path("api/v1/exchanges/", exchange_views.api_exchanges, name="api-exchanges"),
+    path("api/v1/exchange-accounts/", exchange_views.api_add_exchange_account, name="api-exchange-account-add"),
+    path("api/v1/exchange-guides/", exchange_views.api_connection_guides, name="api-exchange-guides"),
     path("api/v1/markets/search/", market_views.api_search, name="api-market-search"),
     path("api/v1/markets/quotes/", market_views.api_quotes, name="api-market-quotes"),
     path("api/v1/markets/stream/", market_views.api_stream, name="api-market-stream"),
@@ -149,6 +153,7 @@ urlpatterns = [
         inbox_views.api_telegram_channel_analytics,
         name="api-telegram-channel-analytics",
     ),
+    path("api/v1/telegram/messages/", inbox_views.api_telegram_messages, name="api-telegram-messages"),
     path("inbox/receive/", inbox_views.receive, name="inbox-receive"),
     path("smart-paste/", inbox_views.smart_paste, name="smart-paste"),
     path("api/v1/smart-paste/", inbox_views.api_smart_paste, name="api-smart-paste"),
@@ -161,6 +166,8 @@ urlpatterns = [
     path("api/v1/inbox/<int:pk>/edit/", inbox_views.api_edit, name="api-inbox-edit"),
     path("api/v1/inbox/<int:pk>/action/", inbox_views.api_action, name="api-inbox-action"),
     path("api/v1/manual/context/", trade_context.manual_context, name="manual-context"),
+    path("api/v1/manual/markets/", trade_context.account_markets, name="manual-markets"),
+    path("api/v1/manual/fix-loss/", trade_context.fix_loss, name="manual-fix-loss"),
     path("api/v1/manual/plans/", plan_views.api_create, name="api-manual-create"),
     path("api/v1/manual/plans/<int:pk>/", plan_views.api_plan, name="api-manual-detail"),
     path(
@@ -186,6 +193,7 @@ urlpatterns = [
         name="watchlist-remove",
     ),
     path("api/v1/watchlists/<int:pk>/", watchlist_views.api_watchlist, name="api-watchlist"),
+    path("api/v1/favorites/", watchlist_views.api_favorites, name="api-favorites"),
     path("exchanges/", exchange_views.exchange_center, name="exchange-center"),
     path("exchanges/add/", exchange_views.add_exchange_account, name="exchange-account-add"),
     path(
@@ -198,6 +206,9 @@ urlpatterns = [
         exchange_views.request_account_sync,
         name="exchange-account-sync",
     ),
+    path("api/v1/exchange-accounts/<int:pk>/sync/", exchange_views.api_sync_exchange_account, name="api-exchange-account-sync"),
+    path("api/v1/exchange-accounts/<int:pk>/logs/", exchange_views.api_connection_logs, name="api-exchange-account-logs"),
+    path("exchanges/<int:pk>/delete/", exchange_views.archive_exchange_account, name="exchange-account-delete"),
     path(
         "exchanges/<int:pk>/live-order/",
         exchange_views.submit_live_spot_order,

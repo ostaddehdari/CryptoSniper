@@ -2,12 +2,12 @@
   "schema_version": "cryptosniper.stage-plan.v1",
   "project": "CryptoSniper",
   "repository": "https://github.com/ostaddehdari/CryptoSniper",
-  "plan_version": "1.1.0",
+  "plan_version": "1.2.0",
   "created_at": "2026-10-06",
-  "stage_count": 22,
-  "work_count": 110,
+  "stage_count": 23,
+  "work_count": 115,
   "execution_unit": "one_complete_stage",
-  "last_stage": "S22",
+  "last_stage": "S23",
   "default_mode": "paper",
   "scope_v1": [
     "spot",
@@ -18,7 +18,7 @@
     "perpetual"
   ],
   "source_sha256": "4904fa47ca4d294e437081bce926368c0028602a0606a82c10d4b60c49dbfd7d",
-  "latest_user_decision": "Stage22 completes Telegram account verification, full resumable archive analysis and historical signal outcome evaluation.",
+  "latest_user_decision": "Stage23 migrates the approved Cornix-inspired Persian React UI into the main CryptoSniper site, removes Paper/Demo from the primary UI, unifies live account/trade views, adds Fix Loss, exchange connection guidance/logging, favorite assets, and Telegram message search.",
   "stages": [
     {
       "id": "S01",
@@ -1237,15 +1237,126 @@
       "id": "S22",
       "number": 22,
       "title": "تکمیل Telegram، آرشیو کامل و سنجش تحقق سیگنال",
-      "depends_on": ["S21"],
+      "depends_on": [
+        "S21"
+      ],
       "status": "partial",
-      "source_sections": [7, 23, 24, 48, 49, 50, 68],
+      "source_sections": [
+        7,
+        23,
+        24,
+        48,
+        49,
+        50,
+        68
+      ],
       "works": [
-        {"id": "S22-W01", "number": 1, "title": "اتصال و وریفای امن حساب", "deliverables": "ارسال/ارسال مجدد کد، انقضا، محدودیت تلاش، 2FA و session رمزنگاری‌شده بدون ذخیره کد.", "acceptance": "کد و رمز در DB/log/HTML ذخیره یا نمایش داده نشوند و خطاها بدون افشای provider مدیریت شوند.", "status": "done"},
-        {"id": "S22-W02", "number": 2, "title": "آرشیو کامل قابل‌ادامه", "deliverables": "واردسازی از نخستین پیام تا snapshot فعلی با cursor مستقل، batch، pause/resume، FloodWait و dedup.", "acceptance": "restart و پیام زنده باعث جاافتادگی/تکرار نشوند و آرشیو هیچ معامله‌ای اجرا نکند.", "status": "done"},
-        {"id": "S22-W03", "number": 3, "title": "چندقالبی و دسته‌بندی پیام", "deliverables": "قالب‌های نسخه‌دار اولویت‌دار و تشخیص signal/update/cancel/result/noise.", "acceptance": "قالب bounded باشد، پیام غیرسیگنال سفارش نسازد و raw سیگنال حفظ شود.", "status": "done"},
-        {"id": "S22-W04", "number": 4, "title": "داده و ارزیابی تاریخی", "deliverables": "کندل OHLC عمومی نرمال، ترتیب entry/TP/SL و سیاست محافظه‌کارانه ابهام داخل کندل.", "acceptance": "هدف پیش از entry برد محسوب نشود و برخورد TP/SL در یک کندل ambiguous بماند.", "status": "done"},
-        {"id": "S22-W05", "number": 5, "title": "داشبورد، API و تحویل", "deliverables": "پیشرفت آرشیو/ارزیابی، آمار کانال، API خصوصی، تست، مستندات و بسته ارتقا.", "acceptance": "آمار فقط نتایج قطعی را در win-rate وارد کند؛ CI و نصب واقعی جداگانه مستند شوند.", "status": "partial"}
+        {
+          "id": "S22-W01",
+          "number": 1,
+          "title": "اتصال و وریفای امن حساب",
+          "deliverables": "ارسال/ارسال مجدد کد، انقضا، محدودیت تلاش، 2FA و session رمزنگاری‌شده بدون ذخیره کد.",
+          "acceptance": "کد و رمز در DB/log/HTML ذخیره یا نمایش داده نشوند و خطاها بدون افشای provider مدیریت شوند.",
+          "status": "done"
+        },
+        {
+          "id": "S22-W02",
+          "number": 2,
+          "title": "آرشیو کامل قابل‌ادامه",
+          "deliverables": "واردسازی از نخستین پیام تا snapshot فعلی با cursor مستقل، batch، pause/resume، FloodWait و dedup.",
+          "acceptance": "restart و پیام زنده باعث جاافتادگی/تکرار نشوند و آرشیو هیچ معامله‌ای اجرا نکند.",
+          "status": "done"
+        },
+        {
+          "id": "S22-W03",
+          "number": 3,
+          "title": "چندقالبی و دسته‌بندی پیام",
+          "deliverables": "قالب‌های نسخه‌دار اولویت‌دار و تشخیص signal/update/cancel/result/noise.",
+          "acceptance": "قالب bounded باشد، پیام غیرسیگنال سفارش نسازد و raw سیگنال حفظ شود.",
+          "status": "done"
+        },
+        {
+          "id": "S22-W04",
+          "number": 4,
+          "title": "داده و ارزیابی تاریخی",
+          "deliverables": "کندل OHLC عمومی نرمال، ترتیب entry/TP/SL و سیاست محافظه‌کارانه ابهام داخل کندل.",
+          "acceptance": "هدف پیش از entry برد محسوب نشود و برخورد TP/SL در یک کندل ambiguous بماند.",
+          "status": "done"
+        },
+        {
+          "id": "S22-W05",
+          "number": 5,
+          "title": "داشبورد، API و تحویل",
+          "deliverables": "پیشرفت آرشیو/ارزیابی، آمار کانال، API خصوصی، تست، مستندات و بسته ارتقا.",
+          "acceptance": "آمار فقط نتایج قطعی را در win-rate وارد کند؛ CI و نصب واقعی جداگانه مستند شوند.",
+          "status": "partial"
+        }
+      ]
+    },
+    {
+      "id": "S23",
+      "number": 23,
+      "title": "رابط React فارسی، مرکز معاملات واقعی و اتصال‌های یکپارچه",
+      "depends_on": [
+        "S22"
+      ],
+      "status": "partial",
+      "source_sections": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        13,
+        14,
+        16,
+        17,
+        41,
+        47,
+        50
+      ],
+      "works": [
+        {
+          "id": "S23-W01",
+          "number": 1,
+          "title": "پوسته React فارسی و سایدبار جمع‌شونده",
+          "deliverables": "پوسته RTL مبتنی بر React/Vite، سایدبار جمع‌شونده، هدر یکپارچه و حفظ routeهای Django.",
+          "acceptance": "صفحات خصوصی بدون شکستن احراز هویت/CSRF در دسکتاپ و موبایل زیر پوسته جدید باز شوند.",
+          "status": "done"
+        },
+        {
+          "id": "S23-W02",
+          "number": 2,
+          "title": "داشبورد و معاملات یکپارچه",
+          "deliverables": "کارت‌های موجودی/USDT/حساب/معاملات/P&L، تب‌های فشرده و نمایش سفارش‌های داخلی و External observations.",
+          "acceptance": "داده واقعی owner-scoped باشد و External Trade فقط خواندنی بماند.",
+          "status": "done"
+        },
+        {
+          "id": "S23-W03",
+          "number": 3,
+          "title": "Manual، Fix Loss و بازبینی سیگنال",
+          "deliverables": "فیلتر بازار بر اساس حساب، قیمت زنده، درصد TP/SL، محاسبه Decimal Fix Loss، Smart Paste و بازبینی سیگنال.",
+          "acceptance": "Fix Loss صرفاً پیشنهاد باشد؛ ویرایش دلیل اجباری و رد سیگنال دلیل اختیاری داشته باشد.",
+          "status": "done"
+        },
+        {
+          "id": "S23-W04",
+          "number": 4,
+          "title": "مرکز اتصال صرافی و راهنما",
+          "deliverables": "جدول اتصال‌های Live، حذف UI شبیه‌ساز/Binance، USDT-first، حذف اتصال، connection logs مرحله‌ای و راهنمای Bitunix/LBank/Nobitex/WEEX/Ourbit.",
+          "acceptance": "هیچ secret در HTML/log/API بازنمایش نشود و failure stage قابل تشخیص باشد.",
+          "status": "done"
+        },
+        {
+          "id": "S23-W05",
+          "number": 5,
+          "title": "اولویت بازار، جست‌وجوی Telegram و آزمون نهایی",
+          "deliverables": "Favorite assets با drag/drop، جست‌وجوی تاریخچه/پیام زنده Telegram، Copy→Smart Paste، تنظیمات افقی، CI ساخت React و تست‌های Stage23.",
+          "acceptance": "مالکیت کاربر حفظ شود، پیام کانال دیگر نشت نکند، build React قبل collectstatic اجرا شود و CI دقیق منبع پاس شود.",
+          "status": "done"
+        }
       ]
     }
   ]

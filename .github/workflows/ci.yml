@@ -41,6 +41,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - uses: astral-sh/setup-uv@v6
         with:
           version: '0.12.19'
@@ -56,6 +59,11 @@ jobs:
           PY
       - name: Install locked dependencies
         run: uv sync --frozen
+      - name: Build React production UI
+        working-directory: frontend
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
       - name: Lint and format
         run: |
           uv run ruff check backend tests scripts
@@ -90,7 +98,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: stage-22-evidence
+          name: stage-23-evidence
           path: |
             .runtime/pytest.xml
             .runtime/screenshots/*.png

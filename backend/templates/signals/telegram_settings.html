@@ -7,7 +7,7 @@
   <div><span class="eyebrow">STAGE 22 · TELETHON</span><h1>اتصال امن حساب و کانال‌های Telegram</h1><p>کد یک‌بارمصرف فقط برای Telegram ارسال می‌شود و هرگز در پایگاه داده یا گزارش ذخیره نمی‌شود.</p></div>
   <span class="status-badge">{{ account.get_status_display }}</span>
 </div>
-<div class="settings-layout">{% include 'accounts/_settings_tabs.html' %}<div class="settings-panel"><div class="settings-grid">
+<div id="cs-telegram-messages-root"></div><div class="settings-layout">{% include 'accounts/_settings_tabs.html' %}<div class="settings-panel"><div class="settings-grid">
   <section class="panel"><h2>۱. درخواست کد ورود</h2><p class="muted">API ID و API Hash را از my.telegram.org بگیرید. این مقادیر در صفحه بازنمایش داده نمی‌شوند.</p><form method="post" class="settings-form">{% csrf_token %}{{ connect_form.as_p }}<button class="button" name="action" value="connect">ارسال کد</button></form></section>
   <section class="panel"><h2>۲. تأیید شماره</h2>{% if account.phone_hint %}<p class="muted">کد ارسال‌شده به {{ account.phone_hint }} را وارد کنید. مهلت: {{ account.verification_expires_at|date:"Y-m-d H:i:s"|default:"—" }} UTC</p>{% endif %}<form method="post" class="settings-form">{% csrf_token %}{{ code_form.as_p }}<button class="button" name="action" value="code">تأیید ورود</button> {% if account.status == 'awaiting_code' or account.status == 'error' %}<button class="button button-secondary" name="action" value="resend">ارسال دوباره کد</button>{% endif %}</form>{% if account.status == 'awaiting_password' %}<p class="notice">حساب شما رمز دومرحله‌ای دارد؛ کد را خالی بگذارید و فقط رمز دومرحله‌ای را وارد کنید.</p>{% endif %}</section>
 </div>

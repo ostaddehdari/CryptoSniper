@@ -8,6 +8,7 @@ import json
 from .adapters import (
     InvalidProviderResponse,
     PermissionReport,
+    ProviderRejectedError,
     Ticker,
     UnsafePermissionError,
     register_adapter,
@@ -22,7 +23,11 @@ class V3SpotMixin:
         if not isinstance(payload, (dict, list)):
             raise InvalidProviderResponse("provider_invalid_response")
         if isinstance(payload, dict) and payload.get("code") not in {None, 0, "0", "00000"}:
-            raise InvalidProviderResponse("provider_rejected_request")
+            code = str(payload.get("code"))[:80]
+            message = str(payload.get("msg") or payload.get("message") or "request rejected")[:160]
+            error = ProviderRejectedError(f"Provider code {code}: {message}")
+            error.code = f"provider_{code}"
+            raise error
         return payload.get("data", payload) if isinstance(payload, dict) else payload
 
     def fetch_balance(self):
@@ -129,7 +134,7 @@ class WeexAdapter(V3SpotMixin, SpotAdapterBase):
 
     def _request(self, method, path, params=None, signed=False):
         params = dict(params or {})
-        headers = {"Accept": "application/json", "User-Agent": "CryptoSniper/0.21"}
+        headers = {"Accept": "application/json", "User-Agent": "CryptoSniper/0.24"}
         query = ""
         body = ""
         if method in {"GET", "DELETE"}:
@@ -164,7 +169,7 @@ class OurbitAdapter(V3SpotMixin, SpotAdapterBase):
 
     def _request(self, method, path, params=None, signed=False):
         params = dict(params or {})
-        headers = {"Accept": "application/json", "User-Agent": "CryptoSniper/0.21"}
+        headers = {"Accept": "application/json", "User-Agent": "CryptoSniper/0.24"}
         if signed:
             key, secret, _ = self._credentials()
             params.setdefault("recvWindow", 5000)

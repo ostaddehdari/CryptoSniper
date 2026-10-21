@@ -174,6 +174,57 @@ class Command(BaseCommand):
             except AdapterError as exc:
                 add(account, "private_balance", "FAIL", f"{getattr(exc, 'code', 'adapter_error')}: {exc}", _action(account.exchange.code, exc))
 
+            # Provider-native non-executing trade-permission probes where officially available.
+            if sample and account.exchange.adapter_code == "ourbit":
+                try:
+                    quantity = str(sample.min_amount or sample.amount_step or "0.0001")
+                    price = str(adapter.fetch_ticker(sample.symbol).price)
+                    adapter._request(
+                        "POST",
+                        "/api/v3/order/test",
+                        {
+                            "symbol": sample.symbol.replace("/", ""),
+                            "side": "BUY",
+                            "type": "LIMIT",
+                            "quantity": quantity,
+                            "price": price,
+                        },
+                        signed=True,
+                    )
+                    add(account, "trade_test_no_execution", "PASS", f"{sample.symbol} validated by /api/v3/order/test")
+                except AdapterError as exc:
+                    add(
+                        account,
+                        "trade_test_no_execution",
+                        "FAIL",
+                        f"{getattr(exc, 'code', 'adapter_error')}: {exc}",
+                        _action(account.exchange.code, exc),
+                    )
+            elif sample and account.exchange.adapter_code == "lbank":
+                try:
+                    quantity = str(sample.min_amount or sample.amount_step or "0.0001")
+                    price = str(adapter.fetch_ticker(sample.symbol).price)
+                    adapter._request(
+                        "POST",
+                        "/v2/supplement/create_order_test.do",
+                        {
+                            "symbol": adapter._provider_symbol(sample.symbol),
+                            "type": "buy",
+                            "amount": quantity,
+                            "price": price,
+                        },
+                        signed=True,
+                    )
+                    add(account, "trade_test_no_execution", "PASS", f"{sample.symbol} validated by LBank test-order endpoint")
+                except AdapterError as exc:
+                    add(
+                        account,
+                        "trade_test_no_execution",
+                        "FAIL",
+                        f"{getattr(exc, 'code', 'adapter_error')}: {exc}",
+                        _action(account.exchange.code, exc),
+                    )
+
             if options["apply"]:
                 try:
                     result = sync_exchange_account(account)

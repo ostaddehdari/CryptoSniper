@@ -44,9 +44,21 @@ def sync_exchange_account(account):
         environment=locked.environment,
     )
     try:
-        permission = adapter.validate_credentials()
-        markets = adapter.fetch_markets()
-        balances = adapter.fetch_balance()
+        try:
+            permission = adapter.validate_credentials()
+        except AdapterError as error:
+            error.sync_stage = "credentials"
+            raise
+        try:
+            markets = adapter.fetch_markets()
+        except AdapterError as error:
+            error.sync_stage = "markets"
+            raise
+        try:
+            balances = adapter.fetch_balance()
+        except AdapterError as error:
+            error.sync_stage = "balances"
+            raise
     except AdapterError:
         locked.status = UserExchangeAccount.Status.ERROR
         locked.trading_enabled = False
@@ -134,4 +146,7 @@ def latest_balances(account):
     queryset = account.balance_snapshots.select_related("asset").order_by("-captured_at", "asset")
     for snapshot in queryset:
         latest.setdefault(snapshot.asset_id, snapshot)
-    return sorted(latest.values(), key=lambda item: item.asset.symbol)
+    return sorted(
+        latest.values(),
+        key=lambda item: (0 if item.asset.symbol.upper() == "USDT" else 1, item.asset.symbol),
+    )

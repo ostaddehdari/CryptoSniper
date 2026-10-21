@@ -7,7 +7,7 @@ from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 from django.db.models import Q
 
-from apps.accounts.models import UserOwnedModel
+from apps.accounts.models import OwnedQuerySet, UserOwnedModel
 from apps.core.security import validate_public_https_url
 
 symbol_validator = RegexValidator(
@@ -120,6 +120,11 @@ class ExchangeMarket(models.Model):
             raise ValidationError("بازار Spot در نسخه نخست اهرم ندارد.")
 
 
+class ExchangeAccountQuerySet(OwnedQuerySet):
+    def for_user(self, user):
+        return super().for_user(user).filter(archived_at__isnull=True)
+
+
 class UserExchangeAccount(UserOwnedModel):
     class Environment(models.TextChoices):
         PAPER = "paper", "شبیه‌ساز"
@@ -144,6 +149,9 @@ class UserExchangeAccount(UserOwnedModel):
     trading_enabled = models.BooleanField(default=False)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
     permissions = models.JSONField(default=dict, blank=True)
+    archived_at = models.DateTimeField(null=True, blank=True)
+
+    objects = ExchangeAccountQuerySet.as_manager()
     last_verified_at = models.DateTimeField(null=True, blank=True)
     last_sync_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -274,3 +282,27 @@ class LiveSpotOrder(models.Model):
 
     def __str__(self):
         return f"{self.account.exchange.code}:{self.client_order_id}"
+
+
+
+class ExchangeConnectionLog(models.Model):
+    class Status(models.TextChoices):
+        RUNNING = "running", "در حال بررسی"
+        SUCCESS = "success", "موفق"
+        FAILED = "failed", "ناموفق"
+
+    account = models.ForeignKey(
+        UserExchangeAccount, on_delete=models.CASCADE, related_name="connection_logs"
+    )
+    stage = models.CharField(max_length=32)
+    status = models.CharField(max_length=12, choices=Status.choices)
+    code = models.CharField(max_length=80, blank=True)
+    message = models.CharField(max_length=240, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-created_at", "-pk")
+        indexes = [models.Index(fields=("account", "created_at"))]
+
+    def __str__(self):
+        return f"{self.account_id}:{self.stage}:{self.status}"

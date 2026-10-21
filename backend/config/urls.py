@@ -115,6 +115,8 @@ urlpatterns = [
     ),
     path("api/v1/me/", account_views.api_me, name="api-me"),
     path("api/v1/exchanges/", exchange_views.api_exchanges, name="api-exchanges"),
+    path("api/v1/exchange-accounts/", exchange_views.api_add_exchange_account, name="api-exchange-account-add"),
+    path("api/v1/exchange-guides/", exchange_views.api_connection_guides, name="api-exchange-guides"),
     path("api/v1/markets/search/", market_views.api_search, name="api-market-search"),
     path("api/v1/markets/quotes/", market_views.api_quotes, name="api-market-quotes"),
     path("api/v1/markets/stream/", market_views.api_stream, name="api-market-stream"),
@@ -202,6 +204,9 @@ urlpatterns = [
         exchange_views.request_account_sync,
         name="exchange-account-sync",
     ),
+    path("api/v1/exchange-accounts/<int:pk>/sync/", exchange_views.api_sync_exchange_account, name="api-exchange-account-sync"),
+    path("api/v1/exchange-accounts/<int:pk>/logs/", exchange_views.api_connection_logs, name="api-exchange-account-logs"),
+    path("exchanges/<int:pk>/delete/", exchange_views.archive_exchange_account, name="exchange-account-delete"),
     path(
         "exchanges/<int:pk>/live-order/",
         exchange_views.submit_live_spot_order,

@@ -40,21 +40,38 @@ class V3SpotMixin:
         payload = self._ensure(self._request("GET", "/api/v3/account", signed=True))
         if not isinstance(payload, dict):
             raise InvalidProviderResponse("provider_invalid_permissions")
-        can_withdraw = payload.get("canWithdraw")
-        if can_withdraw is True:
-            raise UnsafePermissionError("کلید دارای مجوز برداشت است؛ کلید فقط Read+Spot بسازید.")
+        provider_can_withdraw = payload.get("canWithdraw")
         permissions = {str(item).upper() for item in payload.get("permissions", [])}
         can_trade = payload.get("canTrade") is True or bool(
             permissions & {"SPOT", "SPOT_TRADING", "SPOT_DEAL_WRITE"}
         )
+        if self.code == "ourbit":
+            # Ourbit /api/v3/account documents account withdrawal capability, while API-key
+            # withdrawal authority is a separate permission family (SPOT_WITHDRAW_WRITE).
+            # The account endpoint does not expose the current key's full permission set.
+            no_withdrawal = self.credentials.get("no_withdrawal_confirmed") == "true"
+            can_withdraw = False if no_withdrawal else None
+            ip_restricted = self.credentials.get("ip_restricted_confirmed") == "true"
+            notes = (
+                "Ourbit key is treated as no-withdraw only after the operator explicitly confirms "
+                "SPOT_WITHDRAW_WRITE is disabled in API Management.",
+            )
+        else:
+            if provider_can_withdraw is True:
+                raise UnsafePermissionError(
+                    "کلید دارای مجوز برداشت است؛ کلید فقط Read+Spot بسازید."
+                )
+            can_withdraw = False if provider_can_withdraw is False else None
+            ip_restricted = payload.get("ipRestricted")
+            notes = ("Spot REST V3؛ Futures/Perpetual عمداً غیرفعال است.",)
         return PermissionReport(
             can_read=True,
             can_trade_spot=can_trade,
             can_trade_margin=False,
-            can_withdraw=False if can_withdraw is False else None,
-            ip_restricted=payload.get("ipRestricted"),
+            can_withdraw=can_withdraw,
+            ip_restricted=ip_restricted,
             account_reference=str(payload.get("uid", payload.get("accountType", ""))),
-            notes=("Spot REST V3؛ Futures/Perpetual عمداً غیرفعال است.",),
+            notes=notes,
         )
 
     def fetch_markets(self):

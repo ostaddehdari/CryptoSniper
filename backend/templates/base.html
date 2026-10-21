@@ -1,9 +1,10 @@
 {% load static %}<!doctype html>
-<html lang="fa" dir="rtl" data-theme="{{ request.user.theme|default:'light' }}"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#087f73">
+<html lang="fa" dir="rtl" data-theme="{{ request.user.theme|default:'light' }}" data-base-path="/cryptosniper/" data-user-name="{{ request.user.preferred_name|default:''|escape }}" data-page-title="{% block page_title_data %}CryptoSniper{% endblock %}"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#2f66d8">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="htmx-config" content='{"historyCacheSize":0,"selfRequestsOnly":true,"allowEval":false}'>
 <title>{% block title %}CryptoSniper{% endblock %}</title>
 <link rel="icon" href="{% static 'img/mark.svg' %}" type="image/svg+xml"><link rel="manifest" href="{% url 'web-manifest' %}"><link rel="stylesheet" href="{% static 'css/app.css' %}">
+{% block extra_head %}{% endblock %}
 <script src="{% static 'vendor/htmx-2.0.8.min.js' %}" defer></script><script src="{% static 'js/app.js' %}" defer></script><script src="{% static 'js/pwa.js' %}" defer></script><script src="{% static 'vendor/alpine-3.14.9.min.js' %}" defer></script>
-</head><body x-data="workspace" :class="{ 'menu-open': menuOpen }"><a class="skip-link" href="#main">رفتن به محتوای اصلی</a>{% block body %}{% endblock %}</body></html>
+</head><body x-data="workspace" :class="{ 'menu-open': menuOpen }"><a class="skip-link" href="#main">رفتن به محتوای اصلی</a>{% block body %}{% endblock %}{% block extra_scripts %}{% endblock %}</body></html>

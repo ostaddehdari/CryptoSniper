@@ -32,6 +32,7 @@ from apps.marketdata.search import market_is_readable
 from apps.marketdata.models import FavoriteAsset, HistoricalCandle, Watchlist, WatchlistItem
 from apps.operations.models import ExternalObservation, WorkerHeartbeat
 from apps.operations.tasks import reconcile_one
+from apps.portfolio.balances import balances_for
 from apps.signals.backfill import pause_backfill, process_backfill_batch, start_backfill
 from apps.signals.models import Signal, SignalSource, TelegramAccount, TelegramBackfillJob, TelegramChannel, TelegramMessage
 from apps.signals.telegram_client import available_channels, complete_login, configure_channel, request_login_code
@@ -117,7 +118,13 @@ def api_step_up(request):
 @never_cache
 @require_GET
 def api_bootstrap(request):
-    accounts = list(UserExchangeAccount.objects.for_user(request.user).select_related("exchange").exclude(exchange__code="binance"))
+    accounts = list(
+        UserExchangeAccount.objects.for_user(request.user)
+        .select_related("exchange")
+        .exclude(exchange__code="binance")
+    )
+    valuation_rows, valuation_cache_ok = balances_for(accounts, request.user.base_currency)
+    valuations = {row["account"].pk: row for row in valuation_rows}
     unread = Notification.objects.filter(owner=request.user, in_app=True, read_at__isnull=True).count()
     favorites = list(
         FavoriteAsset.objects.filter(owner=request.user).order_by("position", "pk").values_list("symbol", flat=True)
@@ -149,12 +156,27 @@ def api_bootstrap(request):
                     "last_sync_at": a.last_sync_at,
                     "last_error_code": a.last_error_code,
                     "last_error_message": a.last_error_message,
+                    "known_valuation": str(valuations[a.pk]["valuation"])
+                    if a.pk in valuations
+                    else None,
+                    "known_available_valuation": str(
+                        valuations[a.pk]["available_valuation"]
+                    )
+                    if a.pk in valuations
+                    else None,
+                    "valuation_complete": bool(valuations[a.pk]["complete"])
+                    if a.pk in valuations
+                    else False,
+                    "unvalued_assets": valuations[a.pk]["unknown"]
+                    if a.pk in valuations
+                    else 0,
                     "balances": _balance_payload(a),
                 }
                 for a in accounts
                 if a.environment == "live" and a.exchange.adapter_code != "simulator"
             ],
             "unread_notifications": unread,
+            "valuation_cache_ok": valuation_cache_ok,
             "favorites": favorites,
             "watchlists": watchlists,
         }

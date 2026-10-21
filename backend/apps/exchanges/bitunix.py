@@ -5,7 +5,7 @@ import json
 import secrets
 from decimal import Decimal
 
-from .adapters import InvalidProviderResponse, Market, PermissionReport, Ticker, register_adapter
+from .adapters import InvalidProviderResponse, Market, PermissionReport, ProviderRejectedError, Ticker, register_adapter
 from .spot_base import SpotAdapterBase, canonical_symbol, decimal, observed_at, provider_symbol
 
 
@@ -16,7 +16,7 @@ class BitunixAdapter(SpotAdapterBase):
 
     def _request(self, method, path, params=None, signed=False):
         params = dict(params or {})
-        headers = {"Accept": "application/json", "User-Agent": "CryptoSniper/0.21"}
+        headers = {"Accept": "application/json", "User-Agent": "CryptoSniper/0.23"}
         query = self._query(dict(sorted(params.items()))) if method == "GET" else ""
         body = (
             json.dumps(params, separators=(",", ":"), sort_keys=True)
@@ -46,8 +46,30 @@ class BitunixAdapter(SpotAdapterBase):
             body=body or None,
             timeout=10,
         )
-        if not isinstance(payload, dict) or payload.get("code") not in {0, "0", None}:
-            raise InvalidProviderResponse("bitunix_rejected_request")
+        if not isinstance(payload, dict):
+            raise InvalidProviderResponse("bitunix_invalid_payload")
+        code = payload.get("code")
+        if code not in {0, "0", None}:
+            provider_code = str(code)
+            provider_message = str(payload.get("msg") or "request rejected").strip()[:160]
+            hints = {
+                "403": "API key does not allow this operation.",
+                "10003": "API key header is missing or empty.",
+                "10004": "Server IP is not in the API-key whitelist.",
+                "10005": "Bitunix rate limit reached.",
+                "10006": "Requests are too frequent.",
+                "10007": "Signature rejected; check API secret and signing input.",
+                "10010": "Nonce format/length rejected.",
+                "10011": "Server clock differs by more than 60 seconds.",
+                "20001": "Market/symbol does not exist.",
+                "20003": "Insufficient balance.",
+            }
+            hint = hints.get(provider_code, "Bitunix returned a definite provider rejection.")
+            error = ProviderRejectedError(
+                f"Bitunix code {provider_code}: {provider_message} {hint}"
+            )
+            error.code = f"bitunix_{provider_code}"
+            raise error
         return payload.get("data", payload)
 
     def validate_credentials(self):

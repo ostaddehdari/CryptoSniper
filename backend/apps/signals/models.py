@@ -258,7 +258,7 @@ class TelegramChannel(models.Model):
     class Automation(models.TextChoices):
         MANUAL = "manual", "دستی"
         SEMI_AUTO = "semi_auto", "نیمه‌خودکار"
-        FULL_AUTO = "full_auto", "تمام‌خودکار Paper"
+        FULL_AUTO = "full_auto", "Legacy Full-Auto (غیرفعال)"
 
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="telegram_channels"

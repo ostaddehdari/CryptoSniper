@@ -1,4 +1,4 @@
-"""Telegram dedup/edit/delete handling and optional Paper-only automation."""
+"""Telegram dedup/edit/delete handling; Stage23 stops at review/plan creation."""
 
 import hashlib
 import uuid
@@ -10,8 +10,6 @@ from django.utils import timezone
 
 from apps.exchanges.models import ExchangeMarket, UserExchangeAccount
 from apps.tradeplans.service import approve_plan, create_draft
-from apps.trading.intent import queue_paper_trade
-from apps.trading.tasks import process_paper
 
 from .ai import analyze_signal
 from .channel_parser import select_channel_template
@@ -103,68 +101,8 @@ def _paper_account_and_market(channel, pair):
 
 
 def _try_full_auto_paper(channel, signal, parsed):
-    if channel.automation != TelegramChannel.Automation.FULL_AUTO:
-        return None
-    if (
-        parsed.get("futures_mentioned")
-        or parsed.get("technical_confidence", 0) < channel.min_confidence
-    ):
-        return None
-    account, market = _paper_account_and_market(channel, parsed.get("pair"))
-    if not account or not market or parsed.get("side") != "long":
-        return None
-    targets = [{"price": Decimal(value)} for value in parsed.get("execution_targets", [])[:3]]
-    try:
-        structured = {
-            "account_id": account.pk,
-            "market_id": market.pk,
-            "side": "long",
-            "entry_price": Decimal(parsed["entry"]),
-            "stop_loss": Decimal(parsed["stop_loss"]),
-            "targets": targets,
-        }
-        signal = update_parsed(
-            channel.owner,
-            signal.pk,
-            expected_revision=signal.revision,
-            data=structured,
-            reason="تأیید خودکار محدود به Simulator Paper طبق سیاست کانال",
-        )
-        signal = transition(
-            channel.owner,
-            signal.pk,
-            expected_revision=signal.revision,
-            action="approve",
-            reason="سیاست Full-Auto فقط Paper",
-        )
-        prices = [row["price"] for row in targets]
-        plan, _ = create_draft(
-            channel.owner,
-            {
-                "client_token": uuid.uuid4(),
-                "account": account,
-                "market": market,
-                "origin_signal": signal,
-                "side": "long",
-                "entry_price": Decimal(parsed["entry"]),
-                "stop_loss": Decimal(parsed["stop_loss"]),
-                "tp1": prices[0],
-                "tp2": prices[1] if len(prices) > 1 else None,
-                "tp3": prices[2] if len(prices) > 2 else None,
-                "capital": channel.paper_capital,
-                "leverage": Decimal("1"),
-                "trailing_sl": True,
-                "percentage_trailing": True,
-                "trailing_distance": Decimal("1"),
-            },
-        )
-        plan = approve_plan(channel.owner, plan.pk, plan.revision)
-        trade, created = queue_paper_trade(channel.owner, plan.pk, request_key=uuid.uuid4())
-        if created:
-            process_paper.apply_async(args=[trade.orders.get().outbox.pk], queue="orders")
-        return trade
-    except (ValidationError, ValueError, ArithmeticError, KeyError, IndexError):
-        return None
+    # Stage23: simulator/Paper automation is retired. Telegram always stops at review/plan creation.
+    return None
 
 
 def ingest_telegram_message(

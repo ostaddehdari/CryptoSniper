@@ -47,10 +47,16 @@ def sync_exchange_account(account):
         permission = adapter.validate_credentials()
         markets = adapter.fetch_markets()
         balances = adapter.fetch_balance()
-    except AdapterError:
+    except AdapterError as error:
         locked.status = UserExchangeAccount.Status.ERROR
         locked.trading_enabled = False
-        locked.save(update_fields=("status", "trading_enabled", "updated_at"))
+        locked.last_error_code = getattr(error, "code", "adapter_error")
+        locked.last_error_message = str(error)[:240]
+        locked.last_error_at = timezone.now()
+        locked.save(update_fields=(
+            "status", "trading_enabled", "last_error_code",
+            "last_error_message", "last_error_at", "updated_at"
+        ))
         raise
 
     now = timezone.now()
@@ -62,6 +68,9 @@ def sync_exchange_account(account):
         else UserExchangeAccount.Status.RESTRICTED
     )
     locked.last_verified_at = now
+    locked.last_error_code = ""
+    locked.last_error_message = ""
+    locked.last_error_at = None
 
     synced_market_keys = set()
     for market in markets:
@@ -116,6 +125,9 @@ def sync_exchange_account(account):
             "status",
             "last_verified_at",
             "last_sync_at",
+            "last_error_code",
+            "last_error_message",
+            "last_error_at",
             "updated_at",
         )
     )

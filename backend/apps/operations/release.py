@@ -1,4 +1,4 @@
-"""Fail-closed release-candidate evidence assembled from measured services."""
+"""Fail-closed Stage23 release evidence assembled from measured services."""
 
 from django.conf import settings
 
@@ -17,13 +17,13 @@ def release_candidate_status(*, probe_host=False):
     operations = service_snapshot()
     environment = settings.DEPLOYMENT_ENVIRONMENT
     environment_valid = environment in {"staging", "production"}
+    mode_valid = settings.TRADING_MODE == "live"
     passed = (
         deployment["status"] == "ready"
         and hosting["status"] == "ready"
         and operations["status"] == "healthy"
         and environment_valid
-        and settings.TRADING_MODE == "paper"
-        and settings.LIVE_TRADING_ENABLED is False
+        and mode_valid
     )
     return {
         "status": "ready" if passed else "partial",
@@ -34,12 +34,14 @@ def release_candidate_status(*, probe_host=False):
         "deployment": deployment,
         "hosting": hosting,
         "operations": operations,
-        "trading_mode": "paper",
-        "real_order_writes": False,
-        "telegram": "implemented_requires_authorized_account",
+        "trading_mode": settings.TRADING_MODE,
+        "paper_ui": False,
+        "real_order_writes": bool(settings.LIVE_TRADING_ENABLED),
+        "telegram": "implemented_review_first",
         "limitations": [
-            "Host/VPS evidence exists only after this command runs on the target host.",
-            "All real exchange writes remain disabled by default and unverified.",
-            "Telegram and AI require operator-supplied credentials and provider validation.",
+            "Real order writes remain feature-gated by LIVE_TRADING_ENABLED and per-account permissions.",
+            "Managed automatic live TP/SL/trailing is not enabled until provider exit cycles are verified.",
+            "Margin borrow/repay execution is not implemented.",
+            "WalletConnect full sessions require operator project configuration; seed/private keys are never accepted.",
         ],
     }

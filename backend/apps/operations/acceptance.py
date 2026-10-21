@@ -1,4 +1,4 @@
-"""Machine-readable Stage22 product delivery contract."""
+"""Machine-readable Stage23 product delivery contract."""
 
 from django.conf import settings
 
@@ -11,38 +11,37 @@ def base_product_acceptance():
         "release": settings.RELEASE_VERSION,
         "source_revision": settings.SOURCE_REVISION,
         "environment": settings.DEPLOYMENT_ENVIRONMENT,
-        "status": "base_product_ready_for_operator_acceptance",
-        "paper_only": not settings.LIVE_TRADING_ENABLED,
+        "status": "stage23_live_account_ui_ready_for_operator_acceptance",
+        "paper_only": False,
         "real_order_writes": bool(settings.LIVE_TRADING_ENABLED),
-        "accepted_inputs": ["manual", "smart_paste", "telegram_feature_gated"],
-        "accepted_markets": ["spot_long", "margin_long", "margin_short"],
+        "accepted_inputs": ["manual", "smart_paste", "telegram_review"],
+        "accepted_markets": ["spot_long", "margin_plan_only"],
         "accepted_pipeline": [
             "preview",
-            "risk",
-            "paper_execution",
-            "tp_sl_trailing",
+            "risk_and_fix_loss",
+            "explicit_live_spot_entry",
             "alerts",
             "reports",
+            "external_exchange_observation",
             "recovery",
         ],
         "evidence": {
             "engine": engine,
-            "user_guide": "docs/user-guide.md",
-            "admin_guide": "docs/admin-guide.md",
-            "checklist": "docs/acceptance/stage20-checklist.md",
+            "wallet_guide": "docs/WALLET_CONNECTION_GUIDE_FA.md",
+            "stage23_notes": "docs/STAGE23_REACT_LIVE_UI.md",
         },
         "deferred": {
-            "telegram_real_account_validation": "credentials_required",
-            "telegram_full_archive_validation": "authorized_channel_required",
-            "channel_ai_provider_validation": "provider_credentials_required",
-            "provider_specific_historical_candles": "not_implemented_binance_public_only",
-            "real_binance_writes": "disabled_not_verified",
-            "five_exchange_live_validation": "credentials_required",
+            "managed_live_tp_sl_trailing": "not_enabled_until_provider_exit_cycle_is_implemented_and_verified",
+            "live_margin_borrow_repay": "not_implemented",
+            "walletconnect_session": "requires_operator_walletconnect_project_id_and_provider_package",
+            "hardware_wallet_transaction_signing": "not_enabled_public_address_or_browser_wallet_only",
+            "provider_live_validation": "requires_operator_credentials_per_exchange",
         },
         "operator_checks_required": [
-            "install immutable package on the target host",
-            "verify public HTTPS with an independent browser",
-            "run encrypted restore drill against a separate database",
-            "configure and verify an independent offsite backup destination",
+            "verify every exchange API key has withdrawal disabled",
+            "verify IP allow-list where the provider supports it",
+            "run connection diagnostics for each live account",
+            "verify a small explicitly-confirmed live order before normal use",
+            "configure backups and test rollback before enabling live writes",
         ],
     }

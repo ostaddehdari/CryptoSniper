@@ -85,3 +85,28 @@ def monitor_services():
         if snapshot["status"] != "healthy":
             logger.warning("Operational service snapshot is degraded")
         return snapshot
+
+
+@shared_task(name="operations.sync_external_accounts", acks_late=True, time_limit=110)
+def sync_external_accounts():
+    """Refresh balances/open orders/history for readable LIVE accounts.
+
+    Bounded to avoid provider rate-limit storms; each run is read-only.
+    """
+    ids = list(
+        UserExchangeAccount.objects.filter(
+            environment="live",
+            status__in=("connected", "restricted"),
+            permissions__can_read=True,
+        )
+        .order_by("last_sync_at", "pk")
+        .values_list("pk", flat=True)[:40]
+    )
+    results = []
+    for account_id in ids:
+        try:
+            results.append({"account_id": account_id, "result": reconcile_account(account_id)})
+        except Exception as error:
+            logger.warning("External account observation failed", extra={"account_id": account_id, "error": type(error).__name__})
+            results.append({"account_id": account_id, "result": "error"})
+    return {"processed": len(results), "results": results}

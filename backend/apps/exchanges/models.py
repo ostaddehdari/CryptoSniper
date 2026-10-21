@@ -136,7 +136,7 @@ class UserExchangeAccount(UserOwnedModel):
     exchange = models.ForeignKey(Exchange, on_delete=models.PROTECT, related_name="accounts")
     label = models.CharField(max_length=80)
     environment = models.CharField(
-        max_length=12, choices=Environment.choices, default=Environment.PAPER
+        max_length=12, choices=Environment.choices, default=Environment.LIVE
     )
     credentials_encrypted = models.TextField(blank=True, editable=False)
     credential_hint = models.CharField(max_length=24, blank=True, editable=False)
@@ -146,6 +146,9 @@ class UserExchangeAccount(UserOwnedModel):
     permissions = models.JSONField(default=dict, blank=True)
     last_verified_at = models.DateTimeField(null=True, blank=True)
     last_sync_at = models.DateTimeField(null=True, blank=True)
+    last_error_code = models.CharField(max_length=80, blank=True)
+    last_error_message = models.CharField(max_length=240, blank=True)
+    last_error_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

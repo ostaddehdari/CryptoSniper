@@ -212,8 +212,6 @@ def transition(owner, pk, *, expected_revision, action, reason=""):
     elif action == "reject":
         if signal.status not in {"new", "parsed", "needs_review"}:
             raise ValidationError("سیگنال در این وضعیت قابل رد نیست.")
-        if not reason or len(reason.strip()) < 3:
-            raise ValidationError("علت رد سیگنال را بنویسید.")
         signal.status = Signal.Status.REJECTED
         signal.review_reason = reason.strip()
     elif action == "review":

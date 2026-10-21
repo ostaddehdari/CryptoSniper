@@ -1,0 +1,11 @@
+{
+  "release": "0.23.0rc1",
+  "purpose": "Persian RTL React UI + live multi-exchange integration + wallet center",
+  "keeps_live_writes_feature_gated": true,
+  "database_migrations": [
+    "accounts.0006_walletconnection",
+    "exchanges.0007_connection_diagnostics",
+    "exchanges.0008_environment_default_live",
+    "marketdata.0003_favoriteasset"
+  ]
+}

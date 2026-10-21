@@ -23,7 +23,7 @@ from .tasks import infrastructure_probe
 
 
 def home(request):
-    return redirect("dashboard" if request.user.is_authenticated else "login")
+    return redirect("react-app" if request.user.is_authenticated else "login")
 
 
 @require_GET
@@ -33,10 +33,10 @@ def web_manifest(request):
             "id": reverse("home"),
             "name": "CryptoSniper",
             "short_name": "CryptoSniper",
-            "description": "فضای مدیریت معاملات Paper و گزارش عملکرد",
+            "description": "مرکز کنترل معاملات واقعی، سیگنال‌ها و دارایی‌های چندصرافی",
             "lang": "fa",
             "dir": "rtl",
-            "start_url": reverse("dashboard"),
+            "start_url": reverse("react-app"),
             "scope": reverse("home"),
             "display": "standalone",
             "background_color": "#f3f6f5",

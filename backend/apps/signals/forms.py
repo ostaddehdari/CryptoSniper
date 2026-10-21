@@ -151,7 +151,7 @@ class TelegramChannelForm(forms.Form):
     )
     min_confidence = forms.IntegerField(label="حداقل اطمینان فنی", min_value=0, max_value=100)
     paper_capital = forms.DecimalField(
-        label="سرمایه Full-Auto Paper",
+        label="بودجه Legacy Full-Auto (غیرفعال)",
         max_digits=32,
         decimal_places=16,
         min_value=Decimal("0.00000001"),

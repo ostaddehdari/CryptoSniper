@@ -18,12 +18,13 @@ class ExchangeConnectionForm(forms.Form):
     label = forms.CharField(
         label="نام این اتصال",
         max_length=80,
-        widget=forms.TextInput(attrs={"class": "input", "placeholder": "مثلاً حساب اصلی یا تمرین"}),
+        widget=forms.TextInput(attrs={"class": "input", "placeholder": "مثلاً حساب اصلی Bitunix"}),
     )
     environment = forms.ChoiceField(
         label="محیط",
-        choices=UserExchangeAccount.Environment.choices,
-        widget=forms.Select(attrs={"class": "input"}),
+        choices=((UserExchangeAccount.Environment.LIVE, "حساب واقعی"),),
+        initial=UserExchangeAccount.Environment.LIVE,
+        widget=forms.HiddenInput(),
     )
     api_key = forms.CharField(
         label="API Key",
@@ -61,7 +62,7 @@ class ExchangeConnectionForm(forms.Form):
     def __init__(self, owner, *args, **kwargs):
         self.owner = owner
         super().__init__(*args, **kwargs)
-        self.fields["exchange"].queryset = Exchange.objects.filter(enabled=True)
+        self.fields["exchange"].queryset = Exchange.objects.filter(enabled=True).exclude(adapter_code__in=("simulator", "binance"))
 
     def clean(self):
         cleaned = super().clean()
@@ -69,18 +70,10 @@ class ExchangeConnectionForm(forms.Form):
         environment = cleaned.get("environment")
         if not exchange:
             return cleaned
-        if exchange.adapter_code == "simulator":
-            cleaned["environment"] = UserExchangeAccount.Environment.PAPER
-            cleaned["api_key"] = ""
-            cleaned["api_secret"] = ""
-            cleaned["passphrase"] = ""
-        elif environment == UserExchangeAccount.Environment.PAPER:
-            self.add_error("environment", "برای Paper، شبیه‌ساز CryptoSniper را انتخاب کنید.")
-        elif (
-            environment == UserExchangeAccount.Environment.SANDBOX
-            and not exchange.sandbox_supported
-        ):
-            self.add_error("environment", "این Adapter هنوز Sandbox تأییدشده ندارد.")
+        if environment != UserExchangeAccount.Environment.LIVE:
+            self.add_error("environment", "فقط حساب واقعی در CryptoSniper فعال است.")
+        elif exchange.adapter_code in {"simulator", "binance"}:
+            self.add_error("exchange", "این اتصال در رابط جدید قابل افزودن نیست.")
         elif not cleaned.get("api_key"):
             self.add_error("api_key", "API Key یا Token برای صرافی واقعی لازم است.")
         elif exchange.adapter_code != "nobitex" and not cleaned.get("api_secret"):

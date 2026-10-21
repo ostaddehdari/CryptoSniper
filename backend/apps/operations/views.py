@@ -2,6 +2,7 @@
 
 from datetime import timedelta
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
@@ -16,7 +17,6 @@ from django.views.decorators.http import require_GET, require_POST
 from apps.accounts.audit import record_audit
 from apps.accounts.security import session_api_required
 from apps.exchanges.models import UserExchangeAccount
-from apps.trading.models import ExecutionOutbox, TradeProtection
 
 from .models import AccountControl, ExternalObservation, RecoveryIssue, WorkerHeartbeat
 
@@ -45,8 +45,11 @@ def api_host_capabilities(request):
 
 
 def health_context(user):
-    accounts = UserExchangeAccount.objects.filter(owner=user).select_related(
-        "exchange", "accountcontrol"
+    accounts = list(
+        UserExchangeAccount.objects.filter(owner=user, environment="live")
+        .exclude(exchange__adapter_code="simulator")
+        .exclude(exchange__code="binance")
+        .select_related("exchange")
     )
     cutoff = timezone.now() - timedelta(seconds=95)
     workers = [
@@ -58,43 +61,34 @@ def health_context(user):
         }
         for h in WorkerHeartbeat.objects.all()
     ]
-    from django.conf import settings
-
     present = {row["queue"] for row in workers}
     workers += [
         {"queue": q, "fresh": False, "seen_at": None, "lag_seconds": None}
         for q in settings.OPERATION_QUEUES
         if q not in present
     ]
-    oldest = (
-        ExecutionOutbox.objects.filter(order__trade__owner=user)
-        .exclude(state="done")
-        .order_by("created_at")
-        .first()
-    )
-    protections = TradeProtection.objects.filter(
-        trade__owner=user, trade__state__in=["open", "partially_filled"]
-    )
-    feed_lags = [
-        (timezone.now() - p.last_tick_at).total_seconds() for p in protections if p.last_tick_at
-    ]
     try:
         service_snapshot = cache.get("operations:service-snapshot")
     except Exception:
         service_snapshot = None
+    account_rows = []
+    for account in accounts:
+        control, _ = AccountControl.objects.get_or_create(account=account)
+        account_rows.append({
+            "id": account.pk,
+            "exchange": account.exchange.code,
+            "label": account.label,
+            "status": account.status,
+            "paused": control.paused,
+            "reason": control.reason,
+            "version": control.version,
+            "last_reconciled_at": control.last_reconciled_at,
+            "last_sync_at": account.last_sync_at,
+        })
     return {
-        "accounts": accounts,
+        "accounts": account_rows,
         "workers": workers,
-        "oldest_pending_seconds": int((timezone.now() - oldest.created_at).total_seconds())
-        if oldest
-        else 0,
-        "feed_lag_seconds": int(max(feed_lags)) if feed_lags else None,
-        "issues": RecoveryIssue.objects.filter(account__owner=user, resolved=False).select_related(
-            "account"
-        ),
-        "dead_letters": ExecutionOutbox.objects.filter(
-            order__trade__owner=user, dead_letter=True
-        ).exclude(state="done"),
+        "issues": RecoveryIssue.objects.filter(account__owner=user, resolved=False).select_related("account"),
         "external": ExternalObservation.objects.filter(account__owner=user)[:50],
         "service_snapshot": service_snapshot,
     }
@@ -174,13 +168,57 @@ def api_health(request):
     return JsonResponse(
         {
             "workers": data["workers"],
-            "oldest_pending_seconds": data["oldest_pending_seconds"],
-            "feed_lag_seconds": data["feed_lag_seconds"],
-            "unresolved_issues": data["issues"].count(),
-            "live_execution": False,
+            "accounts": data["accounts"],
+            "unresolved_issues": [
+                {
+                    "id": item.pk,
+                    "account_id": item.account_id,
+                    "account": item.account.label,
+                    "code": item.code,
+                    "key": item.key,
+                    "created_at": item.created_at,
+                }
+                for item in data["issues"][:100]
+            ],
+            "external_observations": data["external"].count(),
+            "live_execution": settings.LIVE_TRADING_ENABLED,
             "service_snapshot": data["service_snapshot"],
         }
     )
+
+
+@session_api_required
+@require_POST
+def api_control(request, pk):
+    account = get_object_or_404(
+        UserExchangeAccount.objects.filter(owner=request.user, environment="live"), pk=pk
+    )
+    try:
+        import json
+        body = json.loads(request.body or b"{}") if request.content_type == "application/json" else request.POST
+        action = str(body.get("action", ""))
+        if action == "reconcile":
+            from .tasks import reconcile_one
+            reconcile_one.apply_async(args=[account.pk], queue="maintenance")
+            return JsonResponse({"queued": True}, status=202)
+        if action not in {"pause", "resume"}:
+            raise ValidationError("عملیات نامعتبر است.")
+        if body.get("confirmed") is not True and str(body.get("confirmed", "")).lower() not in {"on", "true", "1"}:
+            raise ValidationError("تأیید صریح تغییر وضعیت لازم است.")
+        control = set_paused(
+            request.user,
+            account.pk,
+            paused=action == "pause",
+            version=int(body.get("version", 0)),
+        )
+        return JsonResponse({
+            "account_id": account.pk,
+            "paused": control.paused,
+            "version": control.version,
+            "last_reconciled_at": control.last_reconciled_at,
+        })
+    except (ValidationError, ValueError, TypeError) as error:
+        return JsonResponse({"error": getattr(error, "messages", [str(error)])}, status=400)
 
 
 @login_required

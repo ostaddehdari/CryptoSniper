@@ -27,7 +27,11 @@ def queue_live_spot_order(owner, account, cleaned):
     if existing:
         return existing, False
     if not settings.LIVE_TRADING_ENABLED:
-        raise ValidationError("Live trading روی سرور خاموش است.")
+        raise ValidationError("ارسال سفارش واقعی روی سرور خاموش است.")
+    from apps.operations.models import AccountControl
+    control, _ = AccountControl.objects.get_or_create(account=account)
+    if control.paused:
+        raise ValidationError("ورود جدید برای این حساب از مرکز عملیات متوقف شده است.")
     if (
         account.environment != "live"
         or account.status != "connected"
@@ -66,8 +70,11 @@ def execute_live_spot_order(order_id):
         )
         if order.state != LiveSpotOrder.State.PENDING:
             return {"status": order.state}
+        from apps.operations.models import AccountControl
+        control, _ = AccountControl.objects.get_or_create(account=order.account)
         if (
             not settings.LIVE_TRADING_ENABLED
+            or control.paused
             or order.account.status != "connected"
             or not order.account.trading_enabled
             or order.account.permissions.get("can_withdraw") is not False

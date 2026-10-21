@@ -203,6 +203,9 @@ def _account_payload(account):
         "permissions": account.permissions,
         "last_verified_at": account.last_verified_at,
         "last_sync_at": account.last_sync_at,
+        "last_error_code": account.last_error_code,
+        "last_error_message": account.last_error_message,
+        "last_error_at": account.last_error_at,
     }
 
 
@@ -219,7 +222,7 @@ def api_exchanges(request):
             "futures": False,
             "sandbox": exchange.sandbox_supported,
         }
-        for exchange in Exchange.objects.filter(enabled=True)
+        for exchange in Exchange.objects.filter(enabled=True).exclude(adapter_code="simulator").exclude(code="binance")
     ]
     accounts = [
         _account_payload(account)

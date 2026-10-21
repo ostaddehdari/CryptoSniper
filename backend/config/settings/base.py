@@ -81,7 +81,7 @@ STORAGES = {
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
 LOGIN_URL = "login"
-LOGIN_REDIRECT_URL = "dashboard"
+LOGIN_REDIRECT_URL = "react-app"
 LOGOUT_REDIRECT_URL = "login"
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
@@ -97,7 +97,7 @@ API_RATE_LIMIT_PER_MINUTE = 120
 PARSER_RATE_LIMIT_PER_MINUTE = 10
 SUBSCRIPTION_RATE_LIMIT_PER_MINUTE = 60
 AUDIT_RETENTION_DAYS = 365
-RELEASE_VERSION = env("CRYPTOSNIPER_RELEASE", default="0.22.0rc1")
+RELEASE_VERSION = env("CRYPTOSNIPER_RELEASE", default="0.23.0rc1")
 SOURCE_REVISION = env("CRYPTOSNIPER_SOURCE_REVISION", default="development")
 DEPLOYMENT_ENVIRONMENT = env("CRYPTOSNIPER_ENVIRONMENT", default="development")
 HOSTING_EGRESS_PROBE_URL = env(
@@ -110,7 +110,7 @@ X_FRAME_OPTIONS = "DENY"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
-TRADING_MODE = "paper"
+TRADING_MODE = "live"
 # A second, explicit switch protects direct Spot writes. It never enables
 # futures/margin and account permission checks still fail closed.
 LIVE_TRADING_ENABLED = env.bool("LIVE_TRADING_ENABLED", default=False)
@@ -208,21 +208,6 @@ CELERY_BEAT_SCHEDULE["refresh-performance-aggregates"] = {
     "schedule": 300.0,
     "options": {"queue": "reports", "expires": 240},
 }
-CELERY_BEAT_SCHEDULE["paper-outbox-scan"] = {
-    "task": "trading.scan_outbox",
-    "schedule": 12.0,
-    "options": {"queue": "maintenance", "expires": 10},
-}
-CELERY_BEAT_SCHEDULE["paper-exit-monitor"] = {
-    "task": "trading.monitor_paper_exits",
-    "schedule": 12.0,
-    "options": {"queue": "trailing", "expires": 10},
-}
-CELERY_BEAT_SCHEDULE["paper-feed-staleness"] = {
-    "task": "trading.paper_feed_staleness",
-    "schedule": 30.0,
-    "options": {"queue": "trailing", "expires": 25},
-}
 CELERY_BEAT_SCHEDULE["market-display-refresh"] = {
     "task": "marketdata.refresh_watchlists",
     "schedule": 30.0,
@@ -271,4 +256,10 @@ CELERY_BEAT_SCHEDULE["operations-monitor"] = {
     "task": "operations.monitor",
     "schedule": 60.0,
     "options": {"queue": "maintenance", "expires": 50},
+}
+
+CELERY_BEAT_SCHEDULE["sync-external-exchange-state"] = {
+    "task": "operations.sync_external_accounts",
+    "schedule": 120.0,
+    "options": {"queue": "maintenance", "expires": 100},
 }

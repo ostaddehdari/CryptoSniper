@@ -8,7 +8,7 @@ from django.db.models import Q
 
 
 class TradePlan(models.Model):
-    """Owner-controlled paper-only intent. Absolutely no exchange order is placed."""
+    """Owner-controlled trade intent. Saving a plan never places an exchange order."""
 
     class Status(models.TextChoices):
         DRAFT = "draft", "پیش‌نویس"

@@ -104,7 +104,7 @@ def set_account_credentials(account, credentials):
     vault = CredentialVault()
     version, encrypted = vault.encrypt(account, credentials)
     api_key = str(credentials.get("api_key", ""))
-    account.credential_hint = f"•••• {api_key[-4:]}" if api_key else "بدون کلید · شبیه‌ساز"
+    account.credential_hint = f"•••• {api_key[-4:]}" if api_key else "بدون کلید"
     account.credential_key_version = version
     account.credentials_encrypted = encrypted
 

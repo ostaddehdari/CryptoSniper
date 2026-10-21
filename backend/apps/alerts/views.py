@@ -83,8 +83,14 @@ def api_list(request):
                         "market_id": a.market_id,
                         "trade_id": a.trade_id,
                         "kind": a.kind,
+                        "direction": a.direction,
                         "threshold": str(a.threshold),
+                        "repeat": a.repeat,
+                        "hysteresis": str(a.hysteresis),
+                        "cooldown_seconds": a.cooldown_seconds,
                         "reference_price": str(a.reference_price),
+                        "market_symbol": a.market.symbol,
+                        "market_exchange": a.market.exchange.code,
                         "reference_at": a.reference_at.isoformat(),
                         "enabled": a.enabled,
                         "version": a.version,
@@ -100,6 +106,14 @@ def api_list(request):
         if not isinstance(data, dict):
             raise ValueError
         instance = _owned(request.user, data["id"]) if data.get("id") else None
+        data = dict(data)
+        data.setdefault("direction", "above")
+        data.setdefault("repeat", False)
+        data.setdefault("hysteresis", "0.1")
+        data.setdefault("cooldown_seconds", 60)
+        data.setdefault("enabled", True)
+        data.setdefault("version", instance.version if instance else 1)
+        data.setdefault("trade", "")
         form = AlertForm(request.user, data, instance=instance)
         if not form.is_valid():
             return JsonResponse({"errors": form.errors}, status=400)

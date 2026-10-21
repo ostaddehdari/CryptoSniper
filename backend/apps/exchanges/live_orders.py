@@ -8,6 +8,7 @@ from .adapters import (
     AdapterError,
     AuthenticationError,
     OrderStatus,
+    ProviderRejectedError,
     UnsupportedOperationError,
     get_adapter,
 )
@@ -102,7 +103,13 @@ def execute_live_spot_order(order_id):
             amount=order.amount,
             price=order.price,
         )
-    except (AuthenticationError, UnsupportedOperationError, ValidationError, ValueError) as error:
+    except (
+        AuthenticationError,
+        ProviderRejectedError,
+        UnsupportedOperationError,
+        ValidationError,
+        ValueError,
+    ) as error:
         with transaction.atomic():
             locked = LiveSpotOrder.objects.select_for_update().get(pk=order_id)
             locked.state, locked.error_code = (

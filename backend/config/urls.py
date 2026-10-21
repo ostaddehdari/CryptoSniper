@@ -163,6 +163,8 @@ urlpatterns = [
     path("api/v1/inbox/<int:pk>/edit/", inbox_views.api_edit, name="api-inbox-edit"),
     path("api/v1/inbox/<int:pk>/action/", inbox_views.api_action, name="api-inbox-action"),
     path("api/v1/manual/context/", trade_context.manual_context, name="manual-context"),
+    path("api/v1/manual/markets/", trade_context.account_markets, name="manual-markets"),
+    path("api/v1/manual/fix-loss/", trade_context.fix_loss, name="manual-fix-loss"),
     path("api/v1/manual/plans/", plan_views.api_create, name="api-manual-create"),
     path("api/v1/manual/plans/<int:pk>/", plan_views.api_plan, name="api-manual-detail"),
     path(

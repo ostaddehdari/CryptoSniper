@@ -528,6 +528,9 @@ def api_list(request):
                     "status": item.status,
                     "source_method": item.source.method,
                     "revision": item.revision,
+                    "created_at": item.created_at,
+                    "raw_text": item.raw_signal.original_text[:2000],
+                    "structured": snapshot(item),
                 }
                 for item in rows
             ],

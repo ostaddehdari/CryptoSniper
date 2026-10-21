@@ -235,3 +235,117 @@ function TradesPage() {
 
 mount("cs-dashboard-root", DashboardPage);
 mount("cs-trades-root", TradesPage);
+
+
+function trimNumber(value, max = 8) {
+  if (value === null || value === undefined || value === "") return "";
+  const n = Number(value);
+  if (!Number.isFinite(n)) return String(value);
+  return n.toLocaleString("en-US", {useGrouping:false, maximumFractionDigits:max});
+}
+function pct(entry, target, side) {
+  const e=Number(entry), t=Number(target);
+  if(!e || !t) return null;
+  const raw=(t-e)/e*100;
+  return side==="short" ? -raw : raw;
+}
+function TargetField({label,value,onChange,entry,side}) {
+  const p=pct(entry,value,side);
+  return <label className="cs-field"><span>{label}</span><div className="cs-input-suffix"><input inputMode="decimal" value={value} onChange={e=>onChange(e.target.value)}/><i>USDT</i></div>{p!==null&&<small className={p>=0?"cs-up":"cs-down"}>{p>=0?"+":""}{money(p,2)}٪ نسبت به ورود</small>}</label>;
+}
+function SearchSelect({items,value,onChange,placeholder="انتخاب کنید",renderLabel=(x)=>x.label||x.name||x.asset}) {
+  const [open,setOpen]=useState(false), [q,setQ]=useState("");
+  const selected=items.find(x=>String(x.id)===String(value));
+  const filtered=items.filter(x=>renderLabel(x).toLowerCase().includes(q.toLowerCase())).slice(0,80);
+  return <div className="cs-search-select">
+    <button type="button" className="cs-select-button" onClick={()=>setOpen(x=>!x)}>{selected?renderLabel(selected):placeholder}<ChevronRight size={15}/></button>
+    {open&&<div className="cs-select-pop"><input autoFocus placeholder="جست‌وجو..." value={q} onChange={e=>setQ(e.target.value)}/><div>{filtered.map(x=><button type="button" key={x.id} onClick={()=>{onChange(String(x.id));setOpen(false);setQ("");}}>{renderLabel(x)}</button>)}</div></div>}
+  </div>;
+}
+
+function ManualPage() {
+  const [accounts,setAccounts]=useState([]), [markets,setMarkets]=useState([]), [account,setAccount]=useState(""), [market,setMarket]=useState("");
+  const [side,setSide]=useState("long"), [entry,setEntry]=useState(""), [sl,setSl]=useState(""), [tp1,setTp1]=useState(""), [tp2,setTp2]=useState(""), [tp3,setTp3]=useState("");
+  const [leverage,setLeverage]=useState("1"), [capital,setCapital]=useState(""), [risk,setRisk]=useState("1"), [fix,setFix]=useState(null);
+  const [message,setMessage]=useState(""), [saving,setSaving]=useState(false);
+  const selectedMarket=markets.find(x=>String(x.id)===String(market));
+  useEffect(()=>{request("api/v1/exchanges/").then(data=>{
+    const rows=(data.accounts||[]).filter(x=>x.environment==="live" && !["binance","simulator"].includes(String(x.exchange_code||x.exchange||"").toLowerCase()));
+    setAccounts(rows);
+    if(rows[0]) setAccount(String(rows[0].id));
+  }).catch(e=>setMessage(e.message));},[]);
+  useEffect(()=>{if(!account){setMarkets([]);return;} request("api/v1/manual/markets/?account="+encodeURIComponent(account)).then(data=>{setMarkets(data.markets||[]);setMarket(data.markets?.[0]?String(data.markets[0].id):"");}).catch(e=>{setMarkets([]);setMessage(e.message);});},[account]);
+  useEffect(()=>{if(selectedMarket?.price && !entry) setEntry(trimNumber(selectedMarket.price,8));},[market,selectedMarket?.price]);
+  useEffect(()=>{setFix(null);},[account,market,entry,sl,side,leverage,risk]);
+  const calcFix=async()=>{if(!account||!market||!entry||!sl)return;try{setFix(await request("api/v1/manual/fix-loss/",{method:"POST",body:{account_id:Number(account),market_id:Number(market),entry,stop_loss:sl,side,leverage,risk_percent:risk}}));}catch(e){setMessage(e.message);}};
+  const save=async()=>{setMessage("");setSaving(true);try{
+    const result=await request("api/v1/manual/plans/",{method:"POST",body:{account:Number(account),market:Number(market),source:"manual",side,entry_price:entry,tp1,tp2:tp2||"",tp3:tp3||"",stop_loss:sl,capital:capital||fix?.suggested_notional||"",leverage,trailing_sl:true,percentage_trailing:true,trailing_distance:"1",client_token:crypto.randomUUID()}});
+    location.href=api("manual/"+result.plan.id+"/");
+  }catch(e){setMessage(e.payload?.errors?JSON.stringify(e.payload.errors):e.message);}finally{setSaving(false);}};
+  const marketLabel=m=>m.asset+(m.market_type==="margin"&&Number(m.max_leverage)>1?"  x"+trimNumber(m.max_leverage,0):"");
+  return <div className="cs-manual-layout">
+    <section className="cs-panel">
+      <div className="cs-panel-head"><div><h2>ثبت معامله جدید</h2><p>ابتدا حساب اصلی و سپس بازار همان صرافی را انتخاب کنید.</p></div>{selectedMarket&&!selectedMarket.price_stale&&<span className="cs-live-dot">قیمت زنده</span>}</div>
+      {message&&<div className="cs-inline-error">{message}</div>}
+      <div className="cs-form-grid">
+        <label className="cs-field"><span>حساب صرافی</span><SearchSelect items={accounts} value={account} onChange={setAccount} renderLabel={x=>(x.exchange_name||x.exchange||"صرافی")+" · "+x.label}/></label>
+        <label className="cs-field"><span>ارز</span><SearchSelect items={markets} value={market} onChange={setMarket} renderLabel={marketLabel}/><small>نام صرافی، Spot و /USDT در فهرست تکرار نمی‌شوند.</small></label>
+        <label className="cs-field"><span>قیمت لحظه‌ای</span><div className="cs-live-price">{selectedMarket?.price?money(selectedMarket.price,8):"ناموجود"} <i>USDT</i></div></label>
+        <label className="cs-field"><span>جهت معامله</span><div className="cs-segment"><button type="button" className={side==="long"?"active":""} onClick={()=>setSide("long")}>لانگ</button><button type="button" className={side==="short"?"active short":""} onClick={()=>setSide("short")} disabled={selectedMarket?.market_type!=="margin"}>شورت</button></div></label>
+        <TargetField label="Entry" value={entry} onChange={setEntry} entry={entry} side={side}/>
+        <label className="cs-field"><span>اهرم / ضریب</span><input inputMode="decimal" value={leverage} onChange={e=>setLeverage(e.target.value)}/><small>سقف بازار: {selectedMarket?("x"+trimNumber(selectedMarket.max_leverage,0)):"—"}</small></label>
+      </div>
+      <div className="cs-section-title">اهداف و حد ضرر</div>
+      <div className="cs-target-grid"><TargetField label="TP1" value={tp1} onChange={setTp1} entry={entry} side={side}/><TargetField label="TP2" value={tp2} onChange={setTp2} entry={entry} side={side}/><TargetField label="TP3" value={tp3} onChange={setTp3} entry={entry} side={side}/><TargetField label="Stop Loss" value={sl} onChange={setSl} entry={entry} side={side}/></div>
+      <div className="cs-fix-box"><div className="cs-fix-head"><ShieldCheck size={20}/><div><b>Fix Loss</b><span>محاسبه عدد پیشنهادی حجم بر اساس موجودی آزاد، فاصله SL و درصد ریسک</span></div></div><div className="cs-fix-grid"><label className="cs-field"><span>ریسک محاسباتی</span><div className="cs-input-suffix"><input value={risk} onChange={e=>setRisk(e.target.value)}/><i>٪</i></div></label><button type="button" className="cs-soft" onClick={calcFix}>محاسبه</button><div className="cs-fix-result"><span>حجم پیشنهادی</span><b>{fix?money(fix.suggested_notional):"—"} USDT</b><small>{fix?.capped_by_available_balance?"به موجودی/اهرم محدود شده":fix?"بر اساس فاصله حد ضرر":"ابتدا Entry و SL را وارد کنید"}</small></div></div></div>
+      <div className="cs-form-grid compact"><label className="cs-field"><span>مبلغ ورود</span><div className="cs-input-suffix"><input value={capital} placeholder={fix?trimNumber(fix.suggested_notional,2):"مثلاً 50"} onChange={e=>setCapital(e.target.value)}/><i>USDT</i></div></label></div>
+      <div className="cs-submit"><button type="button" className="cs-primary" disabled={saving} onClick={save}><ShieldCheck size={18}/>{saving?"در حال ثبت...":"بررسی و ساخت برنامه"}</button></div>
+    </section>
+    <section className="cs-panel cs-market-chart"><div className="cs-panel-head"><div><h2>{selectedMarket?marketLabel(selectedMarket):"بازار"}</h2><p>{accounts.find(x=>String(x.id)===account)?.exchange_name||""}</p></div><b className="cs-up">{selectedMarket?.price?money(selectedMarket.price,8):"—"}</b></div><SparkChart/><div className="cs-chart-note">نمودار سبک برای پایش سریع؛ داده قیمت از feed همان بازار خوانده می‌شود.</div></section>
+  </div>;
+}
+
+function SmartPage() {
+  const [text,setText]=useState(""),[result,setResult]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState("");
+  const run=async()=>{setBusy(true);setError("");try{const data=await request("api/v1/smart-paste/",{method:"POST",body:{text}});setResult(data.signal);}catch(e){setError(e.message);}finally{setBusy(false);}};
+  return <div className="cs-grid-two"><section className="cs-panel"><div className="cs-panel-head"><div><h2>Smart Paste</h2><p>متن سیگنال را بدون تغییر وارد کنید؛ Parser آن را ساختارمند می‌کند.</p></div><Sparkles size={20}/></div><textarea className="cs-signal-text" value={text} onChange={e=>setText(e.target.value)} placeholder="BTC/USDT LONG ..."/>{error&&<div className="cs-inline-error">{error}</div>}<div className="cs-submit"><button className="cs-primary" onClick={run} disabled={!text.trim()||busy}><Sparkles size={18}/>{busy?"در حال تحلیل...":"تحلیل سیگنال"}</button></div></section><section className="cs-panel"><div className="cs-panel-head"><div><h2>نتیجه تحلیل</h2><p>پیش از تأیید نهایی باید بازبینی انسانی انجام شود.</p></div></div>{result?<div className="cs-analysis"><Info label="وضعیت" value={result.status}/><Info label="جهت" value={result.structured?.side||"—"}/><Info label="Entry" value={result.structured?.entry||"—"}/><Info label="Stop" value={result.structured?.stop_loss||"—"}/><a className="cs-primary" href={api("inbox/"+result.id+"/")}>بازبینی سیگنال</a></div>:<Empty>پس از تحلیل، خروجی ساختارمند اینجا نمایش داده می‌شود.</Empty>}</section></div>;
+}
+function Info({label,value}){return <div className="cs-info"><span>{label}</span><b>{String(value)}</b></div>}
+
+function InboxPage() {
+  const [data,setData]=useState(null),[filter,setFilter]=useState("");
+  useEffect(()=>{request("api/v1/inbox/").then(setData).catch(()=>setData({items:[]}));},[]);
+  if(!data)return <Loading/>;
+  const rows=(data.items||[]).filter(x=>!filter||x.raw_text?.toLowerCase().includes(filter.toLowerCase())||String(x.status).includes(filter));
+  return <div className="cs-page"><div className="cs-page-head"><div><h1>صندوق سیگنال‌ها</h1><p>ورودی دستی، Smart Paste و Telegram در یک فهرست.</p></div><a className="cs-primary" href={api("smart-paste/")}><Sparkles size={18}/> تحلیل سیگنال</a></div><section className="cs-panel"><div className="cs-toolbar"><input placeholder="جست‌وجوی متن یا وضعیت..." value={filter} onChange={e=>setFilter(e.target.value)}/></div><div className="cs-signal-cards">{rows.map(x=><a href={api("inbox/"+x.id+"/")} key={x.id} className="cs-signal-card"><div><span className="cs-status ok">{x.source_method}</span><b>سیگنال #{x.id}</b></div><p>{x.raw_text||"بدون متن"}</p><div><span>{x.structured?.side||"—"}</span><strong>{x.structured?.entry?money(x.structured.entry,8):"نیازمند بازبینی"}</strong></div><MiniSignalChart seed={x.id}/></a>)}</div></section></div>;
+}
+function MiniSignalChart({seed}){const y=20+(seed%4)*7;return <svg className="cs-mini-chart" viewBox="0 0 220 60" preserveAspectRatio="none"><path d={"M0 48 L32 "+(44-y/8)+" L70 42 L104 "+(30+y/10)+" L140 32 L178 "+(18+y/12)+" L220 12"} fill="none" stroke="#20a66a" strokeWidth="3"/></svg>}
+
+function SignalDetailPage() {
+  const node=document.getElementById("cs-signal-detail-root"), id=node?.dataset.signalId;
+  const [item,setItem]=useState(null),[accounts,setAccounts]=useState([]),[markets,setMarkets]=useState([]),[form,setForm]=useState({account_id:"",market_id:"",side:"long",entry_price:"",stop_loss:"",tp1:"",tp2:"",tp3:"",reason:""});
+  const [message,setMessage]=useState("");
+  useEffect(()=>{Promise.all([request("api/v1/inbox/"+id+"/"),request("api/v1/exchanges/")]).then(([d,e])=>{const s=d.signal;setItem(s);setAccounts((e.accounts||[]).filter(x=>x.environment==="live"&&!["binance","simulator"].includes(String(x.exchange_code||x.exchange||"").toLowerCase())));const st=s.structured||{};setForm(f=>({...f,account_id:String(st.account_id||""),market_id:String(st.market_id||""),side:st.side||"long",entry_price:st.entry||"",stop_loss:st.stop_loss||"",tp1:st.targets?.[0]?.price||"",tp2:st.targets?.[1]?.price||"",tp3:st.targets?.[2]?.price||""}));}).catch(e=>setMessage(e.message));},[id]);
+  useEffect(()=>{if(!form.account_id)return;request("api/v1/manual/markets/?account="+form.account_id).then(d=>setMarkets(d.markets||[])).catch(()=>setMarkets([]));},[form.account_id]);
+  const change=(k,v)=>setForm(f=>({...f,[k]:v}));
+  const save=async()=>{try{const d=await request("api/v1/inbox/"+id+"/edit/",{method:"POST",body:{...form,account_id:Number(form.account_id),market_id:Number(form.market_id),revision:item.revision}});setItem(d.signal);setMessage("ویرایش ثبت شد.");}catch(e){setMessage(e.message);}};
+  const action=async(action)=>{try{const d=await request("api/v1/inbox/"+id+"/action/",{method:"POST",body:{revision:item.revision,action,reason:action==="reject"?form.reason:""}});setItem(d.signal);setMessage(action==="reject"?"سیگنال رد شد.":"سیگنال تأیید شد.");}catch(e){setMessage(e.message);}};
+  if(!item)return <Loading/>;
+  const editable=["new","parsed","needs_review"].includes(item.status);
+  return <div className="cs-grid-two"><section className="cs-panel"><div className="cs-panel-head"><div><h2>متن اصلی</h2><p>نسخه ذخیره‌شده بدون تغییر</p></div><span className="cs-status ok">{item.status}</span></div><pre className="cs-raw">{item.raw?.original_text}</pre></section><section className="cs-panel"><div className="cs-panel-head"><div><h2>بازبینی سیگنال</h2><p>دلیل ویرایش اجباری است؛ علت رد اختیاری.</p></div></div>{message&&<div className="cs-inline-note">{message}</div>}<div className="cs-form-grid">
+    <label className="cs-field"><span>حساب صرافی</span><SearchSelect items={accounts} value={form.account_id} onChange={v=>{change("account_id",v);change("market_id","");}} renderLabel={x=>(x.exchange_name||x.exchange||"")+" · "+x.label}/></label>
+    <label className="cs-field"><span>بازار</span><SearchSelect items={markets} value={form.market_id} onChange={v=>change("market_id",v)} renderLabel={m=>m.asset+(m.market_type==="margin"&&Number(m.max_leverage)>1?" x"+trimNumber(m.max_leverage,0):"")}/></label>
+    <label className="cs-field"><span>جهت</span><select value={form.side} onChange={e=>change("side",e.target.value)}><option value="long">Long</option><option value="short">Short</option></select></label>
+    <TargetField label="Entry" value={form.entry_price} onChange={v=>change("entry_price",v)} entry={form.entry_price} side={form.side}/>
+    <TargetField label="TP1" value={form.tp1} onChange={v=>change("tp1",v)} entry={form.entry_price} side={form.side}/>
+    <TargetField label="TP2" value={form.tp2} onChange={v=>change("tp2",v)} entry={form.entry_price} side={form.side}/>
+    <TargetField label="TP3" value={form.tp3} onChange={v=>change("tp3",v)} entry={form.entry_price} side={form.side}/>
+    <TargetField label="Stop Loss" value={form.stop_loss} onChange={v=>change("stop_loss",v)} entry={form.entry_price} side={form.side}/>
+    <label className="cs-field cs-wide"><span>دلیل ویرایش</span><input value={form.reason} onChange={e=>change("reason",e.target.value)} placeholder="برای ثبت هر ویرایش حداقل ۳ حرف"/></label>
+  </div>{editable&&<div className="cs-submit split"><button className="cs-soft" onClick={()=>action("reject")}>رد سیگنال</button><button className="cs-soft" onClick={save} disabled={form.reason.trim().length<3}>ثبت ویرایش</button><button className="cs-primary" onClick={()=>action("approve")} disabled={item.status!=="parsed"}>تأیید سیگنال</button></div>}</section></div>;
+}
+
+mount("cs-manual-root", ManualPage);
+mount("cs-smart-root", SmartPage);
+mount("cs-inbox-root", InboxPage);
+mount("cs-signal-detail-root", SignalDetailPage);

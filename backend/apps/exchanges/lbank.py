@@ -9,6 +9,7 @@ from .adapters import (
     InvalidProviderResponse,
     Market,
     PermissionReport,
+    ProviderRejectedError,
     Ticker,
     UnsafePermissionError,
     register_adapter,
@@ -22,12 +23,25 @@ class LbankAdapter(SpotAdapterBase):
     base_url = "https://api.lbank.info"
 
     @staticmethod
+    def _provider_bool(value):
+        if isinstance(value, bool):
+            return value
+        if value is None:
+            return None
+        text = str(value).strip().lower()
+        if text in {"true", "1", "yes", "enabled", "on"}:
+            return True
+        if text in {"false", "0", "no", "disabled", "off"}:
+            return False
+        return None
+
+    @staticmethod
     def _provider_symbol(symbol):
         return str(symbol).replace("/", "_").lower()
 
     def _request(self, method, path, params=None, signed=False):
         params = dict(params or {})
-        headers = {"Accept": "application/json", "User-Agent": "CryptoSniper/0.21"}
+        headers = {"Accept": "application/json", "User-Agent": "CryptoSniper/0.24"}
         if signed:
             key, secret, _ = self._credentials()
             params.update(
@@ -55,22 +69,34 @@ class LbankAdapter(SpotAdapterBase):
         payload = self.transport.request(method, url, headers=headers, body=body, timeout=10)
         if not isinstance(payload, (dict, list)):
             raise InvalidProviderResponse("lbank_invalid_response")
-        if isinstance(payload, dict) and payload.get("result") is False:
-            raise InvalidProviderResponse("lbank_rejected_request")
+        if isinstance(payload, dict):
+            result = payload.get("result")
+            rejected = result is False or str(result).lower() in {"false", "failed", "error"}
+            error_code = payload.get("error_code")
+            if rejected or error_code not in {None, 0, "0"}:
+                code = str(error_code or "rejected")
+                message = str(payload.get("msg") or payload.get("message") or "request rejected")[:160]
+                error = ProviderRejectedError(f"LBank code {code}: {message}")
+                error.code = f"lbank_{code}"
+                raise error
         return payload.get("data", payload) if isinstance(payload, dict) else payload
 
     def validate_credentials(self):
         payload = self._request("POST", "/v2/supplement/api_Restrictions.do", signed=True)
         if not isinstance(payload, dict):
             raise InvalidProviderResponse("lbank_invalid_permissions")
-        if payload.get("enableWithdrawals") is True:
+        can_withdraw = self._provider_bool(payload.get("enableWithdrawals"))
+        can_read = self._provider_bool(payload.get("enableReading"))
+        can_trade = self._provider_bool(payload.get("enableSpotTrading"))
+        ip_restricted = self._provider_bool(payload.get("ipRestrict"))
+        if can_withdraw is True:
             raise UnsafePermissionError("کلید LBank دارای مجوز برداشت است.")
         return PermissionReport(
-            can_read=payload.get("enableReading") is True,
-            can_trade_spot=payload.get("enableSpotTrading") is True,
+            can_read=can_read is True,
+            can_trade_spot=can_trade is True,
             can_trade_margin=False,
-            can_withdraw=False if payload.get("enableWithdrawals") is False else None,
-            ip_restricted=payload.get("ipRestrict"),
+            can_withdraw=False if can_withdraw is False else None,
+            ip_restricted=ip_restricted,
             account_reference="lbank-api-key",
             notes=("LBank Spot V2؛ Futures غیرفعال است.",),
         )

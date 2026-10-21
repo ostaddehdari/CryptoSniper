@@ -44,6 +44,8 @@ urlpatterns = [
     path("external/<int:pk>/", external_views.detail, name="external-detail"),
     path("dashboard/panels/", portfolio_views.fragment, name="dashboard-fragment"),
     path("api/v1/dashboard/", portfolio_views.api_dashboard, name="api-dashboard"),
+    path("trades/", portfolio_views.trades, name="trades"),
+    path("api/v1/trades/", portfolio_views.api_trades, name="api-trades"),
     path(
         "operations/dead-letter/<int:pk>/resolve/",
         operation_views.resolve_dead_letter,

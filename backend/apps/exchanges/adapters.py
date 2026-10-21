@@ -30,6 +30,12 @@ class InvalidProviderResponse(AdapterError):
     code = "invalid_provider_response"
 
 
+class ProviderRejectedError(AdapterError):
+    """Provider returned a definite, parsed rejection; retrying blindly is unsafe."""
+
+    code = "provider_rejected"
+
+
 class OrderStatus(StrEnum):
     OPEN = "open"
     PARTIAL = "partial"

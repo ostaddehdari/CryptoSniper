@@ -48,6 +48,10 @@ def _state(markets):
 @require_GET
 def api_search(request):
     results = search_markets(request.user, request.GET.get("q", ""))
+    by_id = {market.pk: market for market in eligible_markets(request.user).filter(pk__in=[row["id"] for row in results])}
+    for row in results:
+        quote = get_quote(by_id[row["id"]]) if row["id"] in by_id else None
+        row["quote"] = quote
     return JsonResponse({"results": results, "mode": "display_only"})
 
 

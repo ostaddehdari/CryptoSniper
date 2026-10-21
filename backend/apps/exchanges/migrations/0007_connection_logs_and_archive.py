@@ -26,6 +26,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="exchangeconnectionlog",
-            index=models.Index(fields=["account", "created_at"], name="exchanges_e_account_16ca1e_idx"),
+            index=models.Index(fields=["account", "created_at"], name="exchange_conn_acct_time_idx"),
         ),
     ]

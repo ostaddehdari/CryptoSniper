@@ -4,7 +4,8 @@ import {
   Activity, AlertTriangle, ArrowLeftRight, Bell, ChartCandlestick, ChevronLeft,
   ChevronRight, CircleDollarSign, FileBarChart, LayoutDashboard, LogOut,
   Menu, MessageCircle, PlusCircle, Radar, Settings, ShieldCheck, Sparkles,
-  UserCircle2, WalletCards, X, PlugZap, Inbox, SlidersHorizontal
+  UserCircle2, WalletCards, X, PlugZap, Inbox, SlidersHorizontal,
+  GripVertical, Star, Copy, Search
 } from "lucide-react";
 import "./styles.css";
 
@@ -264,7 +265,10 @@ function SearchSelect({items,value,onChange,placeholder="انتخاب کنید",
 }
 
 function ManualPage() {
-  const [accounts,setAccounts]=useState([]), [markets,setMarkets]=useState([]), [account,setAccount]=useState(""), [market,setMarket]=useState("");
+  const queryParams = useMemo(() => new URLSearchParams(location.search), []);
+  const initialAccount = queryParams.get("account_id") || "";
+  const initialMarket = queryParams.get("market_id") || "";
+  const [accounts,setAccounts]=useState([]), [markets,setMarkets]=useState([]), [account,setAccount]=useState(initialAccount), [market,setMarket]=useState(initialMarket);
   const [side,setSide]=useState("long"), [entry,setEntry]=useState(""), [sl,setSl]=useState(""), [tp1,setTp1]=useState(""), [tp2,setTp2]=useState(""), [tp3,setTp3]=useState("");
   const [leverage,setLeverage]=useState("1"), [capital,setCapital]=useState(""), [risk,setRisk]=useState("1"), [fix,setFix]=useState(null);
   const [message,setMessage]=useState(""), [saving,setSaving]=useState(false);
@@ -272,9 +276,13 @@ function ManualPage() {
   useEffect(()=>{request("api/v1/exchanges/").then(data=>{
     const rows=(data.accounts||[]).filter(x=>x.environment==="live" && !["binance","simulator"].includes(String(x.exchange_code||x.exchange||"").toLowerCase()));
     setAccounts(rows);
-    if(rows[0]) setAccount(String(rows[0].id));
+    if (!account && rows[0]) setAccount(String(rows[0].id));
   }).catch(e=>setMessage(e.message));},[]);
-  useEffect(()=>{if(!account){setMarkets([]);return;} request("api/v1/manual/markets/?account="+encodeURIComponent(account)).then(data=>{setMarkets(data.markets||[]);setMarket(data.markets?.[0]?String(data.markets[0].id):"");}).catch(e=>{setMarkets([]);setMessage(e.message);});},[account]);
+  useEffect(()=>{if(!account){setMarkets([]);return;} request("api/v1/manual/markets/?account="+encodeURIComponent(account)).then(data=>{
+    const next=data.markets||[]; setMarkets(next);
+    const requested=initialMarket && next.some(x=>String(x.id)===String(initialMarket)) ? String(initialMarket) : "";
+    setMarket(requested || (next[0]?String(next[0].id):""));
+  }).catch(e=>{setMarkets([]);setMessage(e.message);});},[account]);
   useEffect(()=>{if(selectedMarket?.price && !entry) setEntry(trimNumber(selectedMarket.price,8));},[market,selectedMarket?.price]);
   useEffect(()=>{setFix(null);},[account,market,entry,sl,side,leverage,risk]);
   const calcFix=async()=>{if(!account||!market||!entry||!sl)return;try{setFix(await request("api/v1/manual/fix-loss/",{method:"POST",body:{account_id:Number(account),market_id:Number(market),entry,stop_loss:sl,side,leverage,risk_percent:risk}}));}catch(e){setMessage(e.message);}};
@@ -306,7 +314,7 @@ function ManualPage() {
 }
 
 function SmartPage() {
-  const [text,setText]=useState(""),[result,setResult]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState("");
+  const [text,setText]=useState(()=>{const value=sessionStorage.getItem("cs.smartPasteText")||""; sessionStorage.removeItem("cs.smartPasteText"); return value;}),[result,setResult]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState("");
   const run=async()=>{setBusy(true);setError("");try{const data=await request("api/v1/smart-paste/",{method:"POST",body:{text}});setResult(data.signal);}catch(e){setError(e.message);}finally{setBusy(false);}};
   return <div className="cs-grid-two"><section className="cs-panel"><div className="cs-panel-head"><div><h2>Smart Paste</h2><p>متن سیگنال را بدون تغییر وارد کنید؛ Parser آن را ساختارمند می‌کند.</p></div><Sparkles size={20}/></div><textarea className="cs-signal-text" value={text} onChange={e=>setText(e.target.value)} placeholder="BTC/USDT LONG ..."/>{error&&<div className="cs-inline-error">{error}</div>}<div className="cs-submit"><button className="cs-primary" onClick={run} disabled={!text.trim()||busy}><Sparkles size={18}/>{busy?"در حال تحلیل...":"تحلیل سیگنال"}</button></div></section><section className="cs-panel"><div className="cs-panel-head"><div><h2>نتیجه تحلیل</h2><p>پیش از تأیید نهایی باید بازبینی انسانی انجام شود.</p></div></div>{result?<div className="cs-analysis"><Info label="وضعیت" value={result.status}/><Info label="جهت" value={result.structured?.side||"—"}/><Info label="Entry" value={result.structured?.entry||"—"}/><Info label="Stop" value={result.structured?.stop_loss||"—"}/><a className="cs-primary" href={api("inbox/"+result.id+"/")}>بازبینی سیگنال</a></div>:<Empty>پس از تحلیل، خروجی ساختارمند اینجا نمایش داده می‌شود.</Empty>}</section></div>;
 }
@@ -391,3 +399,50 @@ function ExchangeDetailPage() {
 }
 mount("cs-exchanges-root", ExchangesPage);
 mount("cs-exchange-detail-root", ExchangeDetailPage);
+
+
+function WatchlistPage() {
+  const [favorites,setFavorites]=useState([]),[results,setResults]=useState([]),[accounts,setAccounts]=useState([]),[q,setQ]=useState(""),[dragged,setDragged]=useState(null),[error,setError]=useState("");
+  const loadFav=()=>request("api/v1/favorites/").then(d=>setFavorites(d.items||[])).catch(e=>setError(e.message));
+  useEffect(()=>{loadFav();request("api/v1/exchanges/").then(d=>setAccounts(d.accounts||[])).catch(()=>{});},[]);
+  useEffect(()=>{const handle=setTimeout(()=>{request("api/v1/markets/search/?q="+encodeURIComponent(q)).then(d=>setResults(d.results||[])).catch(e=>setError(e.message));},220);return()=>clearTimeout(handle);},[q]);
+  const favoriteSet=new Set(favorites.map(x=>x.symbol));
+  const add=async symbol=>{try{await request("api/v1/favorites/",{method:"POST",body:{action:"add",symbol}});await loadFav();}catch(e){setError(e.message);}};
+  const remove=async symbol=>{try{const d=await request("api/v1/favorites/",{method:"POST",body:{action:"remove",symbol}});setFavorites(d.items||[]);}catch(e){setError(e.message);}};
+  const reorder=async(target)=>{
+    if(!dragged||dragged===target)return;
+    const symbols=favorites.map(x=>x.symbol), from=symbols.indexOf(dragged), to=symbols.indexOf(target);
+    const next=[...symbols]; next.splice(to,0,next.splice(from,1)[0]);
+    setFavorites(next.map((symbol,position)=>({symbol,position})));
+    setDragged(null);
+    try{const d=await request("api/v1/favorites/",{method:"POST",body:{action:"reorder",symbols:next}});setFavorites(d.items||[]);}catch(e){setError(e.message);loadFav();}
+  };
+  const manualHref=m=>{
+    const account=accounts.find(a=>Number(a.exchange_id)===Number(m.exchange_id)&&a.environment==="live"&&["connected","restricted"].includes(a.status));
+    return account?api("manual/new/?account_id="+account.id+"&market_id="+m.id):api("manual/new/");
+  };
+  return <div className="cs-page">
+    <div className="cs-page-head"><div><h1>دیده‌بان و بازارها</h1><p>ارزهای مهم را یک‌بار اولویت‌بندی کنید؛ در همه صرافی‌ها بازار مرتبط سریع‌تر پیدا می‌شود.</p></div></div>
+    {error&&<div className="cs-inline-error">{error}</div>}
+    <div className="cs-grid-two">
+      <section className="cs-panel"><div className="cs-panel-head"><div><h2>ارزهای اولویت‌دار</h2><p>برای تغییر ترتیب، هر ردیف را بکشید و رها کنید.</p></div></div>
+        <div className="cs-favorite-list">{favorites.map((f,i)=><div draggable key={f.symbol} className="cs-favorite-row" onDragStart={()=>setDragged(f.symbol)} onDragOver={e=>e.preventDefault()} onDrop={()=>reorder(f.symbol)}><GripVertical size={18}/><span className="cs-coin">{f.symbol.slice(0,1)}</span><b>{f.symbol}</b><small>اولویت {i+1}</small><button className="cs-icon" onClick={()=>remove(f.symbol)}><X size={15}/></button></div>)}{!favorites.length&&<Empty>هنوز ارزی به اولویت‌ها اضافه نشده است.</Empty>}</div>
+      </section>
+      <section className="cs-panel"><div className="cs-panel-head"><div><h2>ارز، جفت‌ارز و بازار</h2><p>جست‌وجو در بازارهای حساب‌های متصل</p></div></div><div className="cs-toolbar cs-search-wrap"><Search size={18}/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="BTC، ETH، SOL ..."/></div>
+        <div className="cs-market-results">{results.map(m=>{const live=m.quote&&!m.quote.stale;return <div className="cs-market-result" key={m.id}><div><span className="cs-coin">{m.base_asset?.[0]||"•"}</span><div><b>{m.base_asset}{m.market_type==="margin"&&Number(m.max_leverage)>1?"  x"+trimNumber(m.max_leverage,0):""}</b><small>{m.exchange_name} · {m.market_type==="margin"?"تعهدی":"نقدی"}</small></div></div><div className="cs-market-price"><b>{live?money(m.quote.price,8):"—"}</b><small>{live?"زنده":"ناموجود/قدیمی"}</small></div><div className="cs-row-actions"><button className="cs-icon" disabled={favoriteSet.has(m.base_asset)} onClick={()=>add(m.base_asset)} title="افزودن به اولویت"><Star size={16}/></button><a className="cs-soft" href={manualHref(m)}>سیگنال دستی</a></div></div>})}</div>
+      </section>
+    </div>
+  </div>;
+}
+
+function TelegramMessages() {
+  const [channels,setChannels]=useState([]),[items,setItems]=useState([]),[q,setQ]=useState(""),[channel,setChannel]=useState(""),[error,setError]=useState("");
+  const load=()=>request("api/v1/telegram/messages/?q="+encodeURIComponent(q)+"&channel="+encodeURIComponent(channel)).then(d=>{setChannels(d.channels||[]);setItems(d.items||[]);}).catch(e=>setError(e.message));
+  useEffect(()=>{const handle=setTimeout(load,220);return()=>clearTimeout(handle);},[q,channel]);
+  const copy=async text=>{try{await navigator.clipboard.writeText(text);}catch(e){setError("مرورگر اجازه کپی خودکار نداد؛ متن را دستی انتخاب کنید.");}};
+  const smart=text=>{sessionStorage.setItem("cs.smartPasteText",text||"");location.href=api("smart-paste/");};
+  return <section className="cs-panel cs-telegram-search"><div className="cs-panel-head"><div><h2>جست‌وجوی پیام‌های Telegram</h2><p>پیام‌های آرشیوشده و پیام‌های جدید Listener با متن، هشتگ یا نماد قابل جست‌وجو هستند.</p></div></div>{error&&<div className="cs-inline-error">{error}</div>}<div className="cs-telegram-filter"><div className="cs-search-wrap"><Search size={18}/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="مثلاً #BTC، Entry یا نام ارز"/></div><select value={channel} onChange={e=>setChannel(e.target.value)}><option value="">همه کانال‌ها</option>{channels.map(c=><option key={c.id} value={c.id}>{c.title}</option>)}</select></div><div className="cs-message-list">{items.map(m=><article className="cs-message-card" key={m.id}><header><div><b>{m.channel}</b><span>پیام {m.message_id} · {m.message_kind}</span></div><small>{new Date(m.occurred_at).toLocaleString("fa-IR")}</small></header><pre>{m.text||"پیام بدون متن ذخیره‌شده"}</pre><footer><button className="cs-soft" onClick={()=>copy(m.text)}><Copy size={15}/> کپی متن</button><button className="cs-primary" disabled={!m.text} onClick={()=>smart(m.text)}><Sparkles size={15}/> ارسال به تحلیل سیگنال</button></footer></article>)}{!items.length&&<Empty>پیامی مطابق جست‌وجو پیدا نشد. برای تاریخچه کامل، آرشیو کانال را از همین صفحه شروع کنید.</Empty>}</div></section>;
+}
+
+mount("cs-watchlist-root", WatchlistPage);
+mount("cs-telegram-messages-root", TelegramMessages);

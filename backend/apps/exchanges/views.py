@@ -195,6 +195,7 @@ def _account_payload(account):
         "id": account.pk,
         "exchange": account.exchange.code,
         "exchange_code": account.exchange.code,
+        "exchange_id": account.exchange_id,
         "exchange_name": account.exchange.name,
         "label": account.label,
         "environment": account.environment,

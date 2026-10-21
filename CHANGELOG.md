@@ -1,3 +1,12 @@
+## 0.23.0rc1 — استیج ۲۳ (2026-10-21)
+
+- ظاهر تأییدشده React فارسی/RTL با سایدبار جمع‌شونده به shell اصلی CryptoSniper منتقل شد؛ routeها و CSRF/session Django حفظ می‌شوند.
+- Dashboard و Trades با داده واقعی حساب‌ها، USDT آزاد، P/L موجود، LiveSpotOrder و External Trade فقط‌خواندنی یکپارچه شدند.
+- Manual account-scoped، قیمت بازار، درصد TP/SL و Fix Loss Decimal پیشنهادی؛ Smart Paste و Inbox کارتی با بازبینی جدید.
+- مرکز صرافی جدولی با اتصال Live، حذف Binance/simulator از catalog رابط جدید، USDT-first، حذف اتصال، لاگ مرحله‌ای Worker و راهنمای Bitunix/LBank/Nobitex/WEEX/Ourbit.
+- Favorite assets با اولویت drag/drop، جست‌وجوی پیام تاریخی/زنده Telegram و انتقال متن به Smart Paste اضافه شد؛ تنظیمات از sidebar اصلی جدا و به tabs افقی تبدیل شد.
+- safety gateهای live server حذف نشده‌اند؛ Fix Loss سفارش ایجاد نمی‌کند و External Trade بدون واگذاری صریح read-only است. CI و نصب VPS تا ثبت شواهد واقعی partial هستند.
+
 ## 0.22.0rc1 — استیج ۲۲ (2026-10-18)
 
 - جریان کامل اتصال حساب Telegram: ارسال و ارسال مجدد کد، انقضا و محدودیت تلاش، 2FA و session رمزنگاری‌شده؛ خود کد/رمز ذخیره نمی‌شود.

@@ -1,4 +1,7 @@
-"""User-owned watchlists with enforced exchange-account visibility."""
+"""User-owned watchlists and global favorite assets."""
+
+import json
+import re
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -8,13 +11,13 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 from apps.accounts.security import session_api_required
 from apps.exchanges.models import ExchangeMarket
 
 from .feeds import get_quote
-from .models import Watchlist, WatchlistItem
+from .models import FavoriteAsset, Watchlist, WatchlistItem
 from .search import eligible_markets, market_is_readable, search_markets
 from .tasks import refresh_market
 
@@ -143,3 +146,69 @@ def request_market_refresh(request, pk, market_id):
     else:
         messages.info(request, "لطفاً برای به‌روزرسانی مجدد کمی صبر کنید.")
     return redirect(reverse("watchlists") + f"?list={pk}")
+
+
+
+FAVORITE_SYMBOL = re.compile(r"^[A-Z0-9]{2,20}$")
+
+
+@session_api_required
+@never_cache
+@require_http_methods(["GET", "POST"])
+def api_favorites(request):
+    if request.method == "GET":
+        return JsonResponse(
+            {
+                "items": [
+                    {"id": item.pk, "symbol": item.symbol, "position": item.position}
+                    for item in FavoriteAsset.objects.filter(owner=request.user)
+                ]
+            }
+        )
+    try:
+        body = json.loads(request.body)
+    except (ValueError, UnicodeDecodeError):
+        return JsonResponse({"error": "JSON نامعتبر است."}, status=400)
+    action = str(body.get("action", "add"))
+    current = list(FavoriteAsset.objects.filter(owner=request.user))
+    if action == "add":
+        symbol = str(body.get("symbol", "")).strip().upper()
+        if not FAVORITE_SYMBOL.fullmatch(symbol):
+            return JsonResponse({"error": "نماد ارز معتبر نیست."}, status=400)
+        allowed = eligible_markets(request.user).filter(
+            base_asset__symbol=symbol, quote_asset__symbol="USDT"
+        )
+        if not allowed.exists():
+            return JsonResponse({"error": "این ارز در هیچ حساب خواندنی شما بازار USDT ندارد."}, status=400)
+        if len(current) >= 40:
+            return JsonResponse({"error": "حداکثر ۴۰ ارز اولویت‌دار مجاز است."}, status=400)
+        item, created = FavoriteAsset.objects.get_or_create(
+            owner=request.user,
+            symbol=symbol,
+            defaults={"position": len(current)},
+        )
+        return JsonResponse(
+            {"item": {"id": item.pk, "symbol": item.symbol, "position": item.position}},
+            status=201 if created else 200,
+        )
+    if action == "remove":
+        symbol = str(body.get("symbol", "")).strip().upper()
+        FavoriteAsset.objects.filter(owner=request.user, symbol=symbol).delete()
+    elif action == "reorder":
+        symbols = [str(value).strip().upper() for value in body.get("symbols", [])]
+        existing = {item.symbol: item for item in current}
+        if len(symbols) != len(existing) or set(symbols) != set(existing):
+            return JsonResponse({"error": "فهرست ترتیب با ارزهای ذخیره‌شده هم‌خوان نیست."}, status=400)
+        for position, symbol in enumerate(symbols):
+            existing[symbol].position = position
+        FavoriteAsset.objects.bulk_update(existing.values(), ["position"])
+    else:
+        return JsonResponse({"error": "عملیات ناشناخته است."}, status=400)
+    return JsonResponse(
+        {
+            "items": [
+                {"id": item.pk, "symbol": item.symbol, "position": item.position}
+                for item in FavoriteAsset.objects.filter(owner=request.user)
+            ]
+        }
+    )

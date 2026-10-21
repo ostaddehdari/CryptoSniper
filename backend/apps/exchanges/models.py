@@ -302,7 +302,7 @@ class ExchangeConnectionLog(models.Model):
 
     class Meta:
         ordering = ("-created_at", "-pk")
-        indexes = [models.Index(fields=("account", "created_at"))]
+        indexes = [models.Index(fields=("account", "created_at"), name="exchange_conn_acct_time_idx")]
 
     def __str__(self):
         return f"{self.account_id}:{self.stage}:{self.status}"

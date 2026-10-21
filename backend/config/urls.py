@@ -153,6 +153,7 @@ urlpatterns = [
         inbox_views.api_telegram_channel_analytics,
         name="api-telegram-channel-analytics",
     ),
+    path("api/v1/telegram/messages/", inbox_views.api_telegram_messages, name="api-telegram-messages"),
     path("inbox/receive/", inbox_views.receive, name="inbox-receive"),
     path("smart-paste/", inbox_views.smart_paste, name="smart-paste"),
     path("api/v1/smart-paste/", inbox_views.api_smart_paste, name="api-smart-paste"),
@@ -192,6 +193,7 @@ urlpatterns = [
         name="watchlist-remove",
     ),
     path("api/v1/watchlists/<int:pk>/", watchlist_views.api_watchlist, name="api-watchlist"),
+    path("api/v1/favorites/", watchlist_views.api_favorites, name="api-favorites"),
     path("exchanges/", exchange_views.exchange_center, name="exchange-center"),
     path("exchanges/add/", exchange_views.add_exchange_account, name="exchange-account-add"),
     path(

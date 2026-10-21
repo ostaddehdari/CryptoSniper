@@ -23,10 +23,13 @@ from .spot_base import SpotAdapterBase, canonical_symbol, decimal, observed_at, 
 class NobitexAdapter(SpotAdapterBase):
     code = "nobitex"
     base_url = "https://apiv2.nobitex.ir"
+    private_url = "https://api.nobitex.ir"
     sandbox_url = "https://testnetapi.nobitex.ir"
 
     def _token(self):
-        token = self.credentials.get("api_key", "")
+        token = str(self.credentials.get("api_key", "")).strip().strip('"').strip("'")
+        if token.lower().startswith("token "):
+            token = token[6:].strip()
         if not token:
             raise AuthenticationError("Token نوبیتکس لازم است.")
         return token
@@ -42,7 +45,12 @@ class NobitexAdapter(SpotAdapterBase):
         elif params is not None:
             headers["Content-Type"] = "application/json"
             body = json.dumps(params, separators=(",", ":"))
-        base = self.sandbox_url if self.environment == "sandbox" else self.base_url
+        if self.environment == "sandbox":
+            base = self.sandbox_url
+        elif signed:
+            base = self.private_url
+        else:
+            base = self.base_url
         payload = self.transport.request(
             method,
             base + path + (("?" + query) if query else ""),

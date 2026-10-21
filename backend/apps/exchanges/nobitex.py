@@ -11,6 +11,7 @@ from .adapters import (
     Order,
     OrderStatus,
     PermissionReport,
+    ProviderRejectedError,
     Ticker,
     UnsupportedOperationError,
     register_adapter,
@@ -31,7 +32,7 @@ class NobitexAdapter(SpotAdapterBase):
         return token
 
     def _request(self, method, path, params=None, signed=False):
-        headers = {"Accept": "application/json", "User-Agent": "CryptoSniper/0.21"}
+        headers = {"Accept": "application/json", "User-Agent": "CryptoSniper/0.24"}
         body = None
         query = ""
         if signed:
@@ -49,8 +50,19 @@ class NobitexAdapter(SpotAdapterBase):
             body=body,
             timeout=10,
         )
-        if not isinstance(payload, dict) or payload.get("status") == "failed":
-            raise InvalidProviderResponse("nobitex_rejected_request")
+        if not isinstance(payload, dict):
+            raise InvalidProviderResponse("nobitex_invalid_response")
+        if str(payload.get("status", "")).lower() == "failed":
+            code = str(payload.get("code") or payload.get("errorCode") or "rejected")[:80]
+            message = str(
+                payload.get("message")
+                or payload.get("error")
+                or payload.get("detail")
+                or "request rejected"
+            )[:160]
+            error = ProviderRejectedError(f"Nobitex code {code}: {message}")
+            error.code = f"nobitex_{code}"
+            raise error
         return payload
 
     def validate_credentials(self):

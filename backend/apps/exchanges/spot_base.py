@@ -22,6 +22,7 @@ from .adapters import (
     Market,
     Order,
     OrderStatus,
+    ProviderRejectedError,
     UnsupportedOperationError,
 )
 
@@ -40,9 +41,38 @@ class JsonHttpTransport:
             with urlopen(request, timeout=timeout) as response:  # noqa: S310
                 raw = response.read()
         except HTTPError as error:
+            provider_code = ""
+            provider_message = ""
+            try:
+                error_raw = error.read(8192)
+                error_payload = json.loads(error_raw)
+                if isinstance(error_payload, dict):
+                    provider_code = str(
+                        error_payload.get("code")
+                        or error_payload.get("error_code")
+                        or error_payload.get("status")
+                        or ""
+                    )[:80]
+                    provider_message = str(
+                        error_payload.get("msg")
+                        or error_payload.get("message")
+                        or error_payload.get("error")
+                        or ""
+                    )[:180]
+            except (json.JSONDecodeError, UnicodeDecodeError, ValueError, TypeError):
+                pass
+            details = f"HTTP {error.code}"
+            if provider_code:
+                details += f" code={provider_code}"
+            if provider_message:
+                details += f" message={provider_message}"
             if error.code in {401, 403}:
-                raise AuthenticationError("صرافی اطلاعات اتصال را نپذیرفت.") from error
-            raise InvalidProviderResponse(f"provider_http_{error.code}") from error
+                auth_error = AuthenticationError(details)
+                auth_error.code = f"provider_http_{error.code}"
+                raise auth_error from error
+            provider_error = ProviderRejectedError(details)
+            provider_error.code = f"provider_http_{error.code}"
+            raise provider_error from error
         except (URLError, TimeoutError) as error:
             raise InvalidProviderResponse("provider_connection_failed") from error
         try:

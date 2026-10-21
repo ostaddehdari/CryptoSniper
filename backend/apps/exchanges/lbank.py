@@ -47,7 +47,7 @@ class LbankAdapter(SpotAdapterBase):
             params.update(
                 {
                     "api_key": key,
-                    "echostr": secrets.token_urlsafe(24)[:30],
+                    "echostr": secrets.token_hex(16),
                     "signature_method": "HmacSHA256",
                     "timestamp": str(self.clock()),
                 }

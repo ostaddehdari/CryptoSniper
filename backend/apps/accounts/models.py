@@ -230,6 +230,13 @@ class WalletConnection(UserOwnedModel):
         ]
         indexes = [models.Index(fields=("owner", "status"))]
 
+    def __str__(self):
+        return f"{self.owner_id}:{self.provider}:{self.label}"
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
     def clean(self):
         super().clean()
         self.label = self.label.strip()
@@ -239,10 +246,6 @@ class WalletConnection(UserOwnedModel):
             raise ValidationError({"address": "آدرس کیف پول معتبر نیست."})
         if any(key in self.metadata for key in ("private_key", "seed", "seed_phrase", "mnemonic")):
             raise ValidationError("اطلاعات محرمانه کیف پول قابل ذخیره نیست.")
-
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        return super().save(*args, **kwargs)
 
 
 _SENSITIVE_AUDIT_KEY = re.compile(

@@ -112,7 +112,7 @@ def api_public_prices(request):
             age = (now - ticker.observed_at).total_seconds()
             if age < -5 or age > 30:
                 raise ValueError("stale provider timestamp")
-            prices[key] = {
+            row = {
                 "symbol": symbol,
                 "price": str(ticker.price),
                 "source": adapter_code,
@@ -120,6 +120,11 @@ def api_public_prices(request):
                 "age_seconds": max(0, round(age, 3)),
                 "stale": age > 3,
             }
+            if key == "usdt_irt":
+                row["raw_price_rial"] = str(ticker.price)
+                row["display_price_toman"] = str(ticker.price / 10)
+                row["display_unit"] = "TOMAN"
+            prices[key] = row
         except (AdapterError, ValueError, TypeError):
             prices[key] = {
                 "symbol": symbol,

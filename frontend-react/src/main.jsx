@@ -430,7 +430,87 @@ function SignalMiniChart({signal,onOpen}){
 function SmartPaste({notify,setPage,setManualSeed}){const [text,setText]=useState(()=>localStorage.getItem("cs_smart_text")||"");const [result,setResult]=useState(null);const [busy,setBusy]=useState(false);const run=async()=>{try{setBusy(true);const d=await api("/api/v1/smart-paste/",{method:"POST",body:{text}});setResult(d.signal);notify("سیگنال تحلیل شد")}catch(e){notify(e.message)}finally{setBusy(false)}};const snap=result?.structured;return <div className="grid2 equal"><div className="card"><div className="cardHead"><div><h3>Smart Paste</h3><p>متن سیگنال را بدون تغییر وارد کنید</p></div><ClipboardPaste size={20}/></div><textarea className="signalText" value={text} onChange={e=>setText(e.target.value)} placeholder="متن سیگنال…"/><div className="submitRow"><button className="secondary" onClick={()=>{setText("");localStorage.removeItem("cs_smart_text");setResult(null)}}>پاک کردن</button><button className="primary" disabled={busy||!text.trim()} onClick={run}><Sparkles size={18}/> تحلیل</button></div></div><div className="card"><div className="cardHead"><div><h3>نتیجه تحلیل</h3><p>قبل از معامله قابل بازبینی است</p></div>{result&&<Status value={result.status}/>}</div>{!result?<Empty text="هنوز سیگنالی تحلیل نشده است."/>:<><div className="analysisGrid"><Info label="جهت" value={snap?.side||"—"}/><Info label="Entry" value={snap?.entry||"—"}/><Info label="Stop" value={snap?.stop_loss||"—"}/><Info label="اعتماد" value={`${snap?.technical_confidence||0}٪`}/>{(snap?.targets||[]).map((t,i)=><Info key={i} label={`TP${i+1}`} value={t.price}/>)}</div><div className="aiNote"><Sparkles size={18}/><div><b>تحلیل ساختار</b><p>{snap?.parsed_payload?.extraction?.summary||"ساختار استخراج شد. حساب و بازار را قبل از اجرا انتخاب و تأیید کنید."}</p></div></div><button className="primary full" onClick={()=>{setManualSeed(snap);setPage("manual")}}>انتقال به معامله دستی</button></>}</div></div>}
 function Info({label,value}){return <div className="infoBox"><span>{label}</span><b>{String(value??"—")}</b></div>}
 
-function SignalInbox({notify,boot}){const [items,setItems]=useState([]);const [selected,setSelected]=useState(null);const [detail,setDetail]=useState(null);const [reason,setReason]=useState("");const [edit,setEdit]=useState(null);const [markets,setMarkets]=useState([]);const load=()=>api("/api/v1/inbox/").then(d=>setItems(d.items||[])).catch(e=>notify(e.message));useEffect(()=>{load()},[]);const open=async id=>{setSelected(id);try{const d=await api(`/api/v1/inbox/${id}/`);setDetail(d.signal);const z=d.signal.structured||{};setEdit({account_id:z.account_id||"",market_id:z.market_id||"",side:z.side||"long",entry_price:z.entry||"",stop_loss:z.stop_loss||"",tp1:z.targets?.[0]?.price||"",tp2:z.targets?.[1]?.price||"",tp3:z.targets?.[2]?.price||""});if(z.account_id){const m=await api(`/api/v1/exchange-accounts/${z.account_id}/markets/`);setMarkets(m.markets||[])}}catch(e){notify(e.message)}};const changeAccount=async v=>{setEdit({...edit,account_id:v,market_id:""});try{const m=await api(`/api/v1/exchange-accounts/${v}/markets/`);setMarkets(m.markets||[])}catch(e){notify(e.message)}};const action=async act=>{if(!detail)return;try{const d=await api(`/api/v1/inbox/${detail.id}/action/`,{method:"POST",body:{revision:detail.revision,action:act,reason}});setDetail(d.signal);setReason("");load();notify(act==="approve"?"سیگنال تأیید شد":"سیگنال رد شد")}catch(e){notify(e.message)}};const saveEdit=async()=>{if(!detail||!edit)return;if(reason.trim().length<3){notify("دلیل ویرایش اجباری است و حداقل ۳ حرف باشد");return}try{const d=await api(`/api/v1/inbox/${detail.id}/edit/`,{method:"POST",body:{...edit,revision:detail.revision,reason}});setDetail(d.signal);setReason("");load();notify("ویرایش سیگنال ذخیره شد")}catch(e){notify(e.message)}};return <div className="splitLayout"><div className="card"><div className="cardHead"><div><h3>صندوق سیگنال</h3><p>Smart Paste، دستی و Telegram</p></div><button className="iconBtn" onClick={load}><RefreshCw size={17}/></button></div><div className="signalRows">{items.map(x=><button className={selected===x.id?"active":""} key={x.id} onClick={()=>open(x.id)}><div><b>Signal #{x.id}</b><span>{x.source_method}</span></div><Status value={x.status}/></button>)}</div></div><div className="card">{!detail?<Empty text="یک سیگنال را انتخاب کنید."/>:<><div className="cardHead"><div><h3>سیگنال #{detail.id}</h3><p>Revision {detail.revision}</p></div><Status value={detail.status}/></div><pre className="rawSignal">{detail.raw?.original_text}</pre>{edit&&<div className="formGrid"><div className="field"><label>حساب صرافی</label><select value={edit.account_id} onChange={e=>changeAccount(e.target.value)}><option value="">انتخاب حساب</option>{(boot?.accounts||[]).map(a=><option key={a.id} value={a.id}>{a.exchange_name} · {a.label}</option>)}</select></div><div className="field"><label>بازار همان حساب</label><select value={edit.market_id} onChange={e=>setEdit({...edit,market_id:e.target.value})}><option value="">انتخاب بازار</option>{markets.map(m=><option key={m.id} value={m.id}>{m.base}{m.market_type==="margin"?` · x${Number(m.max_leverage).toFixed(0)}`:""}</option>)}</select></div><div className="field"><label>جهت</label><select value={edit.side} onChange={e=>setEdit({...edit,side:e.target.value})}><option value="long">Long</option><option value="short">Short</option></select></div><div className="field"><label>Entry</label><input value={edit.entry_price} onChange={e=>setEdit({...edit,entry_price:e.target.value})}/></div><div className="field"><label>TP1</label><input value={edit.tp1} onChange={e=>setEdit({...edit,tp1:e.target.value})}/></div><div className="field"><label>TP2</label><input value={edit.tp2} onChange={e=>setEdit({...edit,tp2:e.target.value})}/></div><div className="field"><label>TP3</label><input value={edit.tp3} onChange={e=>setEdit({...edit,tp3:e.target.value})}/></div><div className="field"><label>Stop Loss</label><input value={edit.stop_loss} onChange={e=>setEdit({...edit,stop_loss:e.target.value})}/></div></div>}<div className="actionBox"><label>دلیل ویرایش / بازبینی</label><textarea value={reason} onChange={e=>setReason(e.target.value)} placeholder="برای ویرایش اجباری است؛ برای رد سیگنال اختیاری است."/><div className="row gap wrap"><button className="softBtn" onClick={saveEdit}><Save size={16}/> ذخیره ویرایش</button><button className="secondary" onClick={()=>action("reject")}>رد سیگنال</button><button className="primary" onClick={()=>action("approve")}>تأیید سیگنال</button></div></div></>}</div></div>}
+function SignalInbox({notify,boot,setPage,setManualSeed}){
+  const [items,setItems]=useState([]);
+  const [selected,setSelected]=useState(null);
+  const [detail,setDetail]=useState(null);
+  const [reason,setReason]=useState("");
+  const [edit,setEdit]=useState(null);
+  const [markets,setMarkets]=useState([]);
+  const load=()=>api("/api/v1/inbox/").then(d=>setItems(d.items||[])).catch(e=>notify(e.message));
+  useEffect(()=>{load();const t=setInterval(load,10000);return()=>clearInterval(t)},[]);
+  const open=async id=>{
+    setSelected(id);
+    try{
+      const d=await api("/api/v1/inbox/"+id+"/");
+      setDetail(d.signal);
+      const z=d.signal.structured||{};
+      setEdit({
+        account_id:z.account_id||"",
+        market_id:z.market_id||"",
+        side:z.side||"long",
+        entry_price:z.entry||"",
+        stop_loss:z.stop_loss||"",
+        tp1:z.targets?.[0]?.price||"",
+        tp2:z.targets?.[1]?.price||"",
+        tp3:z.targets?.[2]?.price||""
+      });
+      if(z.account_id){
+        const m=await api("/api/v1/exchange-accounts/"+z.account_id+"/markets/");
+        setMarkets(m.markets||[]);
+      }
+    }catch(e){notify(e.message)}
+  };
+  const changeAccount=async value=>{
+    setEdit({...edit,account_id:value,market_id:""});
+    try{const m=await api("/api/v1/exchange-accounts/"+value+"/markets/");setMarkets(m.markets||[])}catch(e){notify(e.message)}
+  };
+  const removeCurrent=()=>{setSelected(null);setDetail(null);setEdit(null);setReason("");load()};
+  const action=async act=>{
+    if(!detail)return;
+    try{
+      const d=await api("/api/v1/inbox/"+detail.id+"/action/",{method:"POST",body:{revision:detail.revision,action:act,reason}});
+      if(d.deleted){notify(act==="reject"?"سیگنال رد و از صندوق حذف شد":"سیگنال حذف شد");removeCurrent();return}
+      setDetail(d.signal);
+      setReason("");
+      load();
+      if(act==="approve"){
+        const z=d.signal?.structured||{};
+        setManualSeed({...z,signal_id:d.signal.id,new_trade_tab:"manual"});
+        notify("سیگنال تأیید شد و به معامله جدید منتقل شد");
+        setPage("newtrade");
+      }
+    }catch(e){notify(e.message)}
+  };
+  const saveEdit=async()=>{
+    if(!detail||!edit)return;
+    try{
+      const d=await api("/api/v1/inbox/"+detail.id+"/edit/",{method:"POST",body:{...edit,revision:detail.revision,reason}});
+      setDetail(d.signal);setReason("");load();notify("ویرایش سیگنال ذخیره شد");
+    }catch(e){notify(e.message)}
+  };
+  return <div className="splitLayout">
+    <div className="card">
+      <div className="cardHead"><div><h3>صندوق سیگنال</h3><p>Smart Paste، دستی و Telegram</p></div><button type="button" className="iconBtn" onClick={load}><RefreshCw size={17}/></button></div>
+      <div className="signalRows">{items.map(x=><button type="button" className={selected===x.id?"active":""} key={x.id} onClick={()=>open(x.id)}><div><b>{x.symbol||("Signal #"+x.id)}</b><span>{x.source_method}{x.entry?(" · Entry "+x.entry):""}</span></div><Status value={x.status}/></button>)}</div>
+    </div>
+    <div className="card">{!detail?<Empty text="یک سیگنال را انتخاب کنید."/>:<>
+      <div className="cardHead"><div><h3>سیگنال #{detail.id}</h3><p>Revision {detail.revision}</p></div><Status value={detail.status}/></div>
+      <pre className="rawSignal">{detail.raw?.original_text}</pre>
+      {edit&&<div className="formGrid">
+        <div className="field"><label>حساب صرافی</label><select value={edit.account_id} onChange={e=>changeAccount(e.target.value)}><option value="">انتخاب حساب</option>{(boot?.accounts||[]).map(a=><option key={a.id} value={a.id}>{a.exchange_name+" · "+a.label}</option>)}</select></div>
+        <div className="field"><label>بازار همان حساب</label><select value={edit.market_id} onChange={e=>setEdit({...edit,market_id:e.target.value})}><option value="">انتخاب بازار</option>{markets.map(m=><option key={m.id} value={m.id}>{m.base+(m.market_type==="margin"?" · Margin":" · Spot")}</option>)}</select></div>
+        <div className="field"><label>جهت</label><select value={edit.side} onChange={e=>setEdit({...edit,side:e.target.value})}><option value="long">Long</option><option value="short">Short</option></select></div>
+        <div className="field"><label>Entry</label><input value={edit.entry_price} onChange={e=>setEdit({...edit,entry_price:e.target.value})}/></div>
+        <div className="field"><label>TP1</label><input value={edit.tp1} onChange={e=>setEdit({...edit,tp1:e.target.value})}/></div>
+        <div className="field"><label>TP2</label><input value={edit.tp2} onChange={e=>setEdit({...edit,tp2:e.target.value})}/></div>
+        <div className="field"><label>TP3</label><input value={edit.tp3} onChange={e=>setEdit({...edit,tp3:e.target.value})}/></div>
+        <div className="field"><label>Stop Loss</label><input value={edit.stop_loss} onChange={e=>setEdit({...edit,stop_loss:e.target.value})}/></div>
+      </div>}
+      <div className="actionBox"><label>دلیل ویرایش / رد <small>(اختیاری)</small></label><textarea value={reason} onChange={e=>setReason(e.target.value)} placeholder="در صورت نیاز توضیح بنویسید…"/><div className="row gap wrap"><button type="button" className="softBtn" onClick={saveEdit}><Save size={16}/> ذخیره ویرایش</button><button type="button" className="secondary" onClick={()=>action("reject")}>رد و حذف</button><button type="button" className="iconBtn dangerBtn" title="حذف" onClick={()=>confirm("این سیگنال کامل حذف شود؟")&&action("delete")}><Trash2 size={16}/></button><button type="button" className="primary" onClick={()=>action("approve")}>تأیید و انتقال به معامله</button></div></div>
+    </>}</div>
+  </div>
+}
 
 function Exchanges({boot,refreshBoot,notify,requestStepUp}){const [catalog,setCatalog]=useState([]);const [selected,setSelected]=useState(null);const [diag,setDiag]=useState(null);const [showAdd,setShowAdd]=useState(false);const loadCatalog=()=>api("/api/v1/exchanges/").then(d=>setCatalog((d.exchanges||[]).filter(x=>x.code!=="binance")));useEffect(()=>{loadCatalog()},[]);const inspect=async a=>{setSelected(a);try{setDiag(await api(`/api/v1/exchange-accounts/${a.id}/diagnostics/`))}catch(e){notify(e.message)}};const sync=async a=>{try{await api(`/api/v1/exchange-accounts/${a.id}/sync/`,{method:"POST",body:{}});notify("بررسی اتصال و همگام‌سازی در صف قرار گرفت");setTimeout(()=>inspect(a),2500)}catch(e){notify(e.message)}};const revoke=async a=>{if(!confirm("اتصال و credential این حساب حذف شود؟"))return;try{await api(`/api/v1/exchange-accounts/${a.id}/revoke/`,{method:"POST",body:{confirmed:true}});notify("اتصال حذف شد");refreshBoot();setSelected(null)}catch(e){if(e.status===403)requestStepUp();else notify(e.message)}};const rotate=async a=>{if(!confirm("کلید رمزنگاری داخلی این اتصال گردش کند؟ پس از آن اتصال دوباره بررسی می‌شود."))return;try{await api(`/api/v1/exchange-accounts/${a.id}/rotate/`,{method:"POST",body:{confirmed:true}});notify("کلید رمزنگاری گردش یافت و بررسی مجدد در صف است");refreshBoot();setSelected(null);setDiag(null)}catch(e){if(e.status===403)requestStepUp();else notify(e.message)}};return <><div className="card"><div className="cardHead"><div><h3>حساب‌های صرافی</h3><p>فقط حساب‌های اصلی و واقعی متصل به CryptoSniper</p></div><button className="primary" onClick={()=>setShowAdd(true)}><PlusCircle size={18}/> افزودن اتصال</button></div><div className="tableScroll"><table><thead><tr><th>صرافی</th><th>USDT آزاد</th><th>آخرین Sync</th><th>وضعیت API</th><th>مجوز معامله</th><th>عملیات</th></tr></thead><tbody>{(boot?.accounts||[]).map(a=>{const u=a.balances?.find(b=>b.asset==="USDT");return <tr key={a.id}><td><div className="exchangeName"><span className="exchangeLogo">{a.exchange_name[0]}</span><div><b>{a.exchange_name}</b><small>{a.label}</small></div></div></td><td className="usdtHighlight">{fmt(u?.free||0,2)} USDT</td><td>{dt(a.last_sync_at)}</td><td><Status value={a.status}/></td><td>{a.trading_enabled?<span className="up">تأیید شده</span>:<span className="muted">خواندن/محدود</span>}</td><td><div className="row gap"><button className="softBtn" onClick={()=>inspect(a)}>جزئیات و لاگ</button><button className="iconBtn" title="همگام‌سازی" onClick={()=>sync(a)}><RefreshCw size={16}/></button><button className="iconBtn" title="گردش رمزنگاری داخلی" onClick={()=>rotate(a)}><KeyRound size={16}/></button><button className="iconBtn dangerBtn" onClick={()=>revoke(a)}><Trash2 size={16}/></button></div></td></tr>})}</tbody></table></div></div>{selected&&diag&&<Diagnostics account={selected} data={diag} onRotate={()=>rotate(selected)} onClose={()=>{setSelected(null);setDiag(null)}}/>}{showAdd&&<AddExchange catalog={catalog} onClose={()=>setShowAdd(false)} notify={notify} done={()=>{setShowAdd(false);refreshBoot()}}/>}</>}
 function Diagnostics({account,data,onClose,onRotate}){const a=data.account;return <div className="drawerMask" onClick={onClose}><div className="drawer wideDrawer" onClick={e=>e.stopPropagation()}><div className="cardHead"><div><h3>لاگ اتصال {account.exchange_name}</h3><p>آخرین وضعیت قابل مشاهده بدون نمایش Secret</p></div><div className="row gap"><button className="softBtn" onClick={onRotate}><KeyRound size={16}/> گردش رمزنگاری</button><button className="iconBtn" onClick={onClose}><X size={18}/></button></div></div><div className="checkGrid">{Object.entries(data.checks||{}).map(([k,v])=><div className="checkItem" key={k}><span>{v===true?"✓":v===false?"✕":"?"}</span><b>{k}</b><small>{String(v)}</small></div>)}</div>{a.last_error?.code&&<div className="errorBox"><AlertTriangle size={18}/><div><b>{a.last_error.code}</b><span>{a.last_error.message}</span><small>{dt(a.last_error.at)}</small></div></div>}<div className="sectionTitle">موجودی‌ها</div><div className="tableScroll"><table><thead><tr><th>دارایی</th><th>آزاد</th><th>قفل</th><th>کل</th></tr></thead><tbody>{(a.balances||[]).map(b=><tr key={b.asset} className={b.asset==="USDT"?"usdtRow":""}><td><b>{b.asset}</b></td><td>{b.free}</td><td>{b.locked}</td><td>{b.total}</td></tr>)}</tbody></table></div></div></div>}

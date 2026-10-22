@@ -5,7 +5,15 @@ import json
 import secrets
 from decimal import Decimal
 
-from .adapters import InvalidProviderResponse, Market, PermissionReport, ProviderRejectedError, Ticker, UnsupportedOperationError, register_adapter
+from .adapters import (
+    InvalidProviderResponse,
+    Market,
+    PermissionReport,
+    ProviderRejectedError,
+    Ticker,
+    UnsupportedOperationError,
+    register_adapter,
+)
 from .spot_base import SpotAdapterBase, canonical_symbol, decimal, observed_at, provider_symbol
 
 

@@ -226,8 +226,17 @@ class BitunixAdapter(SpotAdapterBase):
             {"symbol": provider_symbol(symbol)},
             signed=True,
         )
-        rows = payload.get("data", payload if isinstance(payload, list) else [])
-        return [self._bitunix_order(item, {"symbol": symbol}) for item in rows]
+        if isinstance(payload, list):
+            rows = payload
+        elif isinstance(payload, dict):
+            rows = payload.get("data") or payload.get("orderList") or []
+        else:
+            rows = []
+        return [
+            self._bitunix_order(item, {"symbol": symbol})
+            for item in rows
+            if isinstance(item, dict)
+        ]
 
     def fetch_trade_history(self, symbol=None):
         if not symbol:
@@ -240,5 +249,10 @@ class BitunixAdapter(SpotAdapterBase):
             {"page": 1, "pageSize": 100, "symbol": provider_symbol(symbol)},
             signed=True,
         )
-        rows = payload.get("data", payload if isinstance(payload, list) else [])
+        if isinstance(payload, list):
+            rows = payload
+        elif isinstance(payload, dict):
+            rows = payload.get("data") or payload.get("orderList") or []
+        else:
+            rows = []
         return rows if isinstance(rows, list) else []

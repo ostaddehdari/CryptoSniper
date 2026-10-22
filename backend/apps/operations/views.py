@@ -226,7 +226,13 @@ def api_control(request, pk):
 @transaction.atomic
 def resolve_dead_letter(request, pk):
     from apps.trading.execution import consume_receipt
-    from apps.trading.models import CapitalReservation, Order, Trade, TradeEvent
+    from apps.trading.models import (
+        CapitalReservation,
+        ExecutionOutbox,
+        Order,
+        Trade,
+        TradeEvent,
+    )
 
     from .provider import lookup
 

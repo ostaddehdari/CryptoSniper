@@ -80,19 +80,35 @@ class HistoricalCandle(models.Model):
 
 
 class FavoriteAsset(models.Model):
-    """User ordered asset symbols shown first across all connected exchanges."""
+    """User ordered asset symbols shown first for one exchange."""
 
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="favorite_assets")
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="favorite_assets",
+    )
+    exchange = models.ForeignKey(
+        "exchanges.Exchange",
+        on_delete=models.CASCADE,
+        related_name="favorite_assets",
+        null=True,
+        blank=True,
+    )
     symbol = models.CharField(max_length=20)
     position = models.PositiveSmallIntegerField(default=0)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ("position", "pk")
+        ordering = ("exchange_id", "position", "pk")
         constraints = [
-            models.UniqueConstraint(fields=("owner", "symbol"), name="favorite_asset_owner_symbol_unique")
+            models.UniqueConstraint(
+                fields=("owner", "exchange", "symbol"),
+                name="favorite_asset_owner_exchange_symbol_unique",
+            )
         ]
-        indexes = [models.Index(fields=("owner", "position"))]
+        indexes = [
+            models.Index(fields=("owner", "exchange", "position")),
+        ]
 
     def save(self, *args, **kwargs):
         self.symbol = self.symbol.strip().upper()

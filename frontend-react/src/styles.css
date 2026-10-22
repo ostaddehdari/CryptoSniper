@@ -35,3 +35,21 @@ a.navItem{text-decoration:none}.fullLoading{min-height:100vh;display:flex;align-
 .metricButton{border:0;text-align:right;cursor:pointer;width:100%;transition:.16s ease;appearance:none}.metricButton:hover{transform:translateY(-2px);box-shadow:0 10px 28px #1b315b14;border-color:#cddaf0}.dashboardBottom{scroll-margin-top:88px}.dashboardListButton{width:100%;border:0;background:transparent;text-align:right;padding:11px 0;border-bottom:1px solid #edf1f5;cursor:pointer}.dashboardListButton:hover{background:#f7faff}.dashboardListButton b,.dashboardListButton span{display:block}.dashboardListButton span{font-size:10px;color:#8490a3}.signalChartGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:16px}.signalMiniCard{border:1px solid #e2e9f2;background:#fff;border-radius:12px;padding:10px;cursor:pointer;text-align:right;color:#335;overflow:hidden}.signalMiniCard:hover{border-color:#adc5ef;box-shadow:0 8px 22px #204b8f12}.signalMiniHead{display:flex;justify-content:space-between;gap:10px;align-items:center}.signalMiniHead b,.signalMiniHead span{display:block}.signalMiniHead span{font-size:9px;color:#8793a6}.signalMiniCard svg{width:100%;height:120px;margin-top:8px;background:repeating-linear-gradient(to bottom,#fff,#fff 29px,#f0f3f8 30px);border-radius:8px;color:#2f66d8}.signalLegend{display:flex;justify-content:space-between;gap:8px;font-size:9px;color:#647186;margin-top:6px;direction:ltr}.levelLine{stroke-width:1.2;stroke-dasharray:5 4;vector-effect:non-scaling-stroke}.levelLine.entry{stroke:#4968d7}.levelLine.target{stroke:#25885f}.levelLine.stop{stroke:#cf4b4b}.levelLine.current{stroke:#e08b2e;stroke-width:1.8}.levelText{font-size:10px;font-weight:700}.levelText.entry{fill:#4968d7}.levelText.target{fill:#25885f}.levelText.stop{fill:#cf4b4b}.levelText.current{fill:#e08b2e}.newTradeWorkspace{display:grid;gap:14px}.newTradeTabs{padding:8px 12px}.trailingGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:0 20px 18px}.toggleCard{border:1px solid #dfe6ef;border-radius:11px;padding:12px;display:flex;align-items:center;gap:9px;background:#fbfcfe}.toggleCard b,.toggleCard span{display:block}.toggleCard span{font-size:9px;color:#8793a5;margin-top:2px}.marketPicker select[size]{height:190px;padding:5px;overflow:auto}.marketPicker select[size] option{padding:7px 8px;border-radius:6px}.searchBox.compact{height:38px;margin:0 0 6px}.searchBox.compact input{height:36px}.favMarketList{max-height:520px;overflow:auto}.softBtn.active{background:#eaf2ff;color:#245ec9;border-color:#b8cff5}.settingsNav{position:sticky;top:84px;align-self:start}.settingsNav button{width:100%;text-align:right}.submitRow>.primary.large{min-width:190px}.fixBox .fixGrid{grid-template-columns:repeat(3,minmax(0,1fr))}.realChart.signalLevels{height:480px}.realChart.signalLevels svg{overflow:visible}.down{color:#bc4141}.marketPicker small{line-height:1.7}.formGrid .field select:disabled{background:#f1f3f6;color:#9aa4b2;cursor:not-allowed}
 @media(max-width:1100px){.trailingGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.signalChartGrid{grid-template-columns:1fr}.fixBox .fixGrid{grid-template-columns:1fr 1fr}}
 @media(max-width:720px){.trailingGrid,.fixBox .fixGrid{grid-template-columns:1fr}.signalChartGrid{padding:10px}.metricButton{min-height:120px}}
+
+/* Stage25 mobile containment: tables and wide controls scroll inside cards, never the document. */
+html,body,#root,.app,.main,.content{max-width:100%;min-width:0}
+html,body{overflow-x:hidden}
+.main,.content,.card,.grid2,.manualLayout,.newTradeWorkspace,.splitLayout,.settingsLayout{min-width:0}
+.tableScroll{width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain}
+.cardHead,.topbar,.topActions,.row{min-width:0}
+@media(max-width:560px){
+  .topbar{gap:8px}
+  .topbar>div:first-child{min-width:0}
+  .topbar h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .topActions{flex:0 0 auto}
+  .topActions .primary{white-space:nowrap}
+  .card{max-width:100%}
+  .marketPicker select[size]{width:100%;max-width:100%}
+  .submitRow{flex-wrap:wrap}
+  .submitRow .primary,.submitRow .secondary{max-width:100%}
+}

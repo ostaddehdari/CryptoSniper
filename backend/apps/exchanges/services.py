@@ -30,47 +30,45 @@ def permission_payload(report):
 
 
 def sync_exchange_account(account):
-    locked = (
-        UserExchangeAccount.objects.select_related("exchange")
-        .get(pk=account.pk)
-    )
-    if locked.status == UserExchangeAccount.Status.DISABLED:
+    current = UserExchangeAccount.objects.select_related("exchange").get(pk=account.pk)
+    if current.status == UserExchangeAccount.Status.DISABLED:
         raise AdapterError("اتصال غیرفعال است.")
+
     adapter = get_adapter(
-        locked.exchange.adapter_code,
-        credentials=_credentials_for(locked),
-        environment=locked.environment,
+        current.exchange.adapter_code,
+        credentials=_credentials_for(current),
+        environment=current.environment,
     )
+
     try:
         permission = adapter.validate_credentials()
         markets = adapter.fetch_markets()
         balances = adapter.fetch_balance()
     except AdapterError as error:
-        locked.status = UserExchangeAccount.Status.ERROR
-        locked.trading_enabled = False
-        locked.last_error_code = getattr(error, "code", "adapter_error")
-        locked.last_error_message = str(error)[:240]
-        locked.last_error_at = timezone.now()
-        locked.save(update_fields=(
-            "status", "trading_enabled", "last_error_code",
-            "last_error_message", "last_error_at", "updated_at"
-        ))
+        # Persist the provider failure outside any surrounding success transaction.
+        UserExchangeAccount.objects.filter(pk=current.pk).update(
+            status=UserExchangeAccount.Status.ERROR,
+            trading_enabled=False,
+            last_error_code=getattr(error, "code", "adapter_error"),
+            last_error_message=str(error)[:240],
+            last_error_at=timezone.now(),
+            updated_at=timezone.now(),
+        )
         raise
 
-    # External provider checks completed successfully. Apply DB state atomically from here.
     with transaction.atomic():
         locked = (
             UserExchangeAccount.objects.select_for_update()
             .select_related("exchange")
-            .get(pk=account.pk)
+            .get(pk=current.pk)
         )
         now = timezone.now()
         locked.permissions = permission_payload(permission)
         locked.trading_enabled = permission.safe_for_trading
         locked.status = (
-        UserExchangeAccount.Status.CONNECTED
-        if permission.safe_for_trading
-        else UserExchangeAccount.Status.RESTRICTED
+            UserExchangeAccount.Status.CONNECTED
+            if permission.safe_for_trading
+            else UserExchangeAccount.Status.RESTRICTED
         )
         locked.last_verified_at = now
         locked.last_error_code = ""
@@ -79,71 +77,74 @@ def sync_exchange_account(account):
 
         synced_market_keys = set()
         for market in markets:
-        if market.market_type not in {"spot", "margin"}:
-            continue
-        base, _ = Asset.objects.get_or_create(symbol=market.base_asset.upper())
-        quote, _ = Asset.objects.get_or_create(symbol=market.quote_asset.upper())
-        metadata = dict(market.metadata)
-        if market.market_type == "margin" and market.max_leverage == 1:
-            metadata.setdefault("leverage_status", "not_reported")
-        ExchangeMarket.objects.update_or_create(
-            exchange=locked.exchange,
-            symbol=market.symbol.upper(),
-            market_type=market.market_type,
-            defaults={
-                "base_asset": base,
-                "quote_asset": quote,
-                "min_amount": market.min_amount,
-                "max_amount": market.max_amount,
-                "amount_step": market.amount_step,
-                "price_step": market.price_step,
-                "min_notional": market.min_notional,
-                "max_leverage": market.max_leverage,
-                "maker_fee": market.maker_fee,
-                "taker_fee": market.taker_fee,
-                "active": market.active,
-                "metadata": metadata,
-                "synced_at": now,
-            },
-        )
-        synced_market_keys.add((market.symbol.upper(), market.market_type))
+            if market.market_type not in {"spot", "margin"}:
+                continue
+            base, _ = Asset.objects.get_or_create(symbol=market.base_asset.upper())
+            quote, _ = Asset.objects.get_or_create(symbol=market.quote_asset.upper())
+            metadata = dict(market.metadata)
+            if market.market_type == "margin" and market.max_leverage == 1:
+                metadata.setdefault("leverage_status", "not_reported")
+            ExchangeMarket.objects.update_or_create(
+                exchange=locked.exchange,
+                symbol=market.symbol.upper(),
+                market_type=market.market_type,
+                defaults={
+                    "base_asset": base,
+                    "quote_asset": quote,
+                    "min_amount": market.min_amount,
+                    "max_amount": market.max_amount,
+                    "amount_step": market.amount_step,
+                    "price_step": market.price_step,
+                    "min_notional": market.min_notional,
+                    "max_leverage": market.max_leverage,
+                    "maker_fee": market.maker_fee,
+                    "taker_fee": market.taker_fee,
+                    "active": market.active,
+                    "metadata": metadata,
+                    "synced_at": now,
+                },
+            )
+            synced_market_keys.add((market.symbol.upper(), market.market_type))
+
         if synced_market_keys:
-        for stale in locked.exchange.markets.filter(active=True).exclude(synced_at=now):
-            stale.active = False
-            stale.save(update_fields=("active",))
+            for stale in locked.exchange.markets.filter(active=True).exclude(synced_at=now):
+                stale.active = False
+                stale.save(update_fields=("active",))
 
         for balance in balances:
-        asset, _ = Asset.objects.get_or_create(symbol=balance.asset.upper())
-        BalanceSnapshot.objects.create(
-            exchange_account=locked,
-            asset=asset,
-            free_balance=balance.free,
-            locked_balance=balance.locked,
-            total_balance=balance.total,
-            captured_at=now,
-        )
+            asset, _ = Asset.objects.get_or_create(symbol=balance.asset.upper())
+            BalanceSnapshot.objects.create(
+                exchange_account=locked,
+                asset=asset,
+                free_balance=balance.free,
+                locked_balance=balance.locked,
+                total_balance=balance.total,
+                captured_at=now,
+            )
+
         locked.last_sync_at = now
         locked.save(
-        update_fields=(
-            "permissions",
-            "trading_enabled",
-            "status",
-            "last_verified_at",
-            "last_sync_at",
-            "last_error_code",
-            "last_error_message",
-            "last_error_at",
-            "updated_at",
+            update_fields=(
+                "permissions",
+                "trading_enabled",
+                "status",
+                "last_verified_at",
+                "last_sync_at",
+                "last_error_code",
+                "last_error_message",
+                "last_error_at",
+                "updated_at",
+            )
         )
-        )
-        return {
-        "account_id": locked.pk,
+
+    return {
+        "account_id": current.pk,
         "status": locked.status,
         "market_count": len(synced_market_keys),
         "balance_count": len(balances),
         "permissions": permission_payload(permission),
         "synced_at": now.isoformat(),
-        }
+    }
 
 
 def latest_balances(account):

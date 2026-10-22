@@ -98,7 +98,14 @@ for code,symbol in (("bitunix","BTC/USDT"),("nobitex","USDT/IRT")):
         t=get_adapter(code,credentials={},environment="paper").fetch_ticker(symbol)
         print(code, symbol, "price=", t.price, "observed_at=", t.observed_at.isoformat())
     except Exception as e:
-        print(code, symbol, "ERROR", type(e).__name__)
+        print(
+            code,
+            symbol,
+            "ERROR",
+            type(e).__name__,
+            getattr(e, "code", ""),
+            str(e)[:180],
+        )
 ' | tee /root/cryptosniper-stage26-live-prices.txt
 
 say "Final health"

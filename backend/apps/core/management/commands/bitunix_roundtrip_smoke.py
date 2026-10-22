@@ -10,7 +10,6 @@ from decimal import Decimal, ROUND_DOWN
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
 
 from apps.exchanges.adapters import AdapterError, OrderStatus, get_adapter
 from apps.exchanges.models import ExchangeMarket, LiveSpotOrder, UserExchangeAccount

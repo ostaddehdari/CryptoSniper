@@ -135,9 +135,24 @@ class NobitexAdapter(SpotAdapterBase):
 
     def fetch_ticker(self, symbol):
         payload = self._request("GET", "/v3/orderbook/" + provider_symbol(symbol))
+        price = payload.get("lastTradePrice")
+        if price in {None, ""}:
+            bids = payload.get("bids") or []
+            asks = payload.get("asks") or []
+            best_bid = bids[0][0] if bids and isinstance(bids[0], (list, tuple)) else None
+            best_ask = asks[0][0] if asks and isinstance(asks[0], (list, tuple)) else None
+            if best_bid not in {None, ""} and best_ask not in {None, ""}:
+                price = (
+                    decimal(best_bid, allow_zero=False)
+                    + decimal(best_ask, allow_zero=False)
+                ) / Decimal("2")
+            else:
+                price = best_bid or best_ask
+        if price in {None, ""}:
+            raise InvalidProviderResponse("nobitex_missing_live_price")
         return Ticker(
             symbol.upper(),
-            decimal(payload["lastTradePrice"]),
+            decimal(price),
             observed_at(payload.get("lastUpdate")),
         )
 

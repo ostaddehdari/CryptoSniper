@@ -194,19 +194,209 @@ function NewTrade({boot,decimals,notify,requestStepUp,seed,setManualSeed}){
 }
 
 function Manual({boot,decimals,notify,requestStepUp,seed}){
-  const accounts=boot?.accounts||[]; const [accountId,setAccountId]=useState(seed?.account_id||accounts[0]?.id||""); const [markets,setMarkets]=useState([]); const [marketId,setMarketId]=useState(seed?.market_id||""); const [side,setSide]=useState(seed?.side||"long"); const [entry,setEntry]=useState(seed?.entry||seed?.entry_price||""); const [tp1,setTp1]=useState(seed?.tp1||seed?.targets?.[0]?.price||"");const [tp2,setTp2]=useState(seed?.tp2||seed?.targets?.[1]?.price||"");const [tp3,setTp3]=useState(seed?.tp3||seed?.targets?.[2]?.price||"");const [sl,setSl]=useState(seed?.stop_loss||"");const [capital,setCapital]=useState(seed?.capital||"");const [risk,setRisk]=useState("1");const [leverage,setLeverage]=useState(String(seed?.leverage||"1"));const [quote,setQuote]=useState(null);const [fixloss,setFixloss]=useState(null);const [confirmed,setConfirmed]=useState(false); const [busy,setBusy]=useState(false);
-  const market=markets.find(x=>String(x.id)===String(marketId)); const account=accounts.find(x=>String(x.id)===String(accountId));
-  const loadMarkets=async id=>{if(!id)return;try{const d=await api(`/api/v1/exchange-accounts/${id}/markets/`);setMarkets(d.markets||[]);const preferred=seed?.market_id&&d.markets.find(x=>String(x.id)===String(seed.market_id));setMarketId(preferred?.id||d.markets?.[0]?.id||"")}catch(e){notify(e.message)}};
+  const accounts=(boot?.accounts||[]).filter(a=>a.status!=="disabled");
+  const [prefs,setPrefs]=useState(null);
+  const [accountId,setAccountId]=useState(seed?.account_id||accounts[0]?.id||"");
+  const [markets,setMarkets]=useState([]);
+  const [marketId,setMarketId]=useState(seed?.market_id||"");
+  const [marketSearch,setMarketSearch]=useState("");
+  const [side,setSide]=useState(seed?.side||"long");
+  const [entry,setEntry]=useState(seed?.entry||seed?.entry_price||"");
+  const [capital,setCapital]=useState(seed?.capital||"");
+  const [tp1,setTp1]=useState(seed?.tp1||seed?.targets?.[0]?.price||"");
+  const [tp2,setTp2]=useState(seed?.tp2||seed?.targets?.[1]?.price||"");
+  const [tp3,setTp3]=useState(seed?.tp3||seed?.targets?.[2]?.price||"");
+  const [sl,setSl]=useState(seed?.stop_loss||"");
+  const [risk,setRisk]=useState("1");
+  const [leverage,setLeverage]=useState(String(seed?.leverage||"1"));
+  const [trailingTP,setTrailingTP]=useState(seed?.percentage_trailing??true);
+  const [trailingSL,setTrailingSL]=useState(seed?.trailing_sl??true);
+  const [trailingTrigger,setTrailingTrigger]=useState(seed?.percentage_trigger||"tp1");
+  const [trailingDistance,setTrailingDistance]=useState(seed?.trailing_distance||"1");
+  const [quote,setQuote]=useState(null);
+  const [fixloss,setFixloss]=useState(null);
+  const [fixBusy,setFixBusy]=useState(false);
+  const [confirmed,setConfirmed]=useState(false);
+  const [busy,setBusy]=useState(false);
+
+  const market=markets.find(x=>String(x.id)===String(marketId));
+  const account=accounts.find(x=>String(x.id)===String(accountId));
+  const favoriteSymbols=boot?.favorites?.[account?.exchange]||[];
+
+  useEffect(()=>{
+    api("/api/v1/me/trading-preferences/").then(d=>{
+      const p=d.trading_preferences;
+      setPrefs(p);
+      if(!seed){
+        setTrailingTP(p.trailing_tp_enabled!==false);
+        setTrailingSL(p.trailing_sl_enabled!==false);
+        setTrailingTrigger(p.trailing_trigger||"tp1");
+        setTrailingDistance(String(p.trailing_distance_percent||"1"));
+      }
+    }).catch(()=>{});
+  },[]);
+
+  const loadMarkets=async id=>{
+    if(!id){setMarkets([]);return}
+    try{
+      const d=await api("/api/v1/exchange-accounts/"+id+"/markets/");
+      setMarkets(d.markets||[]);
+      const preferred=seed?.market_id&&(d.markets||[]).find(x=>String(x.id)===String(seed.market_id));
+      const firstFavorite=(d.markets||[]).find(x=>x.favorite);
+      setMarketId(preferred?.id||firstFavorite?.id||d.markets?.[0]?.id||"");
+    }catch(e){notify(e.message)}
+  };
   useEffect(()=>{loadMarkets(accountId)},[accountId]);
-  useEffect(()=>{if(!marketId)return;let stop=false;const run=async()=>{try{const d=await api(`/api/v1/markets/quotes/?market=${marketId}`);if(!stop){const q=d.markets?.[0]?.quote;setQuote(q);if(!entry&&q?.price)setEntry(String(q.price))}}catch{}};run();const t=setInterval(run,10000);return()=>{stop=true;clearInterval(t)}},[marketId]);
-  useEffect(()=>{if(market?.max_leverage&&num(leverage)>num(market.max_leverage))setLeverage(String(market.max_leverage))},[marketId]);
-  useEffect(()=>{if(market?.market_type==="spot"&&side==="short")setSide("long")},[marketId,market?.market_type]);
-  const pct=t=>{if(!num(entry)||!num(t))return null;const r=(num(t)-num(entry))/num(entry)*100;return side==="short"?-r:r};
-  const calc=async()=>{try{const d=await api("/api/v1/risk/fix-loss/",{method:"POST",body:{account_id:accountId,market_id:marketId,entry,stop:sl,risk_percent:risk,leverage}});setFixloss(d);setCapital(d.suggested_notional);notify("Fix Loss محاسبه شد") }catch(e){notify(e.message)}};
-  const savePlan=async()=>{try{setBusy(true);const body={account:accountId,market:marketId,source:"manual",side,entry_price:entry,tp1,tp2:tp2||null,tp3:tp3||null,stop_loss:sl,capital:capital||fixloss?.suggested_notional||"0",leverage,trailing_sl:seed?.trailing_sl??true,percentage_trailing:seed?.percentage_trailing??true,trailing_distance:seed?.trailing_distance||"1",client_token:seed?.client_token||crypto.randomUUID()};let d;if(seed?.plan_id){d=await api(`/api/v1/manual/plans/${seed.plan_id}/edit/`,{method:"POST",body:{...body,revision:seed.revision}});notify(`برنامه #${d.plan.id} ویرایش شد`)}else{d=await api("/api/v1/manual/plans/",{method:"POST",body});notify(`برنامه #${d.plan.id} ذخیره شد`)}}catch(e){notify(e.message)}finally{setBusy(false)}};
-  const liveOrder=async()=>{if(!confirmed){notify("تأیید ریسک سفارش واقعی را فعال کنید");return} if(market?.market_type!=="spot"){notify("ارسال مستقیم فعلاً فقط برای Spot فعال است؛ برنامه Margin ذخیره می‌شود.");return}try{setBusy(true);const quantity=fixloss?.suggested_quantity||(num(capital)&&num(entry)?String(num(capital)/num(entry)):"");const d=await api("/api/v1/live-orders/",{method:"POST",body:{account:accountId,market:marketId,side:side==="long"?"buy":"sell",amount:quantity,price:entry,confirmed:true,request_key:crypto.randomUUID()}});notify(`سفارش واقعی #${d.order.id} در صف orders ثبت شد`)}catch(e){if(e.status===403&&e.data?.error==="step_up_required")requestStepUp();else notify(e.message)}finally{setBusy(false)}};
-  const target=(label,v,setV)=>{const p=pct(v);return <div className="field"><label>{label}</label><div className="inputSuffix"><input value={v} onChange={e=>setV(e.target.value)} inputMode="decimal"/><span>USDT</span></div>{p!==null&&<small className={p>=0?"up":"down"}>{p>=0?"+":""}{fmt(p,2)}٪ نسبت به Entry</small>}</div>};
-  return <div className="manualLayout"><div className="card tradeForm"><div className="cardHead"><div><h3>تعریف معامله واقعی</h3><p>بازار حساب انتخابی، قیمت زنده و مدیریت ریسک</p></div><span className="liveBadge"><span/> LIVE</span></div><div className="formGrid"><div className="field"><label>حساب صرافی</label><select value={accountId} onChange={e=>setAccountId(e.target.value)}>{accounts.map(a=><option key={a.id} value={a.id}>{a.exchange_name} · {a.label}</option>)}</select></div><div className="field"><label>بازار</label><select value={marketId} onChange={e=>setMarketId(e.target.value)}>{markets.map(m=><option key={m.id} value={m.id}>{m.base}{m.market_type==="margin"?` · x${Number(m.max_leverage).toFixed(0)}`:""}</option>)}</select><small>نام صرافی، Spot و /USDT در فهرست تکرار نمی‌شود.</small></div><div className="field"><label>قیمت زنده</label><div className="livePrice">{quote?.price?fmt(quote.price,quote.price<10?4:2):"ناموجود"}<span>USDT</span></div></div><div className="field"><label>جهت</label><div className="segmented"><button className={side==="long"?"active":""} onClick={()=>setSide("long")}>لانگ</button><button disabled={market?.market_type==="spot"} className={side==="short"?"active danger":""} onClick={()=>setSide("short")}>شورت{market?.market_type==="spot"?" (Margin)":""}</button></div></div><div className="field"><label>Entry</label><input value={entry} onChange={e=>setEntry(e.target.value)}/></div><div className="field"><label>مارجین / اهرم</label><select value={leverage} onChange={e=>setLeverage(e.target.value)}>{Array.from({length:Math.max(1,Math.floor(num(market?.max_leverage||1)))},(_,i)=>i+1).map(x=><option key={x} value={x}>x{x}</option>)}</select></div></div><div className="sectionTitle">اهداف و حد ضرر</div><div className="targetsGrid">{target("TP1",tp1,setTp1)}{target("TP2",tp2,setTp2)}{target("TP3",tp3,setTp3)}{target("Stop Loss",sl,setSl)}</div><div className="fixBox"><div className="fixHead"><div><ShieldCheck size={20}/><div><b>Fix Loss</b><span>حجم پیشنهادی با توجه به موجودی آزاد و فاصله SL</span></div></div><button className="softBtn" onClick={calc}>محاسبه</button></div><div className="fixGrid"><div className="field"><label>ریسک مجاز</label><div className="inputSuffix"><input value={risk} onChange={e=>setRisk(e.target.value)}/><span>٪</span></div></div><div className="field"><label>حجم ورود</label><div className="inputSuffix"><input value={capital} onChange={e=>setCapital(e.target.value)}/><span>USDT</span></div></div><div className="suggestion"><span>پیشنهاد سیستم</span><strong>{fixloss?`${fmt(fixloss.suggested_notional,2)} USDT`:"—"}</strong><small>{fixloss?`ریسک: ${fmt(fixloss.risk_budget,2)} USDT · فاصله SL: ${fmt(fixloss.stop_distance_percent,2)}٪`:"ابتدا محاسبه کنید"}</small></div></div></div><div className="confirmLine"><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/><span>ریسک ارسال سفارش واقعی را تأیید می‌کنم. API صرافی باید بدون مجوز برداشت باشد.</span></div><div className="submitRow"><button className="secondary" disabled={busy} onClick={savePlan}><Save size={17}/> ذخیره برنامه TP/SL</button><button className="primary large" disabled={busy} onClick={liveOrder}><Send size={17}/> ارسال سفارش ورود واقعی</button></div><div className="warningFoot">مدیریت خودکار TP/SL فقط پس از تکمیل و تأیید چرخه خروج واقعی هر Adapter فعال می‌شود؛ در این نسخه ارسال ورود واقعی مستقل و با تأیید صریح انجام می‌شود.</div></div><div className="card chartPanel"><div className="cardHead"><div><h3>{market?.base||"بازار"} <small>/ USDT</small></h3><p>{account?.exchange_name||""}</p></div><b className="up">{quote?.price||"—"}</b></div><MarketChart marketId={marketId}/></div></div>
+
+  useEffect(()=>{
+    if(!marketId)return;
+    let stopped=false;
+    const run=async()=>{
+      try{
+        const d=await api("/api/v1/markets/quotes/?market="+marketId);
+        if(!stopped){
+          const q=d.markets?.[0]?.quote;
+          setQuote(q);
+          if(!entry&&q?.price)setEntry(String(q.price));
+        }
+      }catch{}
+    };
+    run();
+    const timer=setInterval(run,5000);
+    return()=>{stopped=true;clearInterval(timer)}
+  },[marketId]);
+
+  useEffect(()=>{
+    if(market?.market_type==="spot"){
+      setLeverage("1");
+      if(side==="short")setSide("long");
+    }else if(market?.max_leverage&&num(leverage)>num(market.max_leverage)){
+      setLeverage(String(market.max_leverage));
+    }
+  },[marketId,market?.market_type]);
+
+  useEffect(()=>{
+    if(!accountId||!marketId||num(entry)<=0||num(sl)<=0||num(entry)===num(sl)||num(risk)<=0){
+      setFixloss(null);
+      return;
+    }
+    let cancelled=false;
+    setFixBusy(true);
+    const timer=setTimeout(async()=>{
+      try{
+        const d=await api("/api/v1/risk/fix-loss/",{method:"POST",body:{
+          account_id:accountId,
+          market_id:marketId,
+          entry,
+          stop:sl,
+          risk_percent:risk,
+          leverage:market?.market_type==="spot"?"1":leverage
+        }});
+        if(!cancelled){
+          setFixloss(d);
+          setCapital(String(d.suggested_notional));
+        }
+      }catch{
+        if(!cancelled)setFixloss(null);
+      }finally{
+        if(!cancelled)setFixBusy(false);
+      }
+    },250);
+    return()=>{cancelled=true;clearTimeout(timer)}
+  },[accountId,marketId,entry,sl,risk,leverage,market?.market_type]);
+
+  const pct=value=>{
+    if(!num(entry)||!num(value))return null;
+    const raw=(num(value)-num(entry))/num(entry)*100;
+    return side==="short"?-raw:raw;
+  };
+  const filteredMarkets=markets.filter(m=>{
+    const q=marketSearch.trim().toLowerCase();
+    return !q||m.symbol.toLowerCase().includes(q)||m.base.toLowerCase().includes(q);
+  });
+  const target=(label,value,setValue)=>{
+    const p=pct(value);
+    return <div className="field"><label>{label}</label><div className="inputSuffix"><input value={value} onChange={e=>setValue(e.target.value)} inputMode="decimal"/><span>USDT</span></div>{p!==null&&<small className={p>=0?"up":"down"}>{(p>=0?"+":"")+fmt(p,2)+"٪ نسبت به Entry"}</small>}</div>
+  };
+
+  const liveOrder=async()=>{
+    if(!confirmed){notify("تأیید ریسک سفارش را فعال کنید");return}
+    if(!market||!account){notify("حساب و بازار را انتخاب کنید");return}
+    if(market.market_type!=="spot"){notify("ارسال مستقیم فعلاً فقط برای Spot فعال است.");return}
+    const quantity=num(capital)&&num(entry)?String(num(capital)/num(entry)):"";
+    if(!quantity||num(quantity)<=0){notify("حجم ورود معتبر نیست");return}
+    const retry=()=>liveOrder();
+    try{
+      setBusy(true);
+      try{
+        await api("/api/v1/manual/plans/",{method:"POST",body:{
+          account:accountId,
+          market:marketId,
+          source:seed?.signal_id?"signal":"manual",
+          side,
+          entry_price:entry,
+          tp1,
+          tp2:tp2||null,
+          tp3:tp3||null,
+          stop_loss:sl,
+          capital,
+          leverage:"1",
+          trailing_sl:trailingSL,
+          percentage_trailing:trailingTP,
+          trailing_distance:trailingDistance,
+          client_token:crypto.randomUUID()
+        }});
+      }catch{}
+      const d=await api("/api/v1/live-orders/",{method:"POST",body:{
+        account:accountId,
+        market:marketId,
+        side:side==="long"?"buy":"sell",
+        amount:quantity,
+        price:entry,
+        confirmed:true,
+        request_key:crypto.randomUUID()
+      }});
+      notify("سفارش #"+d.order.id+" ارسال شد");
+    }catch(e){
+      if(e.status===403&&e.data?.error==="step_up_required")requestStepUp(retry);else notify(e.message)
+    }finally{setBusy(false)}
+  };
+
+  return <div className="manualLayout">
+    <div className="card tradeForm">
+      <div className="cardHead"><div><h3>تعریف معامله</h3><p>قیمت زنده، حجم ورود، TP/SL و Fix Loss خودکار</p></div><span className="liveBadge"><span/> LIVE</span></div>
+      <div className="formGrid">
+        <div className="field"><label>حساب صرافی</label><select value={accountId} onChange={e=>{setAccountId(e.target.value);setMarketSearch("")}}>{accounts.map(a=><option key={a.id} value={a.id}>{a.exchange_name+" · "+a.label}</option>)}</select></div>
+        <div className="field marketPicker"><label>بازار</label><div className="searchBox compact"><Search size={16}/><input value={marketSearch} onChange={e=>setMarketSearch(e.target.value)} placeholder="جست‌وجوی BTC، ETH…"/></div><select size={Math.min(7,Math.max(3,filteredMarkets.length))} value={marketId} onChange={e=>setMarketId(e.target.value)}>{filteredMarkets.map(m=><option key={m.id} value={m.id}>{(m.favorite?"★ ":"")+m.base+" / USDT"+(m.market_type==="margin"?" · Margin x"+Number(m.max_leverage).toFixed(0):" · Spot")}</option>)}</select><small>{favoriteSymbols.length?("ارزهای منتخب "+(account?.exchange_name||"")+" بالای فهرست هستند."):"ارزهای منتخب این صرافی را از تنظیمات تعیین کنید."}</small></div>
+        <div className="field"><label>قیمت زنده</label><div className="livePrice">{quote?.price?fmt(quote.price,num(quote.price)<10?4:2):"ناموجود"}<span>USDT</span></div><small>{quote?.stale?"قیمت قدیمی است":"به‌روزرسانی خودکار هر ۵ ثانیه"}</small></div>
+        <div className="field"><label>جهت</label><div className="segmented"><button type="button" className={side==="long"?"active":""} onClick={()=>setSide("long")}>لانگ</button><button type="button" disabled={market?.market_type==="spot"} className={side==="short"?"active danger":""} onClick={()=>setSide("short")}>شورت</button></div></div>
+        <div className="field"><label>Entry</label><input value={entry} onChange={e=>setEntry(e.target.value)} inputMode="decimal"/></div>
+        <div className="field"><label>حجم ورود</label><div className="inputSuffix"><input value={capital} onChange={e=>setCapital(e.target.value)} inputMode="decimal"/><span>USDT</span></div><small>پیشنهاد Fix Loss خودکار این مقدار را پر می‌کند؛ قابل ویرایش است.</small></div>
+        <div className="field"><label>اهرم</label><select disabled={market?.market_type==="spot"} value={market?.market_type==="spot"?"1":leverage} onChange={e=>setLeverage(e.target.value)}>{Array.from({length:Math.max(1,Math.floor(num(market?.max_leverage||1)))},(_,i)=>i+1).map(x=><option key={x} value={x}>{"x"+x}</option>)}</select><small>{market?.market_type==="spot"?"Spot بدون اهرم است.":"اهرم بر اساس سقف همین بازار"}</small></div>
+      </div>
+      <div className="sectionTitle">اهداف و حد ضرر</div>
+      <div className="targetsGrid">{target("TP1",tp1,setTp1)}{target("TP2",tp2,setTp2)}{target("TP3",tp3,setTp3)}{target("Stop Loss",sl,setSl)}</div>
+      <div className="sectionTitle">Trailing</div>
+      <div className="trailingGrid">
+        <label className="toggleCard"><input type="checkbox" checked={trailingTP} onChange={e=>setTrailingTP(e.target.checked)}/><div><b>Trailing TP</b><span>پیش‌فرض روشن</span></div></label>
+        <label className="toggleCard"><input type="checkbox" checked={trailingSL} onChange={e=>setTrailingSL(e.target.checked)}/><div><b>Trailing SL</b><span>پیش‌فرض روشن</span></div></label>
+        <div className="field"><label>شروع Trailing</label><select value={trailingTrigger} onChange={e=>setTrailingTrigger(e.target.value)}><option value="tp1">TP1</option></select></div>
+        <div className="field"><label>فاصله Trailing</label><div className="inputSuffix"><input value={trailingDistance} onChange={e=>setTrailingDistance(e.target.value)} inputMode="decimal"/><span>٪</span></div></div>
+      </div>
+      <div className="fixBox">
+        <div className="fixHead"><div><ShieldCheck size={20}/><div><b>Fix Loss خودکار</b><span>بر اساس تتر آزاد همان صرافی، Entry، Stop و درصد ریسک</span></div></div>{fixBusy&&<LoaderCircle className="spin" size={18}/>}</div>
+        <div className="fixGrid">
+          <div className="field"><label>ریسک مجاز</label><div className="inputSuffix"><input value={risk} onChange={e=>setRisk(e.target.value)} inputMode="decimal"/><span>٪</span></div></div>
+          <div className="suggestion"><span>تتر آزاد</span><strong>{fixloss?(fmt(fixloss.available,2)+" USDT"):"—"}</strong><small>{fixloss?("بودجه ریسک: "+fmt(fixloss.risk_budget,2)+" USDT"):"Entry و Stop را وارد کنید"}</small></div>
+          <div className="suggestion"><span>حجم پیشنهادی</span><strong>{fixloss?(fmt(fixloss.suggested_notional,2)+" USDT"):"—"}</strong><small>{fixloss?("فاصله Stop: "+fmt(fixloss.stop_distance_percent,2)+"٪"):"به‌صورت خودکار محاسبه می‌شود"}</small></div>
+        </div>
+      </div>
+      <label className="confirmLine"><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/><span>ریسک ارسال سفارش واقعی را تأیید می‌کنم. API صرافی باید بدون مجوز برداشت باشد.</span></label>
+      <div className="submitRow"><button type="button" className="primary large" disabled={busy} onClick={liveOrder}><Send size={17}/> ارسال سفارش</button></div>
+      <div className="warningFoot">TP/SL و تنظیمات Trailing همراه برنامه معامله ثبت می‌شوند. اجرای خروج واقعی فقط در Adapterهایی فعال می‌شود که چرخه خروجشان کامل شده باشد.</div>
+    </div>
+    <div className="card chartPanel"><div className="cardHead"><div><h3>{market?.base||"بازار"} <small>/ USDT</small></h3><p>{account?.exchange_name||""}</p></div><b className="up">{quote?.price||"—"}</b></div><MarketChart marketId={marketId} levels={{entry,stop:sl,targets:[tp1,tp2,tp3].filter(Boolean),current:quote?.price}}/></div>
+  </div>
 }
 
 function ManualPlans({notify,setPage,setManualSeed}){const [plans,setPlans]=useState([]);const load=()=>api("/api/v1/ui/manual-plans/").then(d=>setPlans(d.plans||[])).catch(e=>notify(e.message));useEffect(()=>{load()},[]);const edit=x=>{setManualSeed({...x,plan_id:x.id});setPage("manual")};const confirmPlan=async x=>{try{await api(`/api/v1/manual/plans/${x.id}/confirm/`,{method:"POST",body:{revision:x.revision}});notify(`برنامه #${x.id} تأیید شد؛ هنوز سفارشی ارسال نشده است.`);load()}catch(e){notify(e.message)}};return <div className="card"><div className="cardHead"><div><h3>برنامه‌های معامله</h3><p>برنامه‌ها تنظیمات معامله‌اند؛ تأیید برنامه به‌تنهایی سفارش واقعی ارسال نمی‌کند.</p></div><div className="row gap"><button className="iconBtn" onClick={load}><RefreshCw size={17}/></button><button className="primary" onClick={()=>{setManualSeed(null);setPage("manual")}}><PlusCircle size={17}/> برنامه جدید</button></div></div><div className="tableScroll"><table><thead><tr><th>بازار</th><th>حساب</th><th>جهت</th><th>Entry</th><th>TP / SL</th><th>حجم</th><th>اهرم</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>{plans.map(x=><tr key={x.id}><td><b>{(x.symbol||"").replace("/USDT","")}</b><small className="blockMuted">{x.market_type}</small></td><td>{x.exchange} · {x.account}</td><td>{x.side==="long"?"لانگ":"شورت"}</td><td>{x.entry}</td><td><span className="up">TP1 {x.tp1}</span><small className="blockMuted down">SL {x.stop_loss}</small></td><td>{fmt(x.capital,2)} USDT</td><td>x{Number(x.leverage||1).toFixed(0)}</td><td><span className="pill">{x.status==="ready"?"تأییدشده":"پیش‌نویس"}</span></td><td><div className="row gap">{x.status==="draft"&&<button className="softBtn" onClick={()=>edit(x)}>ویرایش</button>}{x.status==="draft"&&<button className="primary" onClick={()=>confirmPlan(x)}><CheckCircle2 size={15}/> تأیید</button>}</div></td></tr>)}</tbody></table>{!plans.length&&<Empty/>}</div></div>}

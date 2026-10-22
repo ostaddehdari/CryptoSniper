@@ -58,6 +58,11 @@ jobs:
         run: uv sync --frozen
       - name: Semantic lint
         run: uv run ruff check backend tests scripts
+      - name: Build Stage25 React
+        run: |
+          cd frontend-react
+          npm ci --no-audit --no-fund
+          npm run build
       - name: Security release gates
         run: |
           uv run python scripts/security_scan.py

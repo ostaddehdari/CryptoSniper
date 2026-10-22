@@ -16,6 +16,9 @@ logger = logging.getLogger(__name__)
 FRESH_SECONDS = 25
 CACHE_SECONDS = 90
 LOCK_SECONDS = 12
+LIVE_FRESH_SECONDS = 3
+LIVE_CACHE_SECONDS = 8
+LIVE_LOCK_SECONDS = 2
 SUPPORTED_FEEDS = {"simulator", "binance", "nobitex", "lbank", "weex", "ourbit", "bitunix"}
 
 
@@ -112,6 +115,79 @@ def refresh_quote(market):
         # Never log exception repr: HTTP transports can include signed URLs.
         logger.warning(
             "Market feed failed", extra={"market_id": market.pk, "exchange": adapter_code}
+        )
+        return {"status": "unavailable", "market_id": market.pk}
+    finally:
+        cache.delete(lock_key)
+
+
+
+def _live_key(market_id):
+    return f"marketdata:v2:live:{int(market_id)}"
+
+
+def get_live_quote(market, now=None):
+    """Return the direct short-cache ticker used by live charts."""
+    now = now or timezone.now()
+    item = cache.get(_live_key(market.pk))
+    if not item:
+        return None
+    try:
+        seen = datetime.fromisoformat(item["observed_at"])
+        age = (now - seen).total_seconds()
+    except (ValueError, TypeError, KeyError):
+        return None
+    if age < -5:
+        return None
+    return {
+        **item,
+        "age_seconds": max(0, round(age, 3)),
+        "stale": age > LIVE_FRESH_SECONDS,
+        "live": True,
+        "trade_eligible": False,
+    }
+
+
+def refresh_live_quote(market):
+    """Fetch one provider ticker directly; no credentials, no orderbook, no trading."""
+    if not market.active or market.market_type != "spot":
+        return {"status": "unsupported", "market_id": market.pk}
+    adapter_code = market.exchange.adapter_code
+    if adapter_code not in SUPPORTED_FEEDS:
+        return {"status": "unsupported", "market_id": market.pk}
+    lock_key = f"marketdata:v2:live-lock:{market.pk}"
+    if not cache.add(lock_key, "1", timeout=LIVE_LOCK_SECONDS):
+        current = get_live_quote(market)
+        return {
+            "status": "busy" if not current else "ok",
+            "market_id": market.pk,
+            "data": current,
+        }
+    try:
+        adapter = get_adapter(adapter_code, credentials={}, environment="paper")
+        ticker = adapter.fetch_ticker(market.symbol)
+        price = _positive_decimal(ticker.price)
+        if timezone.is_naive(ticker.observed_at):
+            raise ValueError("Provider timestamp must be timezone-aware")
+        age = (timezone.now() - ticker.observed_at).total_seconds()
+        if age < -5 or age > 30:
+            raise ValueError("Provider ticker is not live enough")
+        payload = {
+            "market_id": market.pk,
+            "exchange": market.exchange.code,
+            "symbol": market.symbol,
+            "market_type": market.market_type,
+            "price": str(price),
+            "observed_at": ticker.observed_at.isoformat(),
+            "received_at": timezone.now().isoformat(),
+            "source": adapter_code,
+        }
+        cache.set(_live_key(market.pk), payload, timeout=LIVE_CACHE_SECONDS)
+        return {"status": "ok", "market_id": market.pk, "data": get_live_quote(market)}
+    except (AdapterError, ValueError, TypeError, KeyError, InvalidOperation):
+        logger.warning(
+            "Live market ticker failed",
+            extra={"market_id": market.pk, "exchange": adapter_code},
         )
         return {"status": "unavailable", "market_id": market.pk}
     finally:

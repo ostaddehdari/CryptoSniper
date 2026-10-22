@@ -110,6 +110,9 @@ class FavoriteAsset(models.Model):
             models.Index(fields=("owner", "exchange", "position")),
         ]
 
+    def __str__(self):
+        return f"{self.owner_id}:{self.exchange_id}:{self.symbol}"
+
     def save(self, *args, **kwargs):
         self.symbol = self.symbol.strip().upper()
         return super().save(*args, **kwargs)

@@ -1,0 +1,10 @@
+.livePriceStrip{display:flex;align-items:center;gap:8px;margin-inline:auto 10px}
+.liveTicker{display:flex;align-items:center;gap:7px;border:1px solid #dfe7f1;background:#f8fbff;border-radius:10px;padding:7px 10px;min-width:142px}
+.liveTicker.stale{background:#fff8e8;border-color:#f0d9a6}
+.liveDot{width:7px;height:7px;border-radius:50%;background:#16a36b;box-shadow:0 0 0 4px rgba(22,163,107,.12)}
+.liveTicker.stale .liveDot{background:#d79822;box-shadow:0 0 0 4px rgba(215,152,34,.12)}
+.liveTicker small,.liveTicker b,.liveTicker em{display:block;white-space:nowrap}
+.liveTicker small{font-size:8px;color:#7d899a}
+.liveTicker b{font-size:11px;color:#17335f;margin-top:1px}
+.liveTicker em{font-size:8px;color:#8d98a8;font-style:normal;margin-top:1px}
+@media(max-width:1050px){.livePriceStrip{display:none}}

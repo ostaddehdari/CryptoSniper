@@ -57,6 +57,9 @@ def test_stage26_public_header_prices_are_explicit_sources(client, django_user_m
     assert prices["btc_usdt"]["price"] == "84000"
     assert prices["btc_usdt"]["source"] == "bitunix"
     assert prices["usdt_irt"]["price"] == "120000"
+    assert prices["usdt_irt"]["raw_price_rial"] == "120000"
+    assert prices["usdt_irt"]["display_price_toman"] == "12000"
+    assert prices["usdt_irt"]["display_unit"] == "TOMAN"
     assert prices["usdt_irt"]["source"] == "nobitex"
 
 

@@ -29,11 +29,9 @@ def permission_payload(report):
     }
 
 
-@transaction.atomic
 def sync_exchange_account(account):
     locked = (
-        UserExchangeAccount.objects.select_for_update()
-        .select_related("exchange")
+        UserExchangeAccount.objects.select_related("exchange")
         .get(pk=account.pk)
     )
     if locked.status == UserExchangeAccount.Status.DISABLED:
@@ -59,21 +57,28 @@ def sync_exchange_account(account):
         ))
         raise
 
-    now = timezone.now()
-    locked.permissions = permission_payload(permission)
-    locked.trading_enabled = permission.safe_for_trading
-    locked.status = (
+    # External provider checks completed successfully. Apply DB state atomically from here.
+    with transaction.atomic():
+        locked = (
+            UserExchangeAccount.objects.select_for_update()
+            .select_related("exchange")
+            .get(pk=account.pk)
+        )
+        now = timezone.now()
+        locked.permissions = permission_payload(permission)
+        locked.trading_enabled = permission.safe_for_trading
+        locked.status = (
         UserExchangeAccount.Status.CONNECTED
         if permission.safe_for_trading
         else UserExchangeAccount.Status.RESTRICTED
-    )
-    locked.last_verified_at = now
-    locked.last_error_code = ""
-    locked.last_error_message = ""
-    locked.last_error_at = None
+        )
+        locked.last_verified_at = now
+        locked.last_error_code = ""
+        locked.last_error_message = ""
+        locked.last_error_at = None
 
-    synced_market_keys = set()
-    for market in markets:
+        synced_market_keys = set()
+        for market in markets:
         if market.market_type not in {"spot", "margin"}:
             continue
         base, _ = Asset.objects.get_or_create(symbol=market.base_asset.upper())
@@ -102,12 +107,12 @@ def sync_exchange_account(account):
             },
         )
         synced_market_keys.add((market.symbol.upper(), market.market_type))
-    if synced_market_keys:
+        if synced_market_keys:
         for stale in locked.exchange.markets.filter(active=True).exclude(synced_at=now):
             stale.active = False
             stale.save(update_fields=("active",))
 
-    for balance in balances:
+        for balance in balances:
         asset, _ = Asset.objects.get_or_create(symbol=balance.asset.upper())
         BalanceSnapshot.objects.create(
             exchange_account=locked,
@@ -117,8 +122,8 @@ def sync_exchange_account(account):
             total_balance=balance.total,
             captured_at=now,
         )
-    locked.last_sync_at = now
-    locked.save(
+        locked.last_sync_at = now
+        locked.save(
         update_fields=(
             "permissions",
             "trading_enabled",
@@ -130,15 +135,15 @@ def sync_exchange_account(account):
             "last_error_at",
             "updated_at",
         )
-    )
-    return {
+        )
+        return {
         "account_id": locked.pk,
         "status": locked.status,
         "market_count": len(synced_market_keys),
         "balance_count": len(balances),
         "permissions": permission_payload(permission),
         "synced_at": now.isoformat(),
-    }
+        }
 
 
 def latest_balances(account):

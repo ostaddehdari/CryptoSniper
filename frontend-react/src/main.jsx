@@ -46,17 +46,25 @@ function App(){
   const [page,setPage]=useHashPage();
   const [boot,setBoot]=useState(null); const [loading,setLoading]=useState(true); const [error,setError]=useState("");
   const [decimals,setDecimals]=useState(Number(localStorage.getItem("cs_decimals")||2));
-  const [toast,setToast]=useState(""); const [stepUp,setStepUp]=useState(false); const [manualSeed,setManualSeed]=useState(null);
+  const [toast,setToast]=useState("");
+  const [stepUp,setStepUp]=useState(false);
+  const [stepUpAction,setStepUpAction]=useState(null);
+  const [manualSeed,setManualSeed]=useState(null);
   const refresh=async()=>{try{setError("");const b=await api("/api/v1/ui/bootstrap/");setBoot(b)}catch(e){setError(e.message)}finally{setLoading(false)}};
-  useEffect(()=>{refresh();const t=setInterval(refresh,60000);return()=>clearInterval(t)},[]);
+  useEffect(()=>{refresh();const t=setInterval(refresh,10000);return()=>clearInterval(t)},[]);
   const notify=m=>{setToast(m);setTimeout(()=>setToast(""),3500)};
   const toggle=()=>{const v=!collapsed;setCollapsed(v);localStorage.setItem("cs_sidebar_collapsed",v?"1":"0")};
   const updateDecimals=v=>{setDecimals(v);localStorage.setItem("cs_decimals",String(v))};
   const menu=[
-    ["dashboard","نمای کلی",LayoutDashboard],["trades","معاملات",ArrowLeftRight],["manual","معامله دستی",PlusCircle],["plans","برنامه‌های معامله",Save],
-    ["smart","تحلیل سیگنال",Sparkles],["inbox","صندوق سیگنال",Inbox],["exchanges","صرافی‌ها",PlugZap],
-    ["wallets","کیف پول‌ها و راهنما",WalletCards],["watchlist","دیده‌بان و بازارها",Radar],["telegram","تلگرام و سیگنال‌ها",MessageCircle],
-    ["alerts","هشدارها",Bell],["reports","گزارش‌ها",BarChart3],["operations","وضعیت سیستم",ServerCog],["settings","تنظیمات",Settings],
+    ["dashboard","نمای کلی",LayoutDashboard],
+    ["trades","معاملات",ArrowLeftRight],
+    ["inbox","صندوق سیگنال",Inbox],
+    ["exchanges","صرافی‌ها",PlugZap],
+    ["telegram","تلگرام و سیگنال‌ها",MessageCircle],
+    ["alerts","هشدارها",Bell],
+    ["reports","گزارش‌ها",BarChart3],
+    ["operations","وضعیت سیستم",ServerCog],
+    ["settings","تنظیمات",Settings],
   ];
   const title=menu.find(x=>x[0]===page)?.[1]||"CryptoSniper";
   if(loading) return <FullLoading/>;
@@ -68,18 +76,14 @@ function App(){
       <div className="sidebarFoot"><button className="navItem" onClick={()=>setPage("settings")}><UserCircle2 size={19}/>{!collapsed&&<span>{boot?.user?.name||"حساب کاربری"}</span>}</button><a className="navItem dangerLite" href={BASE+"/auth/logout/"}><LogOut size={19}/>{!collapsed&&<span>خروج</span>}</a></div>
     </aside>
     <main className={"main "+(collapsed?"wide":"")}>
-      <header className="topbar"><div><h1>{title}</h1><p>{page==="dashboard"?"همه حساب‌ها، معاملات، سیگنال‌ها و هشدارها در یک نما":"CryptoSniper · حساب واقعی"}</p></div><div className="topActions"><button className="iconBtn notification" onClick={()=>setPage("alerts")}><Bell size={19}/>{boot?.unread_notifications>0&&<span className="badge">{boot.unread_notifications}</span>}</button><button className="primary" onClick={()=>setPage("manual")}><PlusCircle size={18}/> معامله جدید</button></div></header>
+      <header className="topbar"><div><h1>{page==="newtrade"?"معامله جدید":title}</h1><p>{page==="dashboard"?"همه حساب‌ها، معاملات، سیگنال‌ها و هشدارها در یک نما":"CryptoSniper · حساب واقعی"}</p></div><div className="topActions"><button type="button" className="iconBtn notification" onClick={()=>setPage("alerts")}><Bell size={19}/>{boot?.unread_notifications>0&&<span className="badge">{boot.unread_notifications}</span>}</button><button type="button" className="primary" onClick={()=>setPage("newtrade")}><PlusCircle size={18}/> معامله جدید</button></div></header>
       <section className="content">
         {error&&<ErrorBox text={error}/>} 
         {page==="dashboard"&&<Dashboard boot={boot} decimals={decimals} refreshBoot={refresh} setPage={setPage}/>} 
-        {page==="trades"&&<Trades decimals={decimals} notify={notify}/>} 
-        {page==="manual"&&<Manual boot={boot} decimals={decimals} notify={notify} requestStepUp={()=>setStepUp(true)} seed={manualSeed}/>} 
-        {page==="plans"&&<ManualPlans notify={notify} setPage={setPage} setManualSeed={setManualSeed}/>} 
-        {page==="smart"&&<SmartPaste notify={notify} setPage={setPage} setManualSeed={setManualSeed}/>} 
-        {page==="inbox"&&<SignalInbox notify={notify} boot={boot}/>} 
-        {page==="exchanges"&&<Exchanges boot={boot} refreshBoot={refresh} notify={notify} requestStepUp={()=>setStepUp(true)}/>} 
-        {page==="wallets"&&<Wallets notify={notify}/>} 
-        {page==="watchlist"&&<Watchlist boot={boot} notify={notify} setPage={setPage} setManualSeed={setManualSeed}/>} 
+        {page==="trades"&&<Trades decimals={decimals} notify={notify} setPage={setPage}/>} 
+        {page==="newtrade"&&<NewTrade boot={boot} decimals={decimals} notify={notify} requestStepUp={action=>{setStepUpAction(()=>action||null);setStepUp(true)}} seed={manualSeed} setManualSeed={setManualSeed}/>} 
+        {page==="inbox"&&<SignalInbox notify={notify} boot={boot} setPage={setPage} setManualSeed={setManualSeed}/>} 
+        {page==="exchanges"&&<Exchanges boot={boot} refreshBoot={refresh} notify={notify} requestStepUp={action=>{setStepUpAction(()=>action||null);setStepUp(true)}}/>} 
         {page==="telegram"&&<Telegram notify={notify} setPage={setPage} setManualSeed={setManualSeed} requestStepUp={()=>setStepUp(true)}/>} 
         {page==="alerts"&&<Alerts notify={notify}/>} 
         {page==="reports"&&<Reports decimals={decimals}/>} 
@@ -88,7 +92,7 @@ function App(){
       </section>
     </main>
     {toast&&<div className="toast">{toast}</div>}
-    {stepUp&&<StepUpModal onClose={()=>setStepUp(false)} notify={notify}/>} 
+    {stepUp&&<StepUpModal onClose={()=>{setStepUp(false);setStepUpAction(null)}} onSuccess={async()=>{const action=stepUpAction;setStepUp(false);setStepUpAction(null);if(action)await action()}} notify={notify}/>} 
   </div>
 }
 function FullLoading(){return <div className="fullLoading"><LoaderCircle className="spin"/><b>در حال بارگذاری CryptoSniper…</b></div>}

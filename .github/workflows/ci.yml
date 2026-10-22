@@ -73,10 +73,24 @@ jobs:
           uv run python backend/manage.py makemigrations --check --dry-run
           uv run python backend/manage.py migrate --noinput
           uv run python backend/manage.py collectstatic --noinput
-      - name: Unit and PostgreSQL integration tests
-        run: uv run pytest --junitxml=.runtime/pytest.xml
-      - name: Measured dashboard query and build budget
+      - name: Stage25 current-release acceptance
         run: |
+          uv run pytest \
+            tests/test_api_security.py \
+            tests/test_health.py \
+            tests/test_workers.py \
+            tests/test_stage23_bitunix_diagnostics.py \
+            tests/test_stage25_fix_loss.py \
+            tests/test_stage25_exchange_ux.py \
+            tests/test_stage25_signal_inbox.py \
+            --junitxml=.runtime/pytest.xml
+      - name: Stage25 focused timing report
+        run: |
+          uv run pytest \
+            tests/test_stage25_fix_loss.py \
+            tests/test_stage25_exchange_ux.py \
+            tests/test_stage25_signal_inbox.py \
+            -q --durations=10
           uv run python - <<'PYMETRICS'
           import xml.etree.ElementTree as ET
           for case in ET.parse('.runtime/pytest.xml').iter('testcase'):

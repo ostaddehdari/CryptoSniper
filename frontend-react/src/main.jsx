@@ -323,31 +323,36 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
     if(!confirmed){notify("تأیید ریسک سفارش را فعال کنید");return}
     if(!market||!account){notify("حساب و بازار را انتخاب کنید");return}
     if(market.market_type!=="spot"){notify("ارسال مستقیم فعلاً فقط برای Spot فعال است.");return}
-    const quantity=num(capital)&&num(entry)?String(num(capital)/num(entry)):"";
+    const sameAsSuggested=fixloss&&Math.abs(num(capital)-num(fixloss.suggested_notional))<1e-8;
+    let quantity=sameAsSuggested?String(fixloss.suggested_quantity||""):(num(capital)&&num(entry)?String(num(capital)/num(entry)):"");
+    if(market.amount_step&&num(quantity)>0){
+      const stepText=String(market.amount_step).replace(/0+$/,"").replace(/\.$/,"");
+      const places=stepText.includes(".")?stepText.split(".")[1].length:0;
+      const factor=10**Math.min(places,12);
+      quantity=(Math.floor((num(quantity)+1e-14)*factor)/factor).toFixed(Math.min(places,12));
+    }
     if(!quantity||num(quantity)<=0){notify("حجم ورود معتبر نیست");return}
     const retry=()=>liveOrder();
     try{
       setBusy(true);
-      try{
-        await api("/api/v1/manual/plans/",{method:"POST",body:{
-          account:accountId,
-          market:marketId,
-          source:"manual",
-          origin_signal:seed?.signal_id||null,
-          side,
-          entry_price:entry,
-          tp1,
-          tp2:tp2||null,
-          tp3:tp3||null,
-          stop_loss:sl,
-          capital,
-          leverage:"1",
-          trailing_sl:trailingSL,
-          percentage_trailing:trailingTP,
-          trailing_distance:trailingDistance,
-          client_token:crypto.randomUUID()
-        }});
-      }catch{}
+      await api("/api/v1/manual/plans/",{method:"POST",body:{
+        account:accountId,
+        market:marketId,
+        source:"manual",
+        origin_signal:seed?.signal_id||null,
+        side,
+        entry_price:entry,
+        tp1,
+        tp2:tp2||null,
+        tp3:tp3||null,
+        stop_loss:sl,
+        capital,
+        leverage:"1",
+        trailing_sl:trailingSL,
+        percentage_trailing:trailingTP,
+        trailing_distance:trailingDistance,
+        client_token:crypto.randomUUID()
+      }});
       const d=await api("/api/v1/live-orders/",{method:"POST",body:{
         account:accountId,
         market:marketId,

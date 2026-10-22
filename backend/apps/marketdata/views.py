@@ -13,7 +13,7 @@ from django.views.decorators.http import require_GET
 
 from apps.accounts.security import session_api_required
 
-from .feeds import get_quote
+from .feeds import get_quote, refresh_quote
 from .search import eligible_markets, search_markets
 
 
@@ -58,6 +58,10 @@ def api_quotes(request):
     markets = _visible(request)
     if markets is None:
         return JsonResponse({"error": "invalid_market_ids"}, status=400)
+    for market in markets:
+        quote = get_quote(market)
+        if not quote or quote.get("stale"):
+            refresh_quote(market)
     return JsonResponse(
         {"markets": _state(markets), "display_only": True, "as_of": timezone.now().isoformat()}
     )

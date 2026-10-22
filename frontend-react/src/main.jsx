@@ -332,7 +332,8 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
         await api("/api/v1/manual/plans/",{method:"POST",body:{
           account:accountId,
           market:marketId,
-          source:seed?.signal_id?"signal":"manual",
+          source:"manual",
+          origin_signal:seed?.signal_id||null,
           side,
           entry_price:entry,
           tp1,

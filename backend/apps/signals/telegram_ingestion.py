@@ -1,21 +1,17 @@
 """Telegram dedup/edit/delete handling; Stage23 stops at review/plan creation."""
 
 import hashlib
-import uuid
-from decimal import Decimal
 
-from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
 from apps.exchanges.models import ExchangeMarket, UserExchangeAccount
-from apps.tradeplans.service import approve_plan, create_draft
 
 from .ai import analyze_signal
 from .channel_parser import select_channel_template
 from .models import Signal, TelegramChannel, TelegramChannelTemplate, TelegramMessage
 from .parsing import assess
-from .services import _revision, receive_signal, transition, update_parsed
+from .services import _revision, receive_signal
 
 
 def _current_text(signal):

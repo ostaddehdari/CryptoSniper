@@ -22,8 +22,8 @@ from .spot_base import SpotAdapterBase, canonical_symbol, decimal, observed_at, 
 @register_adapter
 class NobitexAdapter(SpotAdapterBase):
     code = "nobitex"
-    base_url = "https://api.nobitex.ir"
-    private_url = "https://api.nobitex.ir"
+    base_url = "https://apiv2.nobitex.ir"
+    private_url = "https://apiv2.nobitex.ir"
     sandbox_url = "https://testnetapi.nobitex.ir"
 
     def _token(self):

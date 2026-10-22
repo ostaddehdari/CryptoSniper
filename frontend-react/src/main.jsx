@@ -104,23 +104,85 @@ function Empty({text="داده‌ای برای نمایش وجود ندارد."}
 function Dashboard({boot,decimals,refreshBoot,setPage}){
   const [extra,setExtra]=useState({orders:[],external:[],signals:[],alerts:[],notifications:[],report:null});
   const [showAll,setShowAll]=useState(false);
-  const load=async()=>{const [t,s,a,n,r]=await Promise.allSettled([api("/api/v1/live-orders/"),api("/api/v1/inbox/"),api("/api/v1/alerts/"),api("/api/v1/notifications/"),api("/api/v1/reports/?period=month&group=total")]);setExtra({orders:t.value?.orders||[],external:t.value?.external||[],signals:s.value?.items||[],alerts:a.value?.alerts||[],notifications:n.value?.items||[],report:r.value||null})};
-  useEffect(()=>{load()},[]);
+  const load=async()=>{
+    const [t,s,a,n,r]=await Promise.allSettled([
+      api("/api/v1/live-orders/"),
+      api("/api/v1/inbox/"),
+      api("/api/v1/alerts/"),
+      api("/api/v1/notifications/"),
+      api("/api/v1/reports/?period=month&group=total")
+    ]);
+    setExtra({
+      orders:t.value?.orders||[],
+      external:t.value?.external||[],
+      signals:s.value?.items||[],
+      alerts:a.value?.alerts||[],
+      notifications:n.value?.items||[],
+      report:r.value||null
+    });
+  };
+  useEffect(()=>{load();const t=setInterval(load,10000);return()=>clearInterval(t)},[]);
   const accounts=boot?.accounts||[];
   const usdt=accounts.reduce((sum,a)=>sum+(a.balances||[]).filter(b=>b.asset==="USDT").reduce((x,b)=>x+num(b.free),0),0);
   const total=accounts.reduce((sum,a)=>sum+num(a.known_valuation),0);
   const incompleteValuation=accounts.some(a=>a.valuation_complete===false);
+  const openOrders=extra.orders.filter(x=>["open","partial","pending","submitting"].includes(x.state));
   const net=(extra.report?.rows||[]).reduce((s,r)=>s+num(r.net_realized),0);
   return <>
-    <div className="metricGrid"><Metric icon={WalletCards} label="ارزش کل دارایی‌ها" value={`${fmt(total,decimals)} USDT`} hint={incompleteValuation?"ارزش‌گذاری فقط برای دارایی‌های دارای قیمت تازه و معتبر":"ارزش‌گذاری با قیمت تازه همان صرافی"}/><Metric icon={CircleDollarSign} label="تتر آزاد لحظه‌ای" value={`${fmt(usdt,decimals)} USDT`} hint="جمع USDT آزاد حساب‌ها"/><Metric icon={PlugZap} label="حساب‌های متصل" value={accounts.filter(a=>a.status==="connected").length} hint={`${accounts.length} حساب اصلی`}/><Metric icon={ArrowLeftRight} label="سفارش‌های واقعی" value={extra.orders.filter(x=>["open","partial","pending","submitting"].includes(x.state)).length} hint={`${extra.external.length} رکورد خارجی اخیر`}/><Metric icon={TrendingUp} label="سود خالص ماهانه" value={`${net>=0?"+":""}${fmt(net,decimals)} USDT`} hint="بر اساس گزارش تحقق‌یافته" positive={net>=0}/></div>
-    <div className="grid2"><div className="card"><div className="cardHead"><div><h3>حساب‌ها و موجودی</h3><p>USDT همیشه در اولویت نمایش است</p></div><div className="row gap"><button className="softBtn" onClick={()=>setShowAll(!showAll)}>{showAll?<EyeOff size={17}/>:<Eye size={17}/>} {showAll?"فقط USDT":"تمام موجودی‌ها"}</button><button className="iconBtn" onClick={()=>{refreshBoot();load()}}><RefreshCw size={17}/></button></div></div><div className="tableScroll"><table><thead><tr><th>صرافی</th><th>USDT آزاد</th>{showAll&&<th>سایر موجودی‌ها</th>}<th>وضعیت</th><th></th></tr></thead><tbody>{accounts.map(a=>{const u=(a.balances||[]).find(b=>b.asset==="USDT");return <tr key={a.id}><td><div className="exchangeName"><span className="exchangeLogo">{a.exchange_name?.[0]||a.exchange[0]}</span><div><b>{a.exchange_name}</b><small>{a.label}</small></div></div></td><td className="usdtHighlight">{fmt(u?.free||0,decimals)} USDT</td>{showAll&&<td><div className="chips">{(a.balances||[]).filter(b=>b.asset!=="USDT"&&num(b.total)>0).slice(0,8).map(b=><span className="pill" key={b.asset}>{b.asset}: {fmt(b.total,decimals)}</span>)}</div></td>}<td><Status value={a.status}/></td><td><button className="linkBtn" onClick={()=>setPage("exchanges")}>جزئیات</button></td></tr>})}</tbody></table></div></div>
-      <div className="card"><div className="cardHead"><div><h3>وضعیت حساب‌ها</h3><p>آخرین Sync و سلامت اتصال</p></div></div><div className="accountHealth">{accounts.map(a=><div className="healthRow" key={a.id}><div><b>{a.exchange_name}</b><span>{a.last_error_message||"بدون خطای ثبت‌شده"}</span></div><div><Status value={a.status}/><small>{dt(a.last_sync_at)}</small></div></div>)}</div></div></div>
+    <div className="metricGrid">
+      <button type="button" className="metric card metricButton" onClick={()=>setPage("exchanges")}><div className="metricTop"><div className="metricIcon"><WalletCards size={20}/></div><span>ارزش کل دارایی‌ها</span></div><strong>{fmt(total,decimals)} USDT</strong><small>{incompleteValuation?"فقط دارایی‌های دارای قیمت تازه":"ارزش‌گذاری با قیمت تازه همان صرافی"}</small></button>
+      <button type="button" className="metric card metricButton" onClick={()=>setPage("exchanges")}><div className="metricTop"><div className="metricIcon"><CircleDollarSign size={20}/></div><span>تتر آزاد لحظه‌ای</span></div><strong>{fmt(usdt,decimals)} USDT</strong><small>جمع USDT آزاد حساب‌ها</small></button>
+      <button type="button" className="metric card metricButton" onClick={()=>setPage("exchanges")}><div className="metricTop"><div className="metricIcon"><PlugZap size={20}/></div><span>حساب‌های متصل</span></div><strong>{accounts.filter(a=>a.status==="connected").length}</strong><small>{accounts.length} حساب قابل نمایش</small></button>
+      <button type="button" className="metric card metricButton" onClick={()=>setPage("trades")}><div className="metricTop"><div className="metricIcon"><ArrowLeftRight size={20}/></div><span>سفارش‌های واقعی</span></div><strong>{openOrders.length}</strong><small>برای مشاهده معاملات باز کلیک کنید</small></button>
+      <button type="button" className="metric card metricButton" onClick={()=>setPage("reports")}><div className="metricTop"><div className="metricIcon"><TrendingUp size={20}/></div><span>سود خالص ماهانه</span></div><strong className={net>=0?"up":"down"}>{net>=0?"+":""}{fmt(net,decimals)} USDT</strong><small>بر اساس گزارش تحقق‌یافته</small></button>
+    </div>
+    <div className="grid2">
+      <div className="card">
+        <div className="cardHead"><div><h3>حساب‌ها و موجودی</h3><p>داده زنده‌ی حساب‌های متصل</p></div><div className="row gap"><button type="button" className="softBtn" onClick={()=>setShowAll(!showAll)}>{showAll?<EyeOff size={17}/>:<Eye size={17}/>} {showAll?"فقط USDT":"تمام موجودی‌ها"}</button><button type="button" className="iconBtn" onClick={()=>{refreshBoot();load()}}><RefreshCw size={17}/></button></div></div>
+        <div className="tableScroll"><table><thead><tr><th>صرافی</th><th>USDT آزاد</th>{showAll&&<th>سایر موجودی‌ها</th>}<th>وضعیت</th><th></th></tr></thead><tbody>{accounts.map(a=>{const u=(a.balances||[]).find(b=>b.asset==="USDT");return <tr key={a.id}><td><div className="exchangeName"><span className="exchangeLogo">{a.exchange_name?.[0]||a.exchange[0]}</span><div><b>{a.exchange_name}</b><small>{a.label}</small></div></div></td><td className="usdtHighlight">{fmt(u?.free||0,decimals)} USDT</td>{showAll&&<td><div className="chips">{(a.balances||[]).filter(b=>b.asset!=="USDT"&&num(b.total)>0).slice(0,8).map(b=><span className="pill" key={b.asset}>{b.asset}: {fmt(b.total,decimals)}</span>)}</div></td>}<td><Status value={a.status}/></td><td><button type="button" className="linkBtn" onClick={()=>setPage("exchanges")}>جزئیات</button></td></tr>})}</tbody></table></div>
+      </div>
+      <div className="card">
+        <div className="cardHead"><div><h3>وضعیت حساب‌ها</h3><p>آخرین همگام‌سازی و سلامت اتصال</p></div></div>
+        <div className="accountHealth">{accounts.map(a=><div className="healthRow" key={a.id}><div><b>{a.exchange_name}</b><span>{a.last_error_message||"بدون خطای ثبت‌شده"}</span></div><div><Status value={a.status}/><small>{dt(a.last_sync_at)}</small></div></div>)}</div>
+      </div>
+    </div>
     <DashboardTabs extra={extra} decimals={decimals} setPage={setPage}/>
   </>
 }
-function DashboardTabs({extra,decimals,setPage}){const [tab,setTab]=useState("trades");return <div className="card"><div className="tabs">{[["trades","آخرین معاملات"],["signals","آخرین سیگنال‌ها"],["alerts","آخرین هشدارها"],["notifications","اعلان‌ها"]].map(([id,l])=><button className={tab===id?"active":""} onClick={()=>setTab(id)} key={id}>{l}</button>)}</div>{tab==="trades"&&<TradesTable rows={extra.orders.slice(0,8)} decimals={decimals}/>} {tab==="signals"&&<SignalCards items={extra.signals.slice(0,6)} onMore={()=>setPage("inbox")}/>} {tab==="alerts"&&<div className="simpleList">{extra.alerts.slice(0,8).map(x=><div key={x.id}><b>{x.title}</b><span>{x.kind} · {x.threshold}</span></div>)}</div>} {tab==="notifications"&&<div className="simpleList">{extra.notifications.slice(0,8).map(x=><div key={x.id}><b>{x.title}</b><span>{x.body}</span></div>)}</div>}</div>}
 
-function Trades({decimals,notify}){const [data,setData]=useState({orders:[],external:[]});const [filter,setFilter]=useState("all");const [selected,setSelected]=useState(null);const load=()=>api("/api/v1/live-orders/").then(setData).catch(e=>notify(e.message));useEffect(()=>{load()},[]);const rows=data.orders.filter(x=>filter==="all"||x.state===filter);return <><div className="card"><div className="cardHead"><div><h3>معاملات و سفارش‌ها</h3><p>سفارش‌های CryptoSniper و فعالیت‌های مشاهده‌شده داخل صرافی‌ها</p></div><div className="row gap"><select className="smallSelect" value={filter} onChange={e=>setFilter(e.target.value)}><option value="all">همه</option><option value="open">باز</option><option value="filled">تکمیل</option><option value="failed">ناموفق</option></select><button className="softBtn" onClick={load}><RefreshCw size={17}/> همگام‌سازی</button></div></div><TradesTable rows={rows} decimals={decimals} onSelect={setSelected}/></div><div className="card sectionGap"><div className="cardHead"><div><h3>معاملات خارجی</h3><p>آنچه مستقیماً در صرافی انجام شده، فقط برای مشاهده</p></div></div><div className="tableScroll"><table><thead><tr><th>صرافی</th><th>نوع</th><th>نماد</th><th>وضعیت</th><th>قیمت</th><th>زمان مشاهده</th></tr></thead><tbody>{data.external.map(x=><tr key={x.id} onClick={()=>setSelected(x)} className="clickRow"><td>{x.exchange}</td><td><span className="pill external">External Trade</span></td><td>{x.payload?.symbol||"—"}</td><td>{x.payload?.status||x.kind}</td><td>{x.payload?.price||x.payload?.averagePrice||"—"}</td><td>{dt(x.observed_at)}</td></tr>)}</tbody></table>{!data.external.length&&<Empty/>}</div></div>{selected&&<DetailDrawer item={selected} onClose={()=>setSelected(null)}/>}</>}
+function DashboardTabs({extra,decimals,setPage}){
+  const [tab,setTab]=useState("trades");
+  const body=tab==="trades"
+    ? <TradesTable rows={extra.orders.slice(0,8)} decimals={decimals} onSelect={()=>setPage("trades")}/>
+    : tab==="signals"
+      ? <div className="signalChartGrid">{extra.signals.slice(0,6).map(s=><SignalMiniChart key={s.id} signal={s} onOpen={()=>setPage("inbox")}/>)}</div>
+      : tab==="alerts"
+        ? <div className="simpleList">{extra.alerts.slice(0,8).map(x=><button type="button" key={x.id} className="dashboardListButton" onClick={()=>setPage("alerts")}><div><b>{x.title}</b><span>{x.market_symbol||"—"} · {x.kind} · {x.threshold}</span></div></button>)}{!extra.alerts.length&&<Empty text="هشدار فعالی وجود ندارد."/ >}</div>
+        : <div className="simpleList">{extra.notifications.slice(0,8).map(x=><button type="button" key={x.id} className="dashboardListButton" onClick={()=>setPage("alerts")}><div><b>{x.title}</b><span>{x.body}</span></div></button>)}{!extra.notifications.length&&<Empty text="اعلانی وجود ندارد."/ >}</div>;
+  return <div className="card dashboardBottom" id="dashboard-latest">
+    <div className="tabs">{[["trades","آخرین معاملات"],["signals","آخرین سیگنال‌ها"],["alerts","آخرین هشدارها"],["notifications","اعلان‌ها"]].map(([id,l])=><button type="button" className={tab===id?"active":""} onClick={e=>{e.preventDefault();setTab(id);requestAnimationFrame(()=>document.getElementById("dashboard-latest")?.scrollIntoView({behavior:"smooth",block:"nearest"}))}} key={id}>{l}</button>)}</div>
+    {body}
+  </div>
+}
+
+function Trades({decimals,notify,setPage}){
+  const [data,setData]=useState({orders:[],external:[]});
+  const [filter,setFilter]=useState("open");
+  const [selected,setSelected]=useState(null);
+  const load=()=>api("/api/v1/live-orders/").then(setData).catch(e=>notify(e.message));
+  useEffect(()=>{load();const t=setInterval(load,5000);return()=>clearInterval(t)},[]);
+  const activeStates=["open","partial","pending","submitting","uncertain"];
+  const rows=data.orders.filter(x=>filter==="all"||(filter==="open"?activeStates.includes(x.state):x.state===filter));
+  return <>
+    <div className="card">
+      <div className="cardHead"><div><h3>معاملات و سفارش‌ها</h3><p>سفارش‌های CryptoSniper و فعالیت مستقیم صرافی‌ها</p></div><div className="row gap"><button type="button" className="primary" onClick={()=>setPage("newtrade")}><PlusCircle size={17}/> معامله جدید</button><select className="smallSelect" value={filter} onChange={e=>setFilter(e.target.value)}><option value="open">باز و فعال</option><option value="all">همه</option><option value="filled">تکمیل</option><option value="failed">ناموفق</option></select><button type="button" className="softBtn" onClick={load}><RefreshCw size={17}/> تازه‌سازی</button></div></div>
+      <TradesTable rows={rows} decimals={decimals} onSelect={setSelected}/>
+    </div>
+    <div className="card sectionGap"><div className="cardHead"><div><h3>معاملات خارجی</h3><p>سفارش و Fill ثبت‌شده مستقیم در صرافی؛ فقط مشاهده</p></div></div><div className="tableScroll"><table><thead><tr><th>صرافی</th><th>نوع</th><th>نماد</th><th>وضعیت</th><th>قیمت</th><th>زمان مشاهده</th></tr></thead><tbody>{data.external.map(x=><tr key={x.id} onClick={()=>setSelected(x)} className="clickRow"><td>{x.exchange}</td><td><span className="pill external">External Trade</span></td><td>{x.payload?.symbol||"—"}</td><td>{x.payload?.status||x.kind}</td><td>{x.payload?.price||x.payload?.averagePrice||"—"}</td><td>{dt(x.observed_at)}</td></tr>)}</tbody></table>{!data.external.length&&<Empty/>}</div></div>
+    {selected&&<DetailDrawer item={selected} onClose={()=>setSelected(null)}/>}
+  </>
+}
+
 function TradesTable({rows,decimals,onSelect}){return <div className="tableScroll"><table><thead><tr><th>بازار</th><th>صرافی</th><th>جهت</th><th>قیمت</th><th>مقدار</th><th>پرشده</th><th>وضعیت</th><th>زمان</th></tr></thead><tbody>{rows.map(x=><tr key={x.id} className={onSelect?"clickRow":""} onClick={()=>onSelect?.(x)}><td><b>{(x.symbol||"").replace("/USDT","")}</b></td><td>{x.exchange}</td><td>{x.side==="buy"?"خرید":"فروش"}</td><td>{x.average_price||x.price?fmt(x.average_price||x.price,decimals):"—"}</td><td>{fmt(x.amount,decimals)}</td><td>{fmt(x.filled_amount,decimals)}</td><td><Status value={x.state}/></td><td>{dt(x.updated_at||x.created_at)}</td></tr>)}</tbody></table>{!rows.length&&<Empty/>}</div>}
 function DetailDrawer({item,onClose}){return <div className="drawerMask" onClick={onClose}><div className="drawer" onClick={e=>e.stopPropagation()}><div className="cardHead"><h3>جزئیات</h3><button className="iconBtn" onClick={onClose}><X size={18}/></button></div><pre className="jsonBox">{JSON.stringify(item,null,2)}</pre></div></div>}
 

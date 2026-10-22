@@ -260,6 +260,6 @@ CELERY_BEAT_SCHEDULE["operations-monitor"] = {
 
 CELERY_BEAT_SCHEDULE["sync-external-exchange-state"] = {
     "task": "operations.sync_external_accounts",
-    "schedule": 120.0,
-    "options": {"queue": "maintenance", "expires": 100},
+    "schedule": 20.0,
+    "options": {"queue": "maintenance", "expires": 18},
 }

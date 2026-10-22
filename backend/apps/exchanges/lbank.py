@@ -20,7 +20,7 @@ from .spot_base import SpotAdapterBase, canonical_symbol, decimal, observed_at
 @register_adapter
 class LbankAdapter(SpotAdapterBase):
     code = "lbank"
-    base_url = "https://api.lbank.info"
+    base_url = "https://api.lbkex.com"
 
     @staticmethod
     def _provider_bool(value):

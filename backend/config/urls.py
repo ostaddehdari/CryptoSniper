@@ -140,6 +140,11 @@ urlpatterns = [
     path("api/v1/exchanges/", exchange_views.api_exchanges, name="api-exchanges"),
     path("api/v1/markets/search/", market_views.api_search, name="api-market-search"),
     path("api/v1/markets/quotes/", market_views.api_quotes, name="api-market-quotes"),
+    path(
+        "api/v1/markets/public-prices/",
+        market_views.api_public_prices,
+        name="api-public-prices",
+    ),
     path("api/v1/markets/stream/", market_views.api_stream, name="api-market-stream"),
     path(
         "api/v1/exchange-accounts/<int:pk>/",

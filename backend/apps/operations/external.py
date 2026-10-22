@@ -75,16 +75,35 @@ def observe_account(account):
         raise ValidationError("مجوز امن خواندن تأیید نشد.")
 
     balances = adapter.fetch_balance()
-    try:
-        orders = adapter.fetch_open_orders()
-    except UnsupportedOperationError:
-        orders = []
-    try:
-        history = adapter.fetch_trade_history()
-    except UnsupportedOperationError:
-        history = []
-    except AdapterError:
-        history = []
+    if account.exchange.adapter_code == "bitunix":
+        symbols = []
+        for balance in balances:
+            asset = str(balance.asset).upper()
+            if asset and asset not in {"USDT", "USDC"} and balance.total > 0:
+                symbols.append(f"{asset}/USDT")
+        if "BTC/USDT" not in symbols:
+            symbols.append("BTC/USDT")
+        orders, history = [], []
+        for symbol in symbols[:12]:
+            try:
+                orders.extend(adapter.fetch_open_orders(symbol=symbol))
+            except (UnsupportedOperationError, AdapterError):
+                pass
+            try:
+                history.extend(adapter.fetch_trade_history(symbol=symbol))
+            except (UnsupportedOperationError, AdapterError):
+                pass
+    else:
+        try:
+            orders = adapter.fetch_open_orders()
+        except UnsupportedOperationError:
+            orders = []
+        try:
+            history = adapter.fetch_trade_history()
+        except UnsupportedOperationError:
+            history = []
+        except AdapterError:
+            history = []
 
     if not isinstance(history, list):
         history = []

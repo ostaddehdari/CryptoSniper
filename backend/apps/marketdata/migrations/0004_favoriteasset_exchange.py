@@ -46,7 +46,7 @@ class Migration(migrations.Migration):
         ),
         migrations.RemoveIndex(
             model_name="favoriteasset",
-            name="marketdata_f_owner_i_a331cb_idx",
+            name="marketdata__owner_i_ec8b24_idx",
         ),
         migrations.AddConstraint(
             model_name="favoriteasset",

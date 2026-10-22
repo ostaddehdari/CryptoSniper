@@ -6,6 +6,9 @@ import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+# TRADING_MODE="live" describes the product mode only. Real exchange writes are
+# separately fail-closed behind LIVE_TRADING_ENABLED, so the scanner flags only
+# a literal source-level LIVE_TRADING_ENABLED=True bypass.
 PATTERNS = {
     "critical_private_key": re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
     "critical_aws_key": re.compile(r"\bAKIA[0-9A-Z]{16}\b"),

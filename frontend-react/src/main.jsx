@@ -76,7 +76,7 @@ function App(){
       <div className="sidebarFoot"><button className="navItem" onClick={()=>setPage("settings")}><UserCircle2 size={19}/>{!collapsed&&<span>{boot?.user?.name||"حساب کاربری"}</span>}</button><a className="navItem dangerLite" href={BASE+"/auth/logout/"}><LogOut size={19}/>{!collapsed&&<span>خروج</span>}</a></div>
     </aside>
     <main className={"main "+(collapsed?"wide":"")}>
-      <header className="topbar"><div><h1>{page==="newtrade"?"معامله جدید":title}</h1><p>{page==="dashboard"?"همه حساب‌ها، معاملات، سیگنال‌ها و هشدارها در یک نما":"CryptoSniper · حساب واقعی"}</p></div><div className="topActions"><button type="button" className="iconBtn notification" onClick={()=>setPage("alerts")}><Bell size={19}/>{boot?.unread_notifications>0&&<span className="badge">{boot.unread_notifications}</span>}</button><button type="button" className="primary" onClick={()=>setPage("newtrade")}><PlusCircle size={18}/> معامله جدید</button></div></header>
+      <header className="topbar"><div><h1>{page==="newtrade"?"معامله جدید":title}</h1><p>{page==="dashboard"?"همه حساب‌ها، معاملات، سیگنال‌ها و هشدارها در یک نما":"CryptoSniper · حساب واقعی"}</p></div><LivePriceStrip/><div className="topActions"><button type="button" className="iconBtn notification" onClick={()=>setPage("alerts")}><Bell size={19}/>{boot?.unread_notifications>0&&<span className="badge">{boot.unread_notifications}</span>}</button><button type="button" className="primary" onClick={()=>setPage("newtrade")}><PlusCircle size={18}/> معامله جدید</button></div></header>
       <section className="content">
         {error&&<ErrorBox text={error}/>} 
         {page==="dashboard"&&<Dashboard boot={boot} decimals={decimals} refreshBoot={refresh} setPage={setPage}/>} 
@@ -100,6 +100,18 @@ function ErrorBox({text}){return <div className="errorBox"><AlertTriangle size={
 function Metric({icon:Icon,label,value,hint,positive}){return <div className="metric card"><div className="metricTop"><div className="metricIcon"><Icon size={20}/></div><span>{label}</span></div><strong className={positive?"up":""}>{value}</strong><small>{hint}</small></div>}
 function Status({value}){const cls=value==="connected"||value==="approved"||value==="filled"||value==="open"?"ok":value==="error"||value==="failed"||value==="rejected"?"danger":"warn";return <span className={"status "+cls}>{statusFa[value]||value||"—"}</span>}
 function Empty({text="داده‌ای برای نمایش وجود ندارد."}){return <div className="emptyState">{text}</div>}
+function LivePriceStrip(){
+  const [prices,setPrices]=useState({});
+  useEffect(()=>{
+    let stopped=false;
+    const run=()=>api("/api/v1/markets/public-prices/").then(d=>{if(!stopped)setPrices(d.prices||{})}).catch(()=>{});
+    run();
+    const timer=setInterval(run,2000);
+    return()=>{stopped=true;clearInterval(timer)}
+  },[]);
+  const item=(label,row,suffix)=><div className={"liveTicker "+(row?.stale?"stale":"")}><span className="liveDot"/><div><small>{label}</small><b>{row?.price?fmt(row.price,num(row.price)<10?4:2):"ناموجود"} {suffix}</b><em>{row?.source?row.source.toUpperCase():"—"}{row?.age_seconds!=null?" · "+row.age_seconds+"s":""}</em></div></div>;
+  return <div className="livePriceStrip">{item("BTC / USDT",prices.btc_usdt,"USDT")}{item("USDT / IRT",prices.usdt_irt,"IRT")}</div>
+}
 
 function Dashboard({boot,decimals,refreshBoot,setPage}){
   const [extra,setExtra]=useState({orders:[],external:[],signals:[],alerts:[],notifications:[],report:null});
@@ -253,7 +265,7 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
     let stopped=false;
     const run=async()=>{
       try{
-        const d=await api("/api/v1/markets/quotes/?market="+marketId);
+        const d=await api("/api/v1/markets/quotes/?live=1&market="+marketId);
         if(!stopped){
           const q=d.markets?.[0]?.quote;
           setQuote(q);
@@ -262,7 +274,7 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
       }catch{}
     };
     run();
-    const timer=setInterval(run,5000);
+    const timer=setInterval(run,2000);
     return()=>{stopped=true;clearInterval(timer)}
   },[marketId]);
 
@@ -374,7 +386,7 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
       <div className="formGrid">
         <div className="field"><label>حساب صرافی</label><select value={accountId} onChange={e=>{setAccountId(e.target.value);setMarketSearch("")}}>{accounts.map(a=><option key={a.id} value={a.id}>{a.exchange_name+" · "+a.label}</option>)}</select></div>
         <div className="field marketPicker"><label>بازار</label><div className="searchBox compact"><Search size={16}/><input value={marketSearch} onChange={e=>setMarketSearch(e.target.value)} placeholder="جست‌وجوی BTC، ETH…"/></div><select size={Math.min(7,Math.max(3,filteredMarkets.length))} value={marketId} onChange={e=>setMarketId(e.target.value)}>{filteredMarkets.map(m=><option key={m.id} value={m.id}>{(m.favorite?"★ ":"")+m.base+" / USDT"+(m.market_type==="margin"?" · Margin x"+Number(m.max_leverage).toFixed(0):" · Spot")}</option>)}</select><small>{favoriteSymbols.length?("ارزهای منتخب "+(account?.exchange_name||"")+" بالای فهرست هستند."):"ارزهای منتخب این صرافی را از تنظیمات تعیین کنید."}</small></div>
-        <div className="field"><label>قیمت زنده</label><div className="livePrice">{quote?.price?fmt(quote.price,num(quote.price)<10?4:2):"ناموجود"}<span>USDT</span></div><small>{quote?.stale?"قیمت قدیمی است":"به‌روزرسانی خودکار هر ۵ ثانیه"}</small></div>
+        <div className="field"><label>قیمت زنده</label><div className="livePrice">{quote?.price?fmt(quote.price,num(quote.price)<10?4:2):"ناموجود"}<span>USDT</span></div><small>{quote?.stale?"قیمت قدیمی است":"به‌روزرسانی مستقیم هر ۲ ثانیه"}</small></div>
         <div className="field"><label>جهت</label><div className="segmented"><button type="button" className={side==="long"?"active":""} onClick={()=>setSide("long")}>لانگ</button><button type="button" disabled={market?.market_type==="spot"} className={side==="short"?"active danger":""} onClick={()=>setSide("short")}>شورت</button></div></div>
         <div className="field"><label>Entry</label><input value={entry} onChange={e=>setEntry(e.target.value)} inputMode="decimal"/></div>
         <div className="field"><label>حجم ورود</label><div className="inputSuffix"><input value={capital} onChange={e=>setCapital(e.target.value)} inputMode="decimal"/><span>USDT</span></div><small>پیشنهاد Fix Loss خودکار این مقدار را پر می‌کند؛ قابل ویرایش است.</small></div>
@@ -423,14 +435,14 @@ function MarketChart({marketId,levels={}}){
 function SignalMiniChart({signal,onOpen}){
   const [quote,setQuote]=useState(signal.quote||null);
   const [candles,setCandles]=useState([]);
-  useEffect(()=>{if(!signal.market_id)return;api("/api/v1/markets/"+signal.market_id+"/candles/").then(d=>setCandles(d.candles||[])).catch(()=>{});const run=()=>api("/api/v1/markets/quotes/?market="+signal.market_id).then(d=>setQuote(d.markets?.[0]?.quote||null)).catch(()=>{});run();const t=setInterval(run,5000);return()=>clearInterval(t)},[signal.market_id]);
+  useEffect(()=>{if(!signal.market_id)return;api("/api/v1/markets/"+signal.market_id+"/candles/").then(d=>setCandles(d.candles||[])).catch(()=>{});const run=()=>api("/api/v1/markets/quotes/?live=1&market="+signal.market_id).then(d=>setQuote(d.markets?.[0]?.quote||null)).catch(()=>{});run();const t=setInterval(run,2000);return()=>clearInterval(t)},[signal.market_id]);
   const closes=candles.map(x=>num(x.close)).filter(Boolean);
   const levels=[num(signal.entry),num(signal.stop_loss),num(quote?.price),...(signal.targets||[]).map(x=>num(x.price))].filter(v=>v>0);
   const values=[...closes,...levels];
   const min=values.length?Math.min(...values):0,max=values.length?Math.max(...values):1,span=max-min||1;
   const y=v=>118-(v-min)/span*92;
   const pts=closes.length>1?closes.map((v,i)=>(i/(closes.length-1)*360)+","+y(v)).join(" "):"";
-  return <button type="button" className="signalMiniCard" onClick={onOpen}><div className="signalMiniHead"><div><b>{signal.symbol||("Signal #"+signal.id)}</b><span>{signal.exchange||signal.source_method} · {signal.side||"—"}</span></div><Status value={signal.status}/></div><svg viewBox="0 0 360 130" preserveAspectRatio="none">{pts&&<polyline points={pts} fill="none" stroke="currentColor" strokeWidth="2.5"/>}{num(signal.entry)>0&&<line x1="0" x2="360" y1={y(num(signal.entry))} y2={y(num(signal.entry))} className="levelLine entry"/>}{num(signal.stop_loss)>0&&<line x1="0" x2="360" y1={y(num(signal.stop_loss))} y2={y(num(signal.stop_loss))} className="levelLine stop"/>}{(signal.targets||[]).map((t,i)=><line key={i} x1="0" x2="360" y1={y(num(t.price))} y2={y(num(t.price))} className="levelLine target"/>)}{num(quote?.price)>0&&<line x1="0" x2="360" y1={y(num(quote.price))} y2={y(num(quote.price))} className="levelLine current"/>}</svg><div className="signalLegend"><span>Entry {signal.entry||"—"}</span><span>Now {quote?.price||"—"}</span><span>SL {signal.stop_loss||"—"}</span></div></button>
+  return <button type="button" className="signalMiniCard" onClick={onOpen}><div className="signalMiniHead"><div><b>{signal.symbol||("Signal #"+signal.id)}</b><span>{signal.exchange||signal.source_method} · {signal.side||"—"}</span></div><Status value={signal.status}/></div><svg viewBox="0 0 360 130" preserveAspectRatio="none">{pts&&<polyline points={pts} fill="none" stroke="currentColor" strokeWidth="2.5"/>}{num(signal.entry)>0&&<line x1="0" x2="360" y1={y(num(signal.entry))} y2={y(num(signal.entry))} className="levelLine entry"/>}{num(signal.stop_loss)>0&&<line x1="0" x2="360" y1={y(num(signal.stop_loss))} y2={y(num(signal.stop_loss))} className="levelLine stop"/>}{(signal.targets||[]).map((t,i)=><line key={i} x1="0" x2="360" y1={y(num(t.price))} y2={y(num(t.price))} className="levelLine target"/>)}{num(quote?.price)>0&&<line x1="0" x2="360" y1={y(num(quote.price))} y2={y(num(quote.price))} className="levelLine current"/>}</svg><div className="signalLegend"><span>Entry {signal.entry||"—"}</span><span>LIVE {quote?.price||"—"}</span><span>SL {signal.stop_loss||"—"}</span></div></button>
 }
 
 function SmartPaste({notify,setPage,setManualSeed}){const [text,setText]=useState(()=>localStorage.getItem("cs_smart_text")||"");const [result,setResult]=useState(null);const [busy,setBusy]=useState(false);const run=async()=>{try{setBusy(true);const d=await api("/api/v1/smart-paste/",{method:"POST",body:{text}});setResult(d.signal);notify("سیگنال تحلیل شد")}catch(e){notify(e.message)}finally{setBusy(false)}};const snap=result?.structured;return <div className="grid2 equal"><div className="card"><div className="cardHead"><div><h3>Smart Paste</h3><p>متن سیگنال را بدون تغییر وارد کنید</p></div><ClipboardPaste size={20}/></div><textarea className="signalText" value={text} onChange={e=>setText(e.target.value)} placeholder="متن سیگنال…"/><div className="submitRow"><button className="secondary" onClick={()=>{setText("");localStorage.removeItem("cs_smart_text");setResult(null)}}>پاک کردن</button><button className="primary" disabled={busy||!text.trim()} onClick={run}><Sparkles size={18}/> تحلیل</button></div></div><div className="card"><div className="cardHead"><div><h3>نتیجه تحلیل</h3><p>قبل از معامله قابل بازبینی است</p></div>{result&&<Status value={result.status}/>}</div>{!result?<Empty text="هنوز سیگنالی تحلیل نشده است."/>:<><div className="analysisGrid"><Info label="جهت" value={snap?.side||"—"}/><Info label="Entry" value={snap?.entry||"—"}/><Info label="Stop" value={snap?.stop_loss||"—"}/><Info label="اعتماد" value={`${snap?.technical_confidence||0}٪`}/>{(snap?.targets||[]).map((t,i)=><Info key={i} label={`TP${i+1}`} value={t.price}/>)}</div><div className="aiNote"><Sparkles size={18}/><div><b>تحلیل ساختار</b><p>{snap?.parsed_payload?.extraction?.summary||"ساختار استخراج شد. حساب و بازار را قبل از اجرا انتخاب و تأیید کنید."}</p></div></div><button className="primary full" onClick={()=>{setManualSeed(snap);setPage("manual")}}>انتقال به معامله دستی</button></>}</div></div>}

@@ -157,8 +157,8 @@ function DashboardTabs({extra,decimals,setPage}){
     : tab==="signals"
       ? <div className="signalChartGrid">{extra.signals.slice(0,6).map(s=><SignalMiniChart key={s.id} signal={s} onOpen={()=>setPage("inbox")}/>)}</div>
       : tab==="alerts"
-        ? <div className="simpleList">{extra.alerts.slice(0,8).map(x=><button type="button" key={x.id} className="dashboardListButton" onClick={()=>setPage("alerts")}><div><b>{x.title}</b><span>{x.market_symbol||"—"} · {x.kind} · {x.threshold}</span></div></button>)}{!extra.alerts.length&&<Empty text="هشدار فعالی وجود ندارد."/ >}</div>
-        : <div className="simpleList">{extra.notifications.slice(0,8).map(x=><button type="button" key={x.id} className="dashboardListButton" onClick={()=>setPage("alerts")}><div><b>{x.title}</b><span>{x.body}</span></div></button>)}{!extra.notifications.length&&<Empty text="اعلانی وجود ندارد."/ >}</div>;
+        ? <div className="simpleList">{extra.alerts.slice(0,8).map(x=><button type="button" key={x.id} className="dashboardListButton" onClick={()=>setPage("alerts")}><div><b>{x.title}</b><span>{x.market_symbol||"—"} · {x.kind} · {x.threshold}</span></div></button>)}{!extra.alerts.length&&<Empty text="هشدار فعالی وجود ندارد."/>}</div>
+        : <div className="simpleList">{extra.notifications.slice(0,8).map(x=><button type="button" key={x.id} className="dashboardListButton" onClick={()=>setPage("alerts")}><div><b>{x.title}</b><span>{x.body}</span></div></button>)}{!extra.notifications.length&&<Empty text="اعلانی وجود ندارد."/>}</div>;
   return <div className="card dashboardBottom" id="dashboard-latest">
     <div className="tabs">{[["trades","آخرین معاملات"],["signals","آخرین سیگنال‌ها"],["alerts","آخرین هشدارها"],["notifications","اعلان‌ها"]].map(([id,l])=><button type="button" className={tab===id?"active":""} onClick={e=>{e.preventDefault();setTab(id);requestAnimationFrame(()=>document.getElementById("dashboard-latest")?.scrollIntoView({behavior:"smooth",block:"nearest"}))}} key={id}>{l}</button>)}</div>
     {body}

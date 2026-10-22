@@ -13,6 +13,7 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 
 from apps.accounts.audit import record_audit
 from apps.accounts.security import has_recent_step_up, session_api_required
+from apps.marketdata.feeds import get_quote
 
 from .backfill import pause_backfill, process_backfill_batch, start_backfill
 from .forms import (
@@ -519,21 +520,42 @@ def _serialize(item):
 @never_cache
 @require_GET
 def api_list(request):
-    rows = filtered(request.user, request.GET)[:100]
-    return JsonResponse(
-        {
-            "items": [
-                {
-                    "id": item.pk,
-                    "status": item.status,
-                    "source_method": item.source.method,
-                    "revision": item.revision,
-                }
-                for item in rows
-            ],
-            "execution_enabled": False,
-        }
+    rows = list(
+        filtered(request.user, request.GET)
+        .select_related("source", "raw_signal", "market", "market__exchange", "exchange_account")
+        .prefetch_related("targets")[:100]
     )
+    items = []
+    for item in rows:
+        quote = get_quote(item.market) if item.market_id else None
+        items.append(
+            {
+                "id": item.pk,
+                "status": item.status,
+                "source_method": item.source.method,
+                "revision": item.revision,
+                "account_id": item.exchange_account_id,
+                "account": item.exchange_account.label if item.exchange_account_id else None,
+                "exchange": item.market.exchange.code if item.market_id else None,
+                "market_id": item.market_id,
+                "symbol": item.market.symbol if item.market_id else None,
+                "side": item.side or None,
+                "entry": str(item.entry_price) if item.entry_price is not None else None,
+                "stop_loss": str(item.stop_loss) if item.stop_loss is not None else None,
+                "targets": [
+                    {
+                        "position": target.position,
+                        "price": str(target.price),
+                        "share_percent": str(target.share_percent),
+                    }
+                    for target in item.targets.all()
+                ],
+                "quote": quote,
+                "raw_preview": item.raw_signal.original_text[:280],
+                "created_at": item.created_at,
+            }
+        )
+    return JsonResponse({"items": items, "execution_enabled": False})
 
 
 @session_api_required
@@ -633,13 +655,37 @@ def api_action(request, pk):
     item = owned(request.user, pk)
     try:
         body = _json_body(request)
+        action = str(body.get("action", ""))
+        if action == "delete":
+            raw = item.raw_signal
+            record_audit(
+                "signal.deleted",
+                request=request,
+                user=request.user,
+                metadata={"signal_id": item.pk, "source_id": item.source_id},
+            )
+            item.delete()
+            raw.delete()
+            return JsonResponse({"deleted": True, "id": pk})
         signal = transition(
             request.user,
             item.pk,
             expected_revision=int(body.get("revision", 0)),
-            action=body.get("action", ""),
+            action=action,
             reason=str(body.get("reason", "")),
         )
+        if action == "reject":
+            raw = signal.raw_signal
+            signal_id = signal.pk
+            record_audit(
+                "signal.rejected_and_deleted",
+                request=request,
+                user=request.user,
+                metadata={"signal_id": signal_id},
+            )
+            signal.delete()
+            raw.delete()
+            return JsonResponse({"deleted": True, "rejected": True, "id": signal_id})
         return JsonResponse({"signal": _serialize(signal)})
     except (ValidationError, ValueError, TypeError) as error:
         return JsonResponse({"error": str(error)}, status=400)

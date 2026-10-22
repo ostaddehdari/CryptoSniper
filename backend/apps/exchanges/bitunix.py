@@ -5,7 +5,7 @@ import json
 import secrets
 from decimal import Decimal
 
-from .adapters import InvalidProviderResponse, Market, PermissionReport, ProviderRejectedError, Ticker, register_adapter
+from .adapters import InvalidProviderResponse, Market, PermissionReport, ProviderRejectedError, Ticker, UnsupportedOperationError, register_adapter
 from .spot_base import SpotAdapterBase, canonical_symbol, decimal, observed_at, provider_symbol
 
 
@@ -207,13 +207,30 @@ class BitunixAdapter(SpotAdapterBase):
             )
         )
 
-    def fetch_open_orders(self):
-        payload = self._request("POST", "/api/spot/v1/order/pending/list", {}, signed=True)
-        rows = payload.get("data", payload if isinstance(payload, list) else [])
-        return [self._bitunix_order(item) for item in rows]
-
-    def fetch_trade_history(self):
+    def fetch_open_orders(self, symbol=None):
+        if not symbol:
+            raise UnsupportedOperationError(
+                "Bitunix Spot requires symbol when querying current orders."
+            )
         payload = self._request(
-            "POST", "/api/spot/v1/order/history/page", {"page": 1, "pageSize": 100}, signed=True
+            "POST",
+            "/api/spot/v1/order/pending/list",
+            {"symbol": provider_symbol(symbol)},
+            signed=True,
         )
-        return payload.get("data", payload if isinstance(payload, list) else [])
+        rows = payload.get("data", payload if isinstance(payload, list) else [])
+        return [self._bitunix_order(item, {"symbol": symbol}) for item in rows]
+
+    def fetch_trade_history(self, symbol=None):
+        if not symbol:
+            raise UnsupportedOperationError(
+                "Bitunix Spot requires symbol when querying order history."
+            )
+        payload = self._request(
+            "POST",
+            "/api/spot/v1/order/history/page",
+            {"page": 1, "pageSize": 100, "symbol": provider_symbol(symbol)},
+            signed=True,
+        )
+        rows = payload.get("data", payload if isinstance(payload, list) else [])
+        return rows if isinstance(rows, list) else []

@@ -122,13 +122,19 @@ def api_bootstrap(request):
         UserExchangeAccount.objects.for_user(request.user)
         .select_related("exchange")
         .exclude(exchange__code="binance")
+        .exclude(status="disabled")
     )
     valuation_rows, valuation_cache_ok = balances_for(accounts, request.user.base_currency)
     valuations = {row["account"].pk: row for row in valuation_rows}
     unread = Notification.objects.filter(owner=request.user, in_app=True, read_at__isnull=True).count()
-    favorites = list(
-        FavoriteAsset.objects.filter(owner=request.user).order_by("position", "pk").values_list("symbol", flat=True)
+    favorite_rows = list(
+        FavoriteAsset.objects.filter(owner=request.user, exchange__isnull=False)
+        .select_related("exchange")
+        .order_by("exchange_id", "position", "pk")
     )
+    favorites = {}
+    for item in favorite_rows:
+        favorites.setdefault(item.exchange.code, []).append(item.symbol)
     watchlists = list(Watchlist.objects.filter(owner=request.user).values("id", "name"))
     return JsonResponse(
         {
@@ -247,20 +253,30 @@ def api_watchlists_ui(request):
 @require_http_methods(["GET", "POST"])
 def api_favorites(request):
     if request.method == "GET":
-        return JsonResponse(
-            {
-                "symbols": list(
-                    FavoriteAsset.objects.filter(owner=request.user)
-                    .order_by("position", "pk")
-                    .values_list("symbol", flat=True)
-                )
-            }
+        rows = (
+            FavoriteAsset.objects.filter(owner=request.user, exchange__isnull=False)
+            .select_related("exchange")
+            .order_by("exchange_id", "position", "pk")
         )
+        grouped = {}
+        for item in rows:
+            grouped.setdefault(item.exchange.code, []).append(item.symbol)
+        return JsonResponse({"by_exchange": grouped})
     try:
         data = _body(request)
+        exchange_code = str(data.get("exchange", "")).strip().lower()
+        account = (
+            UserExchangeAccount.objects.for_user(request.user)
+            .select_related("exchange")
+            .filter(environment="live", exchange__code=exchange_code)
+            .exclude(status="disabled")
+            .first()
+        )
+        if not account:
+            raise ValidationError("صرافی متصل معتبر نیست.")
         symbols = data.get("symbols", [])
-        if not isinstance(symbols, list) or len(symbols) > 30:
-            raise ValidationError("حداکثر ۳۰ ارز اولویت‌دار مجاز است.")
+        if not isinstance(symbols, list) or len(symbols) > 40:
+            raise ValidationError("حداکثر ۴۰ ارز منتخب برای هر صرافی مجاز است.")
         normalized = []
         for raw in symbols:
             symbol = str(raw).strip().upper()
@@ -268,12 +284,35 @@ def api_favorites(request):
                 raise ValidationError(f"نماد نامعتبر: {symbol}")
             if symbol not in normalized:
                 normalized.append(symbol)
-        with transaction.atomic():
-            FavoriteAsset.objects.filter(owner=request.user).delete()
-            FavoriteAsset.objects.bulk_create(
-                [FavoriteAsset(owner=request.user, symbol=symbol, position=index) for index, symbol in enumerate(normalized)]
+        valid_symbols = set(
+            ExchangeMarket.objects.filter(
+                exchange=account.exchange,
+                active=True,
+                quote_asset__symbol="USDT",
+                base_asset__symbol__in=normalized,
+            ).values_list("base_asset__symbol", flat=True)
+        )
+        missing = [symbol for symbol in normalized if symbol not in valid_symbols]
+        if missing:
+            raise ValidationError(
+                "این ارزها در بازار فعال صرافی پیدا نشدند: " + ", ".join(missing[:10])
             )
-        return JsonResponse({"symbols": normalized})
+        with transaction.atomic():
+            FavoriteAsset.objects.filter(
+                owner=request.user, exchange=account.exchange
+            ).delete()
+            FavoriteAsset.objects.bulk_create(
+                [
+                    FavoriteAsset(
+                        owner=request.user,
+                        exchange=account.exchange,
+                        symbol=symbol,
+                        position=index,
+                    )
+                    for index, symbol in enumerate(normalized)
+                ]
+            )
+        return JsonResponse({"exchange": account.exchange.code, "symbols": normalized})
     except ValidationError as error:
         return JsonResponse({"error": error.messages}, status=400)
 
@@ -378,10 +417,28 @@ def api_account_markets(request, pk):
         pk=pk,
         environment="live",
     )
-    markets = (
-        ExchangeMarket.objects.filter(exchange=account.exchange, active=True, quote_asset__symbol="USDT")
+    favorites = list(
+        FavoriteAsset.objects.filter(owner=request.user, exchange=account.exchange)
+        .order_by("position", "pk")
+        .values_list("symbol", flat=True)
+    )
+    favorite_position = {symbol: index for index, symbol in enumerate(favorites)}
+    markets = list(
+        ExchangeMarket.objects.filter(
+            exchange=account.exchange,
+            active=True,
+            quote_asset__symbol="USDT",
+        )
         .select_related("base_asset", "quote_asset")
         .order_by("base_asset__symbol", "market_type")[:1000]
+    )
+    markets.sort(
+        key=lambda item: (
+            0 if item.base_asset.symbol in favorite_position else 1,
+            favorite_position.get(item.base_asset.symbol, 9999),
+            item.base_asset.symbol,
+            item.market_type,
+        )
     )
     return JsonResponse(
         {
@@ -396,6 +453,7 @@ def api_account_markets(request, pk):
                     "price_step": str(m.price_step) if m.price_step else None,
                     "amount_step": str(m.amount_step) if m.amount_step else None,
                     "min_notional": str(m.min_notional) if m.min_notional else None,
+                    "favorite": m.base_asset.symbol in favorite_position,
                 }
                 for m in markets
             ],

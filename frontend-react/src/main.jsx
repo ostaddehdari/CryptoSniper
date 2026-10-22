@@ -9,6 +9,7 @@ import {
   BarChart3, ServerCog, Save, KeyRound, Link2, ExternalLink, Send, LoaderCircle
 } from "lucide-react";
 import "./styles.css";
+import "./stage26.css";
 
 const BASE = (window.__CS_BASE__ || "/cryptosniper").replace(/\/$/, "");
 const fmt=(v,d=2)=>Number(v||0).toLocaleString("fa-IR",{minimumFractionDigits:d,maximumFractionDigits:d});

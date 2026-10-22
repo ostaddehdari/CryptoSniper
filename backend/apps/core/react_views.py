@@ -23,7 +23,7 @@ from apps.accounts.services import revoke_user_session
 from apps.alerts.models import Notification, NotificationPreference
 from apps.exchanges.forms import ExchangeConnectionForm, LiveSpotOrderForm
 from apps.exchanges.live_orders import queue_live_spot_order
-from apps.exchanges.models import BalanceSnapshot, ExchangeMarket, LiveSpotOrder, UserExchangeAccount
+from apps.exchanges.models import BalanceSnapshot, Exchange, ExchangeMarket, LiveSpotOrder, UserExchangeAccount
 from apps.exchanges.security import revoke_account_credentials, rotate_account_credentials
 from apps.exchanges.services import latest_balances
 from apps.exchanges.tasks import live_spot_order, sync_exchange_account
@@ -383,10 +383,24 @@ def api_wallet_detail(request, pk):
 def api_exchange_create(request):
     try:
         data = _body(request)
+        exchange_value = data.get("exchange")
+        exchange = None
+        if isinstance(exchange_value, str) and not exchange_value.isdigit():
+            exchange = get_object_or_404(
+                Exchange,
+                code=exchange_value.strip().lower(),
+                enabled=True,
+            )
+        else:
+            exchange = get_object_or_404(
+                Exchange,
+                pk=int(exchange_value),
+                enabled=True,
+            )
         form = ExchangeConnectionForm(
             request.user,
             {
-                "exchange": data.get("exchange"),
+                "exchange": exchange.pk,
                 "label": data.get("label") or "حساب اصلی",
                 "environment": "live",
                 "api_key": data.get("api_key", ""),

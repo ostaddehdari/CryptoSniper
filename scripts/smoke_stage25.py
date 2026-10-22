@@ -143,7 +143,7 @@ def main():
                     page.get_by_role("button", name="ارزهای منتخب", exact=True).wait_for()
 
                     page.locator("aside.sidebar").get_by_text("معاملات", exact=True).click()
-                    page.get_by_role("button", name="معامله جدید", exact=True).wait_for()
+                    page.get_by_role("button", name="معامله جدید", exact=True).first.wait_for()
                     page.get_by_text("معاملات و سفارش‌ها", exact=True).wait_for()
 
                     page.set_viewport_size({"width": 390, "height": 844})

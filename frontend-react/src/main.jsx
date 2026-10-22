@@ -111,7 +111,8 @@ function LivePriceStrip(){
     return()=>{stopped=true;clearInterval(timer)}
   },[]);
   const item=(label,row,suffix)=><div className={"liveTicker "+(row?.stale?"stale":"")}><span className="liveDot"/><div><small>{label}</small><b>{row?.price?fmt(row.price,num(row.price)<10?4:2):"ناموجود"} {suffix}</b><em>{row?.source?row.source.toUpperCase():"—"}{row?.age_seconds!=null?" · "+row.age_seconds+"s":""}</em></div></div>;
-  return <div className="livePriceStrip">{item("BTC / USDT",prices.btc_usdt,"USDT")}{item("USDT / IRT",prices.usdt_irt,"IRT")}</div>
+  const usdtRow=prices.usdt_irt?{...prices.usdt_irt,price:prices.usdt_irt.display_price_toman||prices.usdt_irt.price}:prices.usdt_irt;
+  return <div className="livePriceStrip">{item("BTC / USDT",prices.btc_usdt,"USDT")}{item("USDT / تومان",usdtRow,"تومان")}</div>
 }
 
 function Dashboard({boot,decimals,refreshBoot,setPage}){

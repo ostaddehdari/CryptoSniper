@@ -639,6 +639,13 @@ def api_fix_loss(request):
         max_notional = available * leverage
         suggested = min(raw_notional, max_notional)
         quantity = suggested / entry
+        if market.amount_step:
+            quantity = (quantity // market.amount_step) * market.amount_step
+        if market.min_amount and quantity < market.min_amount:
+            raise ValidationError("حجم محاسبه‌شده از حداقل مقدار بازار کمتر است.")
+        suggested = quantity * entry
+        if market.min_notional and suggested < market.min_notional:
+            raise ValidationError("حجم محاسبه‌شده از حداقل ارزش سفارش بازار کمتر است.")
         return JsonResponse(
             {
                 "available": str(available),

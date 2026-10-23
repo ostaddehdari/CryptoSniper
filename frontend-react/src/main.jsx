@@ -464,7 +464,42 @@ function SignalMiniChart({signal,onOpen}){
   return <button type="button" className="signalMiniCard" onClick={onOpen}><div className="signalMiniHead"><div><b>{signal.symbol||("Signal #"+signal.id)}</b><span>{signal.exchange||signal.source_method} · {signal.side||"—"}</span></div><Status value={signal.status}/></div><svg viewBox="0 0 360 130" preserveAspectRatio="none">{pts&&<polyline points={pts} fill="none" stroke="currentColor" strokeWidth="2.5"/>}{num(signal.entry)>0&&<line x1="0" x2="360" y1={y(num(signal.entry))} y2={y(num(signal.entry))} className="levelLine entry"/>}{num(signal.stop_loss)>0&&<line x1="0" x2="360" y1={y(num(signal.stop_loss))} y2={y(num(signal.stop_loss))} className="levelLine stop"/>}{(signal.targets||[]).map((t,i)=><line key={i} x1="0" x2="360" y1={y(num(t.price))} y2={y(num(t.price))} className="levelLine target"/>)}{num(quote?.price)>0&&<line x1="0" x2="360" y1={y(num(quote.price))} y2={y(num(quote.price))} className="levelLine current"/>}</svg><div className="signalLegend"><span>Entry {signal.entry||"—"}</span><span>LIVE {quote?.price||"—"}</span><span>SL {signal.stop_loss||"—"}</span></div></button>
 }
 
-function SmartPaste({notify,setPage,setManualSeed}){const [text,setText]=useState(()=>localStorage.getItem("cs_smart_text")||"");const [result,setResult]=useState(null);const [busy,setBusy]=useState(false);const run=async()=>{try{setBusy(true);const d=await api("/api/v1/smart-paste/",{method:"POST",body:{text}});setResult(d.signal);notify("سیگنال تحلیل شد")}catch(e){notify(e.message)}finally{setBusy(false)}};const snap=result?.structured;return <div className="grid2 equal"><div className="card"><div className="cardHead"><div><h3>Smart Paste</h3><p>متن سیگنال را بدون تغییر وارد کنید</p></div><ClipboardPaste size={20}/></div><textarea className="signalText" value={text} onChange={e=>setText(e.target.value)} placeholder="متن سیگنال…"/><div className="submitRow"><button className="secondary" onClick={()=>{setText("");localStorage.removeItem("cs_smart_text");setResult(null)}}>پاک کردن</button><button className="primary" disabled={busy||!text.trim()} onClick={run}><Sparkles size={18}/> تحلیل</button></div></div><div className="card"><div className="cardHead"><div><h3>نتیجه تحلیل</h3><p>قبل از معامله قابل بازبینی است</p></div>{result&&<Status value={result.status}/>}</div>{!result?<Empty text="هنوز سیگنالی تحلیل نشده است."/>:<><div className="analysisGrid"><Info label="جهت" value={snap?.side||"—"}/><Info label="Entry" value={snap?.entry||"—"}/><Info label="Stop" value={snap?.stop_loss||"—"}/><Info label="اعتماد" value={`${snap?.technical_confidence||0}٪`}/>{(snap?.targets||[]).map((t,i)=><Info key={i} label={`TP${i+1}`} value={t.price}/>)}</div><div className="aiNote"><Sparkles size={18}/><div><b>تحلیل ساختار</b><p>{snap?.parsed_payload?.extraction?.summary||"ساختار استخراج شد. حساب و بازار را قبل از اجرا انتخاب و تأیید کنید."}</p></div></div><button className="primary full" onClick={()=>{setManualSeed(snap);setPage("manual")}}>انتقال به معامله دستی</button></>}</div></div>}
+function SmartPaste({notify,setPage,setManualSeed}){
+  const [text,setText]=useState(()=>localStorage.getItem("cs_smart_text")||"");
+  const [result,setResult]=useState(null);
+  const [busy,setBusy]=useState(false);
+  useEffect(()=>{localStorage.setItem("cs_smart_text",text)},[text]);
+  const run=async()=>{try{setBusy(true);const d=await api("/api/v1/smart-paste/",{method:"POST",body:{text}});setResult(d.signal);notify(d.signal?.status==="parsed"?"سیگنال کامل استخراج شد":"سیگنال تحلیل شد؛ موارد ناقص را بازبینی کنید")}catch(e){notify(e.message)}finally{setBusy(false)}};
+  const snap=result?.structured||{};
+  const parsed=snap.parsed_payload||{};
+  const inferredTargets=snap.targets?.length?snap.targets:(parsed.execution_targets||[]).map((price,i)=>({position:i+1,price}));
+  const ready=result?.status==="parsed"&&snap.account_id&&snap.market_id&&snap.entry&&snap.stop_loss&&inferredTargets.length;
+  const manualSeed=()=>({
+    ...snap,
+    side:snap.side||parsed.side||"long",
+    entry:snap.entry||parsed.entry||"",
+    stop_loss:snap.stop_loss||parsed.stop_loss||"",
+    targets:inferredTargets,
+    leverage:parsed.leverage||"1",
+    signal_id:result.id,
+    percentage_trailing:parsed.trailing_defaults?.percentage_trailing??true,
+    trailing_sl:parsed.trailing_defaults?.trailing_sl??true,
+    percentage_trigger:parsed.trailing_defaults?.percentage_trigger||"tp1",
+    trailing_distance:parsed.trailing_defaults?.percentage_distance||"1",
+    new_trade_tab:"manual"
+  });
+  return <div className="grid2 equal">
+    <div className="card"><div className="cardHead"><div><h3>تحلیل سیگنال</h3><p>استخراج Pair، جهت، Entry، SL، TP و Leverage با قواعد ساختاری</p></div><ClipboardPaste size={20}/></div><textarea className="signalText" value={text} onChange={e=>setText(e.target.value)} placeholder={"BTCUSDT\nLONG\nENTRY 80000\nTP1 82000\nTP2 84000\nSL 78000"}/><div className="submitRow"><button type="button" className="secondary" onClick={()=>{setText("");localStorage.removeItem("cs_smart_text");setResult(null)}}>پاک کردن</button><button type="button" className="primary" disabled={busy||!text.trim()} onClick={run}><Sparkles size={18}/> تحلیل</button></div></div>
+    <div className="card"><div className="cardHead"><div><h3>نتیجه تحلیل</h3><p>{result?("Parser "+(snap.parser_version||parsed.parser_version||"—")):"قبل از معامله قابل بازبینی است"}</p></div>{result&&<Status value={result.status}/>}</div>
+      {!result?<Empty text="هنوز سیگنالی تحلیل نشده است."/>:<>
+        <div className="analysisGrid"><Info label="جفت‌ارز" value={snap.market_id?(parsed.pair||"بازار متصل"):parsed.pair||"—"}/><Info label="جهت" value={snap.side||parsed.side||"—"}/><Info label="Entry" value={snap.entry||parsed.entry||parsed.entry_range?.join(" - ")||"—"}/><Info label="Stop" value={snap.stop_loss||parsed.stop_loss||"—"}/><Info label="Leverage" value={parsed.leverage?("x"+parsed.leverage):"—"}/><Info label="اعتماد ساختاری" value={(snap.technical_confidence??parsed.technical_confidence??0)+"٪"}/>{inferredTargets.map((t,i)=><Info key={i} label={"TP"+(i+1)} value={t.price}/>)}</div>
+        {(parsed.warnings||[]).length>0&&<div className="analysisWarnings">{parsed.warnings.map((w,i)=><div key={i}><AlertTriangle size={15}/><span>{w}</span></div>)}</div>}
+        <div className="aiNote"><Sparkles size={18}/><div><b>{ready?"بازار و حساب یکتا پیدا شد":"نیازمند بازبینی"}</b><p>{ready?"ساختار کامل است؛ می‌توانید آن را به معامله دستی منتقل و قبل از ارسال دوباره بررسی کنید.":"اگر حساب/بازار یا یکی از قیمت‌ها مشخص نشده، از صندوق سیگنال تکمیل و تأیید کنید."}</p></div></div>
+        <div className="submitRow">{ready?<button type="button" className="primary" onClick={()=>{setManualSeed(manualSeed());setPage("manual")}}>انتقال به معامله دستی</button>:<button type="button" className="primary" onClick={()=>setPage("inbox")}>بازبینی در صندوق سیگنال</button>}</div>
+      </>}
+    </div>
+  </div>
+}
 function Info({label,value}){return <div className="infoBox"><span>{label}</span><b>{String(value??"—")}</b></div>}
 
 function SignalInbox({notify,boot,setPage,setManualSeed}){
@@ -474,68 +509,74 @@ function SignalInbox({notify,boot,setPage,setManualSeed}){
   const [reason,setReason]=useState("");
   const [edit,setEdit]=useState(null);
   const [markets,setMarkets]=useState([]);
-  const load=()=>api("/api/v1/inbox/").then(d=>setItems(d.items||[])).catch(e=>notify(e.message));
+  const [checked,setChecked]=useState([]);
+  const [busy,setBusy]=useState(false);
+  const load=()=>api("/api/v1/inbox/").then(d=>{const next=d.items||[];setItems(next);setChecked(prev=>prev.filter(id=>next.some(x=>x.id===id)))}).catch(e=>notify(e.message));
   useEffect(()=>{load();const t=setInterval(load,10000);return()=>clearInterval(t)},[]);
+  const editFrom=z=>({
+    account_id:z.account_id||"",
+    market_id:z.market_id||"",
+    side:z.side||z.parsed_payload?.side||"long",
+    entry_price:z.entry||z.parsed_payload?.entry||"",
+    stop_loss:z.stop_loss||z.parsed_payload?.stop_loss||"",
+    tp1:z.targets?.[0]?.price||z.parsed_payload?.execution_targets?.[0]||"",
+    tp2:z.targets?.[1]?.price||z.parsed_payload?.execution_targets?.[1]||"",
+    tp3:z.targets?.[2]?.price||z.parsed_payload?.execution_targets?.[2]||""
+  });
   const open=async id=>{
     setSelected(id);
     try{
       const d=await api("/api/v1/inbox/"+id+"/");
-      setDetail(d.signal);
       const z=d.signal.structured||{};
-      setEdit({
-        account_id:z.account_id||"",
-        market_id:z.market_id||"",
-        side:z.side||"long",
-        entry_price:z.entry||"",
-        stop_loss:z.stop_loss||"",
-        tp1:z.targets?.[0]?.price||"",
-        tp2:z.targets?.[1]?.price||"",
-        tp3:z.targets?.[2]?.price||""
-      });
-      if(z.account_id){
-        const m=await api("/api/v1/exchange-accounts/"+z.account_id+"/markets/");
-        setMarkets(m.markets||[]);
-      }
+      setDetail(d.signal);setEdit(editFrom(z));setReason("");
+      if(z.account_id){const m=await api("/api/v1/exchange-accounts/"+z.account_id+"/markets/");setMarkets(m.markets||[])}else setMarkets([]);
     }catch(e){notify(e.message)}
   };
   const changeAccount=async value=>{
-    setEdit({...edit,account_id:value,market_id:""});
+    setEdit(v=>({...v,account_id:value,market_id:""}));
     try{const m=await api("/api/v1/exchange-accounts/"+value+"/markets/");setMarkets(m.markets||[])}catch(e){notify(e.message)}
   };
   const removeCurrent=()=>{setSelected(null);setDetail(null);setEdit(null);setReason("");load()};
-  const action=async act=>{
-    if(!detail)return;
-    try{
-      const d=await api("/api/v1/inbox/"+detail.id+"/action/",{method:"POST",body:{revision:detail.revision,action:act,reason}});
-      if(d.deleted){notify(act==="reject"?"سیگنال رد و از صندوق حذف شد":"سیگنال حذف شد");removeCurrent();return}
-      setDetail(d.signal);
-      setReason("");
-      load();
-      if(act==="approve"){
-        const z=d.signal?.structured||{};
-        setManualSeed({...z,signal_id:d.signal.id,new_trade_tab:"manual"});
-        notify("سیگنال تأیید شد و به معامله جدید منتقل شد");
-        setPage("newtrade");
-      }
-    }catch(e){notify(e.message)}
+  const deleteOne=async()=>{
+    if(!detail||!confirm("این سیگنال کامل حذف شود؟"))return;
+    try{await api("/api/v1/inbox/"+detail.id+"/action/",{method:"POST",body:{action:"delete"}});notify("سیگنال حذف شد");removeCurrent()}catch(e){notify(e.message)}
   };
   const saveEdit=async()=>{
+    if(!detail||!edit)throw new Error("سیگنال انتخاب نشده است");
+    const d=await api("/api/v1/inbox/"+detail.id+"/edit/",{method:"POST",body:{...edit,revision:detail.revision,reason}});
+    setDetail(d.signal);setEdit(editFrom(d.signal.structured||{}));setReason("");load();
+    return d.signal;
+  };
+  const approveAndTransfer=async()=>{
     if(!detail||!edit)return;
     try{
-      const d=await api("/api/v1/inbox/"+detail.id+"/edit/",{method:"POST",body:{...edit,revision:detail.revision,reason}});
-      setDetail(d.signal);setReason("");load();notify("ویرایش سیگنال ذخیره شد");
-    }catch(e){notify(e.message)}
+      setBusy(true);
+      const saved=await saveEdit();
+      const approved=await api("/api/v1/inbox/"+saved.id+"/action/",{method:"POST",body:{revision:saved.revision,action:"approve",reason:""}});
+      const z=approved.signal?.structured||{};
+      const parsed=z.parsed_payload||{};
+      setManualSeed({...z,signal_id:approved.signal.id,new_trade_tab:"manual",percentage_trailing:parsed.trailing_defaults?.percentage_trailing??true,trailing_sl:parsed.trailing_defaults?.trailing_sl??true,percentage_trigger:parsed.trailing_defaults?.percentage_trigger||"tp1",trailing_distance:parsed.trailing_defaults?.percentage_distance||"1"});
+      notify("سیگنال تأیید شد و فرم معامله با مقادیر آن باز شد");
+      setPage("newtrade");
+    }catch(e){notify("تأیید انجام نشد: "+e.message)}finally{setBusy(false)}
+  };
+  const toggleCheck=id=>setChecked(v=>v.includes(id)?v.filter(x=>x!==id):[...v,id]);
+  const allChecked=items.length>0&&items.every(x=>checked.includes(x.id));
+  const bulkDelete=async()=>{
+    if(!checked.length||!confirm(checked.length+" سیگنال انتخاب‌شده حذف شود؟"))return;
+    try{setBusy(true);const d=await api("/api/v1/inbox/bulk-action/",{method:"POST",body:{action:"delete",ids:checked}});notify(d.count+" سیگنال حذف شد");setChecked([]);if(selected&&checked.includes(selected)){setSelected(null);setDetail(null);setEdit(null)}await load()}catch(e){notify(e.message)}finally{setBusy(false)}
   };
   return <div className="splitLayout">
     <div className="card">
-      <div className="cardHead"><div><h3>صندوق سیگنال</h3><p>Smart Paste، دستی و Telegram</p></div><button type="button" className="iconBtn" onClick={load}><RefreshCw size={17}/></button></div>
-      <div className="signalRows">{items.map(x=><button type="button" className={selected===x.id?"active":""} key={x.id} onClick={()=>open(x.id)}><div><b>{x.symbol||("Signal #"+x.id)}</b><span>{x.source_method}{x.entry?(" · Entry "+x.entry):""}</span></div><Status value={x.status}/></button>)}</div>
+      <div className="cardHead"><div><h3>صندوق سیگنال</h3><p>انتخاب گروهی، بازبینی و انتقال به معامله</p></div><div className="row gap"><button type="button" className="iconBtn" onClick={load}><RefreshCw size={17}/></button>{checked.length>0&&<button type="button" className="softBtn dangerBtn" disabled={busy} onClick={bulkDelete}><Trash2 size={16}/> حذف {checked.length}</button>}</div></div>
+      {items.length>0&&<label className="selectAllLine"><input type="checkbox" checked={allChecked} onChange={()=>setChecked(allChecked?[]:items.map(x=>x.id))}/><span>انتخاب همه</span></label>}
+      <div className="signalRows selectable">{items.map(x=><div className={"signalSelectRow "+(selected===x.id?"active":"")} key={x.id}><input type="checkbox" checked={checked.includes(x.id)} onChange={()=>toggleCheck(x.id)}/><button type="button" onClick={()=>open(x.id)}><div><b>{x.symbol||("Signal #"+x.id)}</b><span>{x.source_method}{x.entry?(" · Entry "+x.entry):""}</span></div><Status value={x.status}/></button></div>)}{!items.length&&<Empty/>}</div>
     </div>
     <div className="card">{!detail?<Empty text="یک سیگنال را انتخاب کنید."/>:<>
       <div className="cardHead"><div><h3>سیگنال #{detail.id}</h3><p>Revision {detail.revision}</p></div><Status value={detail.status}/></div>
       <pre className="rawSignal">{detail.raw?.original_text}</pre>
       {edit&&<div className="formGrid">
-        <div className="field"><label>حساب صرافی</label><select value={edit.account_id} onChange={e=>changeAccount(e.target.value)}><option value="">انتخاب حساب</option>{(boot?.accounts||[]).map(a=><option key={a.id} value={a.id}>{a.exchange_name+" · "+a.label}</option>)}</select></div>
+        <div className="field"><label>حساب صرافی</label><select value={edit.account_id} onChange={e=>changeAccount(e.target.value)}><option value="">انتخاب حساب</option>{(boot?.accounts||[]).filter(a=>a.status==="connected").map(a=><option key={a.id} value={a.id}>{a.exchange_name+" · "+a.label}</option>)}</select></div>
         <div className="field"><label>بازار همان حساب</label><select value={edit.market_id} onChange={e=>setEdit({...edit,market_id:e.target.value})}><option value="">انتخاب بازار</option>{markets.map(m=><option key={m.id} value={m.id}>{m.base+(m.market_type==="margin"?" · Margin":" · Spot")}</option>)}</select></div>
         <div className="field"><label>جهت</label><select value={edit.side} onChange={e=>setEdit({...edit,side:e.target.value})}><option value="long">Long</option><option value="short">Short</option></select></div>
         <div className="field"><label>Entry</label><input value={edit.entry_price} onChange={e=>setEdit({...edit,entry_price:e.target.value})}/></div>
@@ -544,11 +585,10 @@ function SignalInbox({notify,boot,setPage,setManualSeed}){
         <div className="field"><label>TP3</label><input value={edit.tp3} onChange={e=>setEdit({...edit,tp3:e.target.value})}/></div>
         <div className="field"><label>Stop Loss</label><input value={edit.stop_loss} onChange={e=>setEdit({...edit,stop_loss:e.target.value})}/></div>
       </div>}
-      <div className="actionBox"><label>دلیل ویرایش / رد <small>(اختیاری)</small></label><textarea value={reason} onChange={e=>setReason(e.target.value)} placeholder="در صورت نیاز توضیح بنویسید…"/><div className="row gap wrap"><button type="button" className="softBtn" onClick={saveEdit}><Save size={16}/> ذخیره ویرایش</button><button type="button" className="secondary" onClick={()=>action("reject")}>رد و حذف</button><button type="button" className="iconBtn dangerBtn" title="حذف" onClick={()=>confirm("این سیگنال کامل حذف شود؟")&&action("delete")}><Trash2 size={16}/></button><button type="button" className="primary" onClick={()=>action("approve")}>تأیید و انتقال به معامله</button></div></div>
+      <div className="actionBox"><label>دلیل ویرایش <small>(اختیاری)</small></label><textarea value={reason} onChange={e=>setReason(e.target.value)} placeholder="در صورت نیاز توضیح بنویسید…"/><div className="row gap wrap"><button type="button" className="softBtn" disabled={busy} onClick={()=>saveEdit().then(()=>notify("ویرایش سیگنال ذخیره شد")).catch(e=>notify(e.message))}><Save size={16}/> ذخیره ویرایش</button><button type="button" className="iconBtn dangerBtn" title="حذف سیگنال" disabled={busy} onClick={deleteOne}><Trash2 size={16}/></button><button type="button" className="primary" disabled={busy} onClick={approveAndTransfer}><CheckCircle2 size={16}/> تأیید و انتقال به معامله</button></div></div>
     </>}</div>
   </div>
 }
-
 function Exchanges({boot,refreshBoot,notify,requestStepUp}){
   const [catalog,setCatalog]=useState([]);
   const [selected,setSelected]=useState(null);

@@ -5,9 +5,39 @@ from decimal import Decimal
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
-from .models import Signal
+from apps.exchanges.models import ExchangeMarket, UserExchangeAccount
+
+from .models import Signal, SignalTarget
 from .parser import PARSER_VERSION, extract
-from .services import _revision
+from .services import _revision, _validate_structure
+
+
+def _unique_market_match(owner, pair):
+    if not pair:
+        return None, None
+    accounts = list(
+        UserExchangeAccount.objects.for_user(owner)
+        .filter(
+            status__in=("connected", "restricted"),
+            permissions__can_read=True,
+            environment="live",
+        )
+        .select_related("exchange")
+    )
+    matches = []
+    for account in accounts:
+        market = (
+            ExchangeMarket.objects.filter(
+                exchange=account.exchange,
+                symbol=pair,
+                active=True,
+            )
+            .order_by("market_type", "pk")
+            .first()
+        )
+        if market:
+            matches.append((account, market))
+    return matches[0] if len(matches) == 1 else (None, None)
 
 
 def assess(parsed):
@@ -80,6 +110,58 @@ def parse_for_review(owner, signal_id):
     signal.technical_confidence = parsed["technical_confidence"]
     signal.status = Signal.Status.NEEDS_REVIEW
     signal.review_reason = "لطفاً پیشنهادهای استخراج را با متن اصلی مقایسه و تأیید کنید."
+
+    account, market = _unique_market_match(owner, parsed.get("pair"))
+    can_materialize = (
+        account
+        and market
+        and parsed.get("side")
+        and parsed.get("entry")
+        and parsed.get("stop_loss")
+        and parsed.get("execution_targets")
+        and not parsed.get("entry_range")
+        and not parsed.get("futures_mentioned")
+    )
+    if can_materialize:
+        try:
+            data = {
+                "account_id": account.pk,
+                "market_id": market.pk,
+                "side": parsed["side"],
+                "entry_price": Decimal(parsed["entry"]),
+                "stop_loss": Decimal(parsed["stop_loss"]),
+                "targets": [
+                    {"price": Decimal(value)}
+                    for value in parsed["execution_targets"]
+                ],
+            }
+            _, _, targets = _validate_structure(owner, data)
+            signal.exchange_account = account
+            signal.market = market
+            signal.side = data["side"]
+            signal.entry_price = data["entry_price"]
+            signal.stop_loss = data["stop_loss"]
+            signal.status = Signal.Status.PARSED
+            signal.review_reason = "استخراج کامل است؛ قبل از تأیید نهایی مقادیر را مرور کنید."
+            signal.revision += 1
+            signal.save()
+            signal.targets.all().delete()
+            SignalTarget.objects.bulk_create(
+                [
+                    SignalTarget(
+                        signal=signal,
+                        position=index + 1,
+                        price=price,
+                        share_percent=share,
+                    )
+                    for index, (price, share) in enumerate(targets)
+                ]
+            )
+            _revision(signal, owner=owner, reason="تحلیل ساختاری کامل با بازار یکتا")
+            return signal
+        except ValidationError as error:
+            parsed["materialize_warning"] = str(error)
+
     signal.revision += 1
     signal.save(
         update_fields=(
@@ -92,5 +174,5 @@ def parse_for_review(owner, signal_id):
             "updated_at",
         )
     )
-    _revision(signal, owner=owner, reason="تحلیل قالبی نیازمند تأیید انسان")
+    _revision(signal, owner=owner, reason="تحلیل ساختاری نیازمند تأیید انسان")
     return signal

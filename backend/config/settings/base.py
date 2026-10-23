@@ -263,3 +263,10 @@ CELERY_BEAT_SCHEDULE["sync-external-exchange-state"] = {
     "schedule": 20.0,
     "options": {"queue": "maintenance", "expires": 18},
 }
+
+
+CELERY_BEAT_SCHEDULE["external-live-management"] = {
+    "task": "operations.monitor_external_trades",
+    "schedule": 5.0,
+    "options": {"queue": "trailing", "expires": 4},
+}

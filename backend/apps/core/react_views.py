@@ -771,6 +771,17 @@ def api_live_orders(request):
                     or plan.market_id != form.cleaned_data["market"].pk
                 ):
                     raise ValidationError("برنامه معامله با حساب یا بازار سفارش هم‌خوان نیست.")
+                expected_quantity = Decimal(
+                    str((plan.approved_snapshot or {}).get("quantity", "0"))
+                )
+                if (
+                    form.cleaned_data["side"] != "buy"
+                    or form.cleaned_data["price"] != plan.entry_price
+                    or form.cleaned_data["amount"] != expected_quantity
+                ):
+                    raise ValidationError(
+                        "مقدار یا قیمت سفارش Live باید دقیقاً با Snapshot برنامه تأییدشده برابر باشد."
+                    )
             order, created = queue_live_spot_order(
                 request.user,
                 account,

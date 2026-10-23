@@ -345,10 +345,32 @@ def main():
                         "button",
                         name="تأیید و انتقال به معامله",
                     ).click()
-                    page.get_by_role(
-                        "heading",
-                        name="معامله جدید",
-                    ).wait_for()
+                    try:
+                        page.get_by_role(
+                            "heading",
+                            name="معامله جدید",
+                        ).wait_for(timeout=15000)
+                    except Exception:
+                        toast_text = ""
+                        try:
+                            toast_text = page.locator(".toast").inner_text(timeout=1000)
+                        except Exception:
+                            pass
+                        diagnostic = (
+                            "Signal transfer failed; "
+                            f"url={page.url!r}; "
+                            f"hash={page.evaluate('location.hash')!r}; "
+                            f"toast={toast_text!r}; "
+                            f"page_errors={errors!r}"
+                        )
+                        page.screenshot(
+                            path=str(
+                                artifacts
+                                / "stage27-signal-transfer-failure.png"
+                            ),
+                            full_page=True,
+                        )
+                        raise AssertionError(diagnostic)
                     page.locator(
                         ".marketSelectButton",
                         has_text="BTC / USDT",

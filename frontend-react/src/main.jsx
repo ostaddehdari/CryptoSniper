@@ -411,11 +411,13 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
         trailing_distance:trailingDistance,
         client_token:crypto.randomUUID()
       }});
+      const orderQuantity=String(planResponse.plan?.snapshot?.quantity||quantity||"");
+      if(!orderQuantity||num(orderQuantity)<=0)throw new Error("Backend حجم نهایی سفارش را محاسبه نکرد.");
       const d=await api("/api/v1/live-orders/",{method:"POST",body:{
         account:accountId,
         market:marketId,
         side:side==="long"?"buy":"sell",
-        amount:quantity,
+        amount:orderQuantity,
         price:entry,
         confirmed:true,
         plan_id:planResponse.plan.id,

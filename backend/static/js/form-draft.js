@@ -8,7 +8,7 @@
   if (state) {
     for (const form of forms) {
       for (const field of form.elements) {
-        if (!field.name || !(field.name in state) || field.type === "hidden") continue;
+        if (!field.name || !(field.name in state) || field.type === "hidden" || field.dataset.noDraft === "1") continue;
         if (field.type === "checkbox" || field.type === "radio") {
           field.checked = state[field.name] === field.value || state[field.name] === true;
         } else if (!field.value) {
@@ -21,7 +21,7 @@
     const draft = {};
     for (const form of forms) {
       for (const field of form.elements) {
-        if (!field.name || field.name === "csrfmiddlewaretoken" || field.type === "hidden") continue;
+        if (!field.name || field.name === "csrfmiddlewaretoken" || field.type === "hidden" || field.dataset.noDraft === "1") continue;
         if (field.type === "checkbox") draft[field.name] = field.checked;
         else if (field.type !== "submit") draft[field.name] = field.value;
       }

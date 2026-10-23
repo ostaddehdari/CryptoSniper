@@ -89,6 +89,10 @@ def ensure_exits(trade_id):
         raise ValidationError("جمع حجم اهداف با معامله هم‌خوان نیست.")
     TradeTarget.objects.bulk_create(targets)
     percentage = bool(source.get("percentage_trailing"))
+    trigger_code = source.get("trailing_trigger") or "tp1"
+    trigger_target = {"tp1": 1, "tp2": 2, "tp3": 3}.get(trigger_code)
+    if trigger_target is None or trigger_target > len(prices):
+        raise ValidationError("شروع Trailing با TPهای Snapshot هم‌خوان نیست.")
     distance = _decimal(source.get("trailing_distance_percent", "1"))
     if distance >= 100:
         raise ValidationError("فاصله trailing باید کمتر از ۱۰۰٪ باشد.")
@@ -100,7 +104,8 @@ def ensure_exits(trade_id):
         step_enabled=bool(source.get("trailing_sl")),
         percentage_enabled=percentage,
         distance_percent=distance,
-        trigger_price=prices[0],
+        trigger_price=prices[trigger_target - 1],
+        trigger_target=trigger_target,
     )
     TradeEvent.objects.create(
         trade=trade,

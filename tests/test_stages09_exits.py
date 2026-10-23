@@ -25,7 +25,9 @@ from django.core.exceptions import ValidationError
 from django.urls import reverse
 
 
-def paper_trade(user, *, percentage=False, step=False, capital="50", two=False, three=False):
+def paper_trade(
+    user, *, percentage=False, step=False, capital="50", two=False, three=False, trigger="tp1"
+):
     exchange = Exchange.objects.get(code="simulator")
     account = UserExchangeAccount(
         owner=user, exchange=exchange, label=f"Demo-{uuid.uuid4().hex[:8]}", environment="paper"
@@ -50,6 +52,7 @@ def paper_trade(user, *, percentage=False, step=False, capital="50", two=False, 
             "leverage": "1",
             "trailing_sl": "on" if step else "",
             "percentage_trailing": "on" if percentage else "",
+            "trailing_trigger": trigger,
             "trailing_distance": "1",
             "client_token": str(uuid.uuid4()),
         },

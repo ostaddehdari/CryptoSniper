@@ -323,6 +323,7 @@ class TradeProtection(models.Model):
     percentage_enabled = models.BooleanField(default=False)
     percentage_active = models.BooleanField(default=False)
     trigger_price = models.DecimalField(max_digits=32, decimal_places=16)
+    trigger_target = models.PositiveSmallIntegerField(default=1)
     distance_percent = models.DecimalField(max_digits=8, decimal_places=4, default=1)
     high_water = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
     low_water = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
@@ -340,6 +341,10 @@ class TradeProtection(models.Model):
             models.CheckConstraint(
                 condition=Q(distance_percent__gt=0) & Q(distance_percent__lt=100),
                 name="paper_trailing_distance_valid",
+            ),
+            models.CheckConstraint(
+                condition=Q(trigger_target__gte=1) & Q(trigger_target__lte=3),
+                name="paper_trailing_trigger_target_valid",
             ),
         ]
 

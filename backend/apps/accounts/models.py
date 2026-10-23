@@ -118,7 +118,9 @@ class TradingPreferences(UserOwnedModel):
         MARGIN = "margin", "Margin"
 
     class TrailingTrigger(models.TextChoices):
-        TP1 = "tp1", "پس از TP1"
+        TP1 = "tp1", "TP1"
+        TP2 = "tp2", "TP2"
+        TP3 = "tp3", "TP3"
 
     default_order_amount = models.DecimalField(
         "مبلغ پیش‌فرض معامله",
@@ -140,7 +142,7 @@ class TradingPreferences(UserOwnedModel):
         "سهم TP3", max_digits=5, decimal_places=2, default=Decimal("80")
     )
     trailing_sl_enabled = models.BooleanField("Trailing SL", default=True)
-    trailing_tp_enabled = models.BooleanField("Trailing TP", default=True)
+    trailing_tp_enabled = models.BooleanField("Trailing", default=True)
     trailing_trigger = models.CharField(
         "شروع Trailing",
         max_length=8,

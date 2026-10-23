@@ -13,7 +13,7 @@ HUNDRED = Decimal("100")
 
 
 def text(value):
-    return format(value, "f")
+    return format(Decimal(str(value)), "f")
 
 
 def _market_multiple(price, step):
@@ -53,7 +53,7 @@ def build_preview(data, now=None):
     entry, sl = data["entry_price"], data["stop_loss"]
     targets = _targets(data)
     leverage = data["leverage"]
-    capital = data["capital"]
+    capital = Decimal(str(data["capital"]))
     if leverage < Decimal("1") or capital <= ZERO or entry <= ZERO or sl <= ZERO:
         raise ValidationError("سرمایه، ورود، حد ضرر و اهرم باید مثبت باشند.")
     if market.market_type == "spot" and leverage != Decimal("1"):
@@ -112,11 +112,15 @@ def build_preview(data, now=None):
             else [Decimal("10"), Decimal("10"), Decimal("80")]
         )
     )
-    trailing_distance = data.get("trailing_distance", Decimal("1"))
+    trailing_distance = Decimal(str(data.get("trailing_distance") or "1"))
+    trigger = data.get("trailing_trigger") or "tp1"
+    if not data.get("percentage_trailing"):
+        trigger = "tp1"
+    trigger_position = {"tp1": 1, "tp2": 2, "tp3": 3}.get(trigger)
+    if trigger_position is None or trigger_position > len(targets):
+        raise ValidationError("شروع Trailing باید یکی از TPهای تعریف‌شده باشد.")
     if data.get("percentage_trailing") and not (ZERO < trailing_distance < HUNDRED):
-        raise ValidationError("فاصله Percentage Trailing باید بین صفر و صد باشد.")
-    if trailing_distance is None:
-        trailing_distance = Decimal("1")
+        raise ValidationError("فاصله Trailing باید بین صفر و صد باشد.")
     tp_info = [
         {
             "price": text(tp),
@@ -152,9 +156,10 @@ def build_preview(data, now=None):
         "fees_are_estimates": True,
         "trailing_sl": bool(data.get("trailing_sl")),
         "percentage_trailing": bool(data.get("percentage_trailing")),
+        "trailing_trigger": trigger,
         "trailing_distance_percent": text(trailing_distance),
         "exit_policy": (
-            "percentage_trailing_only_after_tp1"
+            f"percentage_trailing_only_after_{trigger}"
             if data.get("percentage_trailing")
             else "scheduled_targets"
         ),

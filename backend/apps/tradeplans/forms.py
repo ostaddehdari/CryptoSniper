@@ -30,24 +30,30 @@ class ManualTradeForm(forms.Form):
     stop_loss = forms.DecimalField(
         label="حد ضرر (SL)", max_digits=32, decimal_places=16, min_value=0.0000000000000001
     )
-    capital = forms.DecimalField(
+    capital = forms.IntegerField(
         label="مبلغ سرمایه (به ارز Quote)",
-        max_digits=32,
-        decimal_places=16,
-        min_value=0.0000000000000001,
+        min_value=1,
+        widget=forms.NumberInput(attrs={"step": "1", "min": "1", "inputmode": "numeric"}),
     )
     leverage = forms.DecimalField(
         label="اهرم", max_digits=10, decimal_places=4, min_value=1, initial=1
     )
-    trailing_sl = forms.BooleanField(label="Trailing SL پله‌ای", required=False)
-    percentage_trailing = forms.BooleanField(label="Percentage Trailing", required=False)
-    trailing_distance = forms.DecimalField(
-        label="فاصله trailing (%)",
-        max_digits=8,
-        decimal_places=4,
-        min_value=0.001,
+    trailing_sl = forms.BooleanField(label="Trailing SL", required=False)
+    percentage_trailing = forms.BooleanField(label="Trailing", required=False)
+    trailing_trigger = forms.ChoiceField(
+        label="شروع Trailing",
+        choices=(("tp1", "TP1"), ("tp2", "TP2"), ("tp3", "TP3")),
+        required=False,
+        initial="tp1",
+    )
+    trailing_distance = forms.IntegerField(
+        label="فاصله Trailing (%)",
+        min_value=1,
         max_value=99,
         initial=1,
+        widget=forms.NumberInput(
+            attrs={"step": "1", "min": "1", "max": "99", "inputmode": "numeric"}
+        ),
     )
     origin_signal = forms.ModelChoiceField(
         queryset=Signal.objects.none(), required=False, widget=forms.HiddenInput
@@ -70,17 +76,11 @@ class ManualTradeForm(forms.Form):
         for key, field in self.fields.items():
             if key not in {"client_token", "origin_signal"}:
                 field.widget.attrs.setdefault("class", "input")
-            if key in {
-                "entry_price",
-                "tp1",
-                "tp2",
-                "tp3",
-                "stop_loss",
-                "capital",
-                "leverage",
-                "trailing_distance",
-            }:
+            if key in {"entry_price", "tp1", "tp2", "tp3", "stop_loss", "leverage"}:
                 field.widget.attrs.update({"inputmode": "decimal", "dir": "ltr"})
+            if key in {"capital", "trailing_distance"}:
+                field.widget.attrs.update({"inputmode": "numeric", "dir": "ltr", "step": "1"})
+        self.fields["entry_price"].widget.attrs["data-no-draft"] = "1"
         if not self.is_bound:
             self.initial.setdefault("client_token", uuid.uuid4())
 
@@ -107,4 +107,14 @@ class ManualTradeForm(forms.Form):
         targets = (data.get("tp1"), data.get("tp2"), data.get("tp3"))
         if targets[2] and not targets[1]:
             self.add_error("tp3", "TP3 بدون TP2 معتبر نیست.")
+        trigger = data.get("trailing_trigger") or "tp1"
+        data["trailing_trigger"] = trigger
+        if data.get("percentage_trailing"):
+            available = 1 + int(targets[1] is not None) + int(targets[2] is not None)
+            trigger_position = {"tp1": 1, "tp2": 2, "tp3": 3}.get(trigger, 0)
+            if not trigger_position or trigger_position > available:
+                self.add_error(
+                    "trailing_trigger",
+                    "شروع Trailing باید یکی از TPهای تعریف‌شده همین معامله باشد.",
+                )
         return data

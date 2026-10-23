@@ -51,6 +51,13 @@ class ProfileForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["trailing_sl_enabled"].label = "Trailing SL"
+        self.fields["trailing_tp_enabled"].label = "Trailing"
+        self.fields["trailing_trigger"].label = "شروع Trailing"
+
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         preferred = ["Asia/Tehran", "Asia/Dubai", "Europe/London", "UTC"]
         zones = [zone for zone in preferred if zone in available_timezones()]
         current = self.instance.timezone
@@ -106,6 +113,46 @@ class SetNewPasswordForm(forms.Form):
 
 
 class TradingPreferencesForm(forms.ModelForm):
+    default_order_amount = forms.IntegerField(
+        label="مبلغ پیش‌فرض معامله",
+        min_value=0,
+        widget=forms.NumberInput(
+            attrs={"class": "input", "min": "0", "step": "1", "inputmode": "numeric"}
+        ),
+    )
+    tp1_percent = forms.IntegerField(
+        label="سهم TP1",
+        min_value=0,
+        max_value=100,
+        widget=forms.NumberInput(
+            attrs={"class": "input", "min": "0", "max": "100", "step": "1", "inputmode": "numeric"}
+        ),
+    )
+    tp2_percent = forms.IntegerField(
+        label="سهم TP2",
+        min_value=0,
+        max_value=100,
+        widget=forms.NumberInput(
+            attrs={"class": "input", "min": "0", "max": "100", "step": "1", "inputmode": "numeric"}
+        ),
+    )
+    tp3_percent = forms.IntegerField(
+        label="سهم TP3",
+        min_value=0,
+        max_value=100,
+        widget=forms.NumberInput(
+            attrs={"class": "input", "min": "0", "max": "100", "step": "1", "inputmode": "numeric"}
+        ),
+    )
+    trailing_distance_percent = forms.IntegerField(
+        label="فاصله Trailing (%)",
+        min_value=1,
+        max_value=99,
+        widget=forms.NumberInput(
+            attrs={"class": "input", "min": "1", "max": "99", "step": "1", "inputmode": "numeric"}
+        ),
+    )
+
     class Meta:
         model = TradingPreferences
         fields = (
@@ -120,17 +167,8 @@ class TradingPreferencesForm(forms.ModelForm):
             "trailing_distance_percent",
         )
         widgets = {
-            "default_order_amount": forms.NumberInput(
-                attrs={"class": "input", "min": "0", "step": "0.00000001"}
-            ),
             "default_market": forms.Select(attrs={"class": "input"}),
-            "tp1_percent": forms.NumberInput(attrs={"class": "input", "min": "0", "step": "0.01"}),
-            "tp2_percent": forms.NumberInput(attrs={"class": "input", "min": "0", "step": "0.01"}),
-            "tp3_percent": forms.NumberInput(attrs={"class": "input", "min": "0", "step": "0.01"}),
             "trailing_sl_enabled": forms.CheckboxInput(attrs={"class": "toggle-input"}),
             "trailing_tp_enabled": forms.CheckboxInput(attrs={"class": "toggle-input"}),
             "trailing_trigger": forms.Select(attrs={"class": "input"}),
-            "trailing_distance_percent": forms.NumberInput(
-                attrs={"class": "input", "min": "0.001", "step": "0.001"}
-            ),
         }

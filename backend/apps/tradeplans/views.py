@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
+from apps.accounts.models import TradingPreferences
 from apps.accounts.security import session_api_required
 from apps.signals.models import Signal
 
@@ -46,13 +47,23 @@ def _form_context(form, request, *, plan=None):
 @never_cache
 @require_http_methods(["GET", "POST"])
 def new_plan(request):
-    initial = {}
+    preferences, _ = TradingPreferences.objects.get_or_create(owner=request.user)
+    initial = {
+        "source": "manual",
+        "entry_price": None,
+        "capital": int(preferences.default_order_amount),
+        "leverage": 1,
+        "trailing_sl": preferences.trailing_sl_enabled,
+        "percentage_trailing": preferences.trailing_tp_enabled,
+        "trailing_trigger": preferences.trailing_trigger,
+        "trailing_distance": int(preferences.trailing_distance_percent),
+    }
     signal_id = request.GET.get("signal")
     if signal_id and request.method == "GET":
         signal = get_object_or_404(
             Signal, pk=signal_id, owner=request.user, status=Signal.Status.APPROVED
         )
-        initial = {
+        initial.update({
             "origin_signal": signal.pk,
             "account": signal.exchange_account_id,
             "market": signal.market_id,
@@ -61,11 +72,18 @@ def new_plan(request):
             "entry_price": signal.entry_price,
             "stop_loss": signal.stop_loss,
             "leverage": 1,
-            "capital": 50,
-            "trailing_distance": 1,
-            "trailing_sl": bool(signal.parsed_payload.get("trailing_sl", False)),
-            "percentage_trailing": bool(signal.parsed_payload.get("percentage_trailing", False)),
-        }
+            "capital": int(preferences.default_order_amount),
+            "trailing_distance": int(preferences.trailing_distance_percent),
+            "trailing_sl": bool(
+                signal.parsed_payload.get("trailing_sl", preferences.trailing_sl_enabled)
+            ),
+            "percentage_trailing": bool(
+                signal.parsed_payload.get("percentage_trailing", preferences.trailing_tp_enabled)
+            ),
+            "trailing_trigger": signal.parsed_payload.get(
+                "percentage_trigger", preferences.trailing_trigger
+            ),
+        })
         for target in signal.targets.order_by("position"):
             initial[f"tp{target.position}"] = target.price
     form = ManualTradeForm(
@@ -102,6 +120,7 @@ def edit_plan(request, pk):
         "leverage": plan.leverage,
         "trailing_sl": plan.trailing_sl,
         "percentage_trailing": plan.percentage_trailing,
+        "trailing_trigger": plan.trailing_trigger,
         "trailing_distance": plan.trailing_distance,
         "client_token": plan.client_token,
     }

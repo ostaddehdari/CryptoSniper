@@ -18,6 +18,11 @@ class TradePlan(models.Model):
         LONG = "long", "خرید / Long"
         SHORT = "short", "فروش / Short"
 
+    class TrailingTrigger(models.TextChoices):
+        TP1 = "tp1", "TP1"
+        TP2 = "tp2", "TP2"
+        TP3 = "tp3", "TP3"
+
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="trade_plans"
     )
@@ -41,6 +46,9 @@ class TradePlan(models.Model):
     leverage = models.DecimalField(max_digits=10, decimal_places=4, default=Decimal("1"))
     trailing_sl = models.BooleanField(default=False)
     percentage_trailing = models.BooleanField(default=False)
+    trailing_trigger = models.CharField(
+        max_length=3, choices=TrailingTrigger.choices, default=TrailingTrigger.TP1
+    )
     trailing_distance = models.DecimalField(max_digits=8, decimal_places=4, default=Decimal("1"))
     preview = models.JSONField(default=dict)
     approved_snapshot = models.JSONField(default=dict, blank=True)

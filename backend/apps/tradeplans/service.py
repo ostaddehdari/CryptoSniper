@@ -61,6 +61,7 @@ def create_draft(owner, data):
         leverage=data["leverage"],
         trailing_sl=data.get("trailing_sl", False),
         percentage_trailing=data.get("percentage_trailing", False),
+        trailing_trigger=data.get("trailing_trigger") or "tp1",
         trailing_distance=data["trailing_distance"],
         preview=preview,
     )
@@ -91,6 +92,7 @@ def update_draft(plan, data, expected_revision):
         "leverage",
         "trailing_sl",
         "percentage_trailing",
+        "trailing_trigger",
         "trailing_distance",
     ):
         setattr(locked, name, data.get(name))
@@ -122,6 +124,7 @@ def approve_plan(owner, plan_id, expected_revision):
         "leverage": plan.leverage,
         "trailing_sl": plan.trailing_sl,
         "percentage_trailing": plan.percentage_trailing,
+        "trailing_trigger": plan.trailing_trigger,
         "trailing_distance": plan.trailing_distance,
     }
     # Re-check current market limits and cash, then freeze an independently

@@ -75,6 +75,7 @@ def spot_market(account, symbol="BTC/USDT", *, fee=Decimal("0.001")):
 
 def ready_live_plan(owner, account, market, *, trailing=True, trailing_sl=True, trigger="tp2"):
     preview = {
+        "quantity": "1.000",
         "targets": [
             {"price": "110", "share_percent": "10"},
             {"price": "120", "share_percent": "10"},

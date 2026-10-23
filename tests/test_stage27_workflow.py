@@ -819,3 +819,21 @@ def test_stage27_protective_exit_executes_while_new_entries_are_paused(
     assert result["status"] == LiveSpotOrder.State.FILLED
     exit_order.refresh_from_db()
     assert exit_order.state == LiveSpotOrder.State.FILLED
+
+
+
+@pytest.mark.django_db
+def test_stage27_account_market_api_returns_searchable_spot_markets(
+    client, django_user_model
+):
+    owner = django_user_model.objects.create_user(username="stage27-market-api")
+    account = live_account(owner)
+    spot_market(account, "BTC/USDT")
+    spot_market(account, "ETH/USDT")
+    client.force_login(owner)
+    response = client.get(
+        reverse("api-account-markets", args=[account.pk])
+    )
+    assert response.status_code == 200, response.content
+    symbols = {row["symbol"] for row in response.json()["markets"]}
+    assert {"BTC/USDT", "ETH/USDT"}.issubset(symbols)

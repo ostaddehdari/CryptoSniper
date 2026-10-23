@@ -250,7 +250,7 @@ function ExternalTradeDrawer({item,onClose,notify,requestStepUp,onChanged}){
   </div></div>
 }
 
-function MarketPicker({markets,value,onChange,search,setSearch,exchangeName}){
+function MarketPicker({markets,value,onChange,search,setSearch,exchangeName,loading}){
   const [open,setOpen]=useState(false);
   const selected=markets.find(x=>String(x.id)===String(value));
   const q=search.trim().toLowerCase();
@@ -262,8 +262,8 @@ function MarketPicker({markets,value,onChange,search,setSearch,exchangeName}){
   };
   return <div className="field marketPickerV2">
     <label>بازار</label>
-    <button type="button" className={"marketSelectButton "+(selected?"selected":"")} onClick={()=>setOpen(v=>!v)}>
-      <span>{selected?((selected.favorite?"★ ":"")+selected.base+" / USDT"):"انتخاب بازار"}</span>
+    <button type="button" disabled={loading||!markets.length} className={"marketSelectButton "+(selected?"selected":"")} onClick={()=>setOpen(v=>!v)}>
+      <span>{loading?"در حال دریافت بازارها…":!markets.length?"بازاری موجود نیست":selected?((selected.favorite?"★ ":"")+selected.base+" / USDT"):"انتخاب بازار"}</span>
       <ChevronLeft size={16}/>
     </button>
     {open&&<div className="marketDropdown">
@@ -289,6 +289,7 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
   const [prefs,setPrefs]=useState(null);
   const [accountId,setAccountId]=useState(seed?.account_id||accounts[0]?.id||"");
   const [markets,setMarkets]=useState([]);
+  const [marketsLoading,setMarketsLoading]=useState(false);
   const [marketId,setMarketId]=useState(seed?.market_id||"");
   const [marketSearch,setMarketSearch]=useState("");
   const [side,setSide]=useState(seed?.side||"long");
@@ -327,13 +328,18 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
   },[]);
 
   const loadMarkets=async id=>{
-    if(!id){setMarkets([]);return}
+    if(!id){setMarkets([]);setMarketsLoading(false);return}
+    setMarketsLoading(true);
+    setMarkets([]);
+    setMarketId("");
     try{
       const d=await api("/api/v1/exchange-accounts/"+id+"/markets/");
-      setMarkets(d.markets||[]);
-      const preferred=seed?.market_id&&(d.markets||[]).find(x=>String(x.id)===String(seed.market_id));
+      const rows=d.markets||[];
+      setMarkets(rows);
+      const preferred=seed?.market_id&&rows.find(x=>String(x.id)===String(seed.market_id));
       setMarketId(preferred?.id||"");
-    }catch(e){notify(e.message)}
+    }catch(e){notify("دریافت بازارها انجام نشد: "+e.message)}
+    finally{setMarketsLoading(false)}
   };
   useEffect(()=>{loadMarkets(accountId)},[accountId]);
 
@@ -463,7 +469,7 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
       <div className="cardHead"><div><h3>تعریف معامله</h3><p>قیمت زنده، حجم ورود، TP/SL و Fix Loss خودکار</p></div><span className="liveBadge"><span/> LIVE</span></div>
       <div className="formGrid">
         <div className="field"><label>حساب صرافی</label><select value={accountId} onChange={e=>{setAccountId(e.target.value);setMarketSearch("")}}>{accounts.map(a=><option key={a.id} value={a.id}>{a.exchange_name+" · "+a.label}</option>)}</select></div>
-        <MarketPicker markets={markets} value={marketId} onChange={value=>{setMarketId(value);setQuote(null)}} search={marketSearch} setSearch={setMarketSearch} exchangeName={account?.exchange_name||""}/>
+        <MarketPicker markets={markets} value={marketId} onChange={value=>{setMarketId(value);setQuote(null)}} search={marketSearch} setSearch={setMarketSearch} exchangeName={account?.exchange_name||""} loading={marketsLoading}/>
         <div className="field"><label>قیمت زنده</label><div className="livePrice">{quote?.price?fmt(quote.price,num(quote.price)<10?4:2):"ناموجود"}<span>USDT</span></div><small>{quote?.stale?"قیمت قدیمی است":"به‌روزرسانی مستقیم هر ۲ ثانیه"}</small></div>
         <div className="field"><label>جهت</label><div className="segmented"><button type="button" className={side==="long"?"active":""} onClick={()=>setSide("long")}>لانگ</button><button type="button" disabled={market?.market_type==="spot"} className={side==="short"?"active danger":""} onClick={()=>setSide("short")}>شورت</button></div></div>
         <div className="field"><label>Entry</label><input value={entry} onChange={e=>setEntry(e.target.value)} inputMode="decimal"/></div>

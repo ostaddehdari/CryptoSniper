@@ -288,7 +288,6 @@ def _consume_target_results(management_id):
     )
     targets = list(
         ManagedLiveTarget.objects.select_for_update()
-        .select_related("exit_order")
         .filter(management=item)
         .order_by("position")
     )
@@ -341,13 +340,19 @@ def _consume_target_results(management_id):
 def _consume_full_exit(management_id):
     item = (
         ManagedLiveTrade.objects.select_for_update()
-        .select_related("full_exit__order")
         .filter(pk=management_id)
         .first()
     )
-    if not item or not hasattr(item, "full_exit"):
+    if not item:
         return None
-    order = item.full_exit.order
+    full_exit = (
+        ManagedLiveExit.objects.select_related("order")
+        .filter(management=item)
+        .first()
+    )
+    if not full_exit:
+        return None
+    order = full_exit.order
     if order.state == LiveSpotOrder.State.FILLED:
         item.remaining_quantity = ZERO
         item.state = ManagedLiveTrade.State.CLOSED

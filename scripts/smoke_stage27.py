@@ -395,10 +395,18 @@ def main():
                         ".marketSelectButton",
                         has_text="BTC / USDT",
                     ).wait_for()
-                    assert page.locator(
-                        ".field",
-                        has_text="Entry",
-                    ).locator("input").input_value().startswith("80000")
+                    entry_input = (
+                        page.locator(".field")
+                        .filter(
+                            has=page.get_by_text(
+                                "Entry",
+                                exact=True,
+                            )
+                        )
+                        .locator("input")
+                        .first
+                    )
+                    assert entry_input.input_value().startswith("80000")
 
                     page.screenshot(
                         path=str(

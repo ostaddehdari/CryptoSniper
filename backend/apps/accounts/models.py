@@ -119,6 +119,8 @@ class TradingPreferences(UserOwnedModel):
 
     class TrailingTrigger(models.TextChoices):
         TP1 = "tp1", "پس از TP1"
+        TP2 = "tp2", "پس از TP2"
+        TP3 = "tp3", "پس از TP3"
 
     default_order_amount = models.DecimalField(
         "مبلغ پیش‌فرض معامله",

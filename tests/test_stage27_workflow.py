@@ -31,7 +31,7 @@ from apps.operations.models import (
     ManagedLiveTrade,
 )
 from apps.tradeplans.models import TradePlan
-from apps.signals.models import RawSignal, Signal, SignalSource
+from apps.signals.models import RawSignal, Signal, SignalSource, SignalTarget
 
 
 def live_account(owner, code="bitunix", label="main"):
@@ -837,3 +837,126 @@ def test_stage27_account_market_api_returns_searchable_spot_markets(
     assert response.status_code == 200, response.content
     symbols = {row["symbol"] for row in response.json()["markets"]}
     assert {"BTC/USDT", "ETH/USDT"}.issubset(symbols)
+
+
+
+@pytest.mark.django_db
+def test_stage27_signal_edit_then_approve_transfer_contract(
+    client, django_user_model
+):
+    owner = django_user_model.objects.create_user(username="stage27-signal-transfer")
+    account = live_account(owner)
+    market = spot_market(account)
+    source = SignalSource.objects.create(
+        owner=owner,
+        name="Stage27 smart paste",
+        method=SignalSource.Method.SMART_PASTE,
+    )
+    raw = RawSignal.objects.create(
+        owner=owner,
+        source=source,
+        original_text=(
+            "BTCUSDT LONG ENTRY 80000 "
+            "TP1 82000 TP2 84000 TP3 86000 SL 78000"
+        ),
+        original_payload={},
+        checksum="stage27-transfer-contract",
+    )
+    signal = Signal.objects.create(
+        owner=owner,
+        source=source,
+        raw_signal=raw,
+        exchange_account=account,
+        market=market,
+        side="long",
+        entry_price=Decimal("80000"),
+        stop_loss=Decimal("78000"),
+        technical_confidence=100,
+        parser_version="rules-v2",
+        parsed_payload={
+            "parser_version": "rules-v2",
+            "pair": "BTC/USDT",
+            "trailing_defaults": {
+                "trailing_sl": True,
+                "percentage_trailing": True,
+                "percentage_trigger": "tp1",
+                "percentage_distance": "1",
+            },
+        },
+        status=Signal.Status.PARSED,
+    )
+    SignalTarget.objects.bulk_create(
+        [
+            SignalTarget(
+                signal=signal,
+                position=1,
+                price=Decimal("82000"),
+                share_percent=Decimal("10"),
+            ),
+            SignalTarget(
+                signal=signal,
+                position=2,
+                price=Decimal("84000"),
+                share_percent=Decimal("10"),
+            ),
+            SignalTarget(
+                signal=signal,
+                position=3,
+                price=Decimal("86000"),
+                share_percent=Decimal("80"),
+            ),
+        ]
+    )
+
+    client.force_login(owner)
+    detail = client.get(reverse("api-inbox-detail", args=[signal.pk]))
+    assert detail.status_code == 200, detail.content
+    revision = detail.json()["signal"]["revision"]
+
+    edited = client.post(
+        reverse("api-inbox-edit", args=[signal.pk]),
+        data=json.dumps(
+            {
+                "account_id": account.pk,
+                "market_id": market.pk,
+                "side": "long",
+                "entry_price": "80000",
+                "stop_loss": "78000",
+                "tp1": "82000",
+                "tp2": "84000",
+                "tp3": "86000",
+                "revision": revision,
+                "reason": "",
+            }
+        ),
+        content_type="application/json",
+    )
+    assert edited.status_code == 200, edited.content
+    saved = edited.json()["signal"]
+    assert saved["status"] == Signal.Status.PARSED
+    assert saved["revision"] == revision + 1
+
+    approved = client.post(
+        reverse("api-inbox-action", args=[signal.pk]),
+        data=json.dumps(
+            {
+                "revision": saved["revision"],
+                "action": "approve",
+                "reason": "",
+            }
+        ),
+        content_type="application/json",
+    )
+    assert approved.status_code == 200, approved.content
+    result = approved.json()["signal"]
+    assert result["status"] == Signal.Status.APPROVED
+    structured = result["structured"]
+    assert structured["account_id"] == account.pk
+    assert structured["market_id"] == market.pk
+    assert structured["entry"] == "80000"
+    assert structured["stop_loss"] == "78000"
+    assert [row["price"] for row in structured["targets"]] == [
+        "82000",
+        "84000",
+        "86000",
+    ]

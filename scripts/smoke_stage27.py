@@ -370,7 +370,7 @@ def main():
                             ),
                             full_page=True,
                         )
-                        raise AssertionError(diagnostic)
+                        raise AssertionError(diagnostic) from None
                     page.locator(
                         ".marketSelectButton",
                         has_text="BTC / USDT",

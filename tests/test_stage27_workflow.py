@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.exchanges.adapters import Order, OrderStatus
-from apps.exchanges.live_orders import reconcile_live_spot_order
+from apps.exchanges.live_orders import execute_live_spot_order, reconcile_live_spot_order
 from apps.exchanges.models import (
     Asset,
     BalanceSnapshot,
@@ -25,7 +25,9 @@ from apps.operations.managed_live import (
 )
 from apps.operations.models import (
     ExternalObservation,
+    AccountControl,
     ExternalTradeManagement,
+    ManagedLiveExit,
     ManagedLiveTrade,
 )
 from apps.tradeplans.models import TradePlan
@@ -669,3 +671,146 @@ def test_stage27_managed_live_fixed_tp_then_trailing_sl_protects_remainder(
     management.refresh_from_db()
     assert management.remaining_quantity == Decimal("0.9")
     assert management.effective_stop == Decimal("100")
+
+
+
+@pytest.mark.django_db
+@override_settings(LIVE_TRADING_ENABLED=True)
+def test_stage27_live_order_api_binds_ready_plan_to_managed_trade(
+    client, django_user_model, monkeypatch
+):
+    password = "stage27-managed-api-password"
+    owner = django_user_model.objects.create_user(
+        username="stage27-managed-api",
+        password=password,
+    )
+    account = live_account(owner)
+    market = spot_market(account)
+    plan = ready_live_plan(owner, account, market)
+    queued = []
+    monkeypatch.setattr(
+        "apps.core.react_views.live_spot_order.apply_async",
+        lambda args, queue: queued.append((args, queue)),
+    )
+    monkeypatch.setattr(
+        "apps.core.react_views.transaction.on_commit",
+        lambda callback: callback(),
+    )
+    client.force_login(owner)
+    step = client.post(
+        reverse("api-step-up"),
+        data=json.dumps({"password": password}),
+        content_type="application/json",
+    )
+    assert step.status_code == 200
+    response = client.post(
+        reverse("api-live-orders"),
+        data=json.dumps(
+            {
+                "account": account.pk,
+                "market": market.pk,
+                "side": "buy",
+                "amount": "1.000",
+                "price": "100",
+                "confirmed": True,
+                "plan_id": plan.pk,
+                "plan_revision": plan.revision,
+                "request_key": str(uuid.uuid4()),
+            }
+        ),
+        content_type="application/json",
+    )
+    assert response.status_code == 201, response.content
+    order = LiveSpotOrder.objects.get(pk=response.json()["order"]["id"])
+    management = ManagedLiveTrade.objects.get(entry_order=order)
+    assert management.plan_id == plan.pk
+    assert management.state == ManagedLiveTrade.State.PENDING_ENTRY
+    assert management.trailing_enabled is True
+    assert management.trailing_sl_enabled is True
+    assert management.trailing_trigger == "tp2"
+    assert management.targets.count() == 3
+    assert queued == [([order.pk], "orders")]
+
+
+@pytest.mark.django_db
+@override_settings(LIVE_TRADING_ENABLED=True)
+def test_stage27_protective_exit_executes_while_new_entries_are_paused(
+    monkeypatch, django_user_model
+):
+    owner = django_user_model.objects.create_user(username="stage27-protective-pause")
+    account = live_account(owner)
+    market = spot_market(account)
+    plan = ready_live_plan(owner, account, market)
+    entry = LiveSpotOrder.objects.create(
+        owner=owner,
+        account=account,
+        market=market,
+        request_key=uuid.uuid4(),
+        client_order_id="stage27-pause-entry",
+        external_order_id="entry-filled",
+        side="buy",
+        order_type="limit",
+        amount=Decimal("1"),
+        price=Decimal("100"),
+        filled_amount=Decimal("1"),
+        average_price=Decimal("100"),
+        state=LiveSpotOrder.State.FILLED,
+    )
+    management = create_managed_live(owner, plan.pk, entry)
+    management.initial_quantity = Decimal("1")
+    management.remaining_quantity = Decimal("1")
+    management.state = ManagedLiveTrade.State.EXITING
+    management.save()
+    exit_order = LiveSpotOrder.objects.create(
+        owner=owner,
+        account=account,
+        market=market,
+        request_key=uuid.uuid4(),
+        client_order_id="stage27-pause-protective-exit",
+        side="sell",
+        order_type="market",
+        amount=Decimal("1"),
+        price=None,
+        state=LiveSpotOrder.State.PENDING,
+    )
+    ManagedLiveExit.objects.create(
+        management=management,
+        reason="stop_or_trailing",
+        order=exit_order,
+    )
+    AccountControl.objects.create(account=account, paused=True, reason="operator_pause")
+
+    class FakeAdapter:
+        def validate_credentials(self):
+            class Permission:
+                safe_for_trading = True
+
+            return Permission()
+
+        def place_order(self, **intent):
+            return Order(
+                order_id="protective-provider-order",
+                client_order_id=intent["client_order_id"],
+                symbol=intent["symbol"],
+                side=intent["side"],
+                order_type=intent["order_type"],
+                amount=intent["amount"],
+                price=intent["price"],
+                filled_amount=intent["amount"],
+                average_price=Decimal("99"),
+                status=OrderStatus.FILLED,
+                created_at=datetime.now(UTC),
+            )
+
+    monkeypatch.setattr(
+        "apps.exchanges.live_orders.get_account_credentials",
+        lambda account: {},
+    )
+    monkeypatch.setattr(
+        "apps.exchanges.live_orders.get_adapter",
+        lambda *args, **kwargs: FakeAdapter(),
+    )
+    result = execute_live_spot_order(exit_order.pk)
+    assert result["status"] == LiveSpotOrder.State.FILLED
+    exit_order.refresh_from_db()
+    assert exit_order.state == LiveSpotOrder.State.FILLED

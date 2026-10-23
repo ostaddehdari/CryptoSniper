@@ -252,7 +252,7 @@ def test_stage27_external_trailing_sl_moves_to_entry_once_and_queues_one_exit(
 ):
     owner = django_user_model.objects.create_user(username="stage27-external")
     account = live_account(owner)
-    market = spot_market(account)
+    spot_market(account)
     observation = ExternalObservation.objects.create(
         account=account,
         kind="fill",

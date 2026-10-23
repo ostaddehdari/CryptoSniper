@@ -77,7 +77,7 @@ def paper_mode_removed(request, **kwargs):
 @never_cache
 @require_GET
 def react_app(request):
-    return render(request, "react_app.html", {"release": "stage23-react"})
+    return render(request, "react_app.html", {"release": "stage27-trading-workflow"})
 
 
 def _balance_payload(account):

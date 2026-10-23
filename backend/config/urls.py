@@ -187,6 +187,11 @@ urlpatterns = [
     path("inbox/<int:pk>/edit/", inbox_views.edit, name="inbox-edit"),
     path("inbox/<int:pk>/action/", inbox_views.action, name="inbox-action"),
     path("api/v1/inbox/", inbox_views.api_list, name="api-inbox"),
+    path(
+        "api/v1/inbox/bulk-action/",
+        inbox_views.api_bulk_action,
+        name="api-inbox-bulk-action",
+    ),
     path("api/v1/inbox/receive/", inbox_views.api_receive, name="api-inbox-receive"),
     path("api/v1/inbox/<int:pk>/", inbox_views.api_detail, name="api-inbox-detail"),
     path("api/v1/inbox/<int:pk>/edit/", inbox_views.api_edit, name="api-inbox-edit"),

@@ -15,21 +15,19 @@ jobs:
       - name: Patch Stage23 signal approval smoke flow
         run: |
           python3 - <<'PY'
+          import re
           from pathlib import Path
           path = Path('scripts/smoke.py')
           text = path.read_text()
-          old = '''                page.get_by_role("button", name="ذخیره اصلاحات و اعتبارسنجی").click()
-                page.get_by_role("button", name="تأیید دستی (بدون معامله)").click()
-                page.get_by_role("link", name="ساخت Trade Plan از این سیگنال").click()
-                page.wait_for_url("**/manual/new/?signal=*")
-          '''
-          new = '''                page.get_by_role("button", name="ذخیره اصلاحات و اعتبارسنجی").click()
-                page.get_by_role("button", name="تأیید و انتقال به معامله").click()
-                page.wait_for_url("**/manual/new/?signal=*")
-          '''
-          if old not in text:
-              raise SystemExit('Expected Stage22 smoke block not found')
-          path.write_text(text.replace(old, new, 1))
+          pattern = re.compile(
+              r'(?m)^(?P<indent>\s*)page\.get_by_role\("button", name="تأیید دستی \(بدون معامله\)"\)\.click\(\)\n'
+              r'(?P=indent)page\.get_by_role\("link", name="ساخت Trade Plan از این سیگنال"\)\.click\(\)\n'
+          )
+          replacement = r'\g<indent>page.get_by_role("button", name="تأیید و انتقال به معامله").click()\n'
+          updated, count = pattern.subn(replacement, text, count=1)
+          if count != 1:
+              raise SystemExit(f'Expected two-step smoke flow not found; replacements={count}')
+          path.write_text(updated)
           PY
       - name: Commit smoke fix
         run: |

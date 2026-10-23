@@ -1,0 +1,36 @@
+/* Stage27 trading workflow hardening */
+
+.marketPickerV2{position:relative}
+.marketSelectButton{width:100%;height:42px;border:1px solid #dbe2ed;border-radius:9px;background:#fff;color:#607086;padding:0 12px;display:flex;align-items:center;justify-content:space-between;text-align:right}
+.marketSelectButton.selected{color:#1d3558;font-weight:700;border-color:#9db8e8;background:#f8fbff}
+.marketDropdown{position:absolute;z-index:70;top:68px;right:0;left:0;background:#fff;border:1px solid #dce4ef;border-radius:12px;box-shadow:0 18px 45px rgba(28,52,91,.16);padding:8px}
+.marketDropdown .searchBox{margin:0 0 7px}
+.marketOptions{max-height:300px;overflow:auto}
+.marketOptions>button{width:100%;border:0;background:#fff;border-radius:8px;padding:9px 10px;display:flex;align-items:center;justify-content:space-between;text-align:right;color:#34445d}
+.marketOptions>button:hover,.marketOptions>button.active{background:#eef5ff;color:#1f5fc9}
+.marketOptions b,.marketOptions small{display:block}
+.marketOptions small{font-size:9px;color:#8b96a7;margin-top:2px}
+
+.analysisWarnings{margin:0 20px 14px;display:grid;gap:6px}
+.analysisWarnings>div{display:flex;align-items:flex-start;gap:7px;padding:8px 10px;border:1px solid #f1d9a5;background:#fff8e8;border-radius:9px;color:#7c5c16;font-size:10px}
+
+.selectAllLine{display:flex;gap:7px;align-items:center;padding:9px 14px;border-bottom:1px solid #edf1f5;color:#667489;font-size:10px}
+.signalRows.selectable{padding:7px}
+.signalSelectRow{display:grid;grid-template-columns:28px 1fr;align-items:center;border-radius:10px;padding:2px 6px}
+.signalSelectRow:hover,.signalSelectRow.active{background:#edf4ff}
+.signalSelectRow>input{margin:auto}
+.signalSelectRow>button{border:0;background:transparent;width:100%;display:flex;justify-content:space-between;align-items:center;padding:10px 5px;text-align:right}
+.signalSelectRow b,.signalSelectRow span{display:block}
+.signalSelectRow span{font-size:9px;color:#8994a5}
+
+.detailGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:18px}
+.managementStatus{margin:0 18px 14px;padding:12px;border:1px solid #dbe7f7;background:#f7fbff;border-radius:11px}
+.managementStatus b,.managementStatus span,.managementStatus small{display:block}
+.managementStatus span{font-size:10px;color:#697991;margin-top:4px}
+.managementStatus small{font-size:9px;margin-top:4px}
+
+@media(max-width:720px){
+  .marketDropdown{position:fixed;top:100px;right:12px;left:12px;max-height:70vh}
+  .marketOptions{max-height:58vh}
+  .detailGrid{grid-template-columns:1fr}
+}

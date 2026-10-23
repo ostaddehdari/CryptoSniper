@@ -121,16 +121,16 @@ class TradingPreferencesForm(forms.ModelForm):
         )
         widgets = {
             "default_order_amount": forms.NumberInput(
-                attrs={"class": "input", "min": "0", "step": "0.00000001"}
+                attrs={"class": "input", "min": "0", "step": "1"}
             ),
             "default_market": forms.Select(attrs={"class": "input"}),
-            "tp1_percent": forms.NumberInput(attrs={"class": "input", "min": "0", "step": "0.01"}),
-            "tp2_percent": forms.NumberInput(attrs={"class": "input", "min": "0", "step": "0.01"}),
-            "tp3_percent": forms.NumberInput(attrs={"class": "input", "min": "0", "step": "0.01"}),
+            "tp1_percent": forms.NumberInput(attrs={"class": "input", "min": "0", "step": "1"}),
+            "tp2_percent": forms.NumberInput(attrs={"class": "input", "min": "0", "step": "1"}),
+            "tp3_percent": forms.NumberInput(attrs={"class": "input", "min": "0", "step": "1"}),
             "trailing_sl_enabled": forms.CheckboxInput(attrs={"class": "toggle-input"}),
             "trailing_tp_enabled": forms.CheckboxInput(attrs={"class": "toggle-input"}),
             "trailing_trigger": forms.Select(attrs={"class": "input"}),
             "trailing_distance_percent": forms.NumberInput(
-                attrs={"class": "input", "min": "0.001", "step": "0.001"}
+                attrs={"class": "input", "min": "1", "step": "1"}
             ),
         }

@@ -376,7 +376,7 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
     const retry=()=>liveOrder();
     try{
       setBusy(true);
-      await api("/api/v1/manual/plans/",{method:"POST",body:{
+      const planResponse=await api("/api/v1/manual/plans/",{method:"POST",body:{
         account:accountId,
         market:marketId,
         source:"manual",
@@ -402,6 +402,8 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
         amount:quantity,
         price:entry,
         confirmed:true,
+        plan_id:planResponse.plan.id,
+        plan_revision:planResponse.plan.revision,
         request_key:crypto.randomUUID()
       }});
       notify("سفارش #"+d.order.id+" در صف ارسال به صرافی قرار گرفت");

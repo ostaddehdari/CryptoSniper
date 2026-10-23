@@ -1,5 +1,9 @@
 name: Build Stage23 cumulative deployment
 on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/release-stage23.yml
   workflow_dispatch:
 permissions:
   contents: write
@@ -12,6 +16,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: d0116c930433999fe671e9fce9af80b2c1968356
       - name: Installer upgrade, unmanaged config and rollback regression tests
         run: |
           bash -n scripts/cryptosniper-stage23-run.sh

@@ -32,7 +32,10 @@ async function api(path, opts={}){
   if(body && typeof body!=="string" && !(body instanceof FormData)){
     headers["Content-Type"]="application/json"; body=JSON.stringify(body);
   }
-  if(!["GET","HEAD"].includes(method.toUpperCase())) headers["X-CSRFToken"]=decodeURIComponent(cookie("cryptosniper_csrftoken"));
+  if(!["GET","HEAD"].includes(method.toUpperCase())){
+    const csrf=cookie("cryptosniper_csrftoken")||cookie("csrftoken");
+    if(csrf)headers["X-CSRFToken"]=decodeURIComponent(csrf);
+  }
   const res=await fetch(BASE+path,{credentials:"same-origin",...opts,method,headers,body});
   let data={}; try{data=await res.json()}catch{}
   if(res.status===401){location.href=BASE+"/auth/login/";throw new Error("authentication_required")}

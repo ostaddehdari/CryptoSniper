@@ -15,6 +15,7 @@ from apps.operations.models import ExternalObservation
 from apps.signals.models import Signal
 
 from .balances import balances_for
+from .external_utils import normalized_external
 from .metrics import summarize, trade_queryset
 
 
@@ -62,11 +63,15 @@ def dashboard_context(user, params):
                 "-pk"
             )[:3]
         ),
-        "external": list(
-            ExternalObservation.objects.filter(account_id__in=[a.pk for a in accounts])
-            .select_related("account")
+        "external": [
+            {"item": item, **normalized_external(item)}
+            for item in ExternalObservation.objects.filter(
+                account_id__in=[a.pk for a in accounts],
+                kind__in=("order", "fill", "history"),
+            )
+            .select_related("account__exchange")
             .order_by("-observed_at")[:8]
-        ),
+        ],
         "cache_ok": cache_ok and summary["cache_ok"],
         "as_of": timezone.now(),
         "error": False,

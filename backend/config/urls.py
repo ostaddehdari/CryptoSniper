@@ -41,7 +41,14 @@ urlpatterns = [
     path("reports/export.csv", report_views.export_csv, name="report-csv"),
     path("reports/chart.svg", report_views.export_chart, name="report-chart"),
     path("api/v1/reports/", report_views.api_report, name="api-reports"),
+    path("external/", external_views.list_external, name="external-list"),
     path("external/<int:pk>/", external_views.detail, name="external-detail"),
+    path("external/<int:pk>/manage/", external_views.manage, name="external-manage"),
+    path(
+        "external/<int:pk>/manage/disable/",
+        external_views.disable_management,
+        name="external-manage-disable",
+    ),
     path("dashboard/panels/", portfolio_views.fragment, name="dashboard-fragment"),
     path("api/v1/dashboard/", portfolio_views.api_dashboard, name="api-dashboard"),
     path(

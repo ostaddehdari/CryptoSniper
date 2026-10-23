@@ -272,3 +272,10 @@ CELERY_BEAT_SCHEDULE["operations-monitor"] = {
     "schedule": 60.0,
     "options": {"queue": "maintenance", "expires": 50},
 }
+
+
+CELERY_BEAT_SCHEDULE["external-managed-trades"] = {
+    "task": "operations.monitor_external_trades",
+    "schedule": 10.0,
+    "options": {"queue": "trailing", "expires": 9},
+}

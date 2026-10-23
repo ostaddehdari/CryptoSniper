@@ -1,6 +1,10 @@
-"""Durable operational state. No control grants permission to trade live."""
+"""Durable operational state. Live control remains explicit and fail-closed."""
+
+import uuid
+from decimal import Decimal
 
 from django.db import models
+from django.db.models import Q
 
 
 class AccountControl(models.Model):
@@ -61,6 +65,66 @@ class ExternalObservation(models.Model):
 
     def __str__(self):
         return f"External {self.kind}: {self.external_id}"
+
+
+class ExternalTradePolicy(models.Model):
+    """Explicit user-confirmed management of an observed external Spot long."""
+
+    class State(models.TextChoices):
+        ACTIVE = "active", "فعال"
+        EXIT_SUBMITTED = "exit_submitted", "خروج ارسال شده"
+        DISABLED = "disabled", "غیرفعال"
+        ERROR = "error", "خطا"
+
+    observation = models.OneToOneField(
+        ExternalObservation, on_delete=models.CASCADE, related_name="management_policy"
+    )
+    market = models.ForeignKey("exchanges.ExchangeMarket", on_delete=models.PROTECT)
+    entry_price = models.DecimalField(max_digits=32, decimal_places=16)
+    remaining_amount = models.DecimalField(max_digits=32, decimal_places=16)
+    stop_loss = models.DecimalField(max_digits=32, decimal_places=16)
+    tp1 = models.DecimalField(max_digits=32, decimal_places=16)
+    tp2 = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
+    tp3 = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
+    trailing_enabled = models.BooleanField(default=True)
+    trailing_sl_enabled = models.BooleanField(default=True)
+    trailing_trigger = models.PositiveSmallIntegerField(default=1)
+    trailing_distance_percent = models.DecimalField(
+        max_digits=6, decimal_places=2, default=Decimal("1")
+    )
+    effective_stop = models.DecimalField(max_digits=32, decimal_places=16)
+    trailing_active = models.BooleanField(default=False)
+    high_water = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
+    state = models.CharField(max_length=20, choices=State.choices, default=State.ACTIVE)
+    exit_request_key = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    exit_order = models.ForeignKey(
+        "exchanges.LiveSpotOrder", on_delete=models.SET_NULL, null=True, blank=True
+    )
+    version = models.PositiveIntegerField(default=1)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(entry_price__gt=0)
+                & Q(remaining_amount__gt=0)
+                & Q(stop_loss__gt=0)
+                & Q(tp1__gt=0),
+                name="external_policy_positive_core_values",
+            ),
+            models.CheckConstraint(
+                condition=Q(trailing_trigger__gte=1) & Q(trailing_trigger__lte=3),
+                name="external_policy_trigger_range",
+            ),
+            models.CheckConstraint(
+                condition=Q(trailing_distance_percent__gt=0)
+                & Q(trailing_distance_percent__lt=100),
+                name="external_policy_distance_range",
+            ),
+        ]
+
+    def __str__(self):
+        return f"External policy {self.observation_id} ({self.state})"
 
 
 class PaperProviderOrder(models.Model):

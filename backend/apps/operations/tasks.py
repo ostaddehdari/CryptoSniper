@@ -85,3 +85,11 @@ def monitor_services():
         if snapshot["status"] != "healthy":
             logger.warning("Operational service snapshot is degraded")
         return snapshot
+
+
+
+@shared_task(name="operations.monitor_external_trades", acks_late=True, time_limit=45)
+def monitor_external_trades():
+    from apps.portfolio.external_management import monitor_active_external_trades
+
+    return monitor_active_external_trades()

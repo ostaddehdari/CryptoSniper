@@ -180,9 +180,9 @@ def reconcile_account(account_id):
 
     account = UserExchangeAccount.objects.select_related("exchange").get(pk=account_id)
     if account.environment != "paper" or account.exchange.adapter_code != "simulator":
-        from .external import observe_binance
+        from .external import observe_external_account
 
-        return observe_binance(account)
+        return observe_external_account(account)
     # Known immutable receipt with missing engine fill is consumed, never submitted again.
     for box_id in (
         ExecutionOutbox.objects.filter(order__account=account)

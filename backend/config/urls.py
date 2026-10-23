@@ -144,6 +144,8 @@ urlpatterns = [
     path("api/v1/paper/trades/", paper_views.api_trades, name="api-paper-trades"),
     path("api/v1/paper/trades/<int:pk>/", paper_views.api_trade_detail, name="api-paper-detail"),
     path("inbox/", inbox_views.inbox, name="inbox"),
+    path("inbox/bulk/trash/", inbox_views.bulk_trash, name="inbox-bulk-trash"),
+    path("inbox/bulk/restore/", inbox_views.bulk_restore, name="inbox-bulk-restore"),
     path("settings/sources/", inbox_views.source_settings, name="source-settings"),
     path("settings/telegram/", inbox_views.telegram_settings, name="telegram-settings"),
     path(
@@ -160,6 +162,12 @@ urlpatterns = [
     path("smart-paste/", inbox_views.smart_paste, name="smart-paste"),
     path("api/v1/smart-paste/", inbox_views.api_smart_paste, name="api-smart-paste"),
     path("inbox/<int:pk>/", inbox_views.detail, name="inbox-detail"),
+    path("inbox/<int:pk>/trash/", inbox_views.trash_one, name="inbox-trash-one"),
+    path(
+        "inbox/<int:pk>/approve-trade/",
+        inbox_views.approve_and_trade,
+        name="inbox-approve-trade",
+    ),
     path("inbox/<int:pk>/edit/", inbox_views.edit, name="inbox-edit"),
     path("inbox/<int:pk>/action/", inbox_views.action, name="inbox-action"),
     path("api/v1/inbox/", inbox_views.api_list, name="api-inbox"),

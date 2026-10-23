@@ -236,3 +236,46 @@ def transition(owner, pk, *, expected_revision, action, reason=""):
         metadata={"signal_id": signal.pk, "revision": signal.revision},
     )
     return signal
+
+
+
+@transaction.atomic
+def trash_signals(owner, ids):
+    ids = {int(pk) for pk in ids if str(pk).isdigit()}
+    if not ids:
+        return 0
+    rows = list(
+        Signal.objects.select_for_update()
+        .filter(owner=owner, pk__in=ids, trashed_at__isnull=True)
+        .values_list("pk", flat=True)
+    )
+    if not rows:
+        return 0
+    Signal.objects.filter(pk__in=rows, owner=owner).update(trashed_at=timezone.now())
+    record_audit(
+        "signal.trashed",
+        user=owner,
+        metadata={"count": len(rows), "signal_ids": rows[:50]},
+    )
+    return len(rows)
+
+
+@transaction.atomic
+def restore_signals(owner, ids):
+    ids = {int(pk) for pk in ids if str(pk).isdigit()}
+    if not ids:
+        return 0
+    rows = list(
+        Signal.objects.select_for_update()
+        .filter(owner=owner, pk__in=ids, trashed_at__isnull=False)
+        .values_list("pk", flat=True)
+    )
+    if not rows:
+        return 0
+    Signal.objects.filter(pk__in=rows, owner=owner).update(trashed_at=None)
+    record_audit(
+        "signal.restored",
+        user=owner,
+        metadata={"count": len(rows), "signal_ids": rows[:50]},
+    )
+    return len(rows)

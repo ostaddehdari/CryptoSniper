@@ -5,9 +5,10 @@ from datetime import datetime
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
-from django.db.models import Count
+from django.db.models import Avg, Count
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
@@ -34,7 +35,14 @@ from .models import (
 )
 from .outcomes import evaluate_channel_batch, start_channel_evaluation
 from .parsing import parse_for_review
-from .services import receive_signal, snapshot, transition, update_parsed
+from .services import (
+    receive_signal,
+    restore_signals,
+    snapshot,
+    transition,
+    trash_signals,
+    update_parsed,
+)
 from .sources import get_default_source
 from .telegram_client import (
     available_channels,
@@ -47,7 +55,7 @@ from .telegram_security import revoke_telegram_credentials
 
 def owned(user, pk):
     return get_object_or_404(
-        Signal.objects.filter(owner=user).select_related(
+        Signal.objects.filter(owner=user, trashed_at__isnull=True).select_related(
             "source", "raw_signal", "market", "exchange_account"
         ),
         pk=pk,
@@ -56,6 +64,10 @@ def owned(user, pk):
 
 def filtered(user, params):
     qs = Signal.objects.filter(owner=user).select_related("source", "raw_signal", "market")
+    if params.get("trash") == "1":
+        qs = qs.filter(trashed_at__isnull=False)
+    else:
+        qs = qs.filter(trashed_at__isnull=True)
     status = params.get("status", "").strip()
     if status in Signal.Status.values:
         qs = qs.filter(status=status)
@@ -91,8 +103,55 @@ def inbox(request):
             "items": filtered(request.user, request.GET)[:100],
             "statuses": Signal.Status.choices,
             "methods": SignalSource.Method.choices,
+            "trash_mode": request.GET.get("trash") == "1",
         },
     )
+
+
+@login_required
+@require_POST
+def bulk_trash(request):
+    count = trash_signals(request.user, request.POST.getlist("signal_ids"))
+    messages.success(request, f"{count} سیگنال به سطل زباله منتقل شد.")
+    return redirect("inbox")
+
+
+@login_required
+@require_POST
+def bulk_restore(request):
+    count = restore_signals(request.user, request.POST.getlist("signal_ids"))
+    messages.success(request, f"{count} سیگنال از سطل زباله بازیابی شد.")
+    return redirect(reverse("inbox") + "?trash=1")
+
+
+@login_required
+@require_POST
+def trash_one(request, pk):
+    count = trash_signals(request.user, [pk])
+    if count:
+        messages.success(request, "سیگنال به سطل زباله منتقل شد.")
+    return redirect("inbox")
+
+
+@login_required
+@require_POST
+def approve_and_trade(request, pk):
+    item = owned(request.user, pk)
+    try:
+        if item.status == Signal.Status.PARSED:
+            item = transition(
+                request.user,
+                item.pk,
+                expected_revision=int(request.POST.get("revision", "0")),
+                action="approve",
+            )
+        elif item.status != Signal.Status.APPROVED:
+            raise ValidationError("فقط سیگنال ساختارمند یا تأییدشده قابل انتقال به معامله است.")
+        messages.success(request, "سیگنال تأیید شد؛ فرم معامله با همین داده‌ها باز شد.")
+        return redirect(reverse("manual-new") + f"?signal={item.pk}")
+    except (ValidationError, ValueError) as error:
+        messages.error(request, "; ".join(getattr(error, "messages", [str(error)])))
+        return redirect("inbox-detail", pk=pk)
 
 
 @login_required
@@ -307,23 +366,59 @@ def _channel_metrics(channel):
         row["message_kind"]: row["count"]
         for row in channel.messages.values("message_kind").annotate(count=Count("pk"))
     }
+    signal_qs = Signal.objects.filter(source=channel.source, trashed_at__isnull=True)
+    statuses = {
+        row["status"]: row["count"]
+        for row in signal_qs.values("status").annotate(count=Count("pk"))
+    }
+    outcome_qs = SignalOutcome.objects.filter(
+        signal__source=channel.source, signal__trashed_at__isnull=True
+    )
     outcomes = {
         row["status"]: row["count"]
-        for row in SignalOutcome.objects.filter(signal__source=channel.source)
-        .values("status")
-        .annotate(count=Count("pk"))
+        for row in outcome_qs.values("status").annotate(count=Count("pk"))
     }
     wins = outcomes.get(SignalOutcome.Status.TARGET, 0)
     losses = outcomes.get(SignalOutcome.Status.STOPPED, 0)
     resolved = wins + losses
+    signal_records = signal_qs.count()
+    evaluated = outcome_qs.count()
+    averages = signal_qs.aggregate(confidence=Avg("technical_confidence"))
+    outcome_averages = outcome_qs.aggregate(targets=Avg("targets_hit"))
+    structured = sum(
+        statuses.get(value, 0)
+        for value in (
+            Signal.Status.PARSED,
+            Signal.Status.APPROVED,
+            Signal.Status.EXECUTED,
+        )
+    )
+    review_needed = statuses.get(Signal.Status.NEEDS_REVIEW, 0)
     return {
         "message_kinds": kinds,
         "outcomes": outcomes,
+        "statuses": statuses,
         "total_messages": sum(kinds.values()),
         "signals": kinds.get("signal", 0),
+        "signal_records": signal_records,
+        "structured": structured,
+        "review_needed": review_needed,
+        "approved": statuses.get(Signal.Status.APPROVED, 0),
+        "evaluated": evaluated,
+        "evaluation_coverage": round(evaluated * 100 / signal_records, 2)
+        if signal_records
+        else None,
         "resolved": resolved,
+        "wins": wins,
+        "losses": losses,
         "win_rate": round(wins * 100 / resolved, 2) if resolved else None,
         "ambiguous": outcomes.get(SignalOutcome.Status.AMBIGUOUS, 0),
+        "not_triggered": outcomes.get(SignalOutcome.Status.NOT_TRIGGERED, 0),
+        "no_data": outcomes.get(SignalOutcome.Status.NO_DATA, 0),
+        "open": outcomes.get(SignalOutcome.Status.OPEN, 0),
+        "expired": outcomes.get(SignalOutcome.Status.EXPIRED, 0),
+        "avg_confidence": round(averages["confidence"] or 0, 2),
+        "avg_targets_hit": round(outcome_averages["targets"] or 0, 2),
     }
 
 
@@ -511,6 +606,7 @@ def _serialize(item):
         },
         "structured": snapshot(item),
         "approved_snapshot": item.approved_snapshot if item.status == "approved" else None,
+        "trashed_at": item.trashed_at,
         "execution_enabled": False,
     }
 

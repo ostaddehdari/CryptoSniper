@@ -8,7 +8,7 @@
 {% if item.parsed_payload.entry_range %}<p>بازه ورود: {{ item.parsed_payload.entry_range }}؛ تعیین Entry دقیق با کاربر است.</p>{% endif %}
 {% for warning in item.parsed_payload.warnings %}<div class="notice form-error">{{ warning }}</div>{% endfor %}
 <p class="muted">همه اهداف استخراج‌شده: {{ item.parsed_payload.all_targets }}؛ حداکثر سه هدف اولیه برای بازبینی ساختاری.</p>
-<p class="muted">پیش‌فرض Smart Paste: Step Trailing و Percentage Trailing روشن؛ Trigger=TP1، فاصله ۱٪. اجرای Trailing در Stage 09/10 تکمیل می‌شود.</p></section>
+<p class="muted">Trailing SL در TP1 فقط یک‌بار SL را روی Entry می‌آورد؛ Trailing می‌تواند از TP1/TP2/TP3 در فرم معامله شروع شود.</p></section>
 {% endif %}
 <div class="inbox-review-grid">
 <section class="panel"><span class="eyebrow">ORIGINAL SOURCE</span><h2>متن اصلی بدون تغییر</h2><pre class="inbox-raw" dir="auto">{{ item.raw_signal.original_text }}</pre><p class="muted">تعداد نسخه‌های ورودی: {{ item.raw_signal.revision_number }}</p><h3>نسخه‌های دریافت</h3><div class="inbox-history">{% for rec in raw_revisions %}<details><summary>نسخه {{ rec.version }} · {{ rec.recorded_at|date:'Y/m/d H:i' }}</summary><pre class="inbox-raw" dir="auto">{{ rec.text }}</pre></details>{% endfor %}</div></section>
@@ -17,8 +17,8 @@
 <form method="post" action="{% url 'inbox-edit' item.pk %}" class="manual-form">{% csrf_token %}{% for field in form %}<div class="field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}<button class="button button-primary" type="submit">ذخیره اصلاحات و اعتبارسنجی</button></form>
 {% else %}<p>سیگنال پس از تأیید یا رد قابل اصلاح نیست.</p><dl class="manual-stats"><div><dt>بازار</dt><dd>{{ item.market }}</dd></div><div><dt>Entry</dt><dd>{{ item.entry_price }}</dd></div><div><dt>SL</dt><dd>{{ item.stop_loss }}</dd></div></dl>{% endif %}
 <div class="inbox-actions">
-{% if item.status == 'approved' %}<a class="button button-soft" href="{% url 'manual-new' %}?signal={{ item.pk }}">ساخت Trade Plan از این سیگنال</a>{% endif %}
-{% if item.status == 'parsed' %}<form method="post" action="{% url 'inbox-action' item.pk %}">{% csrf_token %}<input type="hidden" name="revision" value="{{ item.revision }}"><input type="hidden" name="action" value="approve"><button type="submit" class="button button-primary">تأیید دستی (بدون معامله)</button></form>{% endif %}
-{% if item.status == 'new' or item.status == 'parsed' or item.status == 'needs_review' %}<form method="post" action="{% url 'inbox-action' item.pk %}">{% csrf_token %}<input type="hidden" name="revision" value="{{ item.revision }}"><input type="hidden" name="action" value="reject"><label for="reject-reason">علت رد</label><input id="reject-reason" name="reason" class="input" minlength="3" required><button class="button button-soft" type="submit">رد سیگنال</button></form>{% endif %}
+{% if item.status == 'approved' %}<a class="button button-primary" href="{% url 'manual-new' %}?signal={{ item.pk }}">انتقال به معامله</a>{% endif %}
+{% if item.status == 'parsed' %}<form method="post" action="{% url 'inbox-approve-trade' item.pk %}">{% csrf_token %}<input type="hidden" name="revision" value="{{ item.revision }}"><button type="submit" class="button button-primary">تأیید و انتقال به معامله</button></form>{% endif %}
+<form method="post" action="{% url 'inbox-trash-one' item.pk %}">{% csrf_token %}<button class="button button-soft" type="submit">انتقال به سطل زباله</button></form>
 </div></section></div>
 <section class="panel inbox-timeline"><h2>تاریخچه بازبینی</h2><div class="inbox-history">{% for record in historical %}<details><summary>نسخه {{ record.revision }} · {{ record.reason }} · {{ record.recorded_at|date:'Y/m/d H:i' }}</summary><pre class="inbox-raw" dir="ltr">{{ record.snapshot }}</pre></details>{% empty %}<p>تاریخچه‌ای ثبت نشده است.</p>{% endfor %}</div></section>{% endblock %}

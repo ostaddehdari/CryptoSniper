@@ -22,6 +22,9 @@ class RecoveryIssue(models.Model):
     detail = models.JSONField(default=dict)
     resolved = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Managed live exit {self.management_id}:{self.reason}"
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -236,6 +239,9 @@ class ManagedLiveTrade(models.Model):
             ),
         ]
 
+    def __str__(self):
+        return f"Managed live trade {self.pk} [{self.state}]"
+
 
 class ManagedLiveTarget(models.Model):
     class State(models.TextChoices):
@@ -282,6 +288,9 @@ class ManagedLiveTarget(models.Model):
                 name="managed_live_target_values_valid",
             ),
         ]
+
+    def __str__(self):
+        return f"Managed live target {self.management_id}:TP{self.position}"
 
 
 class ManagedLiveExit(models.Model):

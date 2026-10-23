@@ -778,6 +778,7 @@ def api_manual_plans_ui(request):
                 "leverage": str(item.leverage),
                 "trailing_sl": item.trailing_sl,
                 "percentage_trailing": item.percentage_trailing,
+                "percentage_trigger": item.percentage_trigger,
                 "trailing_distance": str(item.trailing_distance),
                 "client_token": str(item.client_token),
                 "created_at": item.created_at,

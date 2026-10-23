@@ -699,22 +699,23 @@ def api_live_orders(request):
             .select_related("account", "account__exchange")
             .order_by("-observed_at")[:200]
         )
+        from apps.operations.external_management import (
+            normalize_external,
+            serialize_management,
+        )
+
+        external_rows = []
+        for item in external:
+            row = normalize_external(item)
+            row["source"] = "external"
+            row["management"] = serialize_management(
+                getattr(item, "management", None)
+            )
+            external_rows.append(row)
         return JsonResponse(
             {
                 "orders": [_live_order_payload(item) for item in internal],
-                "external": [
-                    {
-                        "id": item.pk,
-                        "source": "external",
-                        "exchange": item.account.exchange.code,
-                        "account": item.account.label,
-                        "kind": item.kind,
-                        "external_id": item.external_id,
-                        "payload": item.payload,
-                        "observed_at": item.observed_at,
-                    }
-                    for item in external
-                ],
+                "external": external_rows,
             }
         )
 

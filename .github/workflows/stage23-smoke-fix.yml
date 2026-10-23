@@ -1,0 +1,40 @@
+name: Stage23 one-shot smoke flow fix
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch-smoke:
+    if: ${{ !contains(github.event.head_commit.message, '[smoke-flow-fixed]') }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Patch Stage23 signal approval smoke flow
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/smoke.py')
+          text = path.read_text()
+          old = '''                page.get_by_role("button", name="ذخیره اصلاحات و اعتبارسنجی").click()
+                page.get_by_role("button", name="تأیید دستی (بدون معامله)").click()
+                page.get_by_role("link", name="ساخت Trade Plan از این سیگنال").click()
+                page.wait_for_url("**/manual/new/?signal=*")
+'''
+          new = '''                page.get_by_role("button", name="ذخیره اصلاحات و اعتبارسنجی").click()
+                page.get_by_role("button", name="تأیید و انتقال به معامله").click()
+                page.wait_for_url("**/manual/new/?signal=*")
+'''
+          if old not in text:
+              raise SystemExit('Expected Stage22 smoke block not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+      - name: Commit smoke fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/smoke.py
+          git commit -m "fix(S23): همگام‌سازی Smoke با مسیر یک‌مرحله‌ای سیگنال [smoke-flow-fixed]"
+          git push origin HEAD:main

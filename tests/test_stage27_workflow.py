@@ -1,5 +1,6 @@
 import json
 import uuid
+from datetime import UTC, datetime
 from decimal import Decimal
 
 import pytest
@@ -7,6 +8,8 @@ from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.exchanges.adapters import Order, OrderStatus
+from apps.exchanges.live_orders import reconcile_live_spot_order
 from apps.exchanges.models import (
     Asset,
     BalanceSnapshot,
@@ -366,3 +369,58 @@ def test_stage27_live_order_api_queues_without_provider_call(
     assert order.state == LiveSpotOrder.State.PENDING
     assert order.order_type == "limit"
     assert queued == [([order.pk], "orders")]
+
+
+
+@pytest.mark.django_db
+def test_stage27_live_order_reconcile_updates_existing_order_without_resubmit(
+    monkeypatch, django_user_model
+):
+    owner = django_user_model.objects.create_user(username="stage27-reconcile")
+    account = live_account(owner)
+    market = spot_market(account)
+    order = LiveSpotOrder.objects.create(
+        owner=owner,
+        account=account,
+        market=market,
+        request_key=uuid.uuid4(),
+        client_order_id="stage27-reconcile-order",
+        external_order_id="provider-123",
+        side="buy",
+        order_type="limit",
+        amount=Decimal("1"),
+        price=Decimal("100"),
+        state=LiveSpotOrder.State.OPEN,
+    )
+
+    class FakeAdapter:
+        def fetch_order(self, order_id):
+            assert order_id == "provider-123"
+            return Order(
+                order_id=order_id,
+                client_order_id="stage27-reconcile-order",
+                symbol="BTC/USDT",
+                side="buy",
+                order_type="limit",
+                amount=Decimal("1"),
+                price=Decimal("100"),
+                filled_amount=Decimal("1"),
+                average_price=Decimal("99.5"),
+                status=OrderStatus.FILLED,
+                created_at=datetime.now(UTC),
+            )
+
+    monkeypatch.setattr(
+        "apps.exchanges.live_orders.get_account_credentials",
+        lambda account: {},
+    )
+    monkeypatch.setattr(
+        "apps.exchanges.live_orders.get_adapter",
+        lambda *args, **kwargs: FakeAdapter(),
+    )
+    outcome = reconcile_live_spot_order(order.pk)
+    assert outcome["status"] == LiveSpotOrder.State.FILLED
+    order.refresh_from_db()
+    assert order.state == LiveSpotOrder.State.FILLED
+    assert order.filled_amount == Decimal("1")
+    assert order.average_price == Decimal("99.5")

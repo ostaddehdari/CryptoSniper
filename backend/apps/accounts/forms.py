@@ -51,13 +51,6 @@ class ProfileForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["trailing_sl_enabled"].label = "Trailing SL"
-        self.fields["trailing_tp_enabled"].label = "Trailing"
-        self.fields["trailing_trigger"].label = "شروع Trailing"
-
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         preferred = ["Asia/Tehran", "Asia/Dubai", "Europe/London", "UTC"]
         zones = [zone for zone in preferred if zone in available_timezones()]
         current = self.instance.timezone
@@ -172,3 +165,9 @@ class TradingPreferencesForm(forms.ModelForm):
             "trailing_tp_enabled": forms.CheckboxInput(attrs={"class": "toggle-input"}),
             "trailing_trigger": forms.Select(attrs={"class": "input"}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["trailing_sl_enabled"].label = "Trailing SL"
+        self.fields["trailing_tp_enabled"].label = "Trailing"
+        self.fields["trailing_trigger"].label = "شروع Trailing"

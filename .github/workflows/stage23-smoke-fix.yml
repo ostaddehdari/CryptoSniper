@@ -22,11 +22,11 @@ jobs:
                 page.get_by_role("button", name="تأیید دستی (بدون معامله)").click()
                 page.get_by_role("link", name="ساخت Trade Plan از این سیگنال").click()
                 page.wait_for_url("**/manual/new/?signal=*")
-'''
+          '''
           new = '''                page.get_by_role("button", name="ذخیره اصلاحات و اعتبارسنجی").click()
                 page.get_by_role("button", name="تأیید و انتقال به معامله").click()
                 page.wait_for_url("**/manual/new/?signal=*")
-'''
+          '''
           if old not in text:
               raise SystemExit('Expected Stage22 smoke block not found')
           path.write_text(text.replace(old, new, 1))

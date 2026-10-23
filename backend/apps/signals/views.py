@@ -689,3 +689,49 @@ def api_action(request, pk):
         return JsonResponse({"signal": _serialize(signal)})
     except (ValidationError, ValueError, TypeError) as error:
         return JsonResponse({"error": str(error)}, status=400)
+
+
+
+@session_api_required
+@never_cache
+@require_POST
+def api_bulk_action(request):
+    try:
+        body = _json_body(request)
+        action = str(body.get("action", ""))
+        ids = body.get("ids", [])
+        if action != "delete":
+            raise ValidationError("عملیات گروهی پشتیبانی نمی‌شود.")
+        if not isinstance(ids, list) or not 1 <= len(ids) <= 100:
+            raise ValidationError("بین ۱ تا ۱۰۰ سیگنال برای حذف انتخاب کنید.")
+        normalized = []
+        for raw in ids:
+            value = int(raw)
+            if value not in normalized:
+                normalized.append(value)
+        rows = list(
+            Signal.objects.filter(owner=request.user, pk__in=normalized)
+            .select_related("raw_signal")
+            .order_by("pk")
+        )
+        if len(rows) != len(normalized):
+            raise ValidationError("یک یا چند سیگنال انتخابی پیدا نشد.")
+        deleted_ids = []
+        for item in rows:
+            raw = item.raw_signal
+            signal_id = item.pk
+            item.delete()
+            raw.delete()
+            deleted_ids.append(signal_id)
+        record_audit(
+            "signal.bulk_deleted",
+            request=request,
+            user=request.user,
+            metadata={"count": len(deleted_ids), "ids": deleted_ids[:100]},
+        )
+        return JsonResponse({"deleted": deleted_ids, "count": len(deleted_ids)})
+    except (ValidationError, ValueError, TypeError) as error:
+        return JsonResponse(
+            {"error": getattr(error, "messages", [str(error)])},
+            status=400,
+        )

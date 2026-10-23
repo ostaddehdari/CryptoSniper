@@ -89,9 +89,15 @@ say "Collect static"
 
 say "Stage27 route/model verification"
 "$APP_DIR/.venv/bin/python" manage.py shell -c '
+from django.conf import settings
 from django.urls import reverse
 from apps.accounts.models import TradingPreferences
-from apps.operations.models import ExternalTradeManagement
+from apps.operations.models import (
+    ExternalTradeManagement,
+    ManagedLiveExit,
+    ManagedLiveTarget,
+    ManagedLiveTrade,
+)
 from apps.tradeplans.models import TradePlan
 
 checks = [
@@ -106,9 +112,14 @@ print("ROUTES=", checks)
 print("TRAILING_CHOICES=", list(TradingPreferences.TrailingTrigger.choices))
 print("TradePlan percentage_trigger=", TradePlan._meta.get_field("percentage_trigger").name)
 print("ExternalTradeManagement fields=", [f.name for f in ExternalTradeManagement._meta.fields])
+print("ManagedLiveTrade fields=", [f.name for f in ManagedLiveTrade._meta.fields])
+print("LIVE_TRADING_ENABLED=", settings.LIVE_TRADING_ENABLED)
 assert {x[0] for x in TradingPreferences.TrailingTrigger.choices} == {"tp1","tp2","tp3"}
 assert TradePlan._meta.get_field("percentage_trigger")
 assert ExternalTradeManagement._meta.get_field("trailing_sl_enabled")
+assert ManagedLiveTrade._meta.get_field("entry_order")
+assert ManagedLiveTarget._meta.get_field("exit_order")
+assert ManagedLiveExit._meta.get_field("order")
 '
 
 say "Restart CryptoSniper services"
@@ -180,7 +191,7 @@ Works included:
   W5  Exchange add/delete UI hardening
   W6  Operations hides deleted connections
   W7  Stronger deterministic signal analysis
-  W8  Live-order queue regression and error visibility
+  W8  Live-order reconciliation + managed TP/SL/Trailing lifecycle
 
 Backup:
   $BACKUP_DIR

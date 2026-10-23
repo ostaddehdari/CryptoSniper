@@ -144,3 +144,37 @@ def monitor_external_trades():
             )
             results.append({"id": management_id, "result": "error"})
     return {"processed": len(results), "results": results}
+
+
+
+@shared_task(name="operations.monitor_managed_live_trades", acks_late=True, time_limit=45)
+def monitor_managed_live_trades():
+    from .managed_live import monitor_one
+    from .models import ManagedLiveTrade
+
+    ids = list(
+        ManagedLiveTrade.objects.filter(
+            state__in=("pending_entry", "active", "exiting")
+        )
+        .order_by("pk")
+        .values_list("pk", flat=True)[:100]
+    )
+    results = []
+    for management_id in ids:
+        try:
+            results.append(
+                {
+                    "id": management_id,
+                    "result": monitor_one(management_id),
+                }
+            )
+        except Exception as error:
+            logger.warning(
+                "Managed live trade monitor failed",
+                extra={
+                    "management_id": management_id,
+                    "error": type(error).__name__,
+                },
+            )
+            results.append({"id": management_id, "result": "error"})
+    return {"processed": len(results), "results": results}

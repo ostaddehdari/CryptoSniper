@@ -39,8 +39,13 @@ class ManualTradeForm(forms.Form):
     leverage = forms.DecimalField(
         label="اهرم", max_digits=10, decimal_places=4, min_value=1, initial=1
     )
-    trailing_sl = forms.BooleanField(label="Trailing SL پله‌ای", required=False)
-    percentage_trailing = forms.BooleanField(label="Percentage Trailing", required=False)
+    trailing_sl = forms.BooleanField(label="Trailing SL", required=False)
+    percentage_trailing = forms.BooleanField(label="Trailing", required=False)
+    percentage_trigger = forms.ChoiceField(
+        label="شروع Trailing",
+        choices=(("tp1", "TP1"), ("tp2", "TP2"), ("tp3", "TP3")),
+        initial="tp1",
+    )
     trailing_distance = forms.DecimalField(
         label="فاصله trailing (%)",
         max_digits=8,

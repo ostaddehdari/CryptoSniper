@@ -152,6 +152,10 @@ class LiveSpotOrderForm(forms.Form):
             raise ValidationError("حساب Live متعلق به کاربر لازم است.")
         if account.status != "connected" or not account.trading_enabled:
             raise ValidationError("ابتدا مجوز Read+Spot و نبود مجوز برداشت را همگام‌سازی کنید.")
+        if account.permissions.get("can_read") is not True:
+            raise ValidationError("مجوز Read حساب تأیید نشده است.")
+        if account.permissions.get("can_trade_spot") is not True:
+            raise ValidationError("مجوز Spot Trading این حساب تأیید نشده است.")
         if account.permissions.get("can_withdraw") is not False:
             raise ValidationError("مجوز برداشت باید صریحاً خاموش و توسط API گزارش شود.")
         market = cleaned.get("market")

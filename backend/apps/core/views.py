@@ -136,6 +136,15 @@ def system_context():
 @never_cache
 @require_GET
 def system(request):
+    from apps.exchanges.models import UserExchangeAccount
+
+    connections = (
+        UserExchangeAccount.objects.for_user(request.user)
+        .exclude(status=UserExchangeAccount.Status.DISABLED)
+        .exclude(credentials_encrypted="")
+        .select_related("exchange")
+        .order_by("exchange__name", "label")
+    )
     return render(
         request,
         "core/system.html",
@@ -147,6 +156,7 @@ def system(request):
                 "source_revision": settings.SOURCE_REVISION,
                 "environment": settings.DEPLOYMENT_ENVIRONMENT,
             },
+            "connections": connections,
         },
     )
 

@@ -1,12 +1,13 @@
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ValidationError
-from django.db import IntegrityError
+from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.db import IntegrityError, transaction
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
+from kombu.exceptions import OperationalError
 
 from apps.accounts.audit import record_audit
 from apps.accounts.security import session_api_required, step_up_required
@@ -29,7 +30,12 @@ def _owned_account(user, pk):
 @never_cache
 @require_GET
 def exchange_center(request):
-    accounts = UserExchangeAccount.objects.for_user(request.user).select_related("exchange")
+    accounts = (
+        UserExchangeAccount.objects.for_user(request.user)
+        .exclude(status=UserExchangeAccount.Status.DISABLED)
+        .exclude(credentials_encrypted="")
+        .select_related("exchange")
+    )
     catalog = Exchange.objects.filter(enabled=True)
     return render(
         request,
@@ -44,20 +50,31 @@ def exchange_center(request):
 def add_exchange_account(request):
     form = ExchangeConnectionForm(request.user, request.POST or None)
     if request.method == "POST" and form.is_valid():
-        account = form.save()
-        record_audit(
-            "exchange_account.added",
-            request=request,
-            user=request.user,
-            metadata={
-                "exchange": account.exchange.code,
-                "environment": account.environment,
-                "account_id": account.pk,
-            },
-        )
-        sync_exchange_account.apply_async(args=[account.pk], queue="maintenance")
-        messages.success(request, "اتصال ساخته شد و بررسی امن آن در صف قرار گرفت.")
-        return redirect("exchange-account-detail", pk=account.pk)
+        try:
+            with transaction.atomic():
+                account = form.save()
+                record_audit(
+                    "exchange_account.added",
+                    request=request,
+                    user=request.user,
+                    metadata={
+                        "exchange": account.exchange.code,
+                        "environment": account.environment,
+                        "account_id": account.pk,
+                    },
+                )
+        except (ValidationError, IntegrityError, ImproperlyConfigured, ValueError) as error:
+            form.add_error(None, "; ".join(getattr(error, "messages", [str(error)])))
+        else:
+            try:
+                sync_exchange_account.apply_async(args=[account.pk], queue="maintenance")
+                messages.success(request, "اتصال ساخته شد و بررسی امن آن در صف قرار گرفت.")
+            except OperationalError:
+                messages.warning(
+                    request,
+                    "اتصال ذخیره شد اما صف پردازش در دسترس نیست؛ بعداً «همگام‌سازی» را بزنید.",
+                )
+            return redirect("exchange-account-detail", pk=account.pk)
     return render(
         request,
         "exchanges/add.html",
@@ -109,8 +126,14 @@ def submit_live_spot_order(request, pk):
                     "side": order.side,
                 },
             )
-            live_spot_order.apply_async(args=[order.pk], queue="orders")
-            messages.success(request, "سفارش واقعی با شناسه یکتا در صف امن orders ثبت شد.")
+            try:
+                live_spot_order.apply_async(args=[order.pk], queue="orders")
+                messages.success(request, "سفارش واقعی با شناسه یکتا در صف امن orders ثبت شد.")
+            except OperationalError:
+                messages.warning(
+                    request,
+                    "سفارش با شناسه یکتا ذخیره شد اما Broker موقتاً در دسترس نیست؛ Dispatcher دوره‌ای پس از بازیابی صف آن را برمی‌دارد.",
+                )
         else:
             messages.info(request, "این درخواست قبلاً ثبت شده و دوباره ارسال نشد.")
     except (ValidationError, IntegrityError, ValueError) as error:
@@ -125,7 +148,14 @@ def request_account_sync(request, pk):
     if account.status == UserExchangeAccount.Status.DISABLED:
         messages.error(request, "اتصال غیرفعال است و همگام‌سازی نمی‌شود.")
     else:
-        sync_exchange_account.apply_async(args=[account.pk], queue="maintenance")
+        try:
+            sync_exchange_account.apply_async(args=[account.pk], queue="maintenance")
+        except OperationalError:
+            messages.warning(
+                request,
+                "درخواست همگام‌سازی ثبت نشد چون Broker در دسترس نیست؛ پس از بازیابی دوباره تلاش کنید.",
+            )
+            return redirect("exchange-account-detail", pk=account.pk)
         record_audit(
             "exchange_account.sync_requested",
             request=request,
@@ -223,7 +253,10 @@ def api_exchanges(request):
     ]
     accounts = [
         _account_payload(account)
-        for account in UserExchangeAccount.objects.for_user(request.user).select_related("exchange")
+        for account in UserExchangeAccount.objects.for_user(request.user)
+        .exclude(status=UserExchangeAccount.Status.DISABLED)
+        .exclude(credentials_encrypted="")
+        .select_related("exchange")
     ]
     response = JsonResponse({"exchanges": catalog, "accounts": accounts})
     response["Cache-Control"] = "no-store"

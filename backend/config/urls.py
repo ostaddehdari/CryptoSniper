@@ -20,7 +20,7 @@ from django.urls import path
 
 
 def live(request):
-    return JsonResponse({"status": "ok", "service": "cryptosniper", "stage": "S22"})
+    return JsonResponse({"status": "ok", "service": "cryptosniper", "stage": "S23"})
 
 
 def ready(request):

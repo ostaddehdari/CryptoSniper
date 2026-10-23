@@ -279,3 +279,10 @@ CELERY_BEAT_SCHEDULE["external-managed-trades"] = {
     "schedule": 10.0,
     "options": {"queue": "trailing", "expires": 9},
 }
+
+
+CELERY_BEAT_SCHEDULE["pending-live-spot-orders"] = {
+    "task": "exchanges.dispatch_pending_live_spot_orders",
+    "schedule": 30.0,
+    "options": {"queue": "orders", "expires": 25},
+}

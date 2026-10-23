@@ -953,10 +953,10 @@ def test_stage27_signal_edit_then_approve_transfer_contract(
     structured = result["structured"]
     assert structured["account_id"] == account.pk
     assert structured["market_id"] == market.pk
-    assert structured["entry"] == "80000"
-    assert structured["stop_loss"] == "78000"
-    assert [row["price"] for row in structured["targets"]] == [
-        "82000",
-        "84000",
-        "86000",
+    assert Decimal(structured["entry"]) == Decimal("80000")
+    assert Decimal(structured["stop_loss"]) == Decimal("78000")
+    assert [Decimal(row["price"]) for row in structured["targets"]] == [
+        Decimal("82000"),
+        Decimal("84000"),
+        Decimal("86000"),
     ]

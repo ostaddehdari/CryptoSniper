@@ -81,7 +81,7 @@ function App(){
       <section className="content">
         {error&&<ErrorBox text={error}/>} 
         {page==="dashboard"&&<Dashboard boot={boot} decimals={decimals} refreshBoot={refresh} setPage={setPage}/>} 
-        {page==="trades"&&<Trades decimals={decimals} notify={notify} setPage={setPage}/>} 
+        {page==="trades"&&<Trades decimals={decimals} notify={notify} setPage={setPage} requestStepUp={action=>{setStepUpAction(()=>action||null);setStepUp(true)}}/>} 
         {page==="newtrade"&&<NewTrade boot={boot} decimals={decimals} notify={notify} requestStepUp={action=>{setStepUpAction(()=>action||null);setStepUp(true)}} seed={manualSeed} setManualSeed={setManualSeed}/>} 
         {page==="inbox"&&<SignalInbox notify={notify} boot={boot} setPage={setPage} setManualSeed={setManualSeed}/>} 
         {page==="exchanges"&&<Exchanges boot={boot} refreshBoot={refresh} notify={notify} requestStepUp={action=>{setStepUpAction(()=>action||null);setStepUp(true)}}/>} 
@@ -179,47 +179,58 @@ function DashboardTabs({extra,decimals,setPage}){
   </div>
 }
 
-function Trades({decimals,notify,setPage}){
+function isExternalComplete(item){
+  const s=String(item?.status||"").toLowerCase();
+  return item?.kind==="fill"||["filled","done","completed","closed","2"].includes(s);
+}
+function Trades({decimals,notify,setPage,requestStepUp}){
   const [data,setData]=useState({orders:[],external:[]});
   const [filter,setFilter]=useState("open");
+  const [externalFilter,setExternalFilter]=useState("all");
   const [selected,setSelected]=useState(null);
   const load=()=>api("/api/v1/live-orders/").then(setData).catch(e=>notify(e.message));
   useEffect(()=>{load();const t=setInterval(load,5000);return()=>clearInterval(t)},[]);
   const activeStates=["open","partial","pending","submitting","uncertain"];
   const rows=data.orders.filter(x=>filter==="all"||(filter==="open"?activeStates.includes(x.state):x.state===filter));
+  const externalRows=(data.external||[]).filter(x=>externalFilter==="all"||(externalFilter==="completed"?isExternalComplete(x):!isExternalComplete(x)));
   return <>
     <div className="card">
-      <div className="cardHead"><div><h3>معاملات و سفارش‌ها</h3><p>سفارش‌های CryptoSniper و فعالیت مستقیم صرافی‌ها</p></div><div className="row gap"><button type="button" className="primary" onClick={()=>setPage("newtrade")}><PlusCircle size={17}/> معامله جدید</button><select className="smallSelect" value={filter} onChange={e=>setFilter(e.target.value)}><option value="open">باز و فعال</option><option value="all">همه</option><option value="filled">تکمیل</option><option value="failed">ناموفق</option></select><button type="button" className="softBtn" onClick={load}><RefreshCw size={17}/> تازه‌سازی</button></div></div>
-      <TradesTable rows={rows} decimals={decimals} onSelect={setSelected}/>
+      <div className="cardHead"><div><h3>معاملات و سفارش‌ها</h3><p>سفارش‌های CryptoSniper؛ باز، تکمیل‌شده و ناموفق</p></div><div className="row gap"><button type="button" className="primary" onClick={()=>setPage("newtrade")}><PlusCircle size={17}/> معامله جدید</button><select className="smallSelect" value={filter} onChange={e=>setFilter(e.target.value)}><option value="open">باز و فعال</option><option value="all">همه</option><option value="filled">تکمیل‌شده</option><option value="failed">ناموفق</option></select><button type="button" className="softBtn" onClick={load}><RefreshCw size={17}/> تازه‌سازی</button></div></div>
+      <TradesTable rows={rows} decimals={decimals} onSelect={x=>setSelected({type:"internal",item:x})}/>
     </div>
-    <div className="card sectionGap"><div className="cardHead"><div><h3>معاملات خارجی</h3><p>سفارش و Fill ثبت‌شده مستقیم در صرافی؛ فقط مشاهده</p></div></div><div className="tableScroll"><table><thead><tr><th>صرافی</th><th>نوع</th><th>نماد</th><th>وضعیت</th><th>قیمت</th><th>زمان مشاهده</th></tr></thead><tbody>{data.external.map(x=><tr key={x.id} onClick={()=>setSelected(x)} className="clickRow"><td>{x.exchange}</td><td><span className="pill external">External Trade</span></td><td>{x.payload?.symbol||"—"}</td><td>{x.payload?.status||x.kind}</td><td>{x.payload?.price||x.payload?.averagePrice||"—"}</td><td>{dt(x.observed_at)}</td></tr>)}</tbody></table>{!data.external.length&&<Empty/>}</div></div>
-    {selected&&<DetailDrawer item={selected} onClose={()=>setSelected(null)}/>}
+    <div className="card sectionGap">
+      <div className="cardHead"><div><h3>معاملات خارجی صرافی</h3><p>معاملات ایجادشده خارج از CryptoSniper؛ قابل مشاهده و با Adopt صریح قابل مدیریت</p></div><div className="row gap"><select className="smallSelect" value={externalFilter} onChange={e=>setExternalFilter(e.target.value)}><option value="all">همه</option><option value="open">باز / سفارش جاری</option><option value="completed">تکمیل‌شده / History</option></select><button type="button" className="iconBtn" onClick={load}><RefreshCw size={16}/></button></div></div>
+      <div className="tableScroll"><table><thead><tr><th>صرافی</th><th>بازار</th><th>جهت</th><th>قیمت ورود</th><th>مقدار</th><th>وضعیت</th><th>مدیریت</th><th>زمان</th></tr></thead><tbody>{externalRows.map(x=><tr key={x.id} onClick={()=>setSelected({type:"external",item:x})} className="clickRow"><td>{x.exchange}</td><td><b>{x.symbol||"—"}</b></td><td>{x.side==="buy"?"خرید":x.side==="sell"?"فروش":"—"}</td><td>{x.entry_price?fmt(x.entry_price,decimals):"—"}</td><td>{x.quantity?fmt(x.quantity,decimals):"—"}</td><td><span className={isExternalComplete(x)?"status ok":"status warn"}>{isExternalComplete(x)?"تکمیل‌شده":x.status||"باز"}</span></td><td>{x.management?<span className="status ok">{x.management.state||"مدیریت‌شده"}</span>:<span className="pill">خارجی</span>}</td><td>{dt(x.observed_at)}</td></tr>)}</tbody></table>{!externalRows.length&&<Empty text="معامله خارجی در این فیلتر وجود ندارد."/>}</div>
+    </div>
+    {selected?.type==="internal"&&<TradeDetailDrawer item={selected.item} onClose={()=>setSelected(null)}/>}
+    {selected?.type==="external"&&<ExternalTradeDrawer item={selected.item} onClose={()=>setSelected(null)} notify={notify} requestStepUp={requestStepUp} onChanged={load}/>}
   </>
 }
 
-function TradesTable({rows,decimals,onSelect}){return <div className="tableScroll"><table><thead><tr><th>بازار</th><th>صرافی</th><th>جهت</th><th>قیمت</th><th>مقدار</th><th>پرشده</th><th>وضعیت</th><th>زمان</th></tr></thead><tbody>{rows.map(x=><tr key={x.id} className={onSelect?"clickRow":""} onClick={()=>onSelect?.(x)}><td><b>{(x.symbol||"").replace("/USDT","")}</b></td><td>{x.exchange}</td><td>{x.side==="buy"?"خرید":"فروش"}</td><td>{x.average_price||x.price?fmt(x.average_price||x.price,decimals):"—"}</td><td>{fmt(x.amount,decimals)}</td><td>{fmt(x.filled_amount,decimals)}</td><td><Status value={x.state}/></td><td>{dt(x.updated_at||x.created_at)}</td></tr>)}</tbody></table>{!rows.length&&<Empty/>}</div>}
-function DetailDrawer({item,onClose}){return <div className="drawerMask" onClick={onClose}><div className="drawer" onClick={e=>e.stopPropagation()}><div className="cardHead"><h3>جزئیات</h3><button className="iconBtn" onClick={onClose}><X size={18}/></button></div><pre className="jsonBox">{JSON.stringify(item,null,2)}</pre></div></div>}
+function TradesTable({rows,decimals,onSelect}){return <div className="tableScroll"><table><thead><tr><th>بازار</th><th>صرافی</th><th>جهت</th><th>قیمت</th><th>مقدار</th><th>پرشده</th><th>وضعیت</th><th>زمان</th></tr></thead><tbody>{rows.map(x=><tr key={x.id} className={onSelect?"clickRow":""} onClick={()=>onSelect?.(x)}><td><b>{x.symbol||"—"}</b></td><td>{x.exchange}</td><td>{x.side==="buy"?"خرید":"فروش"}</td><td>{x.average_price||x.price?fmt(x.average_price||x.price,decimals):"—"}</td><td>{fmt(x.amount,decimals)}</td><td>{fmt(x.filled_amount,decimals)}</td><td><Status value={x.state}/></td><td>{dt(x.updated_at||x.created_at)}</td></tr>)}</tbody></table>{!rows.length&&<Empty/>}</div>}
+function TradeDetailDrawer({item,onClose}){return <div className="drawerMask" onClick={onClose}><div className="drawer" onClick={e=>e.stopPropagation()}><div className="cardHead"><div><h3>جزئیات معامله CryptoSniper</h3><p>{item.exchange} · {item.account}</p></div><button type="button" className="iconBtn" onClick={onClose}><X size={18}/></button></div><div className="detailGrid"><Info label="بازار" value={item.symbol}/><Info label="جهت" value={item.side==="buy"?"خرید":"فروش"}/><Info label="نوع سفارش" value={item.order_type}/><Info label="وضعیت" value={statusFa[item.state]||item.state}/><Info label="قیمت سفارش" value={item.price||"—"}/><Info label="میانگین اجرا" value={item.average_price||"—"}/><Info label="مقدار" value={item.amount}/><Info label="پرشده" value={item.filled_amount}/><Info label="شناسه صرافی" value={item.external_order_id||"—"}/><Info label="خطا" value={item.error_code||"—"}/><Info label="ایجاد" value={dt(item.created_at)}/><Info label="آخرین تغییر" value={dt(item.updated_at)}/></div></div></div>}
 
-function MarketPicker({markets,value,onChange,search,setSearch,exchangeName}){
-  const [open,setOpen]=useState(false);
-  const selected=markets.find(x=>String(x.id)===String(value));
-  const q=search.trim().toLowerCase();
-  const rows=markets.filter(m=>!q||m.symbol.toLowerCase().includes(q)||m.base.toLowerCase().includes(q));
-  const choose=m=>{onChange(String(m.id));setSearch("");setOpen(false)};
-  return <div className="field marketPickerV2"><label>بازار</label>
-    <button type="button" className={"marketSelectButton "+(selected?"selected":"")} onClick={()=>setOpen(!open)}>
-      <span>{selected?((selected.favorite?"★ ":"")+selected.base+" / USDT"):"انتخاب بازار"}</span>
-      <ChevronLeft size={16}/>
-    </button>
-    {open&&<div className="marketDropdown">
-      <div className="searchBox compact"><Search size={16}/><input autoFocus value={search} onChange={e=>setSearch(e.target.value)} placeholder="جست‌وجوی BTC، ETH…" onClick={e=>e.stopPropagation()}/></div>
-      <div className="marketOptions">{rows.map(m=><button type="button" key={m.id} className={String(m.id)===String(value)?"active":""} onClick={()=>choose(m)}>
-        <span><b>{m.favorite?"★ ":""}{m.base} / USDT</b><small>{m.market_type==="margin"?"Margin x"+Number(m.max_leverage).toFixed(0):"Spot"}{m.favorite?" · منتخب":""}</small></span>
-        {String(m.id)===String(value)&&<CheckCircle2 size={16}/>}
-      </button>)}{!rows.length&&<Empty text="بازاری با این جست‌وجو پیدا نشد."/>}</div>
-    </div>}
-    <small>{exchangeName?"ارزهای منتخب "+exchangeName+" در ابتدای فهرست هستند.":"ابتدا حساب صرافی را انتخاب کنید."}</small>
-  </div>
+function ExternalTradeDrawer({item,onClose,notify,requestStepUp,onChanged}){
+  const [detail,setDetail]=useState({external:item,management:item.management||null});
+  const [form,setForm]=useState(null);
+  const [busy,setBusy]=useState(false);
+  const ext=detail.external||item;
+  const management=detail.management;
+  const makeForm=(d,m)=>({entry_price:m?.entry_price||d?.entry_price||"",quantity:m?.quantity||d?.quantity||"",stop_loss:m?.stop_loss||"",tp1:m?.tp1||"",tp2:m?.tp2||"",tp3:m?.tp3||"",trailing_enabled:m?.trailing_enabled??true,trailing_sl_enabled:m?.trailing_sl_enabled??true,trailing_trigger:m?.trailing_trigger||"tp1",trailing_distance_percent:String(Math.round(num(m?.trailing_distance_percent||1)))});
+  const load=async()=>{try{const d=await api("/api/v1/external-trades/"+item.id+"/management/");setDetail(d);setForm(makeForm(d.external,d.management))}catch(e){setForm(makeForm(item,item.management));}};
+  useEffect(()=>{load()},[item.id]);
+  const save=async()=>{
+    const run=async()=>{try{setBusy(true);const d=await api("/api/v1/external-trades/"+item.id+"/management/",{method:"POST",body:{action:"save",confirmed:true,...form}});setDetail(d);setForm(makeForm(d.external,d.management));notify("مدیریت معامله خارجی ذخیره شد");onChanged?.()}catch(e){if(e.status===403&&e.data?.error==="step_up_required")requestStepUp(run);else notify(e.message)}finally{setBusy(false)}};
+    await run();
+  };
+  const stateAction=async action=>{const run=async()=>{try{setBusy(true);const d=await api("/api/v1/external-trades/"+item.id+"/management/",{method:"POST",body:{action}});setDetail(d);notify(action==="pause"?"مدیریت متوقف شد":"مدیریت ادامه یافت");onChanged?.()}catch(e){if(e.status===403&&e.data?.error==="step_up_required")requestStepUp(run);else notify(e.message)}finally{setBusy(false)}};await run()};
+  const canManage=ext.side==="buy"&&!isExternalComplete(ext);
+  return <div className="drawerMask" onClick={onClose}><div className="drawer wideDrawer" onClick={e=>e.stopPropagation()}><div className="cardHead"><div><h3>جزئیات معامله خارجی</h3><p>{ext.exchange} · {ext.account}</p></div><button type="button" className="iconBtn" onClick={onClose}><X size={18}/></button></div>
+    <div className="detailGrid"><Info label="بازار" value={ext.symbol||"—"}/><Info label="جهت" value={ext.side==="buy"?"خرید":ext.side==="sell"?"فروش":"—"}/><Info label="قیمت ورود" value={ext.entry_price||"—"}/><Info label="مقدار" value={ext.quantity||"—"}/><Info label="وضعیت" value={isExternalComplete(ext)?"تکمیل‌شده":ext.status||"باز"}/><Info label="شناسه خارجی" value={ext.external_id}/><Info label="زمان مشاهده" value={dt(ext.observed_at)}/><Info label="مدیریت" value={management?.state||"مدیریت نشده"}/></div>
+    {management&&<div className="managementStatus"><b>وضعیت مدیریت</b><span>Stop مؤثر: {management.effective_stop||"—"} · آخرین قیمت: {management.last_price||"—"} · آخرین Tick: {dt(management.last_tick_at)}</span>{management.last_error&&<small className="down">{management.last_error}</small>}</div>}
+    {canManage&&form&&<><div className="sectionTitle">مدیریت معامله خارجی</div><div className="formGrid"><div className="field"><label>Entry</label><input value={form.entry_price} onChange={e=>setForm({...form,entry_price:e.target.value})}/></div><div className="field"><label>مقدار تحت مدیریت</label><input value={form.quantity} onChange={e=>setForm({...form,quantity:e.target.value})}/></div><div className="field"><label>Stop Loss</label><input value={form.stop_loss} onChange={e=>setForm({...form,stop_loss:e.target.value})}/></div><div className="field"><label>TP1</label><input value={form.tp1} onChange={e=>setForm({...form,tp1:e.target.value})}/></div><div className="field"><label>TP2</label><input value={form.tp2} onChange={e=>setForm({...form,tp2:e.target.value})}/></div><div className="field"><label>TP3</label><input value={form.tp3} onChange={e=>setForm({...form,tp3:e.target.value})}/></div><label className="toggleCard"><input type="checkbox" checked={form.trailing_enabled} onChange={e=>setForm({...form,trailing_enabled:e.target.checked})}/><div><b>Trailing</b><span>تریلینگ درصدی</span></div></label><label className="toggleCard"><input type="checkbox" checked={form.trailing_sl_enabled} onChange={e=>setForm({...form,trailing_sl_enabled:e.target.checked})}/><div><b>Trailing SL</b><span>TP1 → Entry یک‌بار</span></div></label><div className="field"><label>شروع Trailing</label><select value={form.trailing_trigger} onChange={e=>setForm({...form,trailing_trigger:e.target.value})}><option value="tp1">TP1</option><option value="tp2">TP2</option><option value="tp3">TP3</option></select></div><div className="field"><label>فاصله Trailing ٪</label><input type="number" min="1" max="99" step="1" value={form.trailing_distance_percent} onChange={e=>setForm({...form,trailing_distance_percent:e.target.value.replace(/[^0-9]/g,"")})}/></div></div><div className="submitRow">{management&&<button type="button" className="secondary" disabled={busy} onClick={()=>stateAction(management.state==="paused"?"resume":"pause")}>{management.state==="paused"?"ادامه مدیریت":"توقف مدیریت"}</button>}<button type="button" className="primary" disabled={busy} onClick={save}>{management?"ذخیره تغییرات مدیریت":"اعمال مدیریت روی معامله"}</button></div></>}
+    {!canManage&&<div className="warningFoot">معامله تکمیل‌شده یا فروش خارجی فقط در تاریخچه نمایش داده می‌شود و Adopt جدید روی آن انجام نمی‌شود.</div>}
+  </div></div>
 }
 
 function NewTrade({boot,decimals,notify,requestStepUp,seed,setManualSeed}){

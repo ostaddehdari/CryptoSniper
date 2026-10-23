@@ -404,7 +404,8 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
         confirmed:true,
         request_key:crypto.randomUUID()
       }});
-      notify("سفارش #"+d.order.id+" ارسال شد");
+      notify("سفارش #"+d.order.id+" در صف ارسال به صرافی قرار گرفت");
+      location.hash="#/trades";
     }catch(e){
       if(e.status===403&&e.data?.error==="step_up_required")requestStepUp(retry);else notify("ارسال سفارش انجام نشد: "+e.message)
     }finally{setBusy(false)}

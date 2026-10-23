@@ -73,12 +73,18 @@ def execute_live_spot_order(order_id):
             return {"status": order.state}
         from apps.operations.models import AccountControl
         control, _ = AccountControl.objects.get_or_create(account=order.account)
+        protective_exit = order.side == "sell" and (
+            hasattr(order, "managed_target_exit")
+            or hasattr(order, "managed_full_exit")
+            or hasattr(order, "external_management")
+        )
         if (
             not settings.LIVE_TRADING_ENABLED
-            or control.paused
+            or (control.paused and not protective_exit)
             or order.account.status != "connected"
             or not order.account.trading_enabled
             or order.account.permissions.get("can_withdraw") is not False
+            or order.account.permissions.get("can_trade_spot") is not True
         ):
             order.state, order.error_code = LiveSpotOrder.State.FAILED, "safety_gate_closed"
             order.save(update_fields=("state", "error_code", "updated_at"))

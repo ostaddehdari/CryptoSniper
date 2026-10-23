@@ -15,7 +15,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_POST
 
 from apps.accounts.audit import record_audit
-from apps.accounts.security import session_api_required
+from apps.accounts.security import has_recent_step_up, session_api_required
 from apps.exchanges.models import UserExchangeAccount
 
 from .models import AccountControl, ExternalObservation, RecoveryIssue, WorkerHeartbeat
@@ -271,3 +271,69 @@ def resolve_dead_letter(request, pk):
         request, "نتیجه از دفتر شبیه‌ساز بررسی شد؛ تطبیق و ادامهٔ حساب را جداگانه اجرا کنید."
     )
     return redirect("operations")
+
+
+
+@session_api_required
+@never_cache
+@require_http_methods(["GET", "POST", "PATCH"])
+def api_external_management(request, pk):
+    from .external_management import (
+        adopt_or_update,
+        normalize_external,
+        serialize_management,
+        set_state,
+    )
+
+    observation = get_object_or_404(
+        ExternalObservation.objects.select_related(
+            "account", "account__exchange"
+        ),
+        pk=pk,
+        account__owner=request.user,
+        account__status__in=("connected", "restricted"),
+    )
+    management = getattr(observation, "management", None)
+    if request.method == "GET":
+        return JsonResponse(
+            {
+                "external": normalize_external(observation),
+                "management": serialize_management(management),
+            }
+        )
+    if not has_recent_step_up(request):
+        return JsonResponse(
+            {
+                "error": "step_up_required",
+                "verify_url": "/cryptosniper/settings/security/step-up/",
+            },
+            status=403,
+        )
+    try:
+        import json
+
+        body = (
+            json.loads(request.body or b"{}")
+            if request.content_type == "application/json"
+            else request.POST
+        )
+        action = str(body.get("action", "save"))
+        if action in {"pause", "resume"}:
+            management = set_state(request.user, observation.pk, action)
+        elif action == "save":
+            if body.get("confirmed") is not True:
+                raise ValidationError("تأیید صریح مدیریت معامله لازم است.")
+            management = adopt_or_update(request.user, observation.pk, body)
+        else:
+            raise ValidationError("عملیات مدیریت معامله معتبر نیست.")
+        return JsonResponse(
+            {
+                "external": normalize_external(observation),
+                "management": serialize_management(management),
+            }
+        )
+    except (ValidationError, ValueError, TypeError) as error:
+        return JsonResponse(
+            {"error": getattr(error, "messages", [str(error)])},
+            status=400,
+        )

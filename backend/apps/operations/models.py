@@ -22,9 +22,6 @@ class RecoveryIssue(models.Model):
     detail = models.JSONField(default=dict)
     resolved = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Managed live exit {self.management_id}:{self.reason}"
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -308,3 +305,6 @@ class ManagedLiveExit(models.Model):
         related_name="managed_full_exit",
     )
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Managed live exit {self.management_id}:{self.reason}"

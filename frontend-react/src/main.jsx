@@ -192,7 +192,16 @@ function Trades({decimals,notify,setPage,requestStepUp}){
   const load=()=>api("/api/v1/live-orders/").then(setData).catch(e=>notify(e.message));
   useEffect(()=>{load();const t=setInterval(load,5000);return()=>clearInterval(t)},[]);
   const activeStates=["open","partial","pending","submitting","uncertain"];
-  const rows=data.orders.filter(x=>filter==="all"||(filter==="open"?activeStates.includes(x.state):x.state===filter));
+  const managementOpenStates=["pending_entry","active","paused","exiting","error"];
+  const internalEntries=(data.orders||[]).filter(x=>!["managed_tp_exit","managed_stop_exit"].includes(x.role));
+  const rows=internalEntries.filter(x=>{
+    const managed=x.management;
+    if(filter==="all")return true;
+    if(filter==="open")return activeStates.includes(x.state)||managementOpenStates.includes(managed?.state);
+    if(filter==="filled")return managed?managed.state==="closed":x.state==="filled";
+    if(filter==="failed")return x.state==="failed"||managed?.state==="error";
+    return x.state===filter;
+  });
   const externalRows=(data.external||[]).filter(x=>externalFilter==="all"||(externalFilter==="completed"?isExternalComplete(x):!isExternalComplete(x)));
   return <>
     <div className="card">
@@ -209,7 +218,14 @@ function Trades({decimals,notify,setPage,requestStepUp}){
 }
 
 function TradesTable({rows,decimals,onSelect}){return <div className="tableScroll"><table><thead><tr><th>بازار</th><th>صرافی</th><th>جهت</th><th>قیمت</th><th>مقدار</th><th>پرشده</th><th>وضعیت</th><th>زمان</th></tr></thead><tbody>{rows.map(x=><tr key={x.id} className={onSelect?"clickRow":""} onClick={()=>onSelect?.(x)}><td><b>{x.symbol||"—"}</b></td><td>{x.exchange}</td><td>{x.side==="buy"?"خرید":"فروش"}</td><td>{x.average_price||x.price?fmt(x.average_price||x.price,decimals):"—"}</td><td>{fmt(x.amount,decimals)}</td><td>{fmt(x.filled_amount,decimals)}</td><td><Status value={x.state}/></td><td>{dt(x.updated_at||x.created_at)}</td></tr>)}</tbody></table>{!rows.length&&<Empty/>}</div>}
-function TradeDetailDrawer({item,onClose}){return <div className="drawerMask" onClick={onClose}><div className="drawer" onClick={e=>e.stopPropagation()}><div className="cardHead"><div><h3>جزئیات معامله CryptoSniper</h3><p>{item.exchange} · {item.account}</p></div><button type="button" className="iconBtn" onClick={onClose}><X size={18}/></button></div><div className="detailGrid"><Info label="بازار" value={item.symbol}/><Info label="جهت" value={item.side==="buy"?"خرید":"فروش"}/><Info label="نوع سفارش" value={item.order_type}/><Info label="وضعیت" value={statusFa[item.state]||item.state}/><Info label="قیمت سفارش" value={item.price||"—"}/><Info label="میانگین اجرا" value={item.average_price||"—"}/><Info label="مقدار" value={item.amount}/><Info label="پرشده" value={item.filled_amount}/><Info label="شناسه صرافی" value={item.external_order_id||"—"}/><Info label="خطا" value={item.error_code||"—"}/><Info label="ایجاد" value={dt(item.created_at)}/><Info label="آخرین تغییر" value={dt(item.updated_at)}/></div></div></div>}
+function TradeDetailDrawer({item,onClose}){
+  const m=item.management;
+  return <div className="drawerMask" onClick={onClose}><div className="drawer wideDrawer" onClick={e=>e.stopPropagation()}>
+    <div className="cardHead"><div><h3>جزئیات معامله CryptoSniper</h3><p>{item.exchange} · {item.account}</p></div><button type="button" className="iconBtn" onClick={onClose}><X size={18}/></button></div>
+    <div className="detailGrid"><Info label="بازار" value={item.symbol}/><Info label="جهت" value={item.side==="buy"?"خرید":"فروش"}/><Info label="نوع سفارش" value={item.order_type}/><Info label="وضعیت سفارش ورود" value={statusFa[item.state]||item.state}/><Info label="قیمت سفارش" value={item.price||"—"}/><Info label="میانگین اجرا" value={item.average_price||"—"}/><Info label="مقدار" value={item.amount}/><Info label="پرشده" value={item.filled_amount}/><Info label="شناسه صرافی" value={item.external_order_id||"—"}/><Info label="خطا" value={item.error_code||"—"}/><Info label="ایجاد" value={dt(item.created_at)}/><Info label="آخرین تغییر" value={dt(item.updated_at)}/></div>
+    {m&&<><div className="sectionTitle">مدیریت TP / SL</div><div className="managementStatus"><b>{statusFa[m.state]||m.state}</b><span>باقیمانده: {m.remaining_quantity} · Stop مؤثر: {m.effective_stop} · آخرین قیمت: {m.last_price||"—"}</span><small>Trailing: {m.trailing_enabled?"روشن":"خاموش"} · Trigger: {String(m.trailing_trigger||"tp1").toUpperCase()} · فاصله: {m.trailing_distance_percent}% · Trailing SL: {m.trailing_sl_enabled?"روشن":"خاموش"}</small>{m.last_error&&<small className="down">{m.last_error}</small>}</div><div className="tableScroll"><table><thead><tr><th>هدف</th><th>قیمت</th><th>سهم</th><th>حجم</th><th>وضعیت</th></tr></thead><tbody>{(m.targets||[]).map(t=><tr key={t.position}><td>TP{t.position}</td><td>{t.price}</td><td>{t.share_percent}%</td><td>{t.allocated_quantity}</td><td>{t.state}</td></tr>)}</tbody></table></div></>}
+  </div></div>
+}
 
 function ExternalTradeDrawer({item,onClose,notify,requestStepUp,onChanged}){
   const [detail,setDetail]=useState({external:item,management:item.management||null});

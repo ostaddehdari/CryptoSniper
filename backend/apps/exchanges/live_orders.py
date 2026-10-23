@@ -141,3 +141,71 @@ def execute_live_spot_order(order_id):
         locked.error_code = ""
         locked.save()
     return {"status": locked.state, "external_order_id": locked.external_order_id}
+
+
+
+def reconcile_live_spot_order(order_id):
+    """Read provider state for an already-submitted order; never resubmit it."""
+    order = (
+        LiveSpotOrder.objects.select_related("account__exchange", "market")
+        .filter(pk=order_id)
+        .first()
+    )
+    if not order:
+        return {"status": "missing"}
+    if order.state not in {LiveSpotOrder.State.OPEN, LiveSpotOrder.State.PARTIAL}:
+        return {"status": order.state}
+    if not order.external_order_id:
+        return {"status": "missing_external_id"}
+    if (
+        order.account.environment != "live"
+        or order.account.status != "connected"
+        or order.account.permissions.get("can_read") is not True
+    ):
+        return {"status": "account_not_readable"}
+
+    try:
+        adapter = get_adapter(
+            order.account.exchange.adapter_code,
+            credentials=get_account_credentials(order.account),
+            environment=order.account.environment,
+        )
+        receipt = adapter.fetch_order(order.external_order_id)
+    except (AdapterError, ValidationError, ValueError, OSError, TimeoutError) as error:
+        LiveSpotOrder.objects.filter(pk=order.pk).update(
+            error_code=f"reconcile:{getattr(error, 'code', type(error).__name__)}"[:50],
+        )
+        return {"status": "reconcile_error"}
+
+    mapped = {
+        OrderStatus.OPEN: LiveSpotOrder.State.OPEN,
+        OrderStatus.PARTIAL: LiveSpotOrder.State.PARTIAL,
+        OrderStatus.FILLED: LiveSpotOrder.State.FILLED,
+        OrderStatus.CANCELLED: LiveSpotOrder.State.CANCELLED,
+    }
+    with transaction.atomic():
+        locked = LiveSpotOrder.objects.select_for_update().get(pk=order.pk)
+        if locked.state not in {LiveSpotOrder.State.OPEN, LiveSpotOrder.State.PARTIAL}:
+            return {"status": locked.state}
+        locked.filled_amount = receipt.filled_amount
+        locked.average_price = receipt.average_price
+        locked.state = mapped[receipt.status]
+        locked.error_code = ""
+        locked.save(
+            update_fields=(
+                "filled_amount",
+                "average_price",
+                "state",
+                "error_code",
+                "updated_at",
+            )
+        )
+    return {
+        "status": locked.state,
+        "filled_amount": str(locked.filled_amount),
+        "average_price": (
+            str(locked.average_price)
+            if locked.average_price is not None
+            else None
+        ),
+    }

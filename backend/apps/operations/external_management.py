@@ -12,7 +12,9 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.accounts.audit import record_audit
+from apps.exchanges.adapters import AdapterError, get_adapter
 from apps.exchanges.models import ExchangeMarket, LiveSpotOrder
+from apps.exchanges.security import get_account_credentials
 from apps.exchanges.tasks import live_spot_order
 from apps.marketdata.feeds import refresh_live_quote
 
@@ -332,6 +334,18 @@ def _trigger_price(item):
     }.get(item.trailing_trigger)
 
 
+def _provider_free_base(item):
+    adapter = get_adapter(
+        item.account.exchange.adapter_code,
+        credentials=get_account_credentials(item.account),
+        environment=item.account.environment,
+    )
+    for balance in adapter.fetch_balance():
+        if balance.asset.upper() == item.market.base_asset.symbol.upper():
+            return balance.free
+    return ZERO
+
+
 def _exit_safety(item):
     control, _ = AccountControl.objects.get_or_create(account=item.account)
     return (
@@ -460,6 +474,18 @@ def monitor_one(management_id):
                 update_fields=("state", "last_error", "updated_at")
             )
             return "safety_gate_closed"
+        try:
+            free_base = _provider_free_base(locked)
+        except AdapterError:
+            locked.state = ExternalTradeManagement.State.ERROR
+            locked.last_error = "balance_read_failed"
+            locked.save(update_fields=("state", "last_error", "updated_at"))
+            return "balance_read_failed"
+        if free_base < locked.quantity:
+            locked.state = ExternalTradeManagement.State.ERROR
+            locked.last_error = "insufficient_base_balance"
+            locked.save(update_fields=("state", "last_error", "updated_at"))
+            return "insufficient_base_balance"
 
         key = uuid.uuid5(
             uuid.NAMESPACE_URL,

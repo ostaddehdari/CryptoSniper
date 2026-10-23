@@ -200,6 +200,28 @@ function Trades({decimals,notify,setPage}){
 function TradesTable({rows,decimals,onSelect}){return <div className="tableScroll"><table><thead><tr><th>بازار</th><th>صرافی</th><th>جهت</th><th>قیمت</th><th>مقدار</th><th>پرشده</th><th>وضعیت</th><th>زمان</th></tr></thead><tbody>{rows.map(x=><tr key={x.id} className={onSelect?"clickRow":""} onClick={()=>onSelect?.(x)}><td><b>{(x.symbol||"").replace("/USDT","")}</b></td><td>{x.exchange}</td><td>{x.side==="buy"?"خرید":"فروش"}</td><td>{x.average_price||x.price?fmt(x.average_price||x.price,decimals):"—"}</td><td>{fmt(x.amount,decimals)}</td><td>{fmt(x.filled_amount,decimals)}</td><td><Status value={x.state}/></td><td>{dt(x.updated_at||x.created_at)}</td></tr>)}</tbody></table>{!rows.length&&<Empty/>}</div>}
 function DetailDrawer({item,onClose}){return <div className="drawerMask" onClick={onClose}><div className="drawer" onClick={e=>e.stopPropagation()}><div className="cardHead"><h3>جزئیات</h3><button className="iconBtn" onClick={onClose}><X size={18}/></button></div><pre className="jsonBox">{JSON.stringify(item,null,2)}</pre></div></div>}
 
+function MarketPicker({markets,value,onChange,search,setSearch,exchangeName}){
+  const [open,setOpen]=useState(false);
+  const selected=markets.find(x=>String(x.id)===String(value));
+  const q=search.trim().toLowerCase();
+  const rows=markets.filter(m=>!q||m.symbol.toLowerCase().includes(q)||m.base.toLowerCase().includes(q));
+  const choose=m=>{onChange(String(m.id));setSearch("");setOpen(false)};
+  return <div className="field marketPickerV2"><label>بازار</label>
+    <button type="button" className={"marketSelectButton "+(selected?"selected":"")} onClick={()=>setOpen(!open)}>
+      <span>{selected?((selected.favorite?"★ ":"")+selected.base+" / USDT"):"انتخاب بازار"}</span>
+      <ChevronLeft size={16}/>
+    </button>
+    {open&&<div className="marketDropdown">
+      <div className="searchBox compact"><Search size={16}/><input autoFocus value={search} onChange={e=>setSearch(e.target.value)} placeholder="جست‌وجوی BTC، ETH…" onClick={e=>e.stopPropagation()}/></div>
+      <div className="marketOptions">{rows.map(m=><button type="button" key={m.id} className={String(m.id)===String(value)?"active":""} onClick={()=>choose(m)}>
+        <span><b>{m.favorite?"★ ":""}{m.base} / USDT</b><small>{m.market_type==="margin"?"Margin x"+Number(m.max_leverage).toFixed(0):"Spot"}{m.favorite?" · منتخب":""}</small></span>
+        {String(m.id)===String(value)&&<CheckCircle2 size={16}/>}
+      </button>)}{!rows.length&&<Empty text="بازاری با این جست‌وجو پیدا نشد."/>}</div>
+    </div>}
+    <small>{exchangeName?"ارزهای منتخب "+exchangeName+" در ابتدای فهرست هستند.":"ابتدا حساب صرافی را انتخاب کنید."}</small>
+  </div>
+}
+
 function NewTrade({boot,decimals,notify,requestStepUp,seed,setManualSeed}){
   const [tab,setTab]=useState(seed?.new_trade_tab||"manual");
   useEffect(()=>{if(seed)setTab("manual")},[seed]);
@@ -256,8 +278,7 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
       const d=await api("/api/v1/exchange-accounts/"+id+"/markets/");
       setMarkets(d.markets||[]);
       const preferred=seed?.market_id&&(d.markets||[]).find(x=>String(x.id)===String(seed.market_id));
-      const firstFavorite=(d.markets||[]).find(x=>x.favorite);
-      setMarketId(preferred?.id||firstFavorite?.id||d.markets?.[0]?.id||"");
+      setMarketId(preferred?.id||"");
     }catch(e){notify(e.message)}
   };
   useEffect(()=>{loadMarkets(accountId)},[accountId]);
@@ -271,7 +292,6 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
         if(!stopped){
           const q=d.markets?.[0]?.quote;
           setQuote(q);
-          if(!entry&&q?.price)setEntry(String(q.price));
         }
       }catch{}
     };
@@ -308,7 +328,7 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
         }});
         if(!cancelled){
           setFixloss(d);
-          setCapital(String(d.suggested_notional));
+          setCapital(String(Math.max(0,Math.floor(num(d.suggested_notional)))));
         }
       }catch{
         if(!cancelled)setFixloss(null);
@@ -324,10 +344,6 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
     const raw=(num(value)-num(entry))/num(entry)*100;
     return side==="short"?-raw:raw;
   };
-  const filteredMarkets=markets.filter(m=>{
-    const q=marketSearch.trim().toLowerCase();
-    return !q||m.symbol.toLowerCase().includes(q)||m.base.toLowerCase().includes(q);
-  });
   const target=(label,value,setValue)=>{
     const p=pct(value);
     return <div className="field"><label>{label}</label><div className="inputSuffix"><input value={value} onChange={e=>setValue(e.target.value)} inputMode="decimal"/><span>USDT</span></div>{p!==null&&<small className={p>=0?"up":"down"}>{(p>=0?"+":"")+fmt(p,2)+"٪ نسبت به Entry"}</small>}</div>
@@ -361,9 +377,10 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
         tp3:tp3||null,
         stop_loss:sl,
         capital,
-        leverage:"1",
+        leverage:market?.market_type==="spot"?"1":leverage,
         trailing_sl:trailingSL,
         percentage_trailing:trailingTP,
+        percentage_trigger:trailingTrigger,
         trailing_distance:trailingDistance,
         client_token:crypto.randomUUID()
       }});
@@ -378,7 +395,7 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
       }});
       notify("سفارش #"+d.order.id+" ارسال شد");
     }catch(e){
-      if(e.status===403&&e.data?.error==="step_up_required")requestStepUp(retry);else notify(e.message)
+      if(e.status===403&&e.data?.error==="step_up_required")requestStepUp(retry);else notify("ارسال سفارش انجام نشد: "+e.message)
     }finally{setBusy(false)}
   };
 
@@ -387,21 +404,21 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
       <div className="cardHead"><div><h3>تعریف معامله</h3><p>قیمت زنده، حجم ورود، TP/SL و Fix Loss خودکار</p></div><span className="liveBadge"><span/> LIVE</span></div>
       <div className="formGrid">
         <div className="field"><label>حساب صرافی</label><select value={accountId} onChange={e=>{setAccountId(e.target.value);setMarketSearch("")}}>{accounts.map(a=><option key={a.id} value={a.id}>{a.exchange_name+" · "+a.label}</option>)}</select></div>
-        <div className="field marketPicker"><label>بازار</label><div className="searchBox compact"><Search size={16}/><input value={marketSearch} onChange={e=>setMarketSearch(e.target.value)} placeholder="جست‌وجوی BTC، ETH…"/></div><select size={Math.min(7,Math.max(3,filteredMarkets.length))} value={marketId} onChange={e=>setMarketId(e.target.value)}>{filteredMarkets.map(m=><option key={m.id} value={m.id}>{(m.favorite?"★ ":"")+m.base+" / USDT"+(m.market_type==="margin"?" · Margin x"+Number(m.max_leverage).toFixed(0):" · Spot")}</option>)}</select><small>{favoriteSymbols.length?("ارزهای منتخب "+(account?.exchange_name||"")+" بالای فهرست هستند."):"ارزهای منتخب این صرافی را از تنظیمات تعیین کنید."}</small></div>
+        <MarketPicker markets={markets} value={marketId} onChange={value=>{setMarketId(value);setQuote(null)}} search={marketSearch} setSearch={setMarketSearch} exchangeName={account?.exchange_name||""}/>
         <div className="field"><label>قیمت زنده</label><div className="livePrice">{quote?.price?fmt(quote.price,num(quote.price)<10?4:2):"ناموجود"}<span>USDT</span></div><small>{quote?.stale?"قیمت قدیمی است":"به‌روزرسانی مستقیم هر ۲ ثانیه"}</small></div>
         <div className="field"><label>جهت</label><div className="segmented"><button type="button" className={side==="long"?"active":""} onClick={()=>setSide("long")}>لانگ</button><button type="button" disabled={market?.market_type==="spot"} className={side==="short"?"active danger":""} onClick={()=>setSide("short")}>شورت</button></div></div>
         <div className="field"><label>Entry</label><input value={entry} onChange={e=>setEntry(e.target.value)} inputMode="decimal"/></div>
-        <div className="field"><label>حجم ورود</label><div className="inputSuffix"><input value={capital} onChange={e=>setCapital(e.target.value)} inputMode="decimal"/><span>USDT</span></div><small>پیشنهاد Fix Loss خودکار این مقدار را پر می‌کند؛ قابل ویرایش است.</small></div>
+        <div className="field"><label>حجم ورود</label><div className="inputSuffix"><input type="number" step="1" min="1" value={capital} onChange={e=>setCapital(e.target.value.replace(/[^0-9]/g,""))} inputMode="numeric"/><span>USDT</span></div><small>فقط عدد صحیح؛ پیشنهاد Fix Loss به پایین گرد می‌شود تا از ریسک تعیین‌شده عبور نکند.</small></div>
         <div className="field"><label>اهرم</label><select disabled={market?.market_type==="spot"} value={market?.market_type==="spot"?"1":leverage} onChange={e=>setLeverage(e.target.value)}>{Array.from({length:Math.max(1,Math.floor(num(market?.max_leverage||1)))},(_,i)=>i+1).map(x=><option key={x} value={x}>{"x"+x}</option>)}</select><small>{market?.market_type==="spot"?"Spot بدون اهرم است.":"اهرم بر اساس سقف همین بازار"}</small></div>
       </div>
       <div className="sectionTitle">اهداف و حد ضرر</div>
       <div className="targetsGrid">{target("TP1",tp1,setTp1)}{target("TP2",tp2,setTp2)}{target("TP3",tp3,setTp3)}{target("Stop Loss",sl,setSl)}</div>
       <div className="sectionTitle">Trailing</div>
       <div className="trailingGrid">
-        <label className="toggleCard"><input type="checkbox" checked={trailingTP} onChange={e=>setTrailingTP(e.target.checked)}/><div><b>Trailing TP</b><span>پیش‌فرض روشن</span></div></label>
+        <label className="toggleCard"><input type="checkbox" checked={trailingTP} onChange={e=>setTrailingTP(e.target.checked)}/><div><b>Trailing</b><span>تریلینگ درصدی</span></div></label>
         <label className="toggleCard"><input type="checkbox" checked={trailingSL} onChange={e=>setTrailingSL(e.target.checked)}/><div><b>Trailing SL</b><span>پیش‌فرض روشن</span></div></label>
-        <div className="field"><label>شروع Trailing</label><select value={trailingTrigger} onChange={e=>setTrailingTrigger(e.target.value)}><option value="tp1">TP1</option></select></div>
-        <div className="field"><label>فاصله Trailing</label><div className="inputSuffix"><input value={trailingDistance} onChange={e=>setTrailingDistance(e.target.value)} inputMode="decimal"/><span>٪</span></div></div>
+        <div className="field"><label>شروع Trailing</label><select value={trailingTrigger} onChange={e=>setTrailingTrigger(e.target.value)}><option value="tp1">TP1</option><option value="tp2">TP2</option><option value="tp3">TP3</option></select></div>
+        <div className="field"><label>فاصله Trailing</label><div className="inputSuffix"><input type="number" step="1" min="1" max="99" value={trailingDistance} onChange={e=>setTrailingDistance(e.target.value.replace(/[^0-9]/g,""))} inputMode="numeric"/><span>٪</span></div></div>
       </div>
       <div className="fixBox">
         <div className="fixHead"><div><ShieldCheck size={20}/><div><b>Fix Loss خودکار</b><span>بر اساس تتر آزاد همان صرافی، Entry، Stop و درصد ریسک</span></div></div>{fixBusy&&<LoaderCircle className="spin" size={18}/>}</div>

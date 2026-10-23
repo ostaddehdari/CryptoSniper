@@ -74,9 +74,9 @@ def seed(owner):
         },
     )
     markets = {}
-    for base, asset, price in (
-        ("BTC", btc, Decimal("80000")),
-        ("ETH", eth, Decimal("2400")),
+    for base, asset in (
+        ("BTC", btc),
+        ("ETH", eth),
     ):
         markets[base] = ExchangeMarket.objects.create(
             exchange=exchange,

@@ -38,8 +38,15 @@ def apply_external_policy(owner, observation_id, data):
         raise ValidationError("برای این معامله قبلاً سفارش خروج ثبت شده است.")
     policy.market = data["market"]
     for name in (
-        "entry_price", "remaining_amount", "stop_loss", "tp1", "tp2", "tp3",
-        "trailing_enabled", "trailing_sl_enabled", "trailing_trigger",
+        "entry_price",
+        "remaining_amount",
+        "stop_loss",
+        "tp1",
+        "tp2",
+        "tp3",
+        "trailing_enabled",
+        "trailing_sl_enabled",
+        "trailing_trigger",
         "trailing_distance_percent",
     ):
         setattr(policy, name, data.get(name))
@@ -65,11 +72,9 @@ def _target_price(policy):
 
 
 def monitor_policy(policy_id):
-    policy = (
-        ExternalTradePolicy.objects.select_related(
-            "observation__account__exchange", "market"
-        ).get(pk=policy_id)
-    )
+    policy = ExternalTradePolicy.objects.select_related(
+        "observation__account__exchange", "market"
+    ).get(pk=policy_id)
     if policy.state != ExternalTradePolicy.State.ACTIVE:
         return policy.state
     account = policy.observation.account
@@ -89,9 +94,11 @@ def monitor_policy(policy_id):
     ticker = adapter.fetch_ticker(policy.market.symbol)
     price = ticker.price
     with transaction.atomic():
-        policy = ExternalTradePolicy.objects.select_for_update().select_related(
-            "observation__account__exchange", "market"
-        ).get(pk=policy_id)
+        policy = (
+            ExternalTradePolicy.objects.select_for_update()
+            .select_related("observation__account__exchange", "market")
+            .get(pk=policy_id)
+        )
         if policy.state != ExternalTradePolicy.State.ACTIVE:
             return policy.state
         changed = False
@@ -114,9 +121,11 @@ def monitor_policy(policy_id):
                 changed = True
             else:
                 policy.high_water = max(policy.high_water or price, price)
-            derived = policy.high_water * (
-                Decimal("100") - policy.trailing_distance_percent
-            ) / Decimal("100")
+            derived = (
+                policy.high_water
+                * (Decimal("100") - policy.trailing_distance_percent)
+                / Decimal("100")
+            )
             if derived > policy.effective_stop:
                 policy.effective_stop = derived
                 changed = True

@@ -16,10 +16,29 @@ from .external_utils import normalized_external
 from .forms import ExternalTradePolicyForm
 
 SAFE_FIELDS = (
-    "symbol", "orderId", "clientOrderId", "status", "origQty", "executedQty", "price",
-    "side", "type", "time", "updateTime", "id", "tradeId", "qty", "quantity",
-    "amount", "filled_amount", "average_price", "avgPrice", "commission",
-    "commissionAsset", "isBuyer", "created_at",
+    "symbol",
+    "orderId",
+    "clientOrderId",
+    "status",
+    "origQty",
+    "executedQty",
+    "price",
+    "side",
+    "type",
+    "time",
+    "updateTime",
+    "id",
+    "tradeId",
+    "qty",
+    "quantity",
+    "amount",
+    "filled_amount",
+    "average_price",
+    "avgPrice",
+    "commission",
+    "commissionAsset",
+    "isBuyer",
+    "created_at",
 )
 
 
@@ -63,9 +82,7 @@ def detail(request, pk):
         if key in payload and isinstance(payload[key], (str, int, float, bool, type(None)))
     ]
     policy = (
-        ExternalTradePolicy.objects.filter(observation=item)
-        .select_related("exit_order")
-        .first()
+        ExternalTradePolicy.objects.filter(observation=item).select_related("exit_order").first()
     )
     form = ExternalTradePolicyForm(item=item, instance=policy)
     return render(

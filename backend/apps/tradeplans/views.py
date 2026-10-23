@@ -63,27 +63,31 @@ def new_plan(request):
         signal = get_object_or_404(
             Signal, pk=signal_id, owner=request.user, status=Signal.Status.APPROVED
         )
-        initial.update({
-            "origin_signal": signal.pk,
-            "account": signal.exchange_account_id,
-            "market": signal.market_id,
-            "source": "manual",
-            "side": signal.side,
-            "entry_price": signal.entry_price,
-            "stop_loss": signal.stop_loss,
-            "leverage": 1,
-            "capital": int(preferences.default_order_amount),
-            "trailing_distance": int(preferences.trailing_distance_percent),
-            "trailing_sl": bool(
-                signal.parsed_payload.get("trailing_sl", preferences.trailing_sl_enabled)
-            ),
-            "percentage_trailing": bool(
-                signal.parsed_payload.get("percentage_trailing", preferences.trailing_tp_enabled)
-            ),
-            "trailing_trigger": signal.parsed_payload.get(
-                "percentage_trigger", preferences.trailing_trigger
-            ),
-        })
+        initial.update(
+            {
+                "origin_signal": signal.pk,
+                "account": signal.exchange_account_id,
+                "market": signal.market_id,
+                "source": "manual",
+                "side": signal.side,
+                "entry_price": signal.entry_price,
+                "stop_loss": signal.stop_loss,
+                "leverage": 1,
+                "capital": int(preferences.default_order_amount),
+                "trailing_distance": int(preferences.trailing_distance_percent),
+                "trailing_sl": bool(
+                    signal.parsed_payload.get("trailing_sl", preferences.trailing_sl_enabled)
+                ),
+                "percentage_trailing": bool(
+                    signal.parsed_payload.get(
+                        "percentage_trailing", preferences.trailing_tp_enabled
+                    )
+                ),
+                "trailing_trigger": signal.parsed_payload.get(
+                    "percentage_trigger", preferences.trailing_trigger
+                ),
+            }
+        )
         for target in signal.targets.order_by("position"):
             initial[f"tp{target.position}"] = target.price
     form = ManualTradeForm(

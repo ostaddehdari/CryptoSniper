@@ -66,11 +66,7 @@ def validate_live_spot_intent(account, market, *, side, amount, price):
         raise ValidationError("ارزش سفارش از Min Notional صرافی کمتر است.")
 
     asset_id = market.quote_asset_id if side == "buy" else market.base_asset_id
-    balance = (
-        account.balance_snapshots.filter(asset_id=asset_id)
-        .order_by("-captured_at")
-        .first()
-    )
+    balance = account.balance_snapshots.filter(asset_id=asset_id).order_by("-captured_at").first()
     if not balance or balance.captured_at < timezone.now() - timedelta(minutes=15):
         raise ValidationError("موجودی تازه نیست؛ ابتدا حساب صرافی را همگام‌سازی کنید.")
     if side == "buy":

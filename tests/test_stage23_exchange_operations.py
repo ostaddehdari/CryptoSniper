@@ -122,9 +122,9 @@ def test_live_order_is_durable_pending_before_provider_execution(django_user_mod
     market = ExchangeMarket.objects.get(
         exchange=account.exchange, symbol="BTC/USDT", market_type="spot"
     )
-    BalanceSnapshot.objects.filter(
-        exchange_account=account, asset=market.quote_asset
-    ).update(captured_at=timezone.now())
+    BalanceSnapshot.objects.filter(exchange_account=account, asset=market.quote_asset).update(
+        captured_at=timezone.now()
+    )
     order, created = queue_live_spot_order(
         user,
         account,

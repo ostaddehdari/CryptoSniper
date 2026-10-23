@@ -24,9 +24,7 @@ def make_signal(user, *, status="new", account=None, market=None):
         technical_confidence=100 if market else 0,
     )
     if market:
-        SignalTarget.objects.create(
-            signal=signal, position=1, price="70000", share_percent="100"
-        )
+        SignalTarget.objects.create(signal=signal, position=1, price="70000", share_percent="100")
     return signal
 
 
@@ -52,9 +50,7 @@ def test_approve_and_trade_is_one_atomic_user_flow(client, django_user_model):
     account, market = setup_paper(user)
     signal = make_signal(user, status="parsed", account=account, market=market)
     client.force_login(user)
-    response = client.post(
-        f"/inbox/{signal.pk}/approve-trade/", {"revision": signal.revision}
-    )
+    response = client.post(f"/inbox/{signal.pk}/approve-trade/", {"revision": signal.revision})
     assert response.status_code == 302
     assert f"/manual/new/?signal={signal.pk}" in response["Location"]
     signal.refresh_from_db()

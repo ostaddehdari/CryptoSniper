@@ -117,8 +117,7 @@ class ExternalTradePolicy(models.Model):
                 name="external_policy_trigger_range",
             ),
             models.CheckConstraint(
-                condition=Q(trailing_distance_percent__gt=0)
-                & Q(trailing_distance_percent__lt=100),
+                condition=Q(trailing_distance_percent__gt=0) & Q(trailing_distance_percent__lt=100),
                 name="external_policy_distance_range",
             ),
         ]

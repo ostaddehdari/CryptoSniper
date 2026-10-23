@@ -21,7 +21,7 @@ def _symbol(value):
         return text
     for quote in ("USDT", "USDC", "BTC", "ETH", "IRT", "RLS"):
         if text.endswith(quote) and len(text) > len(quote):
-            return f"{text[:-len(quote)]}/{quote}"
+            return f"{text[: -len(quote)]}/{quote}"
     return text
 
 
@@ -58,8 +58,14 @@ def normalized_external(item):
         (
             _decimal(payload.get(key))
             for key in (
-                "filled_amount", "executedQty", "matchedAmount", "dealVolume",
-                "qty", "quantity", "amount", "origQty",
+                "filled_amount",
+                "executedQty",
+                "matchedAmount",
+                "dealVolume",
+                "qty",
+                "quantity",
+                "amount",
+                "origQty",
             )
             if _decimal(payload.get(key)) is not None
         ),
@@ -69,9 +75,16 @@ def normalized_external(item):
     if not raw_status and item.kind in {"fill", "history"}:
         raw_status = "filled"
     labels = {
-        "new": "باز", "open": "باز", "active": "باز", "partial": "بخشی اجرا شده",
-        "partially_filled": "بخشی اجرا شده", "filled": "تکمیل‌شده", "done": "تکمیل‌شده",
-        "completed": "تکمیل‌شده", "cancelled": "لغوشده", "canceled": "لغوشده",
+        "new": "باز",
+        "open": "باز",
+        "active": "باز",
+        "partial": "بخشی اجرا شده",
+        "partially_filled": "بخشی اجرا شده",
+        "filled": "تکمیل‌شده",
+        "done": "تکمیل‌شده",
+        "completed": "تکمیل‌شده",
+        "cancelled": "لغوشده",
+        "canceled": "لغوشده",
     }
     status_label = labels.get(raw_status, raw_status or "ثبت‌شده")
     exact = _time(
@@ -98,8 +111,7 @@ def normalized_external(item):
         and amount > 0
         and (
             item.kind in {"fill", "history"}
-            or raw_status
-            in {"partial", "partially_filled", "filled", "done", "completed"}
+            or raw_status in {"partial", "partially_filled", "filled", "done", "completed"}
         )
     )
     return {

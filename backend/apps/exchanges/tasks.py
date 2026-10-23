@@ -30,7 +30,6 @@ def live_spot_order(order_id):
     return execute_live_spot_order(order_id)
 
 
-
 @shared_task(name="exchanges.dispatch_pending_live_spot_orders", acks_late=True, time_limit=45)
 def dispatch_pending_live_spot_orders():
     processed = 0

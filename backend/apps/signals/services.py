@@ -238,7 +238,6 @@ def transition(owner, pk, *, expected_revision, action, reason=""):
     return signal
 
 
-
 @transaction.atomic
 def trash_signals(owner, ids):
     ids = {int(pk) for pk in ids if str(pk).isdigit()}

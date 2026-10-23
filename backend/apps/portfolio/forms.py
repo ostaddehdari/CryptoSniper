@@ -28,9 +28,7 @@ class ExternalTradePolicyForm(forms.Form):
     trailing_distance_percent = forms.IntegerField(
         label="فاصله Trailing (%)", min_value=1, max_value=99, initial=1
     )
-    confirmed = forms.BooleanField(
-        label="تأیید می‌کنم حجم باقی‌مانده و Entry را خودم بررسی کرده‌ام"
-    )
+    confirmed = forms.BooleanField(label="تأیید می‌کنم حجم باقی‌مانده و Entry را خودم بررسی کرده‌ام")
 
     def __init__(self, *args, item, instance=None, **kwargs):
         self.item = item
@@ -39,8 +37,15 @@ class ExternalTradePolicyForm(forms.Form):
         normalized = normalized_external(item)
         if instance:
             for name in (
-                "entry_price", "remaining_amount", "stop_loss", "tp1", "tp2", "tp3",
-                "trailing_sl_enabled", "trailing_enabled", "trailing_trigger",
+                "entry_price",
+                "remaining_amount",
+                "stop_loss",
+                "tp1",
+                "tp2",
+                "tp3",
+                "trailing_sl_enabled",
+                "trailing_enabled",
+                "trailing_trigger",
                 "trailing_distance_percent",
             ):
                 initial[name] = getattr(instance, name)

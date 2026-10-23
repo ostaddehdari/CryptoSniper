@@ -235,7 +235,6 @@ def _safety(item):
         and item.account.permissions.get("can_read") is True
         and item.account.permissions.get("can_trade_spot") is True
         and item.account.permissions.get("can_withdraw") is False
-        and not control.paused
         and not RecoveryIssue.objects.filter(
             account=item.account,
             resolved=False,

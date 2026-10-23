@@ -37,6 +37,7 @@ from apps.signals.models import Signal, SignalSource, TelegramAccount, TelegramB
 from apps.signals.telegram_client import available_channels, complete_login, configure_channel, request_login_code
 from apps.signals.telegram_security import revoke_telegram_credentials
 from apps.tradeplans.models import TradePlan
+from apps.tradeplans.service import approve_plan
 
 
 SAFE_SYMBOL = re.compile(r"^[A-Z0-9]{2,20}$")
@@ -665,9 +666,25 @@ def api_fix_loss(request):
 
 
 def _live_order_payload(item):
+    management = getattr(item, "managed_entry", None)
+    if management is not None:
+        from apps.operations.managed_live import serialize_management
+
+        management_payload = serialize_management(management)
+        order_role = "entry"
+    elif hasattr(item, "managed_target_exit"):
+        management_payload = None
+        order_role = "managed_tp_exit"
+    elif hasattr(item, "managed_full_exit"):
+        management_payload = None
+        order_role = "managed_stop_exit"
+    else:
+        management_payload = None
+        order_role = "order"
     return {
         "id": item.pk,
         "source": "cryptosniper",
+        "role": order_role,
         "exchange": item.account.exchange.code,
         "account": item.account.label,
         "symbol": item.market.symbol,
@@ -679,6 +696,7 @@ def _live_order_payload(item):
         "average_price": str(item.average_price) if item.average_price is not None else None,
         "state": item.state,
         "error_code": item.error_code,
+        "management": management_payload,
         "created_at": item.created_at,
         "updated_at": item.updated_at,
     }
@@ -738,10 +756,41 @@ def api_live_orders(request):
         )
         if not form.is_valid():
             return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
-        order, created = queue_live_spot_order(request.user, account, form.cleaned_data)
-        if created:
-            live_spot_order.apply_async(args=[order.pk], queue="orders")
-        return JsonResponse({"order": _live_order_payload(order), "created": created}, status=201 if created else 200)
+        plan_id = data.get("plan_id")
+        plan_revision = data.get("plan_revision")
+        with transaction.atomic():
+            plan = None
+            if plan_id not in {None, ""}:
+                plan = approve_plan(
+                    request.user,
+                    int(plan_id),
+                    int(plan_revision or 0),
+                )
+                if (
+                    plan.exchange_account_id != account.pk
+                    or plan.market_id != form.cleaned_data["market"].pk
+                ):
+                    raise ValidationError("برنامه معامله با حساب یا بازار سفارش هم‌خوان نیست.")
+            order, created = queue_live_spot_order(
+                request.user,
+                account,
+                form.cleaned_data,
+            )
+            if plan is not None:
+                from apps.operations.managed_live import create_management
+
+                create_management(request.user, plan.pk, order)
+            if created:
+                transaction.on_commit(
+                    lambda order_id=order.pk: live_spot_order.apply_async(
+                        args=[order_id],
+                        queue="orders",
+                    )
+                )
+        return JsonResponse(
+            {"order": _live_order_payload(order), "created": created},
+            status=201 if created else 200,
+        )
     except (ValidationError, ValueError, TypeError) as error:
         return JsonResponse({"error": getattr(error, "messages", [str(error)])}, status=400)
 

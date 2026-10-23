@@ -7,6 +7,7 @@ with explicit protection settings. This module never retries an uncertain exit.
 import uuid
 from decimal import Decimal, InvalidOperation
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
@@ -349,7 +350,8 @@ def _provider_free_base(item):
 def _exit_safety(item):
     control, _ = AccountControl.objects.get_or_create(account=item.account)
     return (
-        item.account.status == "connected"
+        settings.LIVE_TRADING_ENABLED
+        and item.account.status == "connected"
         and item.account.trading_enabled
         and item.account.permissions.get("can_trade_spot") is True
         and item.account.permissions.get("can_withdraw") is False

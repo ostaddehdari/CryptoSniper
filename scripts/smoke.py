@@ -323,8 +323,7 @@ def main():
                 page.locator('[name="tp1"]').fill("70000")
                 page.locator("#id_reason").fill("بازبینی مرورگر")
                 page.get_by_role("button", name="ذخیره اصلاحات و اعتبارسنجی").click()
-                page.get_by_role("button", name="تأیید دستی (بدون معامله)").click()
-                page.get_by_text("سیگنال پس از تأیید یا رد قابل اصلاح نیست.").wait_for()
+                page.get_by_role("button", name="تأیید و انتقال به معامله").wait_for()
                 for width in (320, 390, 768):
                     page.set_viewport_size({"width": width, "height": 844})
                     assert page.evaluate("document.documentElement.scrollWidth <= innerWidth"), (

@@ -47,6 +47,7 @@ def api_host_capabilities(request):
 def health_context(user):
     accounts = list(
         UserExchangeAccount.objects.filter(owner=user, environment="live")
+        .exclude(status="disabled")
         .exclude(exchange__adapter_code="simulator")
         .exclude(exchange__code="binance")
         .select_related("exchange")

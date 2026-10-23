@@ -2,8 +2,8 @@ import logging
 
 from celery import shared_task
 
-from .live_orders import execute_live_spot_order
-from .models import UserExchangeAccount
+from .live_orders import execute_live_spot_order, reconcile_live_spot_order
+from .models import LiveSpotOrder, UserExchangeAccount
 from .services import sync_exchange_account as run_sync
 
 logger = logging.getLogger(__name__)
@@ -28,3 +28,48 @@ def sync_exchange_account(account_id):
 @shared_task(name="exchanges.live_spot_order", acks_late=True, reject_on_worker_lost=True)
 def live_spot_order(order_id):
     return execute_live_spot_order(order_id)
+
+
+
+@shared_task(name="exchanges.reconcile_live_orders", acks_late=True, time_limit=45)
+def reconcile_live_orders():
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    cutoff = timezone.now() - timedelta(seconds=60)
+    LiveSpotOrder.objects.filter(
+        state=LiveSpotOrder.State.SUBMITTING,
+        updated_at__lt=cutoff,
+    ).update(
+        state=LiveSpotOrder.State.UNCERTAIN,
+        error_code="submission_worker_interrupted",
+    )
+    ids = list(
+        LiveSpotOrder.objects.filter(
+            state__in=(LiveSpotOrder.State.OPEN, LiveSpotOrder.State.PARTIAL),
+            account__status="connected",
+            account__permissions__can_read=True,
+        )
+        .exclude(external_order_id="")
+        .order_by("updated_at", "pk")
+        .values_list("pk", flat=True)[:100]
+    )
+    results = []
+    for order_id in ids:
+        try:
+            results.append(
+                {
+                    "order_id": order_id,
+                    "result": reconcile_live_spot_order(order_id),
+                }
+            )
+        except Exception as error:
+            logger.warning(
+                "Live order reconciliation failed",
+                extra={
+                    "order_id": order_id,
+                    "error": type(error).__name__,
+                },
+            )
+    return {"processed": len(results), "results": results}

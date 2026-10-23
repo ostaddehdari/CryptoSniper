@@ -673,6 +673,34 @@ function AddExchange({catalog,onClose,notify,done}){
   </div></Modal>
 }
 
+const guides={
+  bitunix:[
+    "در API Management کلید Read + Spot Trading بسازید.",
+    "Withdrawal باید کاملاً خاموش باشد.",
+    "در صورت امکان IP ثابت سرور را whitelist کنید."
+  ],
+  lbank:[
+    "Verification Method را HmacSHA256 انتخاب کنید.",
+    "Read و Spot Trade روشن و Withdrawal خاموش باشد.",
+    "اگر 10005 می‌بینید Key/Secret فعلی در LBank معتبر نیست و باید کلید تازه بسازید."
+  ],
+  ourbit:[
+    "SPOT_ACCOUNT_READ و SPOT_DEAL_WRITE را فعال کنید.",
+    "مجوز Withdrawal را فعال نکنید.",
+    "خطای 700007 یعنی Permission endpoint حساب ناقص است."
+  ],
+  weex:[
+    "API Key، Secret و Passphrase هر سه لازم‌اند.",
+    "Read و Spot Trade روشن و Withdrawal خاموش باشد.",
+    "IP ثابت سرور را در whitelist قرار دهید."
+  ],
+  nobitex:[
+    "Token جدید حساب را وارد کنید؛ Secret جداگانه لازم نیست.",
+    "Token را بدون پیشوند Token وارد کنید.",
+    "اتصال حذف‌شده باید با Token تازه دوباره ثبت شود."
+  ]
+};
+
 function Guide({provider}){return <div className="guideMini"><b>راهنمای اتصال</b>{(guides[provider]||[]).map((x,i)=><div key={i}><span>{i+1}</span><p>{x}</p></div>)}</div>}
 
 function Wallets({notify}){const [wallets,setWallets]=useState([]);const [provider,setProvider]=useState("metamask");const [network,setNetwork]=useState("ethereum");const [address,setAddress]=useState("");const [label,setLabel]=useState("کیف پول اصلی");const load=()=>api("/api/v1/wallets/").then(d=>setWallets(d.wallets||[])).catch(e=>notify(e.message));useEffect(()=>{load()},[]);const save=async(status="watch_only")=>{try{await api("/api/v1/wallets/",{method:"POST",body:{provider,network,address,label,status}});notify("کیف پول ثبت شد");setAddress("");load()}catch(e){notify(e.message)}};const browserConnect=async()=>{try{if(!window.ethereum)throw new Error("کیف پول مرورگر شناسایی نشد. MetaMask/Trust را در مرورگر فعال کنید.");const accounts=await window.ethereum.request({method:"eth_requestAccounts"});if(!accounts?.[0])throw new Error("آدرسی دریافت نشد");setAddress(accounts[0]);await api("/api/v1/wallets/",{method:"POST",body:{provider,network:"ethereum",address:accounts[0],label,status:"connected"}});notify("کیف پول مرورگر متصل و آدرس عمومی ثبت شد");load()}catch(e){notify(e.message)}};const del=async id=>{try{await api(`/api/v1/wallets/${id}/`,{method:"DELETE"});load()}catch(e){notify(e.message)}};return <div className="walletLayout"><div className="card"><div className="cardHead"><div><h3>کیف پول‌های غیرامانی</h3><p>بدون Seed Phrase و Private Key</p></div><ShieldCheck size={20}/></div><div className="formGrid oneCol"><div className="field"><label>نوع کیف پول</label><select value={provider} onChange={e=>setProvider(e.target.value)}><option value="metamask">MetaMask</option><option value="trust_wallet">Trust Wallet</option><option value="walletconnect">WalletConnect</option><option value="ledger">Ledger</option><option value="trezor">Trezor</option><option value="evm_address">EVM Address</option><option value="tron_address">TRON Address</option></select></div><div className="field"><label>شبکه</label><input value={network} onChange={e=>setNetwork(e.target.value)}/></div><div className="field"><label>نام</label><input value={label} onChange={e=>setLabel(e.target.value)}/></div><div className="field"><label>آدرس عمومی</label><input dir="ltr" value={address} onChange={e=>setAddress(e.target.value)} placeholder="0x… / TRON…"/></div><div className="securityNote"><ShieldCheck size={18}/><div><b>هیچ Secret کیف پول ذخیره نمی‌شود</b><span>اتصال این بخش فقط برای مشاهده/شناسایی آدرس است. تراکنش on-chain نیازمند تأیید جداگانه داخل کیف پول خواهد بود.</span></div></div><div className="row gap"><button className="secondary" onClick={()=>save("watch_only")}>ثبت فقط مشاهده</button>{["metamask","trust_wallet"].includes(provider)&&<button className="primary" onClick={browserConnect}><Link2 size={17}/> اتصال مرورگر</button>}</div></div></div><div className="card"><div className="cardHead"><div><h3>اتصال‌های ثبت‌شده</h3><p>برای مدیریت دارایی‌های چندمحلی</p></div></div><div className="walletList">{wallets.map(w=><div className="walletRow" key={w.id}><div><span className="walletIcon"><WalletCards size={18}/></span><div><b>{w.label}</b><small>{w.provider_label} · {w.network}</small><code>{w.address}</code></div></div><div><Status value={w.status==="connected"?"connected":"restricted"}/><button className="iconBtn dangerBtn" onClick={()=>del(w.id)}><Trash2 size={16}/></button></div></div>)}{!wallets.length&&<Empty/>}</div><div className="guideFooter"><AlertTriangle size={18}/><p>WalletConnect واقعی در مرورگر به Project ID ارائه‌دهنده نیاز دارد. تا زمان تنظیم آن، WalletConnect به‌صورت ثبت آدرس عمومی/فقط مشاهده استفاده می‌شود. Seed Phrase یا Private Key هرگز وارد CryptoSniper نشود.</p></div></div></div>}

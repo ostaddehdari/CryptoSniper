@@ -201,7 +201,7 @@ def test_stage27_exchange_revoke_keeps_web_session_authenticated(client, django_
     account.save(update_fields=("credentials_encrypted", "credential_hint", "updated_at"))
     client.force_login(owner)
     step = client.post(
-        reverse("api-security-step-up"),
+        reverse("api-step-up"),
         data=json.dumps({"password": password}),
         content_type="application/json",
     )
@@ -243,8 +243,8 @@ def test_stage27_smart_paste_materializes_compact_pair_on_unique_market(
     structured = signal["structured"]
     assert structured["account_id"] == account.pk
     assert structured["market_id"] is not None
-    assert structured["entry"] == "80000.0000000000000000"
-    assert structured["stop_loss"] == "78000.0000000000000000"
+    assert structured["entry"] == "80000"
+    assert structured["stop_loss"] == "78000"
     assert len(structured["targets"]) == 3
 
 
@@ -301,6 +301,10 @@ def test_stage27_external_trailing_sl_moves_to_entry_once_and_queues_one_exit(
         "apps.operations.external_management.live_spot_order.apply_async",
         lambda args, queue: queued.append((args, queue)),
     )
+    monkeypatch.setattr(
+        "apps.operations.external_management.transaction.on_commit",
+        lambda callback: callback(),
+    )
 
     assert monitor_one(item.pk) == "monitored"
     item.refresh_from_db()
@@ -344,7 +348,7 @@ def test_stage27_live_order_api_queues_without_provider_call(
     )
     client.force_login(owner)
     step = client.post(
-        reverse("api-security-step-up"),
+        reverse("api-step-up"),
         data=json.dumps({"password": password}),
         content_type="application/json",
     )

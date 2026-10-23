@@ -277,3 +277,10 @@ CELERY_BEAT_SCHEDULE["live-order-reconciliation"] = {
     "schedule": 5.0,
     "options": {"queue": "maintenance", "expires": 4},
 }
+
+
+CELERY_BEAT_SCHEDULE["managed-live-trades"] = {
+    "task": "operations.monitor_managed_live_trades",
+    "schedule": 5.0,
+    "options": {"queue": "trailing", "expires": 4},
+}

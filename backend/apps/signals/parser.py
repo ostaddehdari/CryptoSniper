@@ -5,10 +5,11 @@ from decimal import Decimal, InvalidOperation
 
 from .normalization import normalize
 
-PARSER_VERSION = "rules-v1"
+PARSER_VERSION = "rules-v2"
 NUMBER = r"([0-9]+(?:[.,][0-9]+)?)"
 PAIR = re.compile(r"(?<![A-Z0-9])(?:#)?([A-Z]{2,12})\s*[/_-]\s*([A-Z]{2,12})(?![A-Z0-9])", re.I)
-HASHTAG = re.compile(r"(?<!\w)#([A-Z]{3,15})\s*(?:USDT|USD)\b", re.I)
+HASHTAG = re.compile(r"(?<!\w)[#$]?([A-Z]{2,15})\s*(?:/|_|-)?\s*(USDT|USDC|USD)\b", re.I)
+COMPACT_TOKEN = re.compile(r"(?<![A-Z0-9])[#$]?([A-Z]{4,20})(?![A-Z0-9])", re.I)
 SIDE_LONG = re.compile(r"\b(LONG|BUY)\b|\b(خرید|لانگ)\b", re.I)
 SIDE_SHORT = re.compile(r"\b(SHORT|SELL)\b|\b(فروش|شورت)\b", re.I)
 FUTURES = re.compile(r"\b(FUTURES?|PERPETUAL|PERP)\b|\b(فیوچرز|دائمی)\b", re.I)
@@ -52,10 +53,19 @@ def extract(raw: str) -> dict:
         if pair not in pairs:
             pairs.append(pair)
     if not pairs:
-        for base in HASHTAG.findall(cleaned):
-            pair = f"{base.upper()}/USDT"
+        for base, quote in HASHTAG.findall(cleaned):
+            pair = f"{base.upper()}/{quote.upper()}"
             if pair not in pairs:
                 pairs.append(pair)
+    if not pairs:
+        for token in COMPACT_TOKEN.findall(cleaned):
+            upper_token = token.upper()
+            for quote in ("USDT", "USDC", "USD"):
+                if upper_token.endswith(quote) and len(upper_token) > len(quote) + 1:
+                    pair = f"{upper_token[:-len(quote)]}/{quote}"
+                    if pair not in pairs:
+                        pairs.append(pair)
+                    break
     long = bool(SIDE_LONG.search(cleaned))
     short = bool(SIDE_SHORT.search(cleaned))
     side = "long" if long and not short else "short" if short and not long else None
@@ -88,6 +98,14 @@ def extract(raw: str) -> dict:
     entry_range = entry_values[:2] if len(entry_values) >= 2 else None
     entry = entry_values[0] if len(entry_values) == 1 else None
     sl = stops[0] if len(stops) == 1 else None
+    if side is None and entry and sl and targets:
+        e = Decimal(entry)
+        s = Decimal(sl)
+        ts = [Decimal(value) for value in targets[:3]]
+        if s < e and all(value > e for value in ts):
+            side = "long"
+        elif s > e and all(value < e for value in ts):
+            side = "short"
     return {
         "parser_version": PARSER_VERSION,
         "normalized": cleaned,

@@ -253,8 +253,12 @@ def process_paper_price(
                 target=target,
             )
             fills.append(fill.pk)
-            if protection.step_enabled and target.state == TradeTarget.State.FILLED:
-                stop = _new_step_stop(trade, target.position)
+            if (
+                protection.step_enabled
+                and target.position == 1
+                and target.state == TradeTarget.State.FILLED
+            ):
+                stop = trade.entry_price
                 improves_stop = (
                     stop > protection.effective_stop
                     if long_side
@@ -262,10 +266,11 @@ def process_paper_price(
                 )
                 if improves_stop:
                     protection.effective_stop = stop
+                    protection.step_enabled = False
                     TradeEvent.objects.create(
                         trade=trade,
-                        event_type="STEP_STOP_MOVED",
-                        payload={"position": target.position, "stop": str(stop)},
+                        event_type="TRAILING_SL_BREAKEVEN",
+                        payload={"position": 1, "stop": str(stop)},
                     )
             if trade.state == Trade.State.CLOSED:
                 break

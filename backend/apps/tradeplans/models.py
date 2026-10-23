@@ -41,6 +41,11 @@ class TradePlan(models.Model):
     leverage = models.DecimalField(max_digits=10, decimal_places=4, default=Decimal("1"))
     trailing_sl = models.BooleanField(default=False)
     percentage_trailing = models.BooleanField(default=False)
+    percentage_trigger = models.CharField(
+        max_length=8,
+        choices=(("tp1", "TP1"), ("tp2", "TP2"), ("tp3", "TP3")),
+        default="tp1",
+    )
     trailing_distance = models.DecimalField(max_digits=8, decimal_places=4, default=Decimal("1"))
     preview = models.JSONField(default=dict)
     approved_snapshot = models.JSONField(default=dict, blank=True)

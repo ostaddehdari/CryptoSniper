@@ -112,6 +112,12 @@ def build_preview(data, now=None):
             else [Decimal("10"), Decimal("10"), Decimal("80")]
         )
     )
+    trailing_trigger = str(data.get("percentage_trigger", "tp1"))
+    if trailing_trigger not in {"tp1", "tp2", "tp3"}:
+        raise ValidationError("شروع Trailing باید TP1، TP2 یا TP3 باشد.")
+    trigger_index = {"tp1": 0, "tp2": 1, "tp3": 2}[trailing_trigger]
+    if data.get("percentage_trailing") and trigger_index >= len(targets):
+        raise ValidationError("Trigger انتخاب‌شده باید TP متناظر در معامله داشته باشد.")
     trailing_distance = data.get("trailing_distance", Decimal("1"))
     if data.get("percentage_trailing") and not (ZERO < trailing_distance < HUNDRED):
         raise ValidationError("فاصله Percentage Trailing باید بین صفر و صد باشد.")
@@ -152,9 +158,10 @@ def build_preview(data, now=None):
         "fees_are_estimates": True,
         "trailing_sl": bool(data.get("trailing_sl")),
         "percentage_trailing": bool(data.get("percentage_trailing")),
+        "percentage_trigger": trailing_trigger,
         "trailing_distance_percent": text(trailing_distance),
         "exit_policy": (
-            "percentage_trailing_only_after_tp1"
+            f"percentage_trailing_after_{trailing_trigger}"
             if data.get("percentage_trailing")
             else "scheduled_targets"
         ),

@@ -74,9 +74,8 @@ def build_preview(data, now=None):
         _market_multiple(price, market.price_step)
     if not market.amount_step or market.amount_step <= ZERO:
         raise ValidationError("Lot Step بازار نامعلوم است.")
-    if market.taker_fee is None or not (ZERO <= market.taker_fee < Decimal("1")):
-        raise ValidationError("نرخ کارمزد این بازار نامشخص است.")
-    fee_rate = market.taker_fee
+    fee_known = market.taker_fee is not None and ZERO <= market.taker_fee < Decimal("1")
+    fee_rate = market.taker_fee if fee_known else ZERO
     # capital is collateral/cash to allocate including estimated entry fee.
     # Spot: notional+fee <=capital. Margin: notional/leverage+fee <=capital.
     effective_notional = capital / (Decimal("1") / leverage + fee_rate)
@@ -88,8 +87,8 @@ def build_preview(data, now=None):
     if market.max_amount and quantity > market.max_amount:
         raise ValidationError("مقدار محاسبه‌شده از سقف بازار بیشتر است.")
     notional = quantity * entry
-    if not market.min_notional or notional < market.min_notional:
-        raise ValidationError("ارزش سفارش کمتر از Min Notional صرافی است یا این حد نامعلوم است.")
+    if market.min_notional and notional < market.min_notional:
+        raise ValidationError("ارزش سفارش کمتر از Min Notional گزارش‌شده صرافی است.")
     entry_fee = notional * fee_rate
     exit_fee = notional * fee_rate  # indicative: actual exit price/fee will differ
     required_cash = notional / leverage + entry_fee
@@ -155,7 +154,9 @@ def build_preview(data, now=None):
         "estimated_collateral_and_entry_fee": text(required_cash),
         "quote_free_balance": text(latest.free_balance),
         "quote_asset": market.quote_asset.symbol,
-        "fees_are_estimates": True,
+        "fees_are_estimates": fee_known,
+        "fee_rate_known": fee_known,
+        "min_notional_known": market.min_notional is not None,
         "trailing_sl": bool(data.get("trailing_sl")),
         "percentage_trailing": bool(data.get("percentage_trailing")),
         "percentage_trigger": trailing_trigger,

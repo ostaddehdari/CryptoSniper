@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import "./styles.css";
 import "./stage26.css";
+import "./stage27.css";
 
 const BASE = (window.__CS_BASE__ || "/cryptosniper").replace(/\/$/, "");
 const fmt=(v,d=2)=>Number(v||0).toLocaleString("fa-IR",{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -268,7 +269,6 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
 
   const market=markets.find(x=>String(x.id)===String(marketId));
   const account=accounts.find(x=>String(x.id)===String(accountId));
-  const favoriteSymbols=boot?.favorites?.[account?.exchange]||[];
 
   useEffect(()=>{
     api("/api/v1/me/trading-preferences/").then(d=>{

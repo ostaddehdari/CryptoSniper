@@ -110,3 +110,37 @@ def sync_external_accounts():
             logger.warning("External account observation failed", extra={"account_id": account_id, "error": type(error).__name__})
             results.append({"account_id": account_id, "result": "error"})
     return {"processed": len(results), "results": results}
+
+
+
+@shared_task(name="operations.monitor_external_trades", acks_late=True, time_limit=45)
+def monitor_external_trades():
+    from .external_management import monitor_one
+    from .models import ExternalTradeManagement
+
+    ids = list(
+        ExternalTradeManagement.objects.filter(
+            state__in=("active", "exiting")
+        )
+        .order_by("pk")
+        .values_list("pk", flat=True)[:100]
+    )
+    results = []
+    for management_id in ids:
+        try:
+            results.append(
+                {
+                    "id": management_id,
+                    "result": monitor_one(management_id),
+                }
+            )
+        except Exception as error:
+            logger.warning(
+                "External trade monitor failed",
+                extra={
+                    "management_id": management_id,
+                    "error": type(error).__name__,
+                },
+            )
+            results.append({"id": management_id, "result": "error"})
+    return {"processed": len(results), "results": results}

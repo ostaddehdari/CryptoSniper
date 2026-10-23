@@ -1,3 +1,12 @@
+## 0.23.0rc1 — استیج ۲۳ (2026-10-23)
+
+- رفع انتخاب واقعی بازار در معامله جدید، Entry خالی برای معامله تازه و اعمال پیش‌فرض‌های integer.
+- تعریف نهایی Trailing SL: TP1 → Entry فقط یک‌بار؛ Trailing با Trigger قابل انتخاب TP1/TP2/TP3.
+- External Trade با جزئیات کامل و adoption صریح برای مدیریت امن Spot؛ بدون حدس Position از Fill.
+- Signal Inbox با Soft Trash/restore گروهی، تأیید و انتقال مستقیم به معامله و Analytics کامل‌تر.
+- رفع white-screen اتصال صرافی/Broker و سخت‌سازی durable Live Spot boundary با permission/precision/balance recheck.
+- Live provider success تا ارائه credential و شواهد اپراتور ادعا نمی‌شود؛ Live پیش‌فرض خاموش است.
+
 ## 0.22.0rc1 — استیج ۲۲ (2026-10-18)
 
 - جریان کامل اتصال حساب Telegram: ارسال و ارسال مجدد کد، انقضا و محدودیت تلاش، 2FA و session رمزنگاری‌شده؛ خود کد/رمز ذخیره نمی‌شود.

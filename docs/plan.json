@@ -2,12 +2,12 @@
   "schema_version": "cryptosniper.stage-plan.v1",
   "project": "CryptoSniper",
   "repository": "https://github.com/ostaddehdari/CryptoSniper",
-  "plan_version": "1.1.0",
+  "plan_version": "1.2.0",
   "created_at": "2026-10-06",
-  "stage_count": 22,
-  "work_count": 110,
+  "stage_count": 23,
+  "work_count": 115,
   "execution_unit": "one_complete_stage",
-  "last_stage": "S22",
+  "last_stage": "S23",
   "default_mode": "paper",
   "scope_v1": [
     "spot",
@@ -18,7 +18,7 @@
     "perpetual"
   ],
   "source_sha256": "4904fa47ca4d294e437081bce926368c0028602a0606a82c10d4b60c49dbfd7d",
-  "latest_user_decision": "Stage22 completes Telegram account verification, full resumable archive analysis and historical signal outcome evaluation.",
+  "latest_user_decision": "Stage23 stabilizes manual trading, Trailing semantics, External Trade management, Signal Inbox analytics and exchange/order operations without removing prior capabilities.",
   "stages": [
     {
       "id": "S01",
@@ -1237,15 +1237,123 @@
       "id": "S22",
       "number": 22,
       "title": "تکمیل Telegram، آرشیو کامل و سنجش تحقق سیگنال",
-      "depends_on": ["S21"],
+      "depends_on": [
+        "S21"
+      ],
       "status": "partial",
-      "source_sections": [7, 23, 24, 48, 49, 50, 68],
+      "source_sections": [
+        7,
+        23,
+        24,
+        48,
+        49,
+        50,
+        68
+      ],
       "works": [
-        {"id": "S22-W01", "number": 1, "title": "اتصال و وریفای امن حساب", "deliverables": "ارسال/ارسال مجدد کد، انقضا، محدودیت تلاش، 2FA و session رمزنگاری‌شده بدون ذخیره کد.", "acceptance": "کد و رمز در DB/log/HTML ذخیره یا نمایش داده نشوند و خطاها بدون افشای provider مدیریت شوند.", "status": "done"},
-        {"id": "S22-W02", "number": 2, "title": "آرشیو کامل قابل‌ادامه", "deliverables": "واردسازی از نخستین پیام تا snapshot فعلی با cursor مستقل، batch، pause/resume، FloodWait و dedup.", "acceptance": "restart و پیام زنده باعث جاافتادگی/تکرار نشوند و آرشیو هیچ معامله‌ای اجرا نکند.", "status": "done"},
-        {"id": "S22-W03", "number": 3, "title": "چندقالبی و دسته‌بندی پیام", "deliverables": "قالب‌های نسخه‌دار اولویت‌دار و تشخیص signal/update/cancel/result/noise.", "acceptance": "قالب bounded باشد، پیام غیرسیگنال سفارش نسازد و raw سیگنال حفظ شود.", "status": "done"},
-        {"id": "S22-W04", "number": 4, "title": "داده و ارزیابی تاریخی", "deliverables": "کندل OHLC عمومی نرمال، ترتیب entry/TP/SL و سیاست محافظه‌کارانه ابهام داخل کندل.", "acceptance": "هدف پیش از entry برد محسوب نشود و برخورد TP/SL در یک کندل ambiguous بماند.", "status": "done"},
-        {"id": "S22-W05", "number": 5, "title": "داشبورد، API و تحویل", "deliverables": "پیشرفت آرشیو/ارزیابی، آمار کانال، API خصوصی، تست، مستندات و بسته ارتقا.", "acceptance": "آمار فقط نتایج قطعی را در win-rate وارد کند؛ CI و نصب واقعی جداگانه مستند شوند.", "status": "partial"}
+        {
+          "id": "S22-W01",
+          "number": 1,
+          "title": "اتصال و وریفای امن حساب",
+          "deliverables": "ارسال/ارسال مجدد کد، انقضا، محدودیت تلاش، 2FA و session رمزنگاری‌شده بدون ذخیره کد.",
+          "acceptance": "کد و رمز در DB/log/HTML ذخیره یا نمایش داده نشوند و خطاها بدون افشای provider مدیریت شوند.",
+          "status": "done"
+        },
+        {
+          "id": "S22-W02",
+          "number": 2,
+          "title": "آرشیو کامل قابل‌ادامه",
+          "deliverables": "واردسازی از نخستین پیام تا snapshot فعلی با cursor مستقل، batch، pause/resume، FloodWait و dedup.",
+          "acceptance": "restart و پیام زنده باعث جاافتادگی/تکرار نشوند و آرشیو هیچ معامله‌ای اجرا نکند.",
+          "status": "done"
+        },
+        {
+          "id": "S22-W03",
+          "number": 3,
+          "title": "چندقالبی و دسته‌بندی پیام",
+          "deliverables": "قالب‌های نسخه‌دار اولویت‌دار و تشخیص signal/update/cancel/result/noise.",
+          "acceptance": "قالب bounded باشد، پیام غیرسیگنال سفارش نسازد و raw سیگنال حفظ شود.",
+          "status": "done"
+        },
+        {
+          "id": "S22-W04",
+          "number": 4,
+          "title": "داده و ارزیابی تاریخی",
+          "deliverables": "کندل OHLC عمومی نرمال، ترتیب entry/TP/SL و سیاست محافظه‌کارانه ابهام داخل کندل.",
+          "acceptance": "هدف پیش از entry برد محسوب نشود و برخورد TP/SL در یک کندل ambiguous بماند.",
+          "status": "done"
+        },
+        {
+          "id": "S22-W05",
+          "number": 5,
+          "title": "داشبورد، API و تحویل",
+          "deliverables": "پیشرفت آرشیو/ارزیابی، آمار کانال، API خصوصی، تست، مستندات و بسته ارتقا.",
+          "acceptance": "آمار فقط نتایج قطعی را در win-rate وارد کند؛ CI و نصب واقعی جداگانه مستند شوند.",
+          "status": "partial"
+        }
+      ]
+    },
+    {
+      "id": "S23",
+      "number": 23,
+      "title": "تثبیت معامله و UI عملیاتی",
+      "depends_on": [
+        "S22"
+      ],
+      "status": "partial",
+      "source_sections": [
+        4,
+        5,
+        8,
+        10,
+        13,
+        14,
+        21,
+        41,
+        42,
+        50
+      ],
+      "works": [
+        {
+          "id": "S23-W01",
+          "number": 1,
+          "title": "تثبیت معامله دستی و Trailing",
+          "deliverables": "انتخاب واقعی بازار جست‌وجوشده، Entry خالی در معامله تازه، پیش‌فرض‌های integer و Trigger TP1/TP2/TP3؛ Trailing SL فقط TP1→Entry یک‌بار.",
+          "acceptance": "بازار انتخاب‌شده واقعاً در فرم ثبت شود؛ Trailing SL پس از TPهای بعدی جلو نرود و Trailing از TP انتخابی فعال شود.",
+          "status": "done"
+        },
+        {
+          "id": "S23-W02",
+          "number": 2,
+          "title": "External Trade و واگذاری امن مدیریت",
+          "deliverables": "فهرست/جزئیات معامله خارجی با زمان، جهت، Entry، مقدار و وضعیت؛ adoption صریح Spot Long و مدیریت Trailing بدون حدس Position.",
+          "acceptance": "هیچ Fill به‌طور خودکار Position فرض نشود؛ خروج فقط پس از تأیید حجم و از Live Spot gate امن انجام شود.",
+          "status": "done"
+        },
+        {
+          "id": "S23-W03",
+          "number": 3,
+          "title": "Signal Inbox و Analytics",
+          "deliverables": "Soft Trash/restore گروهی، تأیید و انتقال یکپارچه به معامله، و شاخص‌های پوشش ارزیابی/برد/باخت/ابهام/کیفیت Parser.",
+          "acceptance": "حذف تاریخچه را نابود نکند؛ سیگنال Parsed با یک اقدام تأیید و وارد فرم معامله شود؛ Ambiguous برد/باخت شمرده نشود.",
+          "status": "done"
+        },
+        {
+          "id": "S23-W04",
+          "number": 4,
+          "title": "اتصال صرافی و مسیر سفارش Live",
+          "deliverables": "جلوگیری از white screen، پنهان‌سازی اتصال Disable/Revoked، durable dispatch و بازبینی مجوز/precision/balance در مرز سفارش.",
+          "acceptance": "قطعی Broker اتصال یا سفارش ذخیره‌شده را نابود نکند؛ Live Spot بدون Read+Spot و Withdrawal=false یا metadata/balance معتبر اجرا نشود.",
+          "status": "done"
+        },
+        {
+          "id": "S23-W05",
+          "number": 5,
+          "title": "تست، مستندات و بسته تجمعی",
+          "deliverables": "نسخه 0.23.0rc1، CI exact-source، گزارش S23، installer تجمعی، ZIP/SHA256 و Release workflow.",
+          "acceptance": "Release فقط بعد از CI موفق همان commit ساخته شود؛ installer --check روی ZIP دقیق پاس شود و Live پیش‌فرض خاموش بماند.",
+          "status": "done"
+        }
       ]
     }
   ]

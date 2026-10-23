@@ -1,13 +1,13 @@
 {
   "schema_version": "cryptosniper.progress.v1",
-  "plan_version": "1.1.0",
+  "plan_version": "1.2.0",
   "completed_stages": [
     "S01",
     "S02"
   ],
-  "current_stage": "S22",
+  "current_stage": "S23",
   "next_stage": null,
-  "last_completed_work": "S22-W05",
+  "last_completed_work": "S23-W05",
   "implementation_started": true,
   "stage_results": {
     "S01": {
@@ -1104,11 +1104,33 @@
     },
     "S22": {
       "status": "partial",
-      "completed_works": ["S22-W01", "S22-W02", "S22-W03", "S22-W04", "S22-W05"],
+      "completed_works": [
+        "S22-W01",
+        "S22-W02",
+        "S22-W03",
+        "S22-W04",
+        "S22-W05"
+      ],
       "checks": [
-        {"name": "Local Ruff, Django schema checks and focused Stage22 tests", "status": "passed"},
-        {"name": "Exact-source PostgreSQL/Redis/Workers/Beat/Chromium CI", "status": "passed", "tested_commit": "cfce4d3a19f0bc2df56aae15175b80255a940f51", "tests_passed": 260, "run_url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/39136150786"},
-        {"name": "Immutable Stage22 package and CHECK_OK release", "status": "passed", "source_commit": "cfce4d3a19f0bc2df56aae15175b80255a940f51", "archive_sha256": "8614ebae00367167dbe1f3144db559e194304783b185f1fd3a59dc324e91563a", "installer_sha256": "5ce7a432df677af03ff910df0e9ba39a93d4c53530d388a686fb358621c3b251", "release_url": "https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage22-v0.22.0rc1-deploy"}
+        {
+          "name": "Local Ruff, Django schema checks and focused Stage22 tests",
+          "status": "passed"
+        },
+        {
+          "name": "Exact-source PostgreSQL/Redis/Workers/Beat/Chromium CI",
+          "status": "passed",
+          "tested_commit": "cfce4d3a19f0bc2df56aae15175b80255a940f51",
+          "tests_passed": 260,
+          "run_url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/39136150786"
+        },
+        {
+          "name": "Immutable Stage22 package and CHECK_OK release",
+          "status": "passed",
+          "source_commit": "cfce4d3a19f0bc2df56aae15175b80255a940f51",
+          "archive_sha256": "8614ebae00367167dbe1f3144db559e194304783b185f1fd3a59dc324e91563a",
+          "installer_sha256": "5ce7a432df677af03ff910df0e9ba39a93d4c53530d388a686fb358621c3b251",
+          "release_url": "https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage22-v0.22.0rc1-deploy"
+        }
       ],
       "commit_shas": [
         "5212df1def772a6ec1a061e3fe3bab59c31cf9cd",
@@ -1126,6 +1148,42 @@
       "implementation": "Five Stage22 works implemented and exact-source CI/release completed: secure verification lifecycle, resumable first-message archive, versioned multi-template classification, conservative OHLC outcome evaluation, owner-scoped analytics/API and cumulative verified deployment.",
       "release_tag": "stage22-v0.22.0rc1-deploy",
       "release_commit": "cfce4d3a19f0bc2df56aae15175b80255a940f51"
+    },
+    "S23": {
+      "status": "partial",
+      "completed_works": [
+        "S23-W01",
+        "S23-W02",
+        "S23-W03",
+        "S23-W04",
+        "S23-W05"
+      ],
+      "checks": [
+        {
+          "name": "Exact-source PostgreSQL/Redis/Workers/Beat/Chromium CI",
+          "status": "pending",
+          "notes": "Authoritative result will be pinned after the Stage23 Work5 source commit completes CI."
+        },
+        {
+          "name": "Immutable Stage23 cumulative package and installer --check",
+          "status": "pending",
+          "notes": "Release workflow is present but may run only after exact-source CI succeeds."
+        }
+      ],
+      "commit_shas": [
+        "749bc6965564fb7f408ee0f656b685770f099bfc",
+        "d817f62e7a55393ecae73fe9300180d9bdb450b4",
+        "99727025171e3a593f07f5b3990fe89723f06f10",
+        "52aa7c7d48fbd3e5f139f945f3fe737c50565df0",
+        "898d45c161805ed6b2b630840c2f50bc275c27ae",
+        "d11fc7c47e773931f4a608a4cd37b41cc618b299"
+      ],
+      "blockers": [
+        "No authorized real provider credentials were supplied for end-to-end live order acceptance; LIVE_TRADING_ENABLED remains false by default.",
+        "External Trade management requires user-confirmed remaining amount and fresh balance; the system intentionally does not infer an open position from a fill.",
+        "Target VPS installation and public HTTPS acceptance of 0.23 remain operator evidence."
+      ],
+      "implementation": "Five stabilization works are code-complete: manual market/default/trailing semantics, explicit External Trade adoption, Inbox soft-trash and approve-to-trade analytics, exchange/Broker error handling and a hardened durable Spot order boundary. Exact-source CI/release and VPS acceptance are recorded separately."
     }
   }
 }

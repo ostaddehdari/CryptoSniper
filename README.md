@@ -2,7 +2,7 @@
 
 سامانه پایتونی دریافت، اجرای و مدیریت سیگنال رمزارز با Django، PostgreSQL، Redis و Celery، رابط Mobile-First و حالت روشن پیش‌فرض.
 
-**برنامه: ۲۲ استیج × ۵ ورک = ۱۱۰ ورک.** کد آزمایشی **0.22.0rc1** جریان کامل وریفای حساب Telegram، آرشیو قابل‌ادامه از نخستین پیام، قالب‌های چندگانه و سنجش تاریخی محافظه‌کارانه را همراه adapterهای Spot برای Nobitex، LBank، WEEX، Ourbit و Bitunix دارد. credential واقعی هیچ provider آزمون نشده و `LIVE_TRADING_ENABLED=false` است. Full-Auto Telegram فقط Paper/Simulator می‌ماند؛ Futures/Perpetual و Margin واقعی غیرفعال‌اند.
+**برنامه: ۲۳ استیج × ۵ ورک = ۱۱۵ ورک.** کد آزمایشی **0.23.0rc1** جریان کامل وریفای حساب Telegram، آرشیو قابل‌ادامه از نخستین پیام، قالب‌های چندگانه و سنجش تاریخی محافظه‌کارانه را همراه adapterهای Spot برای Nobitex، LBank، WEEX، Ourbit و Bitunix دارد. credential واقعی هیچ provider آزمون نشده و `LIVE_TRADING_ENABLED=false` است. Full-Auto Telegram فقط Paper/Simulator می‌ماند؛ Futures/Perpetual و Margin واقعی غیرفعال‌اند.
 
 - [گزارش تحویل و شواهد استیج ۱](docs/reports/stage-01.md)
 - [گزارش تحویل و شواهد استیج ۲](docs/reports/stage-02.md)
@@ -17,6 +17,7 @@
 - [پذیرش نسخه پایه استیج ۲۰](docs/reports/stage-20.md)
 - [Telethon، تحلیل کانال و پنج صرافی Spot در استیج ۲۱](docs/reports/stage-21.md)
 - [تکمیل Telegram و ارزیابی تاریخی در استیج ۲۲](docs/reports/stage-22.md)
+- [تثبیت معامله و UI عملیاتی در استیج ۲۳](docs/reports/stage-23.md)
 - [راهنمای کاربر](docs/user-guide.md) و [راهنمای ادمین](docs/admin-guide.md)
 - [راهنمای نصب و اجرا](docs/setup.md)
 - [بررسی خودکار در GitHub Actions](https://github.com/ostaddehdari/CryptoSniper/actions)
@@ -32,7 +33,7 @@
 
 برای ادامه:
 
-> Release 0.22 را ابتدا با `--check` بررسی و سپس روی VPS نصب کن؛ بعد حساب Telegram و credentialها را فقط در UI رمزنگاری‌شده وارد و اتصال خواندنی را پیش از Live تأیید کن.
+> Release 0.23 پس از CI exact-source منتشر می‌شود؛ ابتدا با `--check` بررسی و سپس روی VPS نصب شود. credentialها فقط در UI رمزنگاری‌شده وارد شوند و Live تا پذیرش واقعی روشن نشود.
 
 پس از اتمام، همین دستور با شماره استیج بعد اجرا می‌شود. درخواست یک استیج مجوز رفتن خودکار به استیج بعد نیست. ثبت کد در GitHub به‌معنی مجوز اجرای معامله با پول واقعی یا استقرار روی سرور تعیین‌نشده نیست.
 

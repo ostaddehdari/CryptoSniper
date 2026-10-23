@@ -93,6 +93,11 @@ urlpatterns = [
     path("operations/", react_views.legacy_react_page, {"page": "operations"}, name="operations"),
     path("operations/<int:pk>/control/", operation_views.control, name="operations-control"),
     path("api/v1/operations/health/", operation_views.api_health, name="api-operations-health"),
+    path(
+        "api/v1/external-trades/<int:pk>/management/",
+        operation_views.api_external_management,
+        name="api-external-management",
+    ),
     path("api/v1/operations/accounts/<int:pk>/control/", operation_views.api_control, name="api-operations-account-control"),
     path("api/v1/acceptance/", operation_views.api_acceptance, name="api-acceptance"),
     path(

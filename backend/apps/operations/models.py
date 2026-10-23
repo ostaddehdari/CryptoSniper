@@ -278,10 +278,12 @@ class ManagedLiveTarget(models.Model):
                 name="managed_live_target_position_range",
             ),
             models.CheckConstraint(
-                condition=models.Q(price__gt=0)
-                & models.Q(share_percent__gt=0)
-                & models.Q(share_percent__lte=100)
-                & models.Q(allocated_quantity__gte=0),
+                condition=models.Q(
+                    allocated_quantity__gte=0,
+                    price__gt=0,
+                    share_percent__gt=0,
+                    share_percent__lte=100,
+                ),
                 name="managed_live_target_values_valid",
             ),
         ]

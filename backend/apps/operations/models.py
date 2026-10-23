@@ -164,3 +164,138 @@ class ExternalTradeManagement(models.Model):
 
     def __str__(self):
         return f"External management {self.pk} [{self.state}]"
+
+
+
+class ManagedLiveTrade(models.Model):
+    """Managed protection for an entry order created by CryptoSniper."""
+
+    class State(models.TextChoices):
+        PENDING_ENTRY = "pending_entry", "منتظر تکمیل ورود"
+        ACTIVE = "active", "فعال"
+        PAUSED = "paused", "متوقف"
+        EXITING = "exiting", "در حال خروج"
+        CLOSED = "closed", "بسته"
+        ERROR = "error", "خطا"
+
+    owner = models.ForeignKey("accounts.User", on_delete=models.CASCADE)
+    account = models.ForeignKey("exchanges.UserExchangeAccount", on_delete=models.PROTECT)
+    market = models.ForeignKey("exchanges.ExchangeMarket", on_delete=models.PROTECT)
+    plan = models.ForeignKey("tradeplans.TradePlan", on_delete=models.PROTECT)
+    entry_order = models.OneToOneField(
+        "exchanges.LiveSpotOrder",
+        on_delete=models.PROTECT,
+        related_name="managed_entry",
+    )
+    initial_quantity = models.DecimalField(max_digits=32, decimal_places=16, default=0)
+    remaining_quantity = models.DecimalField(max_digits=32, decimal_places=16, default=0)
+    entry_price = models.DecimalField(max_digits=32, decimal_places=16)
+    initial_stop = models.DecimalField(max_digits=32, decimal_places=16)
+    effective_stop = models.DecimalField(max_digits=32, decimal_places=16)
+    trailing_enabled = models.BooleanField(default=False)
+    trailing_sl_enabled = models.BooleanField(default=False)
+    trailing_trigger = models.CharField(
+        max_length=8,
+        choices=(("tp1", "TP1"), ("tp2", "TP2"), ("tp3", "TP3")),
+        default="tp1",
+    )
+    trailing_distance_percent = models.DecimalField(
+        max_digits=8,
+        decimal_places=4,
+        default=1,
+    )
+    high_water = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
+    breakeven_moved = models.BooleanField(default=False)
+    last_price = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
+    last_tick_at = models.DateTimeField(null=True, blank=True)
+    state = models.CharField(max_length=16, choices=State.choices, default=State.PENDING_ENTRY)
+    last_error = models.CharField(max_length=80, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-updated_at", "-pk")
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(entry_price__gt=0),
+                name="managed_live_entry_positive",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(initial_stop__gt=0),
+                name="managed_live_stop_positive",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(initial_quantity__gte=0)
+                & models.Q(remaining_quantity__gte=0),
+                name="managed_live_quantity_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(trailing_distance_percent__gt=0)
+                & models.Q(trailing_distance_percent__lt=100),
+                name="managed_live_distance_range",
+            ),
+        ]
+
+
+class ManagedLiveTarget(models.Model):
+    class State(models.TextChoices):
+        WAITING = "waiting", "منتظر"
+        EXIT_PENDING = "exit_pending", "خروج در صف"
+        FILLED = "filled", "تکمیل"
+        SKIPPED = "skipped", "عبور شد"
+
+    management = models.ForeignKey(
+        ManagedLiveTrade,
+        on_delete=models.CASCADE,
+        related_name="targets",
+    )
+    position = models.PositiveSmallIntegerField()
+    price = models.DecimalField(max_digits=32, decimal_places=16)
+    share_percent = models.DecimalField(max_digits=5, decimal_places=2)
+    allocated_quantity = models.DecimalField(max_digits=32, decimal_places=16, default=0)
+    exit_order = models.OneToOneField(
+        "exchanges.LiveSpotOrder",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="managed_target_exit",
+    )
+    state = models.CharField(max_length=16, choices=State.choices, default=State.WAITING)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("position",)
+        constraints = [
+            models.UniqueConstraint(
+                fields=("management", "position"),
+                name="managed_live_target_position_unique",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(position__gte=1) & models.Q(position__lte=3),
+                name="managed_live_target_position_range",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(price__gt=0)
+                & models.Q(share_percent__gt=0)
+                & models.Q(share_percent__lte=100)
+                & models.Q(allocated_quantity__gte=0),
+                name="managed_live_target_values_valid",
+            ),
+        ]
+
+
+class ManagedLiveExit(models.Model):
+    """Single durable full-position stop/trailing exit for one managed trade."""
+
+    management = models.OneToOneField(
+        ManagedLiveTrade,
+        on_delete=models.CASCADE,
+        related_name="full_exit",
+    )
+    reason = models.CharField(max_length=24)
+    order = models.OneToOneField(
+        "exchanges.LiveSpotOrder",
+        on_delete=models.PROTECT,
+        related_name="managed_full_exit",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)

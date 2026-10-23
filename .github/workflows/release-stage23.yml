@@ -87,7 +87,7 @@ jobs:
               '__BLOB_TELEGRAM_BACKFILL__': blob('backend/apps/signals/backfill.py'),
               '__BLOB_SIGNAL_OUTCOMES__': blob('backend/apps/signals/outcomes.py'),
               '__BLOB_MARKET_HISTORY__': blob('backend/apps/marketdata/history.py'),
-              '__BLOB_STAGE23_REPORT__': blob('docs/reports/stage-22.md'),
+              '__BLOB_STAGE23_REPORT__': blob('docs/reports/stage-23.md'),
               '__BLOB_LIVE_ORDERS__': blob('backend/apps/exchanges/live_orders.py'),
               '__BLOB_TRADEPLAN_FORMS__': blob('backend/apps/tradeplans/forms.py'),
               '__BLOB_TRADEPLAN_CALCULATIONS__': blob('backend/apps/tradeplans/calculations.py'),

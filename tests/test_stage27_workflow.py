@@ -319,3 +319,50 @@ def test_stage27_external_trailing_sl_moves_to_entry_once_and_queues_one_exit(
     assert order.order_type == "market"
     assert order.amount == Decimal("0.010")
     assert len(queued) == 1
+
+
+
+@pytest.mark.django_db
+@override_settings(LIVE_TRADING_ENABLED=True)
+def test_stage27_live_order_api_queues_without_provider_call(
+    client, django_user_model, monkeypatch
+):
+    password = "stage27-live-order-password"
+    owner = django_user_model.objects.create_user(
+        username="stage27-live-order",
+        password=password,
+    )
+    account = live_account(owner)
+    market = spot_market(account)
+    queued = []
+    monkeypatch.setattr(
+        "apps.core.react_views.live_spot_order.apply_async",
+        lambda args, queue: queued.append((args, queue)),
+    )
+    client.force_login(owner)
+    step = client.post(
+        reverse("api-security-step-up"),
+        data=json.dumps({"password": password}),
+        content_type="application/json",
+    )
+    assert step.status_code == 200
+    response = client.post(
+        reverse("api-live-orders"),
+        data=json.dumps(
+            {
+                "account": account.pk,
+                "market": market.pk,
+                "side": "buy",
+                "amount": "1.000",
+                "price": "100",
+                "confirmed": True,
+                "request_key": str(uuid.uuid4()),
+            }
+        ),
+        content_type="application/json",
+    )
+    assert response.status_code == 201, response.content
+    order = LiveSpotOrder.objects.get(pk=response.json()["order"]["id"])
+    assert order.state == LiveSpotOrder.State.PENDING
+    assert order.order_type == "limit"
+    assert queued == [([order.pk], "orders")]

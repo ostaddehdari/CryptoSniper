@@ -11,7 +11,10 @@ from .external_utils import normalized_external
 class ExternalTradePolicyForm(forms.Form):
     entry_price = forms.DecimalField(label="Entry تأییدشده", max_digits=32, decimal_places=16)
     remaining_amount = forms.DecimalField(
-        label="حجم باقی‌مانده", max_digits=32, decimal_places=16, min_value=Decimal("0.0000000000000001")
+        label="حجم باقی‌مانده",
+        max_digits=32,
+        decimal_places=16,
+        min_value=Decimal("0.0000000000000001"),
     )
     stop_loss = forms.DecimalField(label="SL", max_digits=32, decimal_places=16)
     tp1 = forms.DecimalField(label="TP1", max_digits=32, decimal_places=16)
@@ -96,7 +99,11 @@ class ExternalTradePolicyForm(forms.Form):
             self.add_error("remaining_amount", "حجم با Lot Step صرافی سازگار نیست.")
         if market.min_amount and amount < market.min_amount:
             self.add_error("remaining_amount", "حجم از حداقل بازار کمتر است.")
-        latest = account.balance_snapshots.filter(asset=market.base_asset).order_by("-captured_at").first()
+        latest = (
+            account.balance_snapshots.filter(asset=market.base_asset)
+            .order_by("-captured_at")
+            .first()
+        )
         if not latest or latest.free_balance < amount:
             self.add_error(
                 "remaining_amount",

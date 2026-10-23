@@ -62,7 +62,11 @@ def detail(request, pk):
         for key in SAFE_FIELDS
         if key in payload and isinstance(payload[key], (str, int, float, bool, type(None)))
     ]
-    policy = ExternalTradePolicy.objects.filter(observation=item).select_related("exit_order").first()
+    policy = (
+        ExternalTradePolicy.objects.filter(observation=item)
+        .select_related("exit_order")
+        .first()
+    )
     form = ExternalTradePolicyForm(item=item, instance=policy)
     return render(
         request,
@@ -95,7 +99,8 @@ def manage(request, pk):
         apply_external_policy(request.user, item.pk, form.cleaned_data)
         messages.success(
             request,
-            "مدیریت معامله خارجی فعال شد؛ خروج فقط از مسیر امن Live Spot و بدون برداشت انجام می‌شود.",
+            "مدیریت معامله خارجی فعال شد؛ خروج فقط از مسیر امن Live Spot "
+            "و بدون برداشت انجام می‌شود.",
         )
     except ValidationError as error:
         messages.error(request, "؛ ".join(getattr(error, "messages", [str(error)])))

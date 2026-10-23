@@ -3,9 +3,15 @@ from uuid import uuid4
 
 import pytest
 from apps.exchanges.live_orders import queue_live_spot_order
-from apps.exchanges.models import BalanceSnapshot, ExchangeMarket, LiveSpotOrder, UserExchangeAccount
-from apps.exchanges.services import sync_exchange_account
+from apps.exchanges.models import (
+    BalanceSnapshot,
+    ExchangeMarket,
+    LiveSpotOrder,
+    UserExchangeAccount,
+)
 from apps.exchanges.security import revoke_account_credentials
+from apps.exchanges.services import sync_exchange_account
+from django.core.exceptions import ValidationError
 from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -25,7 +31,8 @@ def test_disabled_or_revoked_connections_are_hidden_from_center_system_and_api(
     revoke_account_credentials(account)
     assert account.label not in client.get(reverse("exchange-center")).content.decode()
     assert account.label not in client.get(reverse("system")).content.decode()
-    assert all(row["id"] != account.pk for row in client.get(reverse("api-exchanges")).json()["accounts"])
+    accounts = client.get(reverse("api-exchanges")).json()["accounts"]
+    assert all(row["id"] != account.pk for row in accounts)
 
 
 @pytest.mark.django_db
@@ -69,7 +76,7 @@ def test_live_boundary_rejects_stale_balance_and_bad_precision(django_user_model
     market = ExchangeMarket.objects.get(
         exchange=account.exchange, symbol="BTC/USDT", market_type="spot"
     )
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         queue_live_spot_order(
             user,
             account,
@@ -82,7 +89,7 @@ def test_live_boundary_rejects_stale_balance_and_bad_precision(django_user_model
             },
         )
     account.balance_snapshots.all().delete()
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         queue_live_spot_order(
             user,
             account,
@@ -115,9 +122,9 @@ def test_live_order_is_durable_pending_before_provider_execution(django_user_mod
     market = ExchangeMarket.objects.get(
         exchange=account.exchange, symbol="BTC/USDT", market_type="spot"
     )
-    BalanceSnapshot.objects.filter(exchange_account=account, asset=market.quote_asset).update(
-        captured_at=timezone.now()
-    )
+    BalanceSnapshot.objects.filter(
+        exchange_account=account, asset=market.quote_asset
+    ).update(captured_at=timezone.now())
     order, created = queue_live_spot_order(
         user,
         account,

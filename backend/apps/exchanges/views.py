@@ -132,7 +132,8 @@ def submit_live_spot_order(request, pk):
             except OperationalError:
                 messages.warning(
                     request,
-                    "سفارش با شناسه یکتا ذخیره شد اما Broker موقتاً در دسترس نیست؛ Dispatcher دوره‌ای پس از بازیابی صف آن را برمی‌دارد.",
+                    "سفارش با شناسه یکتا ذخیره شد اما Broker موقتاً در دسترس نیست؛ "
+                    "Dispatcher دوره‌ای پس از بازیابی صف آن را برمی‌دارد.",
                 )
         else:
             messages.info(request, "این درخواست قبلاً ثبت شده و دوباره ارسال نشد.")
@@ -153,7 +154,8 @@ def request_account_sync(request, pk):
         except OperationalError:
             messages.warning(
                 request,
-                "درخواست همگام‌سازی ثبت نشد چون Broker در دسترس نیست؛ پس از بازیابی دوباره تلاش کنید.",
+                "درخواست همگام‌سازی ثبت نشد چون Broker در دسترس نیست؛ "
+                "پس از بازیابی دوباره تلاش کنید.",
             )
             return redirect("exchange-account-detail", pk=account.pk)
         record_audit(

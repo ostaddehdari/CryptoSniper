@@ -1,9 +1,9 @@
 import uuid
 from decimal import Decimal
 
+import django.db.models.deletion
 from django.db import migrations, models
 from django.db.models import Q
-import django.db.models.deletion
 
 
 class Migration(migrations.Migration):

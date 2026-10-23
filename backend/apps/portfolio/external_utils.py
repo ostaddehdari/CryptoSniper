@@ -78,7 +78,14 @@ def normalized_external(item):
         next(
             (
                 payload.get(key)
-                for key in ("created_at", "time", "create_time", "ctime", "transactTime", "updateTime")
+                for key in (
+                    "created_at",
+                    "time",
+                    "create_time",
+                    "ctime",
+                    "transactTime",
+                    "updateTime",
+                )
                 if payload.get(key) not in {None, ""}
             ),
             None,
@@ -89,7 +96,11 @@ def normalized_external(item):
         side == "buy"
         and amount is not None
         and amount > 0
-        and (item.kind in {"fill", "history"} or raw_status in {"partial", "partially_filled", "filled", "done", "completed"})
+        and (
+            item.kind in {"fill", "history"}
+            or raw_status
+            in {"partial", "partially_filled", "filled", "done", "completed"}
+        )
     )
     return {
         "symbol": symbol,

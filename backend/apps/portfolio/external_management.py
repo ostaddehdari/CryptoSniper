@@ -6,9 +6,9 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 
 from apps.accounts.audit import record_audit
+from apps.exchanges.adapters import AdapterError, get_adapter
 from apps.exchanges.live_orders import queue_live_spot_order
 from apps.exchanges.security import get_account_credentials
-from apps.exchanges.adapters import AdapterError, get_adapter
 from apps.exchanges.tasks import live_spot_order
 from apps.operations.models import ExternalObservation, ExternalTradePolicy
 
@@ -95,7 +95,11 @@ def monitor_policy(policy_id):
         if policy.state != ExternalTradePolicy.State.ACTIVE:
             return policy.state
         changed = False
-        if policy.trailing_sl_enabled and price >= policy.tp1 and policy.effective_stop < policy.entry_price:
+        if (
+            policy.trailing_sl_enabled
+            and price >= policy.tp1
+            and policy.effective_stop < policy.entry_price
+        ):
             policy.effective_stop = policy.entry_price
             changed = True
         trigger_price = _target_price(policy)

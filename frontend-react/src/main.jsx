@@ -250,6 +250,33 @@ function ExternalTradeDrawer({item,onClose,notify,requestStepUp,onChanged}){
   </div></div>
 }
 
+function MarketPicker({markets,value,onChange,search,setSearch,exchangeName}){
+  const [open,setOpen]=useState(false);
+  const selected=markets.find(x=>String(x.id)===String(value));
+  const q=search.trim().toLowerCase();
+  const rows=markets.filter(m=>!q||m.symbol.toLowerCase().includes(q)||m.base.toLowerCase().includes(q));
+  const choose=m=>{
+    onChange(String(m.id));
+    setSearch("");
+    setOpen(false);
+  };
+  return <div className="field marketPickerV2">
+    <label>بازار</label>
+    <button type="button" className={"marketSelectButton "+(selected?"selected":"")} onClick={()=>setOpen(v=>!v)}>
+      <span>{selected?((selected.favorite?"★ ":"")+selected.base+" / USDT"):"انتخاب بازار"}</span>
+      <ChevronLeft size={16}/>
+    </button>
+    {open&&<div className="marketDropdown">
+      <div className="searchBox compact"><Search size={16}/><input autoFocus value={search} onChange={e=>setSearch(e.target.value)} placeholder="جست‌وجوی BTC، ETH…" onClick={e=>e.stopPropagation()}/></div>
+      <div className="marketOptions">{rows.map(m=><button type="button" key={m.id} className={String(m.id)===String(value)?"active":""} onClick={()=>choose(m)}>
+        <span><b>{m.favorite?"★ ":""}{m.base} / USDT</b><small>{m.market_type==="margin"?"Margin x"+Number(m.max_leverage).toFixed(0):"Spot"}{m.favorite?" · منتخب":""}</small></span>
+        {String(m.id)===String(value)&&<CheckCircle2 size={16}/>}
+      </button>)}{!rows.length&&<Empty text="بازاری با این جست‌وجو پیدا نشد."/>}</div>
+    </div>}
+    <small>{exchangeName?"ارزهای منتخب "+exchangeName+" در ابتدای فهرست هستند.":"ابتدا حساب صرافی را انتخاب کنید."}</small>
+  </div>
+}
+
 function NewTrade({boot,decimals,notify,requestStepUp,seed,setManualSeed}){
   const [tab,setTab]=useState(seed?.new_trade_tab||"manual");
   useEffect(()=>{if(seed)setTab("manual")},[seed]);

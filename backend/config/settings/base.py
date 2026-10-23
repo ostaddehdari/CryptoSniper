@@ -270,3 +270,10 @@ CELERY_BEAT_SCHEDULE["external-live-management"] = {
     "schedule": 5.0,
     "options": {"queue": "trailing", "expires": 4},
 }
+
+
+CELERY_BEAT_SCHEDULE["live-order-reconciliation"] = {
+    "task": "exchanges.reconcile_live_orders",
+    "schedule": 5.0,
+    "options": {"queue": "maintenance", "expires": 4},
+}

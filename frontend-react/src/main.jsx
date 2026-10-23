@@ -580,6 +580,7 @@ function SignalInbox({notify,boot,setPage,setManualSeed}){
   const [markets,setMarkets]=useState([]);
   const [checked,setChecked]=useState([]);
   const [busy,setBusy]=useState(false);
+  const [actionError,setActionError]=useState("");
   const load=()=>api("/api/v1/inbox/").then(d=>{const next=d.items||[];setItems(next);setChecked(prev=>prev.filter(id=>next.some(x=>x.id===id)))}).catch(e=>notify(e.message));
   useEffect(()=>{load();const t=setInterval(load,10000);return()=>clearInterval(t)},[]);
   const editFrom=z=>({
@@ -597,7 +598,7 @@ function SignalInbox({notify,boot,setPage,setManualSeed}){
     try{
       const d=await api("/api/v1/inbox/"+id+"/");
       const z=d.signal.structured||{};
-      setDetail(d.signal);setEdit(editFrom(z));setReason("");
+      setDetail(d.signal);setEdit(editFrom(z));setReason("");setActionError("");
       if(z.account_id){const m=await api("/api/v1/exchange-accounts/"+z.account_id+"/markets/");setMarkets(m.markets||[])}else setMarkets([]);
     }catch(e){notify(e.message)}
   };
@@ -617,17 +618,22 @@ function SignalInbox({notify,boot,setPage,setManualSeed}){
     return d.signal;
   };
   const approveAndTransfer=async()=>{
-    if(!detail||!edit)return;
+    if(!detail||!edit){setActionError("اطلاعات سیگنال هنوز کامل بارگذاری نشده است.");return}
     try{
-      setBusy(true);
-      const saved=await saveEdit();
+      setBusy(true);setActionError("");
+      const edited=await api("/api/v1/inbox/"+detail.id+"/edit/",{method:"POST",body:{...edit,revision:detail.revision,reason}});
+      const saved=edited.signal;
       const approved=await api("/api/v1/inbox/"+saved.id+"/action/",{method:"POST",body:{revision:saved.revision,action:"approve",reason:""}});
       const z=approved.signal?.structured||{};
       const parsed=z.parsed_payload||{};
       setManualSeed({...z,signal_id:approved.signal.id,new_trade_tab:"manual",percentage_trailing:parsed.trailing_defaults?.percentage_trailing??true,trailing_sl:parsed.trailing_defaults?.trailing_sl??true,percentage_trigger:parsed.trailing_defaults?.percentage_trigger||"tp1",trailing_distance:parsed.trailing_defaults?.percentage_distance||"1"});
       notify("سیگنال تأیید شد و فرم معامله با مقادیر آن باز شد");
       setPage("newtrade");
-    }catch(e){notify("تأیید انجام نشد: "+e.message)}finally{setBusy(false)}
+    }catch(e){
+      const message="تأیید انجام نشد: "+e.message;
+      setActionError(message);
+      notify(message);
+    }finally{setBusy(false)}
   };
   const toggleCheck=id=>setChecked(v=>v.includes(id)?v.filter(x=>x!==id):[...v,id]);
   const allChecked=items.length>0&&items.every(x=>checked.includes(x.id));
@@ -654,7 +660,7 @@ function SignalInbox({notify,boot,setPage,setManualSeed}){
         <div className="field"><label>TP3</label><input value={edit.tp3} onChange={e=>setEdit({...edit,tp3:e.target.value})}/></div>
         <div className="field"><label>Stop Loss</label><input value={edit.stop_loss} onChange={e=>setEdit({...edit,stop_loss:e.target.value})}/></div>
       </div>}
-      <div className="actionBox"><label>دلیل ویرایش <small>(اختیاری)</small></label><textarea value={reason} onChange={e=>setReason(e.target.value)} placeholder="در صورت نیاز توضیح بنویسید…"/><div className="row gap wrap"><button type="button" className="softBtn" disabled={busy} onClick={()=>saveEdit().then(()=>notify("ویرایش سیگنال ذخیره شد")).catch(e=>notify(e.message))}><Save size={16}/> ذخیره ویرایش</button><button type="button" className="iconBtn dangerBtn" title="حذف سیگنال" disabled={busy} onClick={deleteOne}><Trash2 size={16}/></button><button type="button" className="primary" disabled={busy} onClick={approveAndTransfer}><CheckCircle2 size={16}/> تأیید و انتقال به معامله</button></div></div>
+      <div className="actionBox">{actionError&&<div className="errorBox"><AlertTriangle size={17}/><span>{actionError}</span></div>}<label>دلیل ویرایش <small>(اختیاری)</small></label><textarea value={reason} onChange={e=>setReason(e.target.value)} placeholder="در صورت نیاز توضیح بنویسید…"/><div className="row gap wrap"><button type="button" className="softBtn" disabled={busy} onClick={()=>saveEdit().then(()=>notify("ویرایش سیگنال ذخیره شد")).catch(e=>notify(e.message))}><Save size={16}/> ذخیره ویرایش</button><button type="button" className="iconBtn dangerBtn" title="حذف سیگنال" disabled={busy} onClick={deleteOne}><Trash2 size={16}/></button><button type="button" className="primary" disabled={busy} onClick={approveAndTransfer}><CheckCircle2 size={16}/> تأیید و انتقال به معامله</button></div></div>
     </>}</div>
   </div>
 }

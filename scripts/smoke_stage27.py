@@ -221,9 +221,20 @@ def main():
                     )
                     page = context.new_page()
                     errors = []
+                    inbox_responses = []
                     page.on(
                         "pageerror",
                         lambda error: errors.append(str(error)),
+                    )
+                    page.on(
+                        "response",
+                        lambda response: (
+                            inbox_responses.append(
+                                (response.status, response.url)
+                            )
+                            if "/api/v1/inbox/" in response.url
+                            else None
+                        ),
                     )
 
                     page.goto(base + "/auth/login/")
@@ -356,11 +367,20 @@ def main():
                             toast_text = page.locator(".toast").inner_text(timeout=1000)
                         except Exception:
                             pass
+                        action_error = ""
+                        try:
+                            action_error = page.locator(
+                                ".actionBox .errorBox"
+                            ).inner_text(timeout=1000)
+                        except Exception:
+                            pass
                         diagnostic = (
                             "Signal transfer failed; "
                             f"url={page.url!r}; "
                             f"hash={page.evaluate('location.hash')!r}; "
                             f"toast={toast_text!r}; "
+                            f"action_error={action_error!r}; "
+                            f"inbox_responses={inbox_responses!r}; "
                             f"page_errors={errors!r}"
                         )
                         page.screenshot(

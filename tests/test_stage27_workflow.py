@@ -390,6 +390,10 @@ def test_stage27_live_order_api_queues_without_provider_call(
         "apps.core.react_views.live_spot_order.apply_async",
         lambda args, queue: queued.append((args, queue)),
     )
+    monkeypatch.setattr(
+        "apps.core.react_views.transaction.on_commit",
+        lambda callback: callback(),
+    )
     client.force_login(owner)
     step = client.post(
         reverse("api-step-up"),

@@ -30,22 +30,24 @@ def test_valid_preferences_are_saved_only_for_current_user(client, django_user_m
     response = client.post(
         reverse("trading-preferences"),
         {
-            "default_order_amount": "75.5",
+            "default_order_amount": "75",
             "default_market": "margin",
             "tp1_percent": "15",
             "tp2_percent": "25",
             "tp3_percent": "60",
             "trailing_sl_enabled": "on",
             "trailing_tp_enabled": "on",
-            "trailing_trigger": "tp1",
-            "trailing_distance_percent": "1.5",
+            "trailing_trigger": "tp2",
+            "trailing_distance_percent": "2",
         },
     )
     assert response.status_code == 302
     own = TradingPreferences.objects.get(owner=owner)
     other_preferences.refresh_from_db()
-    assert own.default_order_amount == Decimal("75.50000000")
+    assert own.default_order_amount == Decimal("75.00000000")
     assert own.default_market == "margin"
+    assert own.trailing_trigger == "tp2"
+    assert own.trailing_distance_percent == Decimal("2")
     assert other_preferences.default_order_amount == Decimal("50")
     assert list(TradingPreferences.objects.for_user(owner)) == [own]
 

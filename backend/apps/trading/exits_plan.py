@@ -92,6 +92,10 @@ def ensure_exits(trade_id):
     distance = _decimal(source.get("trailing_distance_percent", "1"))
     if distance >= 100:
         raise ValidationError("فاصله trailing باید کمتر از ۱۰۰٪ باشد.")
+    trigger_name = str(source.get("percentage_trigger", "tp1"))
+    trigger_index = {"tp1": 0, "tp2": 1, "tp3": 2}.get(trigger_name, 0)
+    if trigger_index >= len(prices):
+        raise ValidationError("Trigger Trailing با تعداد TPهای معامله سازگار نیست.")
     protection = TradeProtection.objects.create(
         trade=trade,
         initial_stop=stop,
@@ -100,7 +104,7 @@ def ensure_exits(trade_id):
         step_enabled=bool(source.get("trailing_sl")),
         percentage_enabled=percentage,
         distance_percent=distance,
-        trigger_price=prices[0],
+        trigger_price=prices[trigger_index],
     )
     TradeEvent.objects.create(
         trade=trade,

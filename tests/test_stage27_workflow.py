@@ -19,7 +19,16 @@ from apps.exchanges.models import (
     UserExchangeAccount,
 )
 from apps.operations.external_management import adopt_or_update, monitor_one
-from apps.operations.models import ExternalObservation, ExternalTradeManagement
+from apps.operations.managed_live import (
+    create_management as create_managed_live,
+    monitor_one as monitor_managed_live,
+)
+from apps.operations.models import (
+    ExternalObservation,
+    ExternalTradeManagement,
+    ManagedLiveTrade,
+)
+from apps.tradeplans.models import TradePlan
 from apps.signals.models import RawSignal, Signal, SignalSource
 
 
@@ -59,6 +68,38 @@ def spot_market(account, symbol="BTC/USDT", *, fee=Decimal("0.001")):
         taker_fee=fee,
         active=True,
         synced_at=timezone.now(),
+    )
+
+
+def ready_live_plan(owner, account, market, *, trailing=True, trailing_sl=True, trigger="tp2"):
+    preview = {
+        "targets": [
+            {"price": "110", "share_percent": "10"},
+            {"price": "120", "share_percent": "10"},
+            {"price": "130", "share_percent": "80"},
+        ]
+    }
+    return TradePlan.objects.create(
+        owner=owner,
+        exchange_account=account,
+        market=market,
+        source="manual",
+        status=TradePlan.Status.READY,
+        side=TradePlan.Side.LONG,
+        entry_price=Decimal("100"),
+        stop_loss=Decimal("90"),
+        tp1=Decimal("110"),
+        tp2=Decimal("120"),
+        tp3=Decimal("130"),
+        capital=Decimal("100"),
+        leverage=Decimal("1"),
+        trailing_sl=trailing_sl,
+        percentage_trailing=trailing,
+        percentage_trigger=trigger,
+        trailing_distance=Decimal("1"),
+        preview=preview,
+        approved_snapshot=preview,
+        approved_at=timezone.now(),
     )
 
 
@@ -428,3 +469,203 @@ def test_stage27_live_order_reconcile_updates_existing_order_without_resubmit(
     assert order.state == LiveSpotOrder.State.FILLED
     assert order.filled_amount == Decimal("1")
     assert order.average_price == Decimal("99.5")
+
+
+
+@pytest.mark.django_db
+@override_settings(LIVE_TRADING_ENABLED=True)
+def test_stage27_managed_live_waits_for_full_entry_fill(
+    monkeypatch, django_user_model
+):
+    owner = django_user_model.objects.create_user(username="stage27-managed-pending")
+    account = live_account(owner)
+    market = spot_market(account)
+    plan = ready_live_plan(owner, account, market)
+    entry = LiveSpotOrder.objects.create(
+        owner=owner,
+        account=account,
+        market=market,
+        request_key=uuid.uuid4(),
+        client_order_id="stage27-managed-entry-partial",
+        external_order_id="provider-entry-partial",
+        side="buy",
+        order_type="limit",
+        amount=Decimal("1"),
+        price=Decimal("100"),
+        filled_amount=Decimal("0.5"),
+        average_price=Decimal("100"),
+        state=LiveSpotOrder.State.PARTIAL,
+    )
+    management = create_managed_live(owner, plan.pk, entry)
+    monkeypatch.setattr(
+        "apps.operations.managed_live.refresh_live_quote",
+        lambda market: {
+            "status": "ok",
+            "data": {"price": "150", "stale": False},
+        },
+    )
+    assert monitor_managed_live(management.pk) == ManagedLiveTrade.State.PENDING_ENTRY
+    management.refresh_from_db()
+    assert management.state == ManagedLiveTrade.State.PENDING_ENTRY
+    assert management.initial_quantity == Decimal("0")
+    assert not LiveSpotOrder.objects.filter(side="sell").exists()
+
+
+@pytest.mark.django_db
+@override_settings(LIVE_TRADING_ENABLED=True)
+def test_stage27_managed_live_trailing_sl_and_full_exit_are_idempotent(
+    monkeypatch, django_user_model
+):
+    owner = django_user_model.objects.create_user(username="stage27-managed-live")
+    account = live_account(owner)
+    market = spot_market(account)
+    plan = ready_live_plan(
+        owner,
+        account,
+        market,
+        trailing=True,
+        trailing_sl=True,
+        trigger="tp2",
+    )
+    entry = LiveSpotOrder.objects.create(
+        owner=owner,
+        account=account,
+        market=market,
+        request_key=uuid.uuid4(),
+        client_order_id="stage27-managed-entry",
+        external_order_id="provider-entry-filled",
+        side="buy",
+        order_type="limit",
+        amount=Decimal("1"),
+        price=Decimal("100"),
+        filled_amount=Decimal("1"),
+        average_price=Decimal("100"),
+        state=LiveSpotOrder.State.FILLED,
+    )
+    management = create_managed_live(owner, plan.pk, entry)
+    price = {"value": Decimal("110")}
+    monkeypatch.setattr(
+        "apps.operations.managed_live.refresh_live_quote",
+        lambda market: {
+            "status": "ok",
+            "data": {"price": str(price["value"]), "stale": False},
+        },
+    )
+    monkeypatch.setattr(
+        "apps.operations.managed_live._provider_free_base",
+        lambda item: Decimal("10"),
+    )
+    queued = []
+    monkeypatch.setattr(
+        "apps.operations.managed_live.live_spot_order.apply_async",
+        lambda args, queue: queued.append((args, queue)),
+    )
+    monkeypatch.setattr(
+        "apps.operations.managed_live.transaction.on_commit",
+        lambda callback: callback(),
+    )
+
+    assert monitor_managed_live(management.pk) == "monitored"
+    management.refresh_from_db()
+    assert management.state == ManagedLiveTrade.State.ACTIVE
+    assert management.initial_quantity == Decimal("1")
+    assert management.remaining_quantity == Decimal("1")
+    assert management.breakeven_moved is True
+    assert management.effective_stop == Decimal("100")
+    assert sum(
+        (target.allocated_quantity for target in management.targets.all()),
+        Decimal("0"),
+    ) == Decimal("1")
+    assert not queued
+
+    price["value"] = Decimal("120")
+    assert monitor_managed_live(management.pk) == "monitored"
+    management.refresh_from_db()
+    assert management.high_water == Decimal("120")
+    assert management.effective_stop == Decimal("118.8")
+    assert not queued
+
+    price["value"] = Decimal("118")
+    assert monitor_managed_live(management.pk) == "full_exit_queued"
+    management.refresh_from_db()
+    assert management.state == ManagedLiveTrade.State.EXITING
+    sells = LiveSpotOrder.objects.filter(side="sell")
+    assert sells.count() == 1
+    exit_order = sells.get()
+    assert exit_order.order_type == "market"
+    assert exit_order.amount == Decimal("1")
+    assert len(queued) == 1
+
+    # A repeated monitor pass cannot create or enqueue a duplicate exit.
+    assert monitor_managed_live(management.pk) == ManagedLiveTrade.State.EXITING
+    assert LiveSpotOrder.objects.filter(side="sell").count() == 1
+    assert len(queued) == 1
+
+
+@pytest.mark.django_db
+@override_settings(LIVE_TRADING_ENABLED=True)
+def test_stage27_managed_live_fixed_tp_then_trailing_sl_protects_remainder(
+    monkeypatch, django_user_model
+):
+    owner = django_user_model.objects.create_user(username="stage27-managed-fixed-tp")
+    account = live_account(owner)
+    market = spot_market(account)
+    plan = ready_live_plan(
+        owner,
+        account,
+        market,
+        trailing=False,
+        trailing_sl=True,
+        trigger="tp1",
+    )
+    entry = LiveSpotOrder.objects.create(
+        owner=owner,
+        account=account,
+        market=market,
+        request_key=uuid.uuid4(),
+        client_order_id="stage27-fixed-entry",
+        external_order_id="provider-fixed-entry",
+        side="buy",
+        order_type="limit",
+        amount=Decimal("1"),
+        price=Decimal("100"),
+        filled_amount=Decimal("1"),
+        average_price=Decimal("100"),
+        state=LiveSpotOrder.State.FILLED,
+    )
+    management = create_managed_live(owner, plan.pk, entry)
+    price = {"value": Decimal("110")}
+    monkeypatch.setattr(
+        "apps.operations.managed_live.refresh_live_quote",
+        lambda market: {
+            "status": "ok",
+            "data": {"price": str(price["value"]), "stale": False},
+        },
+    )
+    monkeypatch.setattr(
+        "apps.operations.managed_live._provider_free_base",
+        lambda item: Decimal("10"),
+    )
+    monkeypatch.setattr(
+        "apps.operations.managed_live.transaction.on_commit",
+        lambda callback: None,
+    )
+
+    assert monitor_managed_live(management.pk) == "tp1_exit_queued"
+    management.refresh_from_db()
+    assert management.breakeven_moved is True
+    assert management.effective_stop == Decimal("100")
+    tp1 = management.targets.get(position=1)
+    assert tp1.state == "exit_pending"
+    assert tp1.exit_order is not None
+    assert tp1.exit_order.amount == Decimal("0.1")
+
+    tp1.exit_order.state = LiveSpotOrder.State.FILLED
+    tp1.exit_order.filled_amount = Decimal("0.1")
+    tp1.exit_order.average_price = Decimal("110")
+    tp1.exit_order.save()
+    price["value"] = Decimal("109")
+    assert monitor_managed_live(management.pk) == "monitored"
+    management.refresh_from_db()
+    assert management.remaining_quantity == Decimal("0.9")
+    assert management.effective_stop == Decimal("100")

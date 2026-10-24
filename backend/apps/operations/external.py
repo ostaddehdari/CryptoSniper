@@ -14,7 +14,7 @@ from django.utils import timezone
 
 from apps.accounts.audit import record_audit
 from apps.exchanges.adapters import AdapterError, UnsupportedOperationError, get_adapter
-from apps.exchanges.models import Asset, BalanceSnapshot
+from apps.exchanges.models import Asset, BalanceSnapshot, LiveSpotOrder
 from apps.exchanges.security import get_account_credentials
 
 from .models import AccountControl, ExternalObservation
@@ -75,24 +75,45 @@ def observe_account(account):
         raise ValidationError("مجوز امن خواندن تأیید نشد.")
 
     balances = adapter.fetch_balance()
+    warnings = []
     if account.exchange.adapter_code == "bitunix":
         symbols = []
         for balance in balances:
             asset = str(balance.asset).upper()
             if asset and asset not in {"USDT", "USDC"} and balance.total > 0:
                 symbols.append(f"{asset}/USDT")
+        for symbol in LiveSpotOrder.objects.filter(
+            account=account,
+            state__in=("pending", "submitting", "open", "partial", "uncertain"),
+        ).values_list("market__symbol", flat=True)[:40]:
+            if symbol and symbol not in symbols:
+                symbols.append(symbol)
+        for payload in ExternalObservation.objects.filter(
+            account=account, kind__in=("order", "fill")
+        ).order_by("-observed_at").values_list("payload", flat=True)[:60]:
+            if not isinstance(payload, dict):
+                continue
+            raw_symbol = str(payload.get("symbol") or "").upper().replace("_", "/")
+            if "/" not in raw_symbol and raw_symbol.endswith("USDT"):
+                raw_symbol = raw_symbol[:-4] + "/USDT"
+            if raw_symbol and raw_symbol not in symbols:
+                symbols.append(raw_symbol)
         if "BTC/USDT" not in symbols:
             symbols.append("BTC/USDT")
         orders, history = [], []
         for symbol in symbols[:12]:
             try:
                 orders.extend(adapter.fetch_open_orders(symbol=symbol))
-            except (UnsupportedOperationError, AdapterError):
-                pass
+            except UnsupportedOperationError:
+                warnings.append(f"open_orders_unsupported:{symbol}")
+            except AdapterError as error:
+                warnings.append(f"open_orders_failed:{symbol}:{type(error).__name__}")
             try:
                 history.extend(adapter.fetch_trade_history(symbol=symbol))
-            except (UnsupportedOperationError, AdapterError):
-                pass
+            except UnsupportedOperationError:
+                warnings.append(f"history_unsupported:{symbol}")
+            except AdapterError as error:
+                warnings.append(f"history_failed:{symbol}:{type(error).__name__}")
     else:
         try:
             orders = adapter.fetch_open_orders()
@@ -177,12 +198,37 @@ def observe_account(account):
                 )
 
         AccountControl.objects.update_or_create(account=account, defaults={"last_reconciled_at": now})
+        if warnings:
+            account.last_error_code = "external_observation_partial"
+            account.last_error_message = "; ".join(warnings)[:240]
+            account.last_error_at = now
+            account.save(
+                update_fields=(
+                    "last_error_code",
+                    "last_error_message",
+                    "last_error_at",
+                    "updated_at",
+                )
+            )
+        elif account.last_error_code in {"external_observation_partial", "external_refresh_failed"}:
+            account.last_error_code = ""
+            account.last_error_message = ""
+            account.last_error_at = None
+            account.save(
+                update_fields=(
+                    "last_error_code",
+                    "last_error_message",
+                    "last_error_at",
+                    "updated_at",
+                )
+            )
 
     return {
         "status": "read_only_snapshot",
         "balances": len(balances),
         "open_orders": len(orders),
         "history": len(history),
+        "warnings": warnings,
         "observed_at": now.isoformat(),
     }
 

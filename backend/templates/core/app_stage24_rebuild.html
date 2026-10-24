@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="{% static 'css/stage24-rebuild.css' %}">
 {% endblock %}
 {% block body %}
-<div class="cs-app" data-cs24-root>
+<div class="cs-app" data-cs24-root data-api-root="{% url 'home' %}">
   <aside class="cs-sidebar">
     <a class="cs-brand" href="#/overview">
       <span class="cs-brand-icon">↗</span>
@@ -15,12 +15,12 @@
       <a href="#/newtrade" data-route-link="newtrade"><span>⇄</span>معامله جدید</a>
       <a href="#/trades" data-route-link="trades"><span>↔</span>معاملات</a>
       <a href="#/inbox" data-route-link="inbox"><span>▣</span>صندوق سیگنال</a>
-      <a href="/cryptosniper/exchanges/"><span>⌁</span>صرافی‌ها</a>
-      <a href="/cryptosniper/settings/telegram/"><span>◌</span>تلگرام و سیگنال‌ها</a>
-      <a href="/cryptosniper/alerts/"><span>♧</span>هشدارها</a>
-      <a href="/cryptosniper/reports/"><span>▥</span>گزارش‌ها</a>
-      <a href="/cryptosniper/system/"><span>⌘</span>وضعیت سیستم</a>
-      <a href="/cryptosniper/settings/trading/"><span>⚙</span>تنظیمات</a>
+      <a href="{% url 'exchange-center' %}"><span>⌁</span>صرافی‌ها</a>
+      <a href="{% url 'telegram-settings' %}"><span>◌</span>تلگرام و سیگنال‌ها</a>
+      <a href="{% url 'alerts' %}"><span>♧</span>هشدارها</a>
+      <a href="{% url 'reports' %}"><span>▥</span>گزارش‌ها</a>
+      <a href="{% url 'system' %}"><span>⌘</span>وضعیت سیستم</a>
+      <a href="{% url 'trading-preferences' %}"><span>⚙</span>تنظیمات</a>
     </nav>
     <div class="cs-sidebar-user">
       <span class="cs-avatar">{{ request.user.preferred_name|slice:':1'|upper }}</span>

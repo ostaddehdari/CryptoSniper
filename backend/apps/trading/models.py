@@ -39,6 +39,7 @@ class Trade(models.Model):
     snapshot = models.JSONField(default=dict)
     filled_quantity = models.DecimalField(max_digits=32, decimal_places=16, default=0)
     revision = models.PositiveIntegerField(default=1)
+    archived_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

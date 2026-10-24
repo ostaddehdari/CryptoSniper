@@ -766,7 +766,7 @@ def api_live_orders(request):
             .order_by("-created_at")[:200]
         )
         external = list(
-            external_qs.select_related("account", "account__exchange")
+            external_qs.select_related("account", "account__exchange", "management", "management__market")
             .order_by("-observed_at")[:200]
         )
         from apps.operations.external_management import (

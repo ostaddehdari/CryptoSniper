@@ -83,7 +83,7 @@ def test_pwa_manifest_and_worker_cache_static_assets_only(client):
     assert manifest.status_code == worker.status_code == 200
     assert manifest["Content-Type"].startswith("application/manifest+json")
     body = worker.content
-    assert b"cryptosniper-static-v23" in body
+    assert b"cryptosniper-static-v24" in body
     assert b"event.request.method!=='GET'" in body
     assert b"startsWith(staticPrefix)" in body
     assert b"Background Sync" not in body and b"indexedDB" not in body

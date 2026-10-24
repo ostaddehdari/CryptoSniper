@@ -1,0 +1,36 @@
+name: Stage24 one-shot Ruff fixer
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  fix:
+    if: ${{ !contains(github.event.head_commit.message, '[s24-ruff-fixed]') }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.12.19'
+      - run: uv sync --frozen
+      - name: Ruff safe fixes and format
+        run: |
+          uv run ruff check backend tests scripts --fix
+          uv run ruff format backend tests scripts
+      - name: Commit fixes
+        run: |
+          if git diff --quiet; then
+            echo 'No changes'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend tests scripts
+          git commit -m 'fix(S24): Ruff lint/format [s24-ruff-fixed]'
+          git push origin HEAD:main

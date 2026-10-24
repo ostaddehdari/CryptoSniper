@@ -1,0 +1,33 @@
+/* Stage28 live charts, archive views and signal visualizations */
+.marketChartV2{padding:10px 14px 14px;min-width:0}
+.chartToolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap}
+.chartIntervals{display:flex;gap:4px;background:#f4f7fb;border:1px solid #e3e9f2;border-radius:9px;padding:3px;direction:ltr}
+.chartIntervals button{border:0;background:transparent;color:#718096;border-radius:6px;padding:5px 9px;font-size:10px;cursor:pointer}
+.chartIntervals button.active{background:#fff;color:#245fce;box-shadow:0 2px 7px #1e4b8517;font-weight:800}
+.chartToggle{display:flex;align-items:center;gap:6px;color:#65758b;font-size:10px}
+.realCandleChart{height:440px;border:1px solid #e6ebf2;border-radius:11px;overflow:hidden;background:#fff}
+.candleSvg{width:100%;height:100%;display:block;background:#fff}
+.chartGridLine{stroke:#edf1f6;stroke-width:1;vector-effect:non-scaling-stroke}
+.candle rect,.candleWick{vector-effect:non-scaling-stroke}
+.candle.up rect{fill:#1ba56d}.candle.up .candleWick{stroke:#1ba56d}
+.candle.down rect{fill:#dc5b61}.candle.down .candleWick{stroke:#dc5b61}
+.candleWick{stroke-width:1.2}
+.priceGuide{stroke-width:1.25;stroke-dasharray:6 5;vector-effect:non-scaling-stroke}
+.priceGuide.entry{stroke:#356ce0}.priceGuide.target{stroke:#20a36c}.priceGuide.stop{stroke:#df5962}.priceGuide.current{stroke:#e58a24;stroke-width:1.8}.priceGuide.secondary{opacity:.62;stroke-dasharray:2 5}.priceGuide.openEntry{stroke:#6a7bdc}.priceGuide.openTarget{stroke:#45a87d}.priceGuide.openStop{stroke:#d5777d}
+.priceGuideText{font-size:10px;font-weight:800}.priceGuideText.entry{fill:#356ce0}.priceGuideText.target{fill:#16875a}.priceGuideText.stop{fill:#c94750}.priceGuideText.current{fill:#d77d18}.priceGuideText.secondary{fill:#6e7b90}
+.eventLine{stroke-width:1.25;stroke-dasharray:3 4;vector-effect:non-scaling-stroke;opacity:.75}.eventPoint{stroke:#fff;stroke-width:2.5;vector-effect:non-scaling-stroke}.eventText{font-size:10px;font-weight:900}
+.hitEvent.entry .eventLine{stroke:#356ce0}.hitEvent.entry .eventPoint{fill:#356ce0}.hitEvent.entry .eventText{fill:#2e61ca}
+.hitEvent.target .eventLine{stroke:#1aa66e}.hitEvent.target .eventPoint{fill:#1aa66e}.hitEvent.target .eventText{fill:#14865a}
+.hitEvent.stop .eventLine{stroke:#db4d57}.hitEvent.stop .eventPoint{fill:#db4d57}.hitEvent.stop .eventText{fill:#c13f48}
+.chartMeta{display:flex;gap:12px;justify-content:space-between;align-items:center;margin-top:7px;color:#7d8999;font-size:9px;direction:ltr;flex-wrap:wrap}
+.tradeChartBlock,.signalLiveChart{padding:0 10px 12px}.tradeChartBlock .realCandleChart{height:300px}.tradeChartBlock .marketChartV2{padding-top:0}
+
+.signalInboxV2{display:grid;grid-template-columns:minmax(330px,430px) minmax(0,1fr);gap:16px;align-items:start}.signalListPanel,.signalDetailPanel{min-width:0}.signalDetailPanel{position:sticky;top:82px;max-height:calc(100vh - 100px);overflow:auto}
+.viewSwitch{display:flex;border:1px solid #dfe6ef;border-radius:9px;padding:2px;background:#f7f9fc}.viewSwitch button{border:0;background:transparent;border-radius:6px;padding:6px 8px;display:flex;align-items:center;gap:5px;color:#758196;font-size:10px}.viewSwitch button.active{background:#fff;color:#245fc9;box-shadow:0 1px 5px #153c7018}
+.signalArchiveGrid{grid-template-columns:1fr!important}.signalCardWrap{position:relative;border-radius:13px}.signalCardWrap.selected .signalMiniCard{border-color:#7ca5eb;box-shadow:0 0 0 2px #dce9ff}.signalCardCheck{position:absolute;z-index:3;top:12px;left:12px;background:#fff;border:1px solid #dfe6ef;border-radius:7px;padding:3px 5px}.signalMiniCard{width:100%}.signalScheme{width:100%;margin:7px 0}.signalScheme svg{width:100%;height:120px;display:block;background:linear-gradient(180deg,#fbfdff,#f6f9ff);border-radius:10px}.signalScheme.detail{padding:0 14px}.signalScheme.detail svg{height:190px;border:1px solid #e3ebf7}.schemePath{fill:none;stroke:#346ee4;stroke-width:3;vector-effect:non-scaling-stroke}.schemeEntry{stroke:#6e8cba;stroke-dasharray:4 4}.schemeTarget{stroke:#24a86e;stroke-dasharray:5 4}.schemeStop{stroke:#df6570;stroke-dasharray:5 4}.schemePoint{stroke:#fff;stroke-width:2.5}.schemePoint.entry{fill:#356ce0}.schemePoint.target{fill:#fff;stroke:#28a873}.schemePoint.hit{fill:#20a66c}.schemeBadge{font-size:9px;fill:#168657;font-weight:800}.schemeBadge.hit{fill:#0b7749}.schemeStopText{font-size:9px;fill:#c44953;font-weight:800}.signalDetailScheme{margin:0 14px 14px;border:1px solid #e0e8f3;border-radius:13px;padding:12px;background:#fff}.signalDetailScheme .signalMiniHead{padding:0 3px}.signalDetailScheme .signalLegend{padding:0 4px}
+.signalRows.selectable{max-height:70vh;overflow:auto}
+.signalCardWrap .signalLegend{font-size:8px}
+.miniChartEmpty{height:110px;display:grid;place-items:center;color:#8b97a7;font-size:9px}
+
+@media(max-width:1150px){.signalInboxV2{grid-template-columns:1fr}.signalDetailPanel{position:static;max-height:none}.signalArchiveGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:720px){.realCandleChart{height:330px}.tradeChartBlock .realCandleChart{height:250px}.chartToolbar{align-items:flex-start}.signalArchiveGrid{grid-template-columns:1fr!important}.signalInboxV2{display:block}.signalListPanel{margin-bottom:12px}.signalDetailScheme{margin:0 8px 10px}.signalScheme.detail{padding:0}.signalScheme.detail svg{height:155px}}

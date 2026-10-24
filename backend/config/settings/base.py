@@ -97,7 +97,7 @@ API_RATE_LIMIT_PER_MINUTE = 120
 PARSER_RATE_LIMIT_PER_MINUTE = 10
 SUBSCRIPTION_RATE_LIMIT_PER_MINUTE = 60
 AUDIT_RETENTION_DAYS = 365
-RELEASE_VERSION = env("CRYPTOSNIPER_RELEASE", default="0.23.0rc1")
+RELEASE_VERSION = env("CRYPTOSNIPER_RELEASE", default="0.24.0rc1")
 SOURCE_REVISION = env("CRYPTOSNIPER_SOURCE_REVISION", default="development")
 DEPLOYMENT_ENVIRONMENT = env("CRYPTOSNIPER_ENVIRONMENT", default="development")
 HOSTING_EGRESS_PROBE_URL = env(
@@ -273,6 +273,12 @@ CELERY_BEAT_SCHEDULE["operations-monitor"] = {
     "options": {"queue": "maintenance", "expires": 50},
 }
 
+
+CELERY_BEAT_SCHEDULE["signal-auto-archive"] = {
+    "task": "signals.archive_expired",
+    "schedule": 60.0,
+    "options": {"queue": "signals"},
+}
 
 CELERY_BEAT_SCHEDULE["external-managed-trades"] = {
     "task": "operations.monitor_external_trades",

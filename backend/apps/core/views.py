@@ -26,6 +26,21 @@ def home(request):
     return redirect("dashboard" if request.user.is_authenticated else "login")
 
 
+@login_required
+@never_cache
+@require_GET
+def app_shell(request):
+    """Stage24 hash-routed trading workspace backed by the canonical private APIs."""
+    return render(
+        request,
+        "core/app_stage24.html",
+        {
+            "nav": "app",
+            "release": settings.RELEASE_VERSION,
+        },
+    )
+
+
 @require_GET
 def web_manifest(request):
     response = JsonResponse(

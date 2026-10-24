@@ -23,7 +23,9 @@ from .tasks import infrastructure_probe
 
 
 def home(request):
-    return redirect("dashboard" if request.user.is_authenticated else "login")
+    if request.user.is_authenticated:
+        return redirect(f'{reverse("app-shell")}#/overview')
+    return redirect("login")
 
 
 @login_required
@@ -51,7 +53,7 @@ def web_manifest(request):
             "description": "فضای مدیریت معاملات Paper و گزارش عملکرد",
             "lang": "fa",
             "dir": "rtl",
-            "start_url": reverse("dashboard"),
+            "start_url": f'{reverse("app-shell")}#/overview',
             "scope": reverse("home"),
             "display": "standalone",
             "background_color": "#f3f6f5",
@@ -116,18 +118,8 @@ def service_worker(request):
 @never_cache
 @require_GET
 def dashboard(request):
-    from apps.exchanges.models import UserExchangeAccount
-
-    exchange_accounts = UserExchangeAccount.objects.for_user(request.user)
-    return render(
-        request,
-        "core/dashboard.html",
-        {
-            "nav": "dashboard",
-            "exchange_count": exchange_accounts.exclude(status="disabled").count(),
-            "connected_exchange_count": exchange_accounts.filter(status="connected").count(),
-        },
-    )
+    """Compatibility guard: the removed legacy dashboard can never render again."""
+    return redirect(f'{reverse("app-shell")}#/overview')
 
 
 def system_context():

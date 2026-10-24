@@ -18,8 +18,6 @@ from apps.exchanges.adapters import AdapterError, get_adapter
 from .feeds import get_quote
 from .search import eligible_markets, search_markets
 
-
-
 HEADER_TICKER_CACHE_KEY = "marketdata:v1:header-usdt"
 HEADER_TICKER_FRESH_SECONDS = 20
 HEADER_TICKER_STALE_SECONDS = 300

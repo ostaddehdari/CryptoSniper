@@ -189,9 +189,7 @@ def test_refresh_is_real_read_sync(client, django_user_model):
 
 
 @pytest.mark.django_db
-def test_chart_has_trade_levels_and_newtrade_has_no_open_trade_overlay(
-    client, django_user_model
-):
+def test_chart_has_trade_levels_and_newtrade_has_no_open_trade_overlay(client, django_user_model):
     user = django_user_model.objects.create_user(username="s24-chart")
     trade = paper_trade(user, three=True)
     now = timezone.now()
@@ -214,8 +212,7 @@ def test_chart_has_trade_levels_and_newtrade_has_no_open_trade_overlay(
             + f"?market={trade.market_id}&trade={trade.pk}&interval=5m&bars=30"
         ).json()
         clean = client.get(
-            reverse("api-market-chart")
-            + f"?market={trade.market_id}&interval=5m&bars=30"
+            reverse("api-market-chart") + f"?market={trade.market_id}&interval=5m&bars=30"
         ).json()
     kinds = {row["kind"] for row in detail["overlay"]["levels"]}
     assert {"entry", "tp1", "tp2", "tp3", "sl"} <= kinds

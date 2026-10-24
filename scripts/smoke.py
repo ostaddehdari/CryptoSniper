@@ -144,9 +144,12 @@ def main():
                 page.locator('[name="password"]').fill(password)
                 page.get_by_role("button", name="ورود به فضای کار").click()
                 page.wait_for_url("**/dashboard/")
-                page.get_by_text("ذخیره نتایج", exact=True).wait_for()
-                page.get_by_role("heading", name="موجودی و ارزش حساب‌ها").wait_for()
-                assert page.locator("#dashboard-panels").get_attribute("aria-busy") == "false"
+                page.locator("[data-cs24-root]").wait_for()
+                page.get_by_role("heading", name="نمای کلی").wait_for()
+                page.get_by_text("USDT / USD", exact=True).wait_for()
+                page.get_by_text("USDT / تومان", exact=True).wait_for()
+                assert page.locator(".cs-header a").count() == 0
+                page.locator("[data-overview-open]").wait_for()
                 page.set_viewport_size({"width": 390, "height": 844})
                 assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
                 page.screenshot(path=str(artifacts / "dashboard13-mobile.png"), full_page=True)

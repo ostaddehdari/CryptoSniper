@@ -173,3 +173,33 @@ def test_chart_returns_candles_and_trade_overlay(client, django_user_model):
     assert payload["overlay"]["type"] == "internal_trade"
     kinds = {row["kind"] for row in payload["overlay"]["levels"]}
     assert {"entry", "tp1", "tp2", "tp3", "sl"} <= kinds
+
+
+@pytest.mark.django_db
+def test_legacy_dashboard_can_never_render_old_shell(client, django_user_model):
+    user = django_user_model.objects.create_user(username="s24-no-legacy-dashboard")
+    client.force_login(user)
+    response = client.get(reverse("dashboard"))
+    assert response.status_code == 302
+    assert response["Location"].endswith("/app/#/overview")
+
+
+@pytest.mark.django_db
+def test_workspace_has_cornix_overview_and_no_dashboard_backlink(client, django_user_model):
+    user = django_user_model.objects.create_user(username="s24-cornix-lock")
+    client.force_login(user)
+    response = client.get(reverse("app-shell"))
+    assert response.status_code == 200
+    assert b'data-page="overview"' in response.content
+    assert b'href="#/overview"' in response.content
+    assert b'/cryptosniper/dashboard/' not in response.content
+
+
+@pytest.mark.django_db
+def test_legacy_pages_use_cornix_shell(client, django_user_model):
+    user = django_user_model.objects.create_user(username="s24-shell-lock")
+    client.force_login(user)
+    response = client.get(reverse("reports"))
+    assert response.status_code == 200
+    assert b'data-cornix-shell' in response.content
+    assert b'class="app-layout"' not in response.content

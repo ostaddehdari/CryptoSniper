@@ -6,7 +6,7 @@ from django.urls import reverse
 
 
 @pytest.mark.django_db
-def test_stage25_reject_deletes_signal_and_raw_input(client, django_user_model):
+def test_stage28_reject_archives_signal_and_preserves_raw_input(client, django_user_model):
     owner = django_user_model.objects.create_user(username="stage25-signal")
     source = SignalSource.objects.create(
         owner=owner,
@@ -40,6 +40,7 @@ def test_stage25_reject_deletes_signal_and_raw_input(client, django_user_model):
         content_type="application/json",
     )
     assert response.status_code == 200, response.content
-    assert response.json()["deleted"] is True
-    assert not Signal.objects.filter(pk=signal.pk).exists()
-    assert not RawSignal.objects.filter(pk=raw.pk).exists()
+    assert response.json()["archived"] is True
+    signal.refresh_from_db()
+    assert signal.archived_at is not None
+    assert RawSignal.objects.filter(pk=raw.pk).exists()

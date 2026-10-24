@@ -543,31 +543,125 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
 
 function ManualPlans({notify,setPage,setManualSeed}){const [plans,setPlans]=useState([]);const load=()=>api("/api/v1/ui/manual-plans/").then(d=>setPlans(d.plans||[])).catch(e=>notify(e.message));useEffect(()=>{load()},[]);const edit=x=>{setManualSeed({...x,plan_id:x.id});setPage("manual")};const confirmPlan=async x=>{try{await api(`/api/v1/manual/plans/${x.id}/confirm/`,{method:"POST",body:{revision:x.revision}});notify(`برنامه #${x.id} تأیید شد؛ هنوز سفارشی ارسال نشده است.`);load()}catch(e){notify(e.message)}};return <div className="card"><div className="cardHead"><div><h3>برنامه‌های معامله</h3><p>برنامه‌ها تنظیمات معامله‌اند؛ تأیید برنامه به‌تنهایی سفارش واقعی ارسال نمی‌کند.</p></div><div className="row gap"><button className="iconBtn" onClick={load}><RefreshCw size={17}/></button><button className="primary" onClick={()=>{setManualSeed(null);setPage("manual")}}><PlusCircle size={17}/> برنامه جدید</button></div></div><div className="tableScroll"><table><thead><tr><th>بازار</th><th>حساب</th><th>جهت</th><th>Entry</th><th>TP / SL</th><th>حجم</th><th>اهرم</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>{plans.map(x=><tr key={x.id}><td><b>{(x.symbol||"").replace("/USDT","")}</b><small className="blockMuted">{x.market_type}</small></td><td>{x.exchange} · {x.account}</td><td>{x.side==="long"?"لانگ":"شورت"}</td><td>{x.entry}</td><td><span className="up">TP1 {x.tp1}</span><small className="blockMuted down">SL {x.stop_loss}</small></td><td>{fmt(x.capital,2)} USDT</td><td>x{Number(x.leverage||1).toFixed(0)}</td><td><span className="pill">{x.status==="ready"?"تأییدشده":"پیش‌نویس"}</span></td><td><div className="row gap">{x.status==="draft"&&<button className="softBtn" onClick={()=>edit(x)}>ویرایش</button>}{x.status==="draft"&&<button className="primary" onClick={()=>confirmPlan(x)}><CheckCircle2 size={15}/> تأیید</button>}</div></td></tr>)}</tbody></table>{!plans.length&&<Empty/>}</div></div>}
 
-function MarketChart({marketId,levels={}}){
+function deriveHitMarkers(rows,levels,startedAt){
+  if(!startedAt||!rows.length)return [];
+  const startMs=new Date(startedAt).getTime();
+  const side=levels.side==="short"?"short":"long";
+  const entry=num(levels.entry),stop=num(levels.stop);
+  const targets=(levels.targets||[]).map(num).filter(v=>v>0);
+  let entered=!entry, entryIndex=-1, nextTarget=0;
+  const events=[];
+  const touched=(c,p)=>p>0&&num(c.low)<=p&&num(c.high)>=p;
+  for(let i=0;i<rows.length;i++){
+    const c=rows[i], time=new Date(c.time).getTime();
+    if(Number.isFinite(startMs)&&time<startMs)continue;
+    if(!entered&&touched(c,entry)){
+      entered=true;entryIndex=i;events.push({index:i,label:"Entry",kind:"entry",price:entry,time:c.time});
+    }
+    if(!entered)continue;
+    const stopHit=stop>0&&(side==="long"?num(c.low)<=stop:num(c.high)>=stop);
+    while(nextTarget<targets.length){
+      const p=targets[nextTarget];
+      const hit=side==="long"?num(c.high)>=p:num(c.low)<=p;
+      if(!hit)break;
+      events.push({index:i,label:"TP"+(nextTarget+1),kind:"target",price:p,time:c.time});
+      nextTarget++;
+    }
+    if(stopHit&&i>=Math.max(0,entryIndex)){
+      events.push({index:i,label:"SL",kind:"stop",price:stop,time:c.time});
+      break;
+    }
+  }
+  return events;
+}
+
+function CandleSvg({rows,levels={},startedAt,secondaryLevels=null,compact=false}){
+  const current=num(levels.current);
+  const displayRows=useMemo(()=>{
+    const copy=(rows||[]).map(x=>({...x}));
+    if(copy.length&&current>0){
+      const last=copy[copy.length-1];
+      last.close=String(current);
+      last.high=String(Math.max(num(last.high),current));
+      last.low=String(Math.min(num(last.low)||current,current));
+    }
+    return copy;
+  },[rows,current]);
+  const primaryLines=[["Entry",levels.entry,"entry"],["SL",levels.stop,"stop"],...((levels.targets||[]).map((v,i)=>["TP"+(i+1),v,"target"])),["LIVE",levels.current,"current"]].filter(x=>num(x[1])>0);
+  const secondaryLines=secondaryLevels?[["Open Entry",secondaryLevels.entry,"openEntry"],["Open SL",secondaryLevels.stop,"openStop"],...((secondaryLevels.targets||[]).map((v,i)=>["Open TP"+(i+1),v,"openTarget"]))].filter(x=>num(x[1])>0):[];
+  const priceValues=[...displayRows.flatMap(c=>[num(c.low),num(c.high)]),...primaryLines.map(x=>num(x[1])),...secondaryLines.map(x=>num(x[1]))].filter(v=>v>0);
+  if(!displayRows.length&&!priceValues.length)return <div className={compact?"miniChartEmpty":"chartEmpty"}>داده کندل در حال دریافت است…</div>;
+  const rawMin=Math.min(...priceValues),rawMax=Math.max(...priceValues),pad=(rawMax-rawMin||rawMax*.01||1)*.08,min=rawMin-pad,max=rawMax+pad,span=max-min||1;
+  const W=760,H=compact?150:360,left=54,right=742,top=18,bottom=compact?132:326;
+  const y=v=>bottom-(v-min)/span*(bottom-top);
+  const n=Math.max(displayRows.length,1),step=(right-left)/n,body=Math.max(2,Math.min(compact?7:10,step*.62));
+  const x=i=>left+step*i+step/2;
+  const markers=deriveHitMarkers(displayRows,levels,startedAt);
+  return <svg className={"candleSvg "+(compact?"compact":"")} viewBox={"0 0 "+W+" "+H} preserveAspectRatio="none">
+    {[0,.25,.5,.75,1].map((p,i)=><line key={"g"+i} x1={left} x2={right} y1={top+(bottom-top)*p} y2={top+(bottom-top)*p} className="chartGridLine"/>)}
+    {displayRows.map((c,i)=>{const o=num(c.open),cl=num(c.close),hi=num(c.high),lo=num(c.low),up=cl>=o,cy=Math.min(y(o),y(cl)),h=Math.max(1.5,Math.abs(y(o)-y(cl)));return <g key={c.time||i} className={up?"candle up":"candle down"}><line x1={x(i)} x2={x(i)} y1={y(hi)} y2={y(lo)} className="candleWick"/><rect x={x(i)-body/2} y={cy} width={body} height={h} rx="1"/></g>})}
+    {primaryLines.map(([label,v,kind])=><g key={label}><line x1={left} x2={right} y1={y(num(v))} y2={y(num(v))} className={"priceGuide "+kind}/>{!compact&&<text x={left+5} y={Math.max(top+11,y(num(v))-5)} className={"priceGuideText "+kind}>{label} {trimNumber(v,8)}</text>}</g>)}
+    {secondaryLines.map(([label,v,kind])=><g key={label}><line x1={left} x2={right} y1={y(num(v))} y2={y(num(v))} className={"priceGuide secondary "+kind}/>{!compact&&<text x={right-6} textAnchor="end" y={Math.max(top+11,y(num(v))-5)} className={"priceGuideText secondary "+kind}>{label} {trimNumber(v,8)}</text>}</g>)}
+    {markers.map((m,i)=><g key={m.label+"-"+i} className={"hitEvent "+m.kind}><line x1={x(m.index)} x2={x(m.index)} y1={top} y2={bottom} className="eventLine"/><circle cx={x(m.index)} cy={y(m.price)} r={compact?4.5:6} className="eventPoint"/>{!compact&&<text x={x(m.index)+7} y={Math.max(top+12,y(m.price)-8)} className="eventText">{m.label}</text>}</g>)}
+  </svg>
+}
+
+function MarketChart({marketId,levels={},startedAt,includeOpenTrades=false}){
   const [rows,setRows]=useState([]);
-  useEffect(()=>{if(marketId)api("/api/v1/markets/"+marketId+"/candles/").then(d=>setRows(d.candles||[])).catch(()=>setRows([]))},[marketId]);
-  const closes=rows.map(x=>num(x.close)).filter(Boolean);
-  const levelValues=[num(levels.entry),num(levels.stop),num(levels.current),...(levels.targets||[]).map(num)].filter(v=>v>0);
-  const values=[...closes,...levelValues];
-  if(!values.length)return <div className="chartEmpty">قیمت زنده پس از انتخاب بازار نمایش داده می‌شود.</div>;
-  const min=Math.min(...values),max=Math.max(...values),span=max-min||1;
-  const y=v=>160-(v-min)/span*130;
-  const pts=closes.length>1?closes.map((v,i)=>(i/(closes.length-1)*600)+","+y(v)).join(" "):"";
-  const lines=[["Entry",levels.entry,"entry"],["SL",levels.stop,"stop"],...((levels.targets||[]).map((v,i)=>["TP"+(i+1),v,"target"])),["Now",levels.current,"current"]].filter(x=>num(x[1])>0);
-  return <div className="realChart signalLevels"><svg viewBox="0 0 600 180" preserveAspectRatio="none">{pts&&<polyline points={pts} fill="none" stroke="currentColor" strokeWidth="3"/>}{lines.map(([label,v,kind])=><g key={label}><line x1="0" x2="600" y1={y(num(v))} y2={y(num(v))} className={"levelLine "+kind}/><text x="8" y={Math.max(12,y(num(v))-4)} className={"levelText "+kind}>{label} {v}</text></g>)}</svg></div>
+  const [interval,setIntervalValue]=useState("15m");
+  const [historyError,setHistoryError]=useState("");
+  const [livePrice,setLivePrice]=useState(levels.current||null);
+  const [showOpen,setShowOpen]=useState(true);
+  const [openLevels,setOpenLevels]=useState(null);
+  useEffect(()=>{
+    if(!marketId){setRows([]);return}
+    let alive=true;
+    const load=()=>api("/api/v1/markets/"+marketId+"/candles/?interval="+interval).then(d=>{if(!alive)return;setRows(d.candles||[]);setHistoryError(d.history_error||"");if(d.quote?.price)setLivePrice(d.quote.price)}).catch(e=>{if(alive)setHistoryError(e.message)});
+    load();const t=setInterval(load,20000);return()=>{alive=false;clearInterval(t)}
+  },[marketId,interval]);
+  useEffect(()=>{
+    if(!marketId)return;
+    let alive=true;
+    const quote=()=>api("/api/v1/markets/quotes/?live=1&market="+marketId).then(d=>{const p=d.markets?.[0]?.quote?.price;if(alive&&p)setLivePrice(p)}).catch(()=>{});
+    quote();const t=setInterval(quote,2000);return()=>{alive=false;clearInterval(t)}
+  },[marketId]);
+  useEffect(()=>{
+    if(!includeOpenTrades||!marketId){setOpenLevels(null);return}
+    let alive=true;
+    const loadOpen=()=>api("/api/v1/live-orders/?view=active").then(d=>{
+      if(!alive)return;
+      const candidates=[...(d.orders||[]),...(d.external||[])].filter(x=>String(x.market_id)===String(marketId)&&x.management&&["pending_entry","active","paused","exiting","error"].includes(x.management.state));
+      const x=candidates[0],m=x?.management;
+      if(!m){setOpenLevels(null);return}
+      setOpenLevels({entry:m.entry_price||x.average_price||x.entry_price||x.price,stop:m.effective_stop||m.stop_loss,targets:(m.targets||[]).map(t=>t.price).filter(Boolean).length?(m.targets||[]).map(t=>t.price).filter(Boolean):[m.tp1,m.tp2,m.tp3].filter(Boolean)});
+    }).catch(()=>{});
+    loadOpen();const t=setInterval(loadOpen,5000);return()=>{alive=false;clearInterval(t)}
+  },[includeOpenTrades,marketId]);
+  const merged={...levels,current:livePrice||levels.current};
+  return <div className="marketChartV2">
+    <div className="chartToolbar"><div className="chartIntervals">{["1m","5m","15m","1h","4h"].map(x=><button type="button" key={x} className={interval===x?"active":""} onClick={()=>setIntervalValue(x)}>{x}</button>)}</div>{includeOpenTrades&&<label className="chartToggle"><input type="checkbox" checked={showOpen} onChange={e=>setShowOpen(e.target.checked)}/><span>نمایش خطوط معامله باز</span></label>}</div>
+    <div className="realCandleChart"><CandleSvg rows={rows} levels={merged} startedAt={startedAt} secondaryLevels={showOpen?openLevels:null}/></div>
+    <div className="chartMeta"><span>LIVE {livePrice?trimNumber(livePrice,8):"—"}</span><span>{rows.length} کندل · {interval}</span>{historyError&&<span className="down">تاریخچه: {historyError}</span>}</div>
+  </div>
 }
-function SignalMiniChart({signal,onOpen}){
-  const [quote,setQuote]=useState(signal.quote||null);
-  const [candles,setCandles]=useState([]);
-  useEffect(()=>{if(!signal.market_id)return;api("/api/v1/markets/"+signal.market_id+"/candles/").then(d=>setCandles(d.candles||[])).catch(()=>{});const run=()=>api("/api/v1/markets/quotes/?live=1&market="+signal.market_id).then(d=>setQuote(d.markets?.[0]?.quote||null)).catch(()=>{});run();const t=setInterval(run,2000);return()=>clearInterval(t)},[signal.market_id]);
-  const closes=candles.map(x=>num(x.close)).filter(Boolean);
-  const levels=[num(signal.entry),num(signal.stop_loss),num(quote?.price),...(signal.targets||[]).map(x=>num(x.price))].filter(v=>v>0);
-  const values=[...closes,...levels];
-  const min=values.length?Math.min(...values):0,max=values.length?Math.max(...values):1,span=max-min||1;
-  const y=v=>118-(v-min)/span*92;
-  const pts=closes.length>1?closes.map((v,i)=>(i/(closes.length-1)*360)+","+y(v)).join(" "):"";
-  return <button type="button" className="signalMiniCard" onClick={onOpen}><div className="signalMiniHead"><div><b>{signal.symbol||("Signal #"+signal.id)}</b><span>{signal.exchange||signal.source_method} · {signal.side||"—"}</span></div><Status value={signal.status}/></div><svg viewBox="0 0 360 130" preserveAspectRatio="none">{pts&&<polyline points={pts} fill="none" stroke="currentColor" strokeWidth="2.5"/>}{num(signal.entry)>0&&<line x1="0" x2="360" y1={y(num(signal.entry))} y2={y(num(signal.entry))} className="levelLine entry"/>}{num(signal.stop_loss)>0&&<line x1="0" x2="360" y1={y(num(signal.stop_loss))} y2={y(num(signal.stop_loss))} className="levelLine stop"/>}{(signal.targets||[]).map((t,i)=><line key={i} x1="0" x2="360" y1={y(num(t.price))} y2={y(num(t.price))} className="levelLine target"/>)}{num(quote?.price)>0&&<line x1="0" x2="360" y1={y(num(quote.price))} y2={y(num(quote.price))} className="levelLine current"/>}</svg><div className="signalLegend"><span>Entry {signal.entry||"—"}</span><span>LIVE {quote?.price||"—"}</span><span>SL {signal.stop_loss||"—"}</span></div></button>
+
+function SignalSchematic({signal,detail=false,onOpen}){
+  const targets=signal.targets||signal.structured?.targets||[];
+  const entry=signal.entry||signal.structured?.entry;
+  const stop=signal.stop_loss||signal.structured?.stop_loss;
+  const outcome=signal.outcome||{};
+  const hit=Number(outcome.targets_hit||0);
+  const content=<>
+    <div className="signalMiniHead"><div><b>{signal.symbol||signal.structured?.symbol||("Signal #"+signal.id)}</b><span>{signal.exchange||signal.source_method||"Signal"} · {signal.side||signal.structured?.side||"—"}</span></div><Status value={outcome.status||signal.status}/></div>
+    <div className={"signalScheme "+(detail?"detail":"card")}>
+      <svg viewBox="0 0 380 150" preserveAspectRatio="none"><path d="M18 116 C62 144,82 135,110 94 S166 18,205 52 S243 129,286 92 S321 44,360 34" className="schemePath"/><line x1="12" x2="365" y1="115" y2="115" className="schemeEntry"/><circle cx="34" cy="116" r="6" className="schemePoint entry"/>{targets.slice(0,3).map((t,i)=><g key={i}><line x1="215" x2="365" y1={88-i*27} y2={88-i*27} className="schemeTarget"/><circle cx={285+i*31} cy={91-i*24} r="5.5" className={"schemePoint "+(hit>i?"hit":"target")}/>{detail&&<text x="369" y={92-i*27} textAnchor="end" className={"schemeBadge "+(hit>i?"hit":"")}>{"TP"+(i+1)+" "+trimNumber(t.price,8)}</text>}</g>)}<line x1="12" x2="190" y1="130" y2="130" className="schemeStop"/>{detail&&<text x="16" y="144" className="schemeStopText">SL {trimNumber(stop,8)}</text>}</svg>
+    </div>
+    <div className="signalLegend"><span>Entry {entry||"—"}</span><span>{hit?("TP "+hit+"/"+targets.length):"در انتظار"}</span><span>SL {stop||"—"}</span></div>
+  </>;
+  return onOpen?<button type="button" className="signalMiniCard" onClick={onOpen}>{content}</button>:<div className="signalDetailScheme">{content}</div>
 }
+
+function SignalMiniChart({signal,onOpen}){return <SignalSchematic signal={signal} onOpen={onOpen}/>}
 
 function SmartPaste({notify,setPage,setManualSeed}){
   const [text,setText]=useState(()=>localStorage.getItem("cs_smart_text")||"");

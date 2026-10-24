@@ -2,12 +2,12 @@
   "schema_version": "cryptosniper.stage-plan.v1",
   "project": "CryptoSniper",
   "repository": "https://github.com/ostaddehdari/CryptoSniper",
-  "plan_version": "1.2.0",
+  "plan_version": "1.3.0",
   "created_at": "2026-10-06",
-  "stage_count": 23,
-  "work_count": 115,
+  "stage_count": 24,
+  "work_count": 120,
   "execution_unit": "one_complete_stage",
-  "last_stage": "S23",
+  "last_stage": "S24",
   "default_mode": "paper",
   "scope_v1": [
     "spot",
@@ -18,7 +18,7 @@
     "perpetual"
   ],
   "source_sha256": "4904fa47ca4d294e437081bce926368c0028602a0606a82c10d4b60c49dbfd7d",
-  "latest_user_decision": "Stage23 stabilizes manual trading, Trailing semantics, External Trade management, Signal Inbox analytics and exchange/order operations without removing prior capabilities.",
+  "latest_user_decision": "Stage24 adds live candlestick workspaces, signal hit markers, card/table Inbox, unified internal/external trades, real read refresh and archive lifecycle.",
   "stages": [
     {
       "id": "S01",
@@ -1353,6 +1353,66 @@
           "deliverables": "نسخه 0.23.0rc1، CI exact-source، گزارش S23، installer تجمعی، ZIP/SHA256 و Release workflow.",
           "acceptance": "Release فقط بعد از CI موفق همان commit ساخته شود؛ installer --check روی ZIP دقیق پاس شود و Live پیش‌فرض خاموش بماند.",
           "status": "done"
+        }
+      ]
+    },
+    {
+      "id": "S24",
+      "number": 24,
+      "title": "چارت زنده، نمایش سیگنال و بایگانی معاملات",
+      "depends_on": [
+        "S23"
+      ],
+      "status": "partial",
+      "source_sections": [
+        4,
+        6,
+        8,
+        13,
+        14,
+        15,
+        50
+      ],
+      "works": [
+        {
+          "id": "S24-W01",
+          "number": 1,
+          "title": "چارت کندلی زنده",
+          "deliverables": "API خصوصی کندل 1m/5m/15m/1h/4h/1d و Workspace زنده برای Inbox، New Trade و Trade Detail.",
+          "acceptance": "بازار مجاز کندل قابل نمایش بدهد؛ نبود داده provider خطای امن و قابل فهم باشد.",
+          "status": "done"
+        },
+        {
+          "id": "S24-W02",
+          "number": 2,
+          "title": "Overlay و نقاط تحقق",
+          "deliverables": "Entry/TP1/TP2/TP3/SL به صورت خطوط قیمت و لحظه برخورد به صورت خط زمانی عمودی و پوینت رنگی.",
+          "acceptance": "سطح و زمان برخورد از هم تفکیک باشند؛ سیگنال و معامله داده مالک دیگر را نمایش ندهند.",
+          "status": "done"
+        },
+        {
+          "id": "S24-W03",
+          "number": 3,
+          "title": "Workspace و نمایش کارتی/جدولی",
+          "deliverables": "مسیر رسمی /app/ با hash routes Inbox/NewTrade/Trades، شماتیک detail و mini-card و table mode.",
+          "acceptance": "سه route از سورس GitHub ارائه شوند و New Trade خطوط TP/SL معامله باز قبلی را overlay نکند.",
+          "status": "done"
+        },
+        {
+          "id": "S24-W04",
+          "number": 4,
+          "title": "بایگانی و Refresh واقعی",
+          "deliverables": "Archive/Restore سیگنال و معاملات داخلی/Live/خارجی، auto-archive سیگنال منقضی و Sync واقعی خواندنی صرافی.",
+          "acceptance": "حذف داده را نابود نکند؛ فیلتر Active/Archive/All مستقل باشد و Refresh داده صرافی را دوباره بخواند.",
+          "status": "done"
+        },
+        {
+          "id": "S24-W05",
+          "number": 5,
+          "title": "تست و تحویل تجمعی",
+          "deliverables": "0.24.0rc1، migrationها، integration/UI smoke، مستندات و بسته نصب تجمعی.",
+          "acceptance": "CI exact-source سبز و installer --check قبل از انتشار/نصب موفق باشد؛ Live write پیش‌فرض خاموش بماند.",
+          "status": "partial"
         }
       ]
     }

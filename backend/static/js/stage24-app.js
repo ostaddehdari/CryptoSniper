@@ -8,7 +8,7 @@
   const qsa = (s, p = document) => Array.from(p.querySelectorAll(s));
   const csrf = qs(".s24-csrf input[name=csrfmiddlewaretoken]")?.value || "";
   const state = {
-    route: "inbox",
+    route: "overview",
     signalView: "active",
     signalLayout: "cards",
     signals: [],
@@ -87,6 +87,32 @@
     return payload;
   }
 
+  async function loadOverview() {
+    try {
+      const payload = await api("/cryptosniper/api/v1/dashboard/");
+      const openNode = qs("[data-overview-open]");
+      const todayNode = qs("[data-overview-today]");
+      const signalsNode = qs("[data-overview-signals]");
+      const asofNode = qs("[data-overview-asof]");
+      if (openNode) openNode.textContent = n(payload.open_trades, "0");
+      if (todayNode) todayNode.textContent = n(payload.today_trades, "0");
+      if (signalsNode) signalsNode.textContent = n(payload.active_signals, "0");
+      if (asofNode) asofNode.textContent = "آخرین بروزرسانی: " + faDate(payload.as_of);
+      const accounts = qs("[data-overview-accounts]");
+      if (accounts) {
+        const rows = payload.accounts || [];
+        accounts.innerHTML = rows.length ? rows.map((row) => `<div class="s24-overview-account">
+          <div><strong>حساب #${esc(row.id)}</strong><span>${esc(row.base_currency || "")}</span></div>
+          <div><small>ارزش شناخته‌شده</small><b>${n(row.known_valuation)}</b></div>
+          <div><small>قابل استفاده</small><b>${n(row.known_available_valuation)}</b></div>
+        </div>`).join("") : '<div class="s24-empty-inline">حساب متصل برای نمایش وجود ندارد.</div>';
+      }
+    } catch (error) {
+      const accounts = qs("[data-overview-accounts]");
+      if (accounts) accounts.innerHTML = `<div class="s24-empty-inline">${esc(error.message)}</div>`;
+    }
+  }
+
   function setActive(group, attr, value) {
     qsa("button", group).forEach((button) => {
       button.classList.toggle("active", button.dataset[attr] === value);
@@ -94,10 +120,11 @@
   }
 
   function route() {
-    const value = (location.hash || "#/inbox").replace(/^#\/?/, "").split("?")[0];
-    state.route = ["inbox", "newtrade", "trades"].includes(value) ? value : "inbox";
+    const value = (location.hash || "#/overview").replace(/^#\/?/, "").split("?")[0];
+    state.route = ["overview", "inbox", "newtrade", "trades"].includes(value) ? value : "overview";
     qsa("[data-page]").forEach((page) => { page.hidden = page.dataset.page !== state.route; });
     qsa("[data-route-link]").forEach((link) => link.classList.toggle("active", link.dataset.routeLink === state.route));
+    if (state.route === "overview") loadOverview();
     if (state.route === "inbox") loadSignals();
     if (state.route === "trades") loadTrades();
     if (state.route === "newtrade" && state.market) loadNewTradeChart();
@@ -468,6 +495,7 @@
     state.poller = setInterval(() => {
       qs("[data-live-time]").textContent = new Date().toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
       if (document.hidden) return;
+      if (state.route === "overview") loadOverview();
       if (state.route === "inbox" && state.selectedSignal?.market_id) {
         chartFor({ market: state.selectedSignal.market_id, signal: state.selectedSignal.id, interval: "5m", bars: 180 }, qs("[data-signal-chart]"), qs("[data-signal-chart-empty]")).catch(()=>{});
       }

@@ -2,15 +2,18 @@ import asyncio
 import json
 import re
 import uuid
+from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
@@ -27,6 +30,7 @@ from apps.exchanges.security import revoke_account_credentials, rotate_account_c
 from apps.exchanges.services import latest_balances
 from apps.exchanges.tasks import live_spot_order, sync_exchange_account
 from apps.marketdata.feeds import get_quote
+from apps.marketdata.history import fetch_binance_history
 from apps.marketdata.search import market_is_readable
 from apps.marketdata.models import FavoriteAsset, HistoricalCandle, Watchlist, WatchlistItem
 from apps.operations.models import ExternalObservation, WorkerHeartbeat
@@ -481,35 +485,72 @@ def api_account_markets(request, pk):
 @never_cache
 @require_GET
 def api_market_candles(request, pk):
-    market = get_object_or_404(ExchangeMarket.objects.select_related("exchange"), pk=pk, active=True)
+    market = get_object_or_404(
+        ExchangeMarket.objects.select_related("exchange"), pk=pk, active=True
+    )
     if not UserExchangeAccount.objects.for_user(request.user).filter(
-        exchange=market.exchange, status__in=("connected", "restricted"), permissions__can_read=True
+        exchange=market.exchange,
+        status__in=("connected", "restricted"),
+        permissions__can_read=True,
     ).exists():
         return JsonResponse({"error": "market_not_visible"}, status=404)
-    interval = str(request.GET.get("interval", "1h"))
-    if interval not in {"15m", "1h", "4h", "1d"}:
-        interval = "1h"
+
+    interval = str(request.GET.get("interval", "15m"))
+    horizons = {
+        "1m": timedelta(hours=6),
+        "5m": timedelta(hours=24),
+        "15m": timedelta(days=3),
+        "1h": timedelta(days=10),
+        "4h": timedelta(days=45),
+        "1d": timedelta(days=240),
+    }
+    if interval not in horizons:
+        interval = "15m"
+
+    now = timezone.now()
+    refresh_key = f"chart-history:v1:{market.pk}:{interval}"
+    history_error = ""
+    if cache.add(refresh_key, now.isoformat(), timeout=20):
+        try:
+            fetch_binance_history(
+                market.symbol,
+                now - horizons[interval],
+                now,
+                interval=interval,
+                max_pages=1,
+            )
+        except ValidationError as error:
+            history_error = str(error)
+
     rows = list(
         HistoricalCandle.objects.filter(symbol=market.symbol, interval=interval)
-        .order_by("-open_time")[:120]
+        .order_by("-open_time")[:180]
     )
     rows.reverse()
-    return JsonResponse({
-        "market_id": market.pk,
-        "symbol": market.symbol,
-        "interval": interval,
-        "candles": [
-            {
-                "time": row.open_time.isoformat(),
-                "open": str(row.open_price),
-                "high": str(row.high_price),
-                "low": str(row.low_price),
-                "close": str(row.close_price),
-                "volume": str(row.volume),
-            }
-            for row in rows
-        ],
-    })
+    quote = get_quote(market)
+    return JsonResponse(
+        {
+            "market_id": market.pk,
+            "symbol": market.symbol,
+            "exchange": market.exchange.code,
+            "interval": interval,
+            "history_source": "binance_public",
+            "history_error": history_error or None,
+            "quote": quote,
+            "candles": [
+                {
+                    "time": row.open_time.isoformat(),
+                    "close_time": row.close_time.isoformat(),
+                    "open": str(row.open_price),
+                    "high": str(row.high_price),
+                    "low": str(row.low_price),
+                    "close": str(row.close_price),
+                    "volume": str(row.volume),
+                }
+                for row in rows
+            ],
+        }
+    )
 
 
 @session_api_required
@@ -688,6 +729,7 @@ def _live_order_payload(item):
         "exchange": item.account.exchange.code,
         "account": item.account.label,
         "symbol": item.market.symbol,
+        "market_id": item.market_id,
         "side": item.side,
         "order_type": item.order_type,
         "amount": str(item.amount),
@@ -696,6 +738,7 @@ def _live_order_payload(item):
         "average_price": str(item.average_price) if item.average_price is not None else None,
         "state": item.state,
         "error_code": item.error_code,
+        "archived_at": item.archived_at,
         "management": management_payload,
         "created_at": item.created_at,
         "updated_at": item.updated_at,
@@ -707,14 +750,23 @@ def _live_order_payload(item):
 @require_http_methods(["GET", "POST"])
 def api_live_orders(request):
     if request.method == "GET":
+        view = str(request.GET.get("view", "active")).lower()
+        internal_qs = LiveSpotOrder.objects.filter(owner=request.user)
+        external_qs = ExternalObservation.objects.filter(
+            account__owner=request.user, kind__in=("order", "fill")
+        )
+        if view == "archive":
+            internal_qs = internal_qs.filter(archived_at__isnull=False)
+            external_qs = external_qs.filter(archived_at__isnull=False)
+        elif view != "all":
+            internal_qs = internal_qs.filter(archived_at__isnull=True)
+            external_qs = external_qs.filter(archived_at__isnull=True)
         internal = list(
-            LiveSpotOrder.objects.filter(owner=request.user)
-            .select_related("account", "account__exchange", "market")
+            internal_qs.select_related("account", "account__exchange", "market")
             .order_by("-created_at")[:200]
         )
         external = list(
-            ExternalObservation.objects.filter(account__owner=request.user, kind__in=("order", "fill"))
-            .select_related("account", "account__exchange")
+            external_qs.select_related("account", "account__exchange")
             .order_by("-observed_at")[:200]
         )
         from apps.operations.external_management import (
@@ -806,6 +858,36 @@ def api_live_orders(request):
         return JsonResponse({"error": getattr(error, "messages", [str(error)])}, status=400)
 
 
+@session_api_required
+@never_cache
+@require_POST
+def api_trade_archive(request):
+    try:
+        data = _body(request)
+        source = str(data.get("source", "internal")).lower()
+        item_id = int(data.get("id"))
+        archived = data.get("archived") is not False
+        stamp = timezone.now() if archived else None
+        if source == "external":
+            item = get_object_or_404(
+                ExternalObservation,
+                pk=item_id,
+                account__owner=request.user,
+                kind__in=("order", "fill"),
+            )
+        else:
+            item = get_object_or_404(LiveSpotOrder, pk=item_id, owner=request.user)
+        item.archived_at = stamp
+        item.save(update_fields=("archived_at",))
+        record_audit(
+            "trade.archived" if archived else "trade.restored",
+            request=request,
+            user=request.user,
+            metadata={"source": source, "id": item_id},
+        )
+        return JsonResponse({"id": item_id, "source": source, "archived": archived})
+    except (ValidationError, ValueError, TypeError) as error:
+        return JsonResponse({"error": getattr(error, "messages", [str(error)])}, status=400)
 
 
 @session_api_required

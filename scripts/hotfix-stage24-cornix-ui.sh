@@ -106,13 +106,42 @@ runuser -u "$APP_USER" -- env   DJANGO_SETTINGS_MODULE=config.settings.server   
 
 echo "===== RESTART WEB ====="
 systemctl restart cryptosniper-web.service
-systemctl is-active --quiet cryptosniper-web.service
+
+echo "===== WAIT FOR WEB READY ====="
+ready=0
+for attempt in $(seq 1 30); do
+  if systemctl is-active --quiet cryptosniper-web.service; then
+    code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 3 \
+      -H 'Host: srun.ir' -H 'X-Forwarded-Proto: https' \
+      http://127.0.0.1:18881/health/ready/ 2>/dev/null || true)
+    if [[ "$code" == "200" ]]; then
+      echo "PASS: web ready on attempt $attempt."
+      ready=1
+      break
+    fi
+  fi
+  if (( attempt == 1 || attempt % 5 == 0 )); then
+    echo "WAIT: web not ready yet (attempt $attempt/30)."
+  fi
+  sleep 1
+done
+
+if [[ "$ready" != "1" ]]; then
+  echo "ERROR: cryptosniper-web did not become ready."
+  systemctl --no-pager --full status cryptosniper-web.service || true
+  journalctl --no-pager -u cryptosniper-web.service -n 80 || true
+  exit 1
+fi
 
 echo "===== VERIFY ROUTES ====="
-code=$(curl -sS -o /dev/null -w '%{http_code}' -H 'Host: srun.ir' -H 'X-Forwarded-Proto: https' http://127.0.0.1:18881/dashboard/)
+code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 5 \
+  -H 'Host: srun.ir' -H 'X-Forwarded-Proto: https' \
+  http://127.0.0.1:18881/dashboard/)
 [[ "$code" == "302" ]] || { echo "ERROR: /dashboard/ expected 302, got $code"; exit 1; }
 
-app_code=$(curl -sS -o /dev/null -w '%{http_code}' -H 'Host: srun.ir' -H 'X-Forwarded-Proto: https' http://127.0.0.1:18881/app/)
+app_code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 5 \
+  -H 'Host: srun.ir' -H 'X-Forwarded-Proto: https' \
+  http://127.0.0.1:18881/app/)
 [[ "$app_code" == "302" || "$app_code" == "200" ]] || { echo "ERROR: /app/ unexpected HTTP $app_code"; exit 1; }
 
 echo

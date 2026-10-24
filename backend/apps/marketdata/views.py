@@ -73,6 +73,7 @@ def _header_ticker_value():
 def api_header_ticker(request):
     return JsonResponse({**_header_ticker_value(), "display_only": True})
 
+
 def _market_ids(request):
     raw = request.GET.getlist("market")
     if len(raw) > 20 or any(not value.isascii() or not value.isdecimal() for value in raw):

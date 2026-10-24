@@ -1,7 +1,10 @@
 import logging
 
 from celery import shared_task
+from django.core.exceptions import ValidationError
+from django.utils import timezone
 
+from .adapters import AdapterError
 from .live_orders import execute_live_spot_order, reconcile_live_spot_order
 from .models import LiveSpotOrder, UserExchangeAccount
 from .services import sync_exchange_account as run_sync
@@ -13,6 +16,34 @@ logger = logging.getLogger(__name__)
 def sync_exchange_account(account_id):
     account = UserExchangeAccount.objects.select_related("exchange").get(pk=account_id)
     result = run_sync(account)
+    external = None
+    account.refresh_from_db()
+    if (
+        account.environment == "live"
+        and account.status in {"connected", "restricted"}
+        and account.permissions.get("can_read") is True
+    ):
+        try:
+            from apps.operations.external import observe_account
+
+            external = observe_account(account)
+        except (AdapterError, ValidationError) as error:
+            account.last_error_code = "external_refresh_failed"
+            account.last_error_message = str(error)[:240]
+            account.last_error_at = timezone.now()
+            account.save(
+                update_fields=(
+                    "last_error_code",
+                    "last_error_message",
+                    "last_error_at",
+                    "updated_at",
+                )
+            )
+            external = {
+                "status": "provider_read_failed",
+                "error": type(error).__name__,
+            }
+    result["external"] = external
     logger.info(
         "Exchange account synchronized",
         extra={

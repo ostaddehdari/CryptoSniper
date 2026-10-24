@@ -54,6 +54,7 @@ class ExternalObservation(models.Model):
     external_id = models.CharField(max_length=120)
     kind = models.CharField(max_length=16)
     payload = models.JSONField(default=dict)
+    archived_at = models.DateTimeField(null=True, blank=True)
     observed_at = models.DateTimeField(auto_now=True)
 
     class Meta:

@@ -134,14 +134,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          TAG=stage24-v0.24.0rc1-deploy
+          TAG=stage24-v0.24.0rc1-deploy-r1
           PIN=$(git rev-parse HEAD)
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo 'Release already exists; immutable assets were not replaced.'
           else
             gh release create "$TAG" dist/* --target "$PIN" --prerelease \
-              --title "CryptoSniper Stage24 — cumulative v0.24.0rc1" \
-              --notes "Cumulative Stages 01-23: manual trading controls, explicit External Trade adoption, Signal Inbox analytics and hardened Spot operations on top of Stages 01-22. Historical imports never trade and Live remains disabled by default. Real Telegram/provider credentials, legal eligibility and public-host acceptance remain operator responsibilities. Exact-source checks: https://github.com/ostaddehdari/CryptoSniper/commit/$PIN/checks."
+              --title "CryptoSniper Stage24 — v0.24.0rc1 UI hotfix r1" \
+              --notes "Stage24 UI hotfix r1: Cornix-like workspace is the permanent primary UI; the legacy dashboard template is removed, legacy pages use the same shell, and Stage24 live charts/archive/refresh capabilities are preserved. Live remains disabled by default. Exact-source checks: https://github.com/ostaddehdari/CryptoSniper/commit/$PIN/checks."
           fi
           cat dist/SHA256SUMS.txt
           gh release view "$TAG" --json assets,url

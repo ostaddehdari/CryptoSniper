@@ -23,7 +23,18 @@ from .tasks import infrastructure_probe
 
 
 def home(request):
-    return redirect("dashboard" if request.user.is_authenticated else "login")
+    return redirect("app-shell" if request.user.is_authenticated else "login")
+
+
+@login_required
+@never_cache
+@require_GET
+def app_shell(request):
+    return render(
+        request,
+        "core/app_stage24_rebuild.html",
+        {"nav": "app", "release": settings.RELEASE_VERSION},
+    )
 
 
 @require_GET
@@ -36,7 +47,7 @@ def web_manifest(request):
             "description": "فضای مدیریت معاملات Paper و گزارش عملکرد",
             "lang": "fa",
             "dir": "rtl",
-            "start_url": reverse("dashboard"),
+            "start_url": reverse("app-shell"),
             "scope": reverse("home"),
             "display": "standalone",
             "background_color": "#f3f6f5",
@@ -60,7 +71,9 @@ def web_manifest(request):
 def service_worker(request):
     assets = [
         static("css/app.css"),
+        static("css/stage24-rebuild.css"),
         static("js/app.js"),
+        static("js/stage24-rebuild.js"),
         static("js/pwa.js"),
         static("img/mark.svg"),
         static("img/pwa-icon.svg"),
@@ -69,7 +82,7 @@ def service_worker(request):
     ]
     source = (
         "'use strict';\n"
-        "const CACHE='cryptosniper-static-v23';\n"
+        "const CACHE='cryptosniper-static-v24-rebuild';\n"
         f"const ASSETS={assets!r};\n"
         "self.addEventListener('install',event=>event.waitUntil("
         "caches.open(CACHE).then(c=>c.addAll(ASSETS))));\n"
@@ -99,18 +112,7 @@ def service_worker(request):
 @never_cache
 @require_GET
 def dashboard(request):
-    from apps.exchanges.models import UserExchangeAccount
-
-    exchange_accounts = UserExchangeAccount.objects.for_user(request.user)
-    return render(
-        request,
-        "core/dashboard.html",
-        {
-            "nav": "dashboard",
-            "exchange_count": exchange_accounts.exclude(status="disabled").count(),
-            "connected_exchange_count": exchange_accounts.filter(status="connected").count(),
-        },
-    )
+    return redirect("app-shell")
 
 
 def system_context():

@@ -1,4 +1,5 @@
 name: Build Stage24 cumulative deployment
+# exact-source release trigger after green Stage24 CI
 on:
   push:
     branches: [main]

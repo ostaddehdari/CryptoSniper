@@ -6,16 +6,74 @@ from datetime import timedelta
 
 from asgiref.sync import sync_to_async
 from django.conf import settings
+from django.core.cache import cache
 from django.http import JsonResponse, StreamingHttpResponse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 
 from apps.accounts.security import session_api_required
+from apps.exchanges.adapters import AdapterError, get_adapter
 
 from .feeds import get_quote
 from .search import eligible_markets, search_markets
 
+
+
+HEADER_TICKER_CACHE_KEY = "marketdata:v1:header-usdt"
+HEADER_TICKER_FRESH_SECONDS = 20
+HEADER_TICKER_STALE_SECONDS = 300
+
+
+def _header_ticker_value():
+    cached = cache.get(HEADER_TICKER_CACHE_KEY)
+    if cached:
+        return {**cached, "stale": False}
+
+    stale = cache.get(HEADER_TICKER_CACHE_KEY + ":stale")
+    payload = {
+        "usdt_usd": None,
+        "usdt_toman": None,
+        "sources": {},
+        "observed_at": timezone.now().isoformat(),
+        "stale": False,
+    }
+    try:
+        adapter = get_adapter("binance", credentials={}, environment="paper")
+        ticker = adapter.fetch_ticker("USDT/USDC")
+        payload["usdt_usd"] = str(ticker.price)
+        payload["sources"]["usdt_usd"] = "binance_public"
+    except (AdapterError, ValueError, TypeError, KeyError):
+        pass
+
+    try:
+        adapter = get_adapter("nobitex", credentials={}, environment="paper")
+        ticker = adapter.fetch_ticker("USDT/IRT")
+        payload["usdt_toman"] = str(ticker.price)
+        payload["sources"]["usdt_toman"] = "nobitex_public"
+    except (AdapterError, ValueError, TypeError, KeyError):
+        pass
+
+    if payload["usdt_usd"] is None and stale:
+        payload["usdt_usd"] = stale.get("usdt_usd")
+    if payload["usdt_toman"] is None and stale:
+        payload["usdt_toman"] = stale.get("usdt_toman")
+
+    if payload["usdt_usd"] is None and payload["usdt_toman"] is None:
+        if stale:
+            return {**stale, "stale": True}
+        return payload
+
+    cache.set(HEADER_TICKER_CACHE_KEY, payload, timeout=HEADER_TICKER_FRESH_SECONDS)
+    cache.set(HEADER_TICKER_CACHE_KEY + ":stale", payload, timeout=HEADER_TICKER_STALE_SECONDS)
+    return payload
+
+
+@session_api_required
+@never_cache
+@require_GET
+def api_header_ticker(request):
+    return JsonResponse({**_header_ticker_value(), "display_only": True})
 
 def _market_ids(request):
     raw = request.GET.getlist("market")

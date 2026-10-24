@@ -1,3 +1,12 @@
+## 0.24.0rc1 — استیج ۲۴ (2026-10-24)
+
+- Workspace رسمی `/app/#/inbox`، `#/newtrade` و `#/trades` با چارت کندلی زنده.
+- خطوط Entry/TP1/TP2/TP3/SL و marker زمانی عمودی + پوینت رنگی برای رخدادها.
+- Inbox کارتی/جدولی با شماتیک Detail و Card.
+- Unified Trades برای Paper، Live داخلی و External؛ Archive/Restore به‌جای حذف.
+- Auto-Archive سیگنال منقضی و Refresh واقعی read-sync برای حساب‌های متصل.
+- New Trade عمداً overlay TP/SL معاملات باز قبلی را نمایش نمی‌دهد.
+
 ## 0.23.0rc1 — استیج ۲۳ (2026-10-23)
 
 - رفع انتخاب واقعی بازار در معامله جدید، Entry خالی برای معامله تازه و اعمال پیش‌فرض‌های integer.

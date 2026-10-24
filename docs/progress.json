@@ -1,6 +1,6 @@
 {
   "schema_version": "cryptosniper.progress.v1",
-  "plan_version": "1.2.0",
+  "plan_version": "1.3.0",
   "completed_stages": [
     "S01",
     "S02"
@@ -1184,6 +1184,47 @@
         "Target VPS installation and public HTTPS acceptance of 0.23 remain operator evidence."
       ],
       "implementation": "Five stabilization works are code-complete: manual market/default/trailing semantics, explicit External Trade adoption, Inbox soft-trash and approve-to-trade analytics, exchange/Broker error handling and a hardened durable Spot order boundary. Exact-source CI/release and VPS acceptance are recorded separately."
+    }
+  },
+  "stage_count": 24,
+  "work_count": 120,
+  "last_stage": "S24",
+  "stages": {
+    "S24": {
+      "status": "partial",
+      "completed_works": [
+        "S24-W01",
+        "S24-W02",
+        "S24-W03",
+        "S24-W04"
+      ],
+      "checks": [
+        {
+          "name": "Stage24 exact-source PostgreSQL/Redis/Workers/Beat/Chromium CI",
+          "status": "pending",
+          "notes": "Final result will be pinned after Stage24 documentation/source settles on one exact commit."
+        },
+        {
+          "name": "Stage24 cumulative package and installer --check",
+          "status": "pending",
+          "notes": "Packaging follows exact-source CI success."
+        }
+      ],
+      "commit_shas": [
+        "be1b676ee42d67f586c9bf676e080d20487d0283",
+        "19e71d5c55c6576ec99602fd17672c731885a8b5",
+        "94e32efd4f6f73db85078a3fe0ee99ce9dcc2d14",
+        "5990af8dba919db0337d7daee9ec7c341f881afe",
+        "8bfafd0a9e079b54468a25e3ef558f3afa1072ac",
+        "3fccd2dfe2c26d6730e8db35f9e75f10ab50e763",
+        "467afe7746d90c338d5a45ef75176b2d13435c34"
+      ],
+      "blockers": [
+        "Target VPS deployment and authenticated browser acceptance of /app/#/inbox, /app/#/newtrade and /app/#/trades are still operator evidence.",
+        "External provider live-write acceptance is not claimed; refresh is read-sync and LIVE_TRADING_ENABLED remains false by default.",
+        "Public Binance candles are a display/history reference and do not claim provider-specific execution candles."
+      ],
+      "implementation": "Live candle API and owner-scoped overlays, vertical hit-time markers, canonical hash-routed workspace, signal card/table views, archive/restore for signals and internal/live/external trades, expired-signal auto archive, and bounded real read-refresh for connected exchange accounts."
     }
   }
 }

@@ -274,7 +274,7 @@ CELERY_BEAT_SCHEDULE["operations-monitor"] = {
 }
 
 
-CELERY_BEAT_SCHEDULE["external-managed-trades"] = {
+CELERY_BEAT_SCHEDULE["signal-auto-archive"] = {\n    "task": "signals.archive_expired",\n    "schedule": 60.0,\n    "options": {"queue": "signals"},\n}\n\nCELERY_BEAT_SCHEDULE["external-managed-trades"] = {
     "task": "operations.monitor_external_trades",
     "schedule": 10.0,
     "options": {"queue": "trailing", "expires": 9},

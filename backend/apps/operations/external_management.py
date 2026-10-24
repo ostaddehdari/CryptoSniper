@@ -85,6 +85,19 @@ def normalize_external(observation):
         payload.get("status")
         or ("filled" if observation.kind == "fill" else "open")
     )
+    management = getattr(observation, "management", None)
+    market_id = management.market_id if management is not None else None
+    if market_id is None and symbol:
+        market_id = (
+            ExchangeMarket.objects.filter(
+                exchange=observation.account.exchange,
+                symbol=symbol,
+                market_type="spot",
+                active=True,
+            )
+            .values_list("pk", flat=True)
+            .first()
+        )
     return {
         "id": observation.pk,
         "account_id": observation.account_id,
@@ -93,11 +106,13 @@ def normalize_external(observation):
         "kind": observation.kind,
         "external_id": observation.external_id,
         "symbol": symbol,
+        "market_id": market_id,
         "side": _side(payload),
         "entry_price": str(entry) if entry not in {None, ""} else None,
         "quantity": str(quantity) if quantity not in {None, ""} else None,
         "status": status,
         "observed_at": observation.observed_at,
+        "archived_at": observation.archived_at,
         "payload": payload,
         "managed": hasattr(observation, "management"),
     }

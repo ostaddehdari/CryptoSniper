@@ -6,9 +6,9 @@
 {% block body %}
 <div class="s24-shell" data-stage24-root>
   <aside class="s24-sidebar">
-    <a class="s24-brand" href="#/inbox"><span class="s24-brand-mark">⌁</span><span><strong>CryptoSniper</strong><small>مرکز کنترل معاملات واقعی</small></span></a>
+    <a class="s24-brand" href="#/overview"><span class="s24-brand-mark">⌁</span><span><strong>CryptoSniper</strong><small>مرکز کنترل معاملات واقعی</small></span></a>
     <nav class="s24-nav" aria-label="ناوبری اصلی">
-      <a href="/cryptosniper/dashboard/">نمای کلی</a>
+      <a href="#/overview" data-route-link="overview">نمای کلی</a>
       <a href="#/trades" data-route-link="trades">معاملات</a>
       <a href="#/inbox" data-route-link="inbox">صندوق سیگنال</a>
       <a href="/cryptosniper/exchanges/">صرافی‌ها</a>
@@ -24,12 +24,44 @@
   <main class="s24-workspace" id="main">
     <header class="s24-topbar">
       <div class="s24-tabs">
+        <a href="#/overview" data-route-link="overview">نمای کلی</a>
         <a href="#/newtrade" data-route-link="newtrade">معامله دستی</a>
         <a href="#/inbox" data-route-link="inbox">تحلیل سیگنال</a>
         <a href="#/trades" data-route-link="trades">معاملات</a>
       </div>
       <div class="s24-live-pill"><i></i><span>LIVE</span><small data-live-time>—</small></div>
     </header>
+
+    <section class="s24-page" data-page="overview" hidden>
+      <div class="s24-section-head">
+        <div><h1>نمای کلی</h1><p>خلاصه زنده حساب، معاملات و سیگنال‌ها در همان Workspace اصلی.</p></div>
+        <div class="s24-actions">
+          <a class="s24-button primary" href="#/newtrade">＋ معامله جدید</a>
+          <a class="s24-button" href="#/inbox">صندوق سیگنال</a>
+          <a class="s24-button" href="#/trades">معاملات</a>
+        </div>
+      </div>
+      <div class="s24-overview-cards">
+        <article class="s24-panel"><span class="s24-overview-label">معاملات باز</span><strong class="s24-overview-number" data-overview-open>—</strong></article>
+        <article class="s24-panel"><span class="s24-overview-label">معاملات امروز</span><strong class="s24-overview-number" data-overview-today>—</strong></article>
+        <article class="s24-panel"><span class="s24-overview-label">سیگنال‌های فعال</span><strong class="s24-overview-number" data-overview-signals>—</strong></article>
+      </div>
+      <div class="s24-grid s24-overview-grid">
+        <article class="s24-panel">
+          <div class="s24-panel-head"><strong>حساب‌ها و موجودی</strong><span class="s24-muted" data-overview-asof>—</span></div>
+          <div data-overview-accounts class="s24-overview-accounts"><div class="s24-empty-inline">در حال دریافت اطلاعات…</div></div>
+        </article>
+        <article class="s24-panel">
+          <div class="s24-panel-head"><strong>دسترسی سریع</strong><span class="s24-status">LIVE</span></div>
+          <div class="s24-overview-links">
+            <a href="#/newtrade">معامله دستی</a>
+            <a href="#/inbox">تحلیل سیگنال</a>
+            <a href="#/trades">معاملات و بایگانی</a>
+            <a href="/cryptosniper/exchanges/">مدیریت صرافی‌ها</a>
+          </div>
+        </article>
+      </div>
+    </section>
 
     <section class="s24-page" data-page="inbox" hidden>
       <div class="s24-section-head">

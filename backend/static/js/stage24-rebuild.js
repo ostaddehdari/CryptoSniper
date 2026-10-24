@@ -2,7 +2,9 @@
 "use strict";
 const root=document.querySelector("[data-cs24-root]"); if(!root)return;
 const qs=(s,p=document)=>p.querySelector(s), qsa=(s,p=document)=>Array.from(p.querySelectorAll(s));
-const csrf=qs(".cs-csrf input[name=csrfmiddlewaretoken]")?.value||"";\nconst appRoot=(root.dataset.apiRoot||"/").replace(/\\/$/,"");\nconst appPath=(path)=>`${appRoot}${path.startsWith("/")?path:"/"+path}`;
+const csrf=qs(".cs-csrf input[name=csrfmiddlewaretoken]")?.value||"";
+const appRoot=(root.dataset.apiRoot||"/").replace(/\/$/,"");
+const appPath=(path)=>`${appRoot}${path.startsWith("/")?path:"/"+path}`;
 const state={route:"overview",signalView:"active",signalLayout:"cards",signals:[],selectedSignal:null,tradeView:"active",trades:[],selectedTrade:null,market:null,interval:"5m",accounts:[],poller:null};
 const colors={entry:"#245fe8",tp1:"#20a874",tp2:"#16a269",tp3:"#0b8357",tp:"#18a66f",sl:"#dc5563",stop:"#dc5563",expired:"#f59e0b",external:"#7658dc",default:"#64748b"};
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");

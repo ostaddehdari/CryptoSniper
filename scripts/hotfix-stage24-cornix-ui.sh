@@ -5,7 +5,7 @@ umask 022
 
 APP_DIR=/opt/cryptosniper/app
 APP_USER=cryptosniper
-PIN=cc19c416387497b7a27e8dfafb26fa398fca56d4
+PIN=e471c57ac9180c144254173f946a7f885f3d5547
 RAW="https://raw.githubusercontent.com/ostaddehdari/CryptoSniper/$PIN"
 BACKUP_ROOT=/opt/cryptosniper/ui-backups
 STAMP=$(date +%Y%m%d-%H%M%S)
@@ -15,7 +15,7 @@ APPLIED=0
 
 FILES=(
   "backend/apps/portfolio/views.py:6ad0a69dec542575e8c8922561981e42941cc385"
-  "backend/apps/core/views.py:dc2423d0af685e861ff18638105e404e734bed35"
+  "backend/apps/core/views.py:84f72cec1b9e5cfda58ba16aee0db49751b91c5b"
   "backend/templates/shell.html:eb60dbb3a881a019f6f013bfccd4d2ff30542be7"
   "backend/templates/core/app_stage24.html:5221387bbff79c11878174a0b7a47051ca71038a"
   "backend/static/js/stage24-app.js:1efc9a0ccd9b37584e96582d4e390d3e2af3685d"

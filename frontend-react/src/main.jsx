@@ -537,7 +537,7 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
       <div className="submitRow"><button type="button" className="primary large" disabled={busy} onClick={liveOrder}><Send size={17}/> ارسال سفارش</button></div>
       <div className="warningFoot">TP/SL و تنظیمات Trailing همراه برنامه معامله ثبت می‌شوند. اجرای خروج واقعی فقط در Adapterهایی فعال می‌شود که چرخه خروجشان کامل شده باشد.</div>
     </div>
-    <div className="card chartPanel"><div className="cardHead"><div><h3>{market?.base||"بازار"} <small>/ USDT</small></h3><p>{account?.exchange_name||""}</p></div><b className="up">{quote?.price||"—"}</b></div><MarketChart marketId={marketId} levels={{entry,stop:sl,targets:[tp1,tp2,tp3].filter(Boolean),current:quote?.price}}/></div>
+    <div className="card chartPanel"><div className="cardHead"><div><h3>{market?.base||"بازار"} <small>/ USDT</small></h3><p>{account?.exchange_name||""}</p></div><b className="up">{quote?.price||"—"}</b></div><MarketChart marketId={marketId} levels={{entry,stop:sl,targets:[tp1,tp2,tp3].filter(Boolean),current:quote?.price,side}} includeOpenTrades={true}/></div>
   </div>
 }
 
@@ -711,8 +711,11 @@ function SignalInbox({notify,boot,setPage,setManualSeed}){
   const [checked,setChecked]=useState([]);
   const [busy,setBusy]=useState(false);
   const [actionError,setActionError]=useState("");
-  const load=()=>api("/api/v1/inbox/").then(d=>{const next=d.items||[];setItems(next);setChecked(prev=>prev.filter(id=>next.some(x=>x.id===id)))}).catch(e=>notify(e.message));
-  useEffect(()=>{load();const t=setInterval(load,10000);return()=>clearInterval(t)},[]);
+  const [archiveView,setArchiveView]=useState("active");
+  const [viewMode,setViewMode]=useState(()=>localStorage.getItem("cs_signal_view")||"cards");
+  const load=(view=archiveView)=>api("/api/v1/inbox/?view="+encodeURIComponent(view)).then(d=>{const next=d.items||[];setItems(next);setChecked(prev=>prev.filter(id=>next.some(x=>x.id===id)))}).catch(e=>notify(e.message));
+  useEffect(()=>{load();const t=setInterval(()=>load(),10000);return()=>clearInterval(t)},[archiveView]);
+  useEffect(()=>{localStorage.setItem("cs_signal_view",viewMode)},[viewMode]);
   const editFrom=z=>({
     account_id:z.account_id||"",
     market_id:z.market_id||"",
@@ -737,9 +740,11 @@ function SignalInbox({notify,boot,setPage,setManualSeed}){
     try{const m=await api("/api/v1/exchange-accounts/"+value+"/markets/");setMarkets(m.markets||[])}catch(e){notify(e.message)}
   };
   const removeCurrent=()=>{setSelected(null);setDetail(null);setEdit(null);setReason("");load()};
-  const deleteOne=async()=>{
-    if(!detail||!confirm("این سیگنال کامل حذف شود؟"))return;
-    try{await api("/api/v1/inbox/"+detail.id+"/action/",{method:"POST",body:{action:"delete"}});notify("سیگنال حذف شد");removeCurrent()}catch(e){notify(e.message)}
+  const archiveCurrent=async()=>{
+    if(!detail)return;
+    const restore=archiveView==="archive"||!!detail.archived_at;
+    if(!restore&&!confirm("این سیگنال به بایگانی منتقل شود؟ اطلاعات و تاریخچه آن حفظ می‌شود."))return;
+    try{await api("/api/v1/inbox/"+detail.id+"/action/",{method:"POST",body:{action:restore?"restore":"archive"}});notify(restore?"سیگنال از بایگانی بازگردانده شد":"سیگنال بایگانی شد");removeCurrent()}catch(e){notify(e.message)}
   };
   const saveEdit=async()=>{
     if(!detail||!edit)throw new Error("سیگنال انتخاب نشده است");
@@ -757,28 +762,37 @@ function SignalInbox({notify,boot,setPage,setManualSeed}){
       const z=approved.signal?.structured||{};
       const parsed=z.parsed_payload||{};
       setManualSeed({...z,signal_id:approved.signal.id,new_trade_tab:"manual",percentage_trailing:parsed.trailing_defaults?.percentage_trailing??true,trailing_sl:parsed.trailing_defaults?.trailing_sl??true,percentage_trigger:parsed.trailing_defaults?.percentage_trigger||"tp1",trailing_distance:parsed.trailing_defaults?.percentage_distance||"1"});
-      notify("سیگنال تأیید شد و فرم معامله با مقادیر آن باز شد");
-      setPage("newtrade");
-    }catch(e){
-      const message="تأیید انجام نشد: "+e.message;
-      setActionError(message);
-      notify(message);
-    }finally{setBusy(false)}
+      notify("سیگنال تأیید شد و فرم معامله با مقادیر آن باز شد");setPage("newtrade");
+    }catch(e){const message="تأیید انجام نشد: "+e.message;setActionError(message);notify(message)}finally{setBusy(false)}
   };
   const toggleCheck=id=>setChecked(v=>v.includes(id)?v.filter(x=>x!==id):[...v,id]);
   const allChecked=items.length>0&&items.every(x=>checked.includes(x.id));
-  const bulkDelete=async()=>{
-    if(!checked.length||!confirm(checked.length+" سیگنال انتخاب‌شده حذف شود؟"))return;
-    try{setBusy(true);const d=await api("/api/v1/inbox/bulk-action/",{method:"POST",body:{action:"delete",ids:checked}});notify(d.count+" سیگنال حذف شد");setChecked([]);if(selected&&checked.includes(selected)){setSelected(null);setDetail(null);setEdit(null)}await load()}catch(e){notify(e.message)}finally{setBusy(false)}
+  const bulkArchive=async()=>{
+    if(!checked.length)return;
+    const restore=archiveView==="archive";
+    if(!restore&&!confirm(checked.length+" سیگنال انتخاب‌شده به بایگانی منتقل شود؟"))return;
+    try{setBusy(true);const d=await api("/api/v1/inbox/bulk-action/",{method:"POST",body:{action:restore?"restore":"archive",ids:checked}});notify(d.count+(restore?" سیگنال بازگردانده شد":" سیگنال بایگانی شد"));setChecked([]);if(selected&&checked.includes(selected)){setSelected(null);setDetail(null);setEdit(null)}await load()}catch(e){notify(e.message)}finally{setBusy(false)}
   };
-  return <div className="splitLayout">
-    <div className="card">
-      <div className="cardHead"><div><h3>صندوق سیگنال</h3><p>انتخاب گروهی، بازبینی و انتقال به معامله</p></div><div className="row gap"><button type="button" className="iconBtn" onClick={load}><RefreshCw size={17}/></button>{checked.length>0&&<button type="button" className="softBtn dangerBtn" disabled={busy} onClick={bulkDelete}><Trash2 size={16}/> حذف {checked.length}</button>}</div></div>
+  const renderSignal=x=>viewMode==="cards"
+    ? <div className={"signalCardWrap "+(selected===x.id?"selected":"")} key={x.id}><label className="signalCardCheck"><input type="checkbox" checked={checked.includes(x.id)} onChange={()=>toggleCheck(x.id)}/></label><SignalMiniChart signal={x} onOpen={()=>open(x.id)}/></div>
+    : <div className={"signalSelectRow "+(selected===x.id?"active":"")} key={x.id}><input type="checkbox" checked={checked.includes(x.id)} onChange={()=>toggleCheck(x.id)}/><button type="button" onClick={()=>open(x.id)}><div><b>{x.symbol||("Signal #"+x.id)}</b><span>{x.source_method}{x.entry?(" · Entry "+x.entry):""}</span></div><div className="row gap"><span className="muted">{x.outcome?.status||""}</span><Status value={x.status}/></div></button></div>;
+  const z=detail?.structured||{};
+  const detailSignal=detail?{...detail,symbol:z.symbol||z.parsed_payload?.pair,exchange:z.exchange,side:z.side,entry:z.entry,stop_loss:z.stop_loss,targets:z.targets||[],outcome:detail.outcome}:null;
+  return <div className="signalInboxV2">
+    <div className="card signalListPanel">
+      <div className="cardHead"><div><h3>صندوق سیگنال</h3><p>فعال، همه و بایگانی؛ نمایش کارتی یا جدولی.</p></div><div className="row gap wrap">
+        <select className="smallSelect" value={archiveView} onChange={e=>{setArchiveView(e.target.value);setSelected(null);setDetail(null)}}><option value="active">فعال</option><option value="all">همه</option><option value="archive">بایگانی</option></select>
+        <div className="viewSwitch"><button type="button" className={viewMode==="cards"?"active":""} onClick={()=>setViewMode("cards")}><LayoutDashboard size={15}/> کارتی</button><button type="button" className={viewMode==="table"?"active":""} onClick={()=>setViewMode("table")}><BarChart3 size={15}/> جدولی</button></div>
+        <button type="button" className="iconBtn" onClick={()=>load()}><RefreshCw size={17}/></button>
+        {checked.length>0&&<button type="button" className="softBtn" disabled={busy} onClick={bulkArchive}>{archiveView==="archive"?<RefreshCw size={16}/>:<Trash2 size={16}/>} {archiveView==="archive"?"بازگردانی":"بایگانی"} {checked.length}</button>}
+      </div></div>
       {items.length>0&&<label className="selectAllLine"><input type="checkbox" checked={allChecked} onChange={()=>setChecked(allChecked?[]:items.map(x=>x.id))}/><span>انتخاب همه</span></label>}
-      <div className="signalRows selectable">{items.map(x=><div className={"signalSelectRow "+(selected===x.id?"active":"")} key={x.id}><input type="checkbox" checked={checked.includes(x.id)} onChange={()=>toggleCheck(x.id)}/><button type="button" onClick={()=>open(x.id)}><div><b>{x.symbol||("Signal #"+x.id)}</b><span>{x.source_method}{x.entry?(" · Entry "+x.entry):""}</span></div><Status value={x.status}/></button></div>)}{!items.length&&<Empty/>}</div>
+      <div className={viewMode==="cards"?"signalGrid compact signalArchiveGrid":"signalRows selectable"}>{items.map(renderSignal)}{!items.length&&<Empty text={archiveView==="archive"?"بایگانی خالی است.":"سیگنال فعالی وجود ندارد."}/>}</div>
     </div>
-    <div className="card">{!detail?<Empty text="یک سیگنال را انتخاب کنید."/>:<>
-      <div className="cardHead"><div><h3>سیگنال #{detail.id}</h3><p>Revision {detail.revision}</p></div><Status value={detail.status}/></div>
+    <div className="card signalDetailPanel">{!detail?<Empty text="یک سیگنال را انتخاب کنید تا چارت زنده و جزئیات آن نمایش داده شود."/>:<>
+      <div className="cardHead"><div><h3>{z.symbol||z.parsed_payload?.pair||("سیگنال #"+detail.id)}</h3><p>Signal #{detail.id} · Revision {detail.revision}</p></div><div className="row gap"><Status value={detail.outcome?.status||detail.status}/><button type="button" className="softBtn" onClick={archiveCurrent}>{archiveView==="archive"||detail.archived_at?"بازگردانی":"بایگانی"}</button></div></div>
+      {z.market_id?<div className="signalLiveChart"><MarketChart marketId={z.market_id} levels={{entry:edit?.entry_price||z.entry,stop:edit?.stop_loss||z.stop_loss,targets:[edit?.tp1,edit?.tp2,edit?.tp3].filter(Boolean),side:edit?.side||z.side}} startedAt={detail.created_at}/></div>:<div className="note">برای چارت زنده ابتدا حساب و بازار سیگنال را مشخص کنید.</div>}
+      <SignalSchematic signal={detailSignal} detail={true}/>
       <pre className="rawSignal">{detail.raw?.original_text}</pre>
       {edit&&<div className="formGrid">
         <div className="field"><label>حساب صرافی</label><select value={edit.account_id} onChange={e=>changeAccount(e.target.value)}><option value="">انتخاب حساب</option>{(boot?.accounts||[]).filter(a=>a.status==="connected").map(a=><option key={a.id} value={a.id}>{a.exchange_name+" · "+a.label}</option>)}</select></div>
@@ -790,10 +804,11 @@ function SignalInbox({notify,boot,setPage,setManualSeed}){
         <div className="field"><label>TP3</label><input value={edit.tp3} onChange={e=>setEdit({...edit,tp3:e.target.value})}/></div>
         <div className="field"><label>Stop Loss</label><input value={edit.stop_loss} onChange={e=>setEdit({...edit,stop_loss:e.target.value})}/></div>
       </div>}
-      <div className="actionBox">{actionError&&<div className="errorBox"><AlertTriangle size={17}/><span>{actionError}</span></div>}<label>دلیل ویرایش <small>(اختیاری)</small></label><textarea value={reason} onChange={e=>setReason(e.target.value)} placeholder="در صورت نیاز توضیح بنویسید…"/><div className="row gap wrap"><button type="button" className="softBtn" disabled={busy} onClick={()=>saveEdit().then(()=>notify("ویرایش سیگنال ذخیره شد")).catch(e=>notify(e.message))}><Save size={16}/> ذخیره ویرایش</button><button type="button" className="iconBtn dangerBtn" title="حذف سیگنال" disabled={busy} onClick={deleteOne}><Trash2 size={16}/></button><button type="button" className="primary" disabled={busy} onClick={approveAndTransfer}><CheckCircle2 size={16}/> تأیید و انتقال به معامله</button></div></div>
+      <div className="actionBox">{actionError&&<div className="errorBox"><AlertTriangle size={17}/><span>{actionError}</span></div>}<label>دلیل ویرایش <small>(اختیاری)</small></label><textarea value={reason} onChange={e=>setReason(e.target.value)} placeholder="در صورت نیاز توضیح بنویسید…"/><div className="row gap wrap"><button type="button" className="softBtn" disabled={busy} onClick={()=>saveEdit().then(()=>notify("ویرایش سیگنال ذخیره شد")).catch(e=>notify(e.message))}><Save size={16}/> ذخیره ویرایش</button><button type="button" className="primary" disabled={busy} onClick={approveAndTransfer}><CheckCircle2 size={16}/> تأیید و انتقال به معامله</button></div></div>
     </>}</div>
   </div>
 }
+
 function Exchanges({boot,refreshBoot,notify,requestStepUp}){
   const [catalog,setCatalog]=useState([]);
   const [selected,setSelected]=useState(null);

@@ -12,7 +12,6 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 
 from apps.accounts.security import session_api_required
-from apps.exchanges.models import ExchangeMarket
 from apps.operations.models import ExternalObservation, ExternalTradePolicy
 from apps.signals.models import Signal, SignalOutcome
 from apps.trading.models import PaperExitFill, Trade
@@ -95,7 +94,11 @@ def _signal_overlay(user, signal_id, candles):
                     "label": f"TP{target.position}",
                 }
             )
-    stop_at = outcome.stop_hit_at if outcome else _touch(candles, signal.stop_loss, signal.side, after=start)
+    stop_at = (
+        outcome.stop_hit_at
+        if outcome
+        else _touch(candles, signal.stop_loss, signal.side, after=start)
+    )
     if stop_at:
         markers.append({"kind": "sl", "time": int(stop_at.timestamp()), "label": "SL"})
     if outcome and outcome.status == SignalOutcome.Status.EXPIRED and outcome.evaluated_until:

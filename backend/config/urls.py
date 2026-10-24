@@ -147,8 +147,16 @@ urlpatterns = [
     path("paper/risk/", paper_risk_views.paper_risk, name="paper-risk"),
     path("api/v1/paper/trades/", paper_views.api_trades, name="api-paper-trades"),
     path("api/v1/trades/", portfolio_stage24_views.api_trades, name="api-stage24-trades"),
-    path("api/v1/trades/archive/", portfolio_stage24_views.api_archive_trade, name="api-stage24-trades-archive"),
-    path("api/v1/trades/refresh/", portfolio_stage24_views.api_refresh_trades, name="api-stage24-trades-refresh"),
+    path(
+        "api/v1/trades/archive/",
+        portfolio_stage24_views.api_archive_trade,
+        name="api-stage24-trades-archive",
+    ),
+    path(
+        "api/v1/trades/refresh/",
+        portfolio_stage24_views.api_refresh_trades,
+        name="api-stage24-trades-refresh",
+    ),
     path("api/v1/paper/trades/<int:pk>/", paper_views.api_trade_detail, name="api-paper-detail"),
     path("inbox/", inbox_views.inbox, name="inbox"),
     path("inbox/bulk/trash/", inbox_views.bulk_trash, name="inbox-bulk-trash"),

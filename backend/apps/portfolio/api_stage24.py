@@ -49,7 +49,8 @@ def _paper_row(trade):
         "amount": str(trade.quantity),
         "position_amount": str(position.quantity) if position else "0",
         "state": trade.state,
-        "open": trade.state in {
+        "open": trade.state
+        in {
             Trade.State.QUEUED,
             Trade.State.SUBMITTING,
             Trade.State.PARTIAL,
@@ -80,7 +81,8 @@ def _live_row(order):
         "amount": str(order.amount),
         "position_amount": str(order.filled_amount),
         "state": order.state,
-        "open": order.state in {
+        "open": order.state
+        in {
             LiveSpotOrder.State.PENDING,
             LiveSpotOrder.State.SUBMITTING,
             LiveSpotOrder.State.OPEN,
@@ -149,32 +151,23 @@ def _external_row(item):
 
 
 def _rows(user, view):
-    paper = (
-        _archived_filter(
-            Trade.objects.filter(owner=user)
-            .select_related("account__exchange", "market")
-            .prefetch_related("targets"),
-            view,
-        )
-        .order_by("-updated_at")[:200]
-    )
-    live = (
-        _archived_filter(
-            LiveSpotOrder.objects.filter(owner=user).select_related("account__exchange", "market"),
-            view,
-        )
-        .order_by("-updated_at")[:200]
-    )
-    external = (
-        _archived_filter(
-            ExternalObservation.objects.filter(
-                account__owner=user,
-                kind__in=("order", "fill", "history"),
-            ).select_related("account__exchange"),
-            view,
-        )
-        .order_by("-observed_at")[:200]
-    )
+    paper = _archived_filter(
+        Trade.objects.filter(owner=user)
+        .select_related("account__exchange", "market")
+        .prefetch_related("targets"),
+        view,
+    ).order_by("-updated_at")[:200]
+    live = _archived_filter(
+        LiveSpotOrder.objects.filter(owner=user).select_related("account__exchange", "market"),
+        view,
+    ).order_by("-updated_at")[:200]
+    external = _archived_filter(
+        ExternalObservation.objects.filter(
+            account__owner=user,
+            kind__in=("order", "fill", "history"),
+        ).select_related("account__exchange"),
+        view,
+    ).order_by("-observed_at")[:200]
     rows = [_paper_row(row) for row in paper]
     rows += [_live_row(row) for row in live]
     rows += [_external_row(row) for row in external]
@@ -249,7 +242,14 @@ def api_archive_trade(request):
                 "archived_at": value.isoformat() if value else None,
             }
         )
-    except (ValueError, TypeError, ValidationError, Trade.DoesNotExist, LiveSpotOrder.DoesNotExist, ExternalObservation.DoesNotExist) as error:
+    except (
+        ValueError,
+        TypeError,
+        ValidationError,
+        Trade.DoesNotExist,
+        LiveSpotOrder.DoesNotExist,
+        ExternalObservation.DoesNotExist,
+    ) as error:
         return JsonResponse({"error": str(error)}, status=400)
 
 
@@ -272,7 +272,9 @@ def api_refresh_trades(request):
             state["sync"] = "ok"
             state["market_count"] = synced.get("market_count", 0)
             state["balance_count"] = synced.get("balance_count", 0)
-        except Exception as error:  # provider failures are returned per account, never leaked with credentials
+        except (
+            Exception
+        ) as error:  # provider failures are returned per account, never leaked with credentials
             state["sync"] = "error"
             state["sync_error"] = type(error).__name__
         try:

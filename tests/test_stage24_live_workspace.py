@@ -43,9 +43,9 @@ def test_stage24_app_shell_and_archive_filters(client, django_user_model):
     assert page.status_code == 200
     assert b"stage24-app.js" in page.content
     assert b"stage24-app.css" in page.content
-    assert b"data-page=\"inbox\"" in page.content
-    assert b"data-page=\"newtrade\"" in page.content
-    assert b"data-page=\"trades\"" in page.content
+    assert b'data-page="inbox"' in page.content
+    assert b'data-page="newtrade"' in page.content
+    assert b'data-page="trades"' in page.content
 
     active = client.get(reverse("api-inbox") + "?view=active").json()["items"]
     assert [row["id"] for row in active] == [signal.pk]
@@ -120,7 +120,7 @@ def test_unified_trades_include_internal_external_and_archive(client, django_use
 @pytest.mark.django_db
 def test_refresh_endpoint_runs_real_read_sync_boundary(client, django_user_model):
     user = django_user_model.objects.create_user(username="s24-refresh")
-    trade = paper_trade(user)
+    paper_trade(user)
     client.force_login(user)
     with (
         patch(

@@ -238,7 +238,7 @@ from pathlib import Path
 SNIPPET = Path('/etc/nginx/snippets/cryptosniper-location.conf')
 INCLUDE = f'include {SNIPPET};'
 MARKER = '# Managed by CryptoSniper Stage24 installer'
-KNOWN_MARKERS = tuple(f'# Managed by CryptoSniper Stage{stage:02d} installer' for stage in range(1, 24))
+KNOWN_MARKERS = tuple(f'# Managed by CryptoSniper Stage{stage:02d} installer' for stage in range(1, 25))
 plan_path = Path(sys.argv[2])
 
 def digest(text):
@@ -396,8 +396,8 @@ state = json.loads((Path(os.environ['CONFIG_DIR']) / 'install.json').read_text()
 expected = {key: os.environ[key] for key in ('SERVER_HOST', 'URL_PREFIX', 'WEB_PORT', 'PG_PORT', 'REDIS_PORT')}
 if any(state.get(key) != value for key, value in expected.items()):
     raise SystemExit('Existing installer configuration differs. No automatic upgrade/configuration replacement.')
-if state.get('SOURCE_COMMIT') not in {os.environ['STAGE01_SOURCE_COMMIT'], os.environ['STAGE02_SOURCE_COMMIT'], os.environ['STAGE03_SOURCE_COMMIT'], os.environ['STAGE04_SOURCE_COMMIT'], os.environ['STAGE05_SOURCE_COMMIT'], os.environ['STAGE06_SOURCE_COMMIT'], os.environ['STAGE08_SOURCE_COMMIT'], os.environ['PREVIOUS_SOURCE_COMMIT'], os.environ['STAGE10_SOURCE_COMMIT'], os.environ['STAGE14_SOURCE_COMMIT'], os.environ['STAGE16_SOURCE_COMMIT'], os.environ['STAGE18_SOURCE_COMMIT'], os.environ['STAGE20_SOURCE_COMMIT'], os.environ['STAGE21_SOURCE_COMMIT'], os.environ['STAGE22_SOURCE_COMMIT'], os.environ['SOURCE_COMMIT']}:
-    raise SystemExit('Existing installation source is not a supported managed Stage01-23 release.')
+if state.get('SOURCE_COMMIT') not in {os.environ['STAGE01_SOURCE_COMMIT'], os.environ['STAGE02_SOURCE_COMMIT'], os.environ['STAGE03_SOURCE_COMMIT'], os.environ['STAGE04_SOURCE_COMMIT'], os.environ['STAGE05_SOURCE_COMMIT'], os.environ['STAGE06_SOURCE_COMMIT'], os.environ['STAGE08_SOURCE_COMMIT'], os.environ['PREVIOUS_SOURCE_COMMIT'], os.environ['STAGE10_SOURCE_COMMIT'], os.environ['STAGE14_SOURCE_COMMIT'], os.environ['STAGE16_SOURCE_COMMIT'], os.environ['STAGE18_SOURCE_COMMIT'], os.environ['STAGE20_SOURCE_COMMIT'], os.environ['STAGE21_SOURCE_COMMIT'], os.environ['STAGE22_SOURCE_COMMIT'], os.environ['STAGE23_SOURCE_COMMIT'], os.environ['SOURCE_COMMIT']}:
+    raise SystemExit('Existing installation source is not a supported managed Stage01-24 release.')
 print('Existing managed installation detected; private configuration, database and login will be preserved.')
 PY
     MANAGED=true
@@ -437,7 +437,7 @@ fi
 
 ARCHIVE_SHA256=$(sha256sum "$ARCHIVE" | awk '{print $1}')
 export ARCHIVE_SHA256
-step 'INSTALL PINNED STAGE23 SOURCE; PRESERVE PRIVATE CONFIGURATION'
+step 'INSTALL PINNED STAGE24 SOURCE; PRESERVE PRIVATE CONFIGURATION'
 UNIT_BACKUP="$CONFIG_DIR/backups/units-$(date +%Y%m%d-%H%M%S)-$$"
 mkdir -p "$UNIT_BACKUP"
 for unit_name in web orders reports beat signals market-data trailing alerts maintenance telegram; do
@@ -450,7 +450,7 @@ if [[ -f $APP_DIR/.installed-source.sha256 ]]; then
 fi
 if [[ $CURRENT_ARCHIVE_SHA != "$ARCHIVE_SHA256" ]]; then
     if [[ -n $CURRENT_ARCHIVE_SHA && $CURRENT_ARCHIVE_SHA != "$STAGE22_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$STAGE21_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$STAGE20_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$STAGE18_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$STAGE16_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$STAGE14_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$PREVIOUS_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$STAGE10_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$STAGE08_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$STAGE06_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$STAGE05_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$STAGE04_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$STAGE03_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$STAGE02_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$STAGE01_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$OLDER_STAGE03_ARCHIVE_SHA256" ]]; then
-        fail 'Existing application checksum is not an allowed managed Stage01-21 source; no files were replaced.'
+        fail 'Existing application checksum is not an allowed managed prior release; no files were replaced.'
     fi
     python3 - "$ARCHIVE" "$TMP_DIR" <<'PY'
 import sys, zipfile

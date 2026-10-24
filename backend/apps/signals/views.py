@@ -9,6 +9,7 @@ from django.db.models import Avg, Count
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
@@ -68,6 +69,13 @@ def filtered(user, params):
         qs = qs.filter(trashed_at__isnull=False)
     else:
         qs = qs.filter(trashed_at__isnull=True)
+        view = params.get("view", "active")
+        if view == "archive":
+            qs = qs.filter(archived_at__isnull=False)
+        elif view == "all":
+            pass
+        else:
+            qs = qs.filter(archived_at__isnull=True)
     status = params.get("status", "").strip()
     if status in Signal.Status.values:
         qs = qs.filter(status=status)
@@ -607,6 +615,20 @@ def _serialize(item):
         "structured": snapshot(item),
         "approved_snapshot": item.approved_snapshot if item.status == "approved" else None,
         "trashed_at": item.trashed_at,
+        "archived_at": item.archived_at,
+        "created_at": item.created_at,
+        "updated_at": item.updated_at,
+        "outcome": (
+            {
+                "status": item.outcome.status,
+                "entry_hit_at": item.outcome.entry_hit_at,
+                "stop_hit_at": item.outcome.stop_hit_at,
+                "targets_hit": item.outcome.targets_hit,
+                "evaluated_until": item.outcome.evaluated_until,
+            }
+            if hasattr(item, "outcome")
+            else None
+        ),
         "execution_enabled": False,
     }
 
@@ -615,7 +637,7 @@ def _serialize(item):
 @never_cache
 @require_GET
 def api_list(request):
-    rows = filtered(request.user, request.GET)[:100]
+    rows = list(filtered(request.user, request.GET).prefetch_related("targets")[:100])
     return JsonResponse(
         {
             "items": [
@@ -623,13 +645,54 @@ def api_list(request):
                     "id": item.pk,
                     "status": item.status,
                     "source_method": item.source.method,
+                    "source_name": item.source.name,
                     "revision": item.revision,
+                    "market_id": item.market_id,
+                    "symbol": item.market.symbol if item.market_id else "",
+                    "side": item.side,
+                    "entry": str(item.entry_price) if item.entry_price is not None else None,
+                    "stop_loss": str(item.stop_loss) if item.stop_loss is not None else None,
+                    "targets": [
+                        {"position": target.position, "price": str(target.price)}
+                        for target in item.targets.all()
+                    ],
+                    "created_at": item.created_at,
+                    "updated_at": item.updated_at,
+                    "archived_at": item.archived_at,
                 }
                 for item in rows
             ],
+            "view": request.GET.get("view", "active"),
             "execution_enabled": False,
         }
     )
+
+
+@session_api_required
+@never_cache
+@require_POST
+def api_archive(request, pk):
+    item = get_object_or_404(Signal, owner=request.user, pk=pk)
+    try:
+        body = _json_body(request)
+        archived = body.get("archived", True) is True
+        item.archived_at = timezone.now() if archived else None
+        item.save(update_fields=("archived_at", "updated_at"))
+        record_audit(
+            "signal.archive_changed",
+            request=request,
+            user=request.user,
+            metadata={"signal_id": item.pk, "archived": archived},
+        )
+        return JsonResponse(
+            {
+                "ok": True,
+                "id": item.pk,
+                "archived_at": item.archived_at,
+            }
+        )
+    except ValidationError as error:
+        return JsonResponse({"error": error.messages}, status=400)
 
 
 @session_api_required

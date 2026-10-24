@@ -19,7 +19,7 @@ from django.urls import path
 
 
 def live(request):
-    return JsonResponse({"status": "ok", "service": "cryptosniper", "stage": "S27"})
+    return JsonResponse({"status": "ok", "service": "cryptosniper", "stage": "S28"})
 
 
 def ready(request):
@@ -54,6 +54,7 @@ urlpatterns = [
     path("api/v1/risk/fix-loss/", react_views.api_fix_loss, name="api-fix-loss"),
     path("api/v1/markets/<int:pk>/candles/", react_views.api_market_candles, name="api-market-candles"),
     path("api/v1/live-orders/", react_views.api_live_orders, name="api-live-orders"),
+    path("api/v1/trades/archive/", react_views.api_trade_archive, name="api-trade-archive"),
     path("api/v1/telegram/state/", react_views.api_telegram_state, name="api-telegram-state"),
     path("api/v1/telegram/messages/", react_views.api_telegram_messages, name="api-telegram-messages"),
     path("api/v1/telegram/action/", react_views.api_telegram_action, name="api-telegram-action"),

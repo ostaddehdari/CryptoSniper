@@ -30,3 +30,16 @@
 .s24-toast{position:fixed;left:22px;bottom:22px;z-index:100;background:#10213a;color:#fff;padding:11px 14px;border-radius:10px;box-shadow:0 12px 30px #10213a30;font-size:11px}.s24-toast.error{background:#a83342}
 @media(max-width:1180px){.s24-sidebar{width:210px}.s24-workspace{margin-right:210px;width:calc(100% - 210px)}.s24-inbox-focus,.s24-trades-focus,.s24-newtrade-grid{grid-template-columns:1fr}.s24-card-grid{grid-template-columns:repeat(2,minmax(230px,1fr))}.s24-chart-wrap.tall{height:450px}}
 @media(max-width:760px){.s24-sidebar{position:static;width:100%;height:auto;inset:auto}.s24-shell{display:block}.s24-workspace{margin:0;width:100%}.s24-nav{grid-template-columns:repeat(3,1fr)}.s24-sidebar-foot{display:none}.s24-topbar{top:0;height:auto;padding:10px;display:grid;gap:8px}.s24-tabs{overflow:auto}.s24-section-head{display:grid}.s24-actions{justify-content:stretch}.s24-card-grid{grid-template-columns:1fr}.s24-page{padding:12px}.s24-chart-wrap{height:290px}.s24-chart-wrap.tall{height:330px}.s24-market-search{min-width:0;width:100%}}
+
+.s24-logout-button{border:0;background:transparent;color:#d54848;font:700 11px inherit;cursor:pointer;padding:0}
+.s24-legacy-page{max-width:1640px}
+.s24-legacy-page .page-heading,.s24-legacy-page .panel,.s24-legacy-page .card,.s24-legacy-page .table-wrap{border-radius:14px}
+.s24-overview-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:16px}
+.s24-overview-label{display:block;color:var(--s24-muted);font-size:11px}
+.s24-overview-number{display:block;margin-top:8px;font:700 34px/1 Arial;color:#10213a}
+.s24-overview-grid{grid-template-columns:minmax(0,1.6fr) minmax(280px,.7fr)}
+.s24-overview-accounts{display:grid;gap:9px}
+.s24-overview-account{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:12px;align-items:center;padding:12px;border:1px solid #edf1f6;border-radius:11px;background:#fbfdff}
+.s24-overview-account>div{display:grid;gap:3px}.s24-overview-account span,.s24-overview-account small{font-size:9px;color:var(--s24-muted)}.s24-overview-account b{font:700 12px Arial}
+.s24-overview-links{display:grid;gap:8px}.s24-overview-links a{display:flex;align-items:center;justify-content:space-between;padding:12px;border:1px solid #e7ecf3;border-radius:10px;background:#fbfdff;color:#52637b;font-weight:700}.s24-overview-links a:hover{border-color:#9ab8ff;color:#1d55cc;background:#f5f8ff}
+@media(max-width:900px){.s24-overview-cards,.s24-overview-grid{grid-template-columns:1fr}.s24-overview-account{grid-template-columns:1fr}}

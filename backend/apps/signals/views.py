@@ -10,6 +10,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
+from django.utils import timezone
 
 from apps.accounts.audit import record_audit
 from apps.accounts.security import has_recent_step_up, session_api_required
@@ -57,6 +58,11 @@ def owned(user, pk):
 
 def filtered(user, params):
     qs = Signal.objects.filter(owner=user).select_related("source", "raw_signal", "market")
+    view = params.get("view", "active").strip().lower()
+    if view == "archive":
+        qs = qs.filter(archived_at__isnull=False)
+    elif view != "all":
+        qs = qs.filter(archived_at__isnull=True)
     status = params.get("status", "").strip()
     if status in Signal.Status.values:
         qs = qs.filter(status=status)
@@ -512,6 +518,20 @@ def _serialize(item):
         },
         "structured": snapshot(item),
         "approved_snapshot": item.approved_snapshot if item.status == "approved" else None,
+        "archived_at": item.archived_at,
+        "outcome": (
+            {
+                "status": item.outcome.status,
+                "entry_hit_at": item.outcome.entry_hit_at,
+                "stop_hit_at": item.outcome.stop_hit_at,
+                "targets_hit": item.outcome.targets_hit,
+                "evaluated_from": item.outcome.evaluated_from,
+                "evaluated_until": item.outcome.evaluated_until,
+                "evidence": item.outcome.evidence,
+            }
+            if hasattr(item, "outcome")
+            else None
+        ),
         "execution_enabled": False,
     }
 
@@ -520,9 +540,16 @@ def _serialize(item):
 @never_cache
 @require_GET
 def api_list(request):
+    terminal = [SignalOutcome.Status.TARGET, SignalOutcome.Status.STOPPED, SignalOutcome.Status.EXPIRED]
+    Signal.objects.filter(
+        owner=request.user,
+        archived_at__isnull=True,
+        outcome__status__in=terminal,
+    ).update(archived_at=timezone.now())
     rows = list(
         filtered(request.user, request.GET)
         .select_related("source", "raw_signal", "market", "market__exchange", "exchange_account")
+        .select_related("outcome")
         .prefetch_related("targets")[:100]
     )
     items = []
@@ -553,6 +580,20 @@ def api_list(request):
                 "quote": quote,
                 "raw_preview": item.raw_signal.original_text[:280],
                 "created_at": item.created_at,
+                "archived_at": item.archived_at,
+                "outcome": (
+                    {
+                        "status": item.outcome.status,
+                        "entry_hit_at": item.outcome.entry_hit_at,
+                        "stop_hit_at": item.outcome.stop_hit_at,
+                        "targets_hit": item.outcome.targets_hit,
+                        "evaluated_from": item.outcome.evaluated_from,
+                        "evaluated_until": item.outcome.evaluated_until,
+                        "evidence": item.outcome.evidence,
+                    }
+                    if hasattr(item, "outcome")
+                    else None
+                ),
             }
         )
     return JsonResponse({"items": items, "execution_enabled": False})
@@ -656,17 +697,19 @@ def api_action(request, pk):
     try:
         body = _json_body(request)
         action = str(body.get("action", ""))
-        if action == "delete":
-            raw = item.raw_signal
+        if action in {"delete", "archive", "restore"}:
+            archived = action != "restore"
+            item.archived_at = timezone.now() if archived else None
+            item.save(update_fields=("archived_at", "updated_at"))
             record_audit(
-                "signal.deleted",
+                "signal.archived" if archived else "signal.restored",
                 request=request,
                 user=request.user,
                 metadata={"signal_id": item.pk, "source_id": item.source_id},
             )
-            item.delete()
-            raw.delete()
-            return JsonResponse({"deleted": True, "id": pk})
+            return JsonResponse(
+                {"archived": archived, "id": pk, "signal": _serialize(item)}
+            )
         signal = transition(
             request.user,
             item.pk,
@@ -675,17 +718,17 @@ def api_action(request, pk):
             reason=str(body.get("reason", "")),
         )
         if action == "reject":
-            raw = signal.raw_signal
-            signal_id = signal.pk
+            signal.archived_at = timezone.now()
+            signal.save(update_fields=("archived_at", "updated_at"))
             record_audit(
-                "signal.rejected_and_deleted",
+                "signal.rejected_and_archived",
                 request=request,
                 user=request.user,
-                metadata={"signal_id": signal_id},
+                metadata={"signal_id": signal.pk},
             )
-            signal.delete()
-            raw.delete()
-            return JsonResponse({"deleted": True, "rejected": True, "id": signal_id})
+            return JsonResponse(
+                {"archived": True, "rejected": True, "id": signal.pk, "signal": _serialize(signal)}
+            )
         return JsonResponse({"signal": _serialize(signal)})
     except (ValidationError, ValueError, TypeError) as error:
         return JsonResponse({"error": str(error)}, status=400)
@@ -700,36 +743,27 @@ def api_bulk_action(request):
         body = _json_body(request)
         action = str(body.get("action", ""))
         ids = body.get("ids", [])
-        if action != "delete":
+        if action not in {"delete", "archive", "restore"}:
             raise ValidationError("عملیات گروهی پشتیبانی نمی‌شود.")
         if not isinstance(ids, list) or not 1 <= len(ids) <= 100:
-            raise ValidationError("بین ۱ تا ۱۰۰ سیگنال برای حذف انتخاب کنید.")
+            raise ValidationError("بین ۱ تا ۱۰۰ سیگنال انتخاب کنید.")
         normalized = []
         for raw in ids:
             value = int(raw)
             if value not in normalized:
                 normalized.append(value)
-        rows = list(
-            Signal.objects.filter(owner=request.user, pk__in=normalized)
-            .select_related("raw_signal")
-            .order_by("pk")
-        )
-        if len(rows) != len(normalized):
+        qs = Signal.objects.filter(owner=request.user, pk__in=normalized)
+        if qs.count() != len(normalized):
             raise ValidationError("یک یا چند سیگنال انتخابی پیدا نشد.")
-        deleted_ids = []
-        for item in rows:
-            raw = item.raw_signal
-            signal_id = item.pk
-            item.delete()
-            raw.delete()
-            deleted_ids.append(signal_id)
+        archived = action != "restore"
+        count = qs.update(archived_at=timezone.now() if archived else None)
         record_audit(
-            "signal.bulk_deleted",
+            "signal.bulk_archived" if archived else "signal.bulk_restored",
             request=request,
             user=request.user,
-            metadata={"count": len(deleted_ids), "ids": deleted_ids[:100]},
+            metadata={"count": count, "ids": normalized[:100]},
         )
-        return JsonResponse({"deleted": deleted_ids, "count": len(deleted_ids)})
+        return JsonResponse({"ids": normalized, "count": count, "archived": archived})
     except (ValidationError, ValueError, TypeError) as error:
         return JsonResponse(
             {"error": getattr(error, "messages", [str(error)])},

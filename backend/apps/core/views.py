@@ -75,7 +75,9 @@ def web_manifest(request):
 def service_worker(request):
     assets = [
         static("css/app.css"),
+        static("css/stage24-app.css"),
         static("js/app.js"),
+        static("js/stage24-app.js"),
         static("js/pwa.js"),
         static("img/mark.svg"),
         static("img/pwa-icon.svg"),

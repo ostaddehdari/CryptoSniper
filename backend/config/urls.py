@@ -4,9 +4,11 @@ from apps.alerts import views as alert_views
 from apps.core import views
 from apps.core.health import dependency_status
 from apps.exchanges import views as exchange_views
+from apps.marketdata import chart as market_chart_views
 from apps.marketdata import views as market_views
 from apps.marketdata import watchlists as watchlist_views
 from apps.operations import views as operation_views
+from apps.portfolio import api_stage24 as portfolio_stage24_views
 from apps.portfolio import external_views
 from apps.portfolio import views as portfolio_views
 from apps.reports import views as report_views
@@ -20,7 +22,7 @@ from django.urls import path
 
 
 def live(request):
-    return JsonResponse({"status": "ok", "service": "cryptosniper", "stage": "S23"})
+    return JsonResponse({"status": "ok", "service": "cryptosniper", "stage": "S24"})
 
 
 def ready(request):
@@ -36,6 +38,7 @@ def ready(request):
 
 urlpatterns = [
     path("manifest.webmanifest", views.web_manifest, name="web-manifest"),
+    path("app/", views.app_shell, name="app-shell"),
     path("service-worker.js", views.service_worker, name="service-worker"),
     path("reports/", report_views.center, name="reports"),
     path("reports/export.csv", report_views.export_csv, name="report-csv"),
@@ -123,6 +126,7 @@ urlpatterns = [
     path("api/v1/markets/search/", market_views.api_search, name="api-market-search"),
     path("api/v1/markets/quotes/", market_views.api_quotes, name="api-market-quotes"),
     path("api/v1/markets/stream/", market_views.api_stream, name="api-market-stream"),
+    path("api/v1/markets/chart/", market_chart_views.api_chart, name="api-market-chart"),
     path(
         "api/v1/exchange-accounts/<int:pk>/",
         exchange_views.api_exchange_account,
@@ -142,6 +146,9 @@ urlpatterns = [
     path("paper/<int:pk>/cancel/", paper_views.cancel_trade, name="paper-cancel"),
     path("paper/risk/", paper_risk_views.paper_risk, name="paper-risk"),
     path("api/v1/paper/trades/", paper_views.api_trades, name="api-paper-trades"),
+    path("api/v1/trades/", portfolio_stage24_views.api_trades, name="api-stage24-trades"),
+    path("api/v1/trades/archive/", portfolio_stage24_views.api_archive_trade, name="api-stage24-trades-archive"),
+    path("api/v1/trades/refresh/", portfolio_stage24_views.api_refresh_trades, name="api-stage24-trades-refresh"),
     path("api/v1/paper/trades/<int:pk>/", paper_views.api_trade_detail, name="api-paper-detail"),
     path("inbox/", inbox_views.inbox, name="inbox"),
     path("inbox/bulk/trash/", inbox_views.bulk_trash, name="inbox-bulk-trash"),
@@ -175,6 +182,7 @@ urlpatterns = [
     path("api/v1/inbox/<int:pk>/", inbox_views.api_detail, name="api-inbox-detail"),
     path("api/v1/inbox/<int:pk>/edit/", inbox_views.api_edit, name="api-inbox-edit"),
     path("api/v1/inbox/<int:pk>/action/", inbox_views.api_action, name="api-inbox-action"),
+    path("api/v1/inbox/<int:pk>/archive/", inbox_views.api_archive, name="api-inbox-archive"),
     path("api/v1/manual/context/", trade_context.manual_context, name="manual-context"),
     path("api/v1/manual/plans/", plan_views.api_create, name="api-manual-create"),
     path("api/v1/manual/plans/<int:pk>/", plan_views.api_plan, name="api-manual-detail"),

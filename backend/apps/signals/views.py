@@ -508,6 +508,7 @@ def _serialize(item):
         "id": item.pk,
         "status": item.status,
         "revision": item.revision,
+        "created_at": item.created_at,
         "source_id": item.source_id,
         "source_method": item.source.method,
         "raw": {

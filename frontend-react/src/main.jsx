@@ -21,6 +21,7 @@ const BASE = (
 const fmt=(v,d=2)=>Number(v||0).toLocaleString("fa-IR",{minimumFractionDigits:d,maximumFractionDigits:d});
 const dt=v=>v?new Date(v).toLocaleString("fa-IR"):"—";
 const num=v=>{const n=Number(v);return Number.isFinite(n)?n:0};
+const trimNumber=(v,max=8)=>{const n=Number(v);return Number.isFinite(n)?n.toLocaleString("en-US",{useGrouping:false,maximumFractionDigits:max}):"—"};
 const statusFa={connected:"متصل",restricted:"محدود",pending:"در انتظار",error:"خطا",disabled:"غیرفعال",open:"باز",filled:"تکمیل",partial:"بخشی",cancelled:"لغو",failed:"ناموفق",uncertain:"نامعلوم",submitting:"در حال ارسال",new:"جدید",parsed:"تحلیل‌شده",needs_review:"نیازمند بررسی",approved:"تأییدشده",rejected:"ردشده",complete:"کامل",running:"در حال اجرا",paused:"متوقف",completed:"کامل",pending_entry:"منتظر تکمیل ورود",active:"فعال",exiting:"در حال خروج",closed:"بسته",waiting:"منتظر",exit_pending:"خروج در صف",skipped:"عبور شد"};
 
 function cookie(name){

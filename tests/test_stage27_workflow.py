@@ -181,7 +181,7 @@ def test_stage27_preferences_accept_tp3_trigger_and_return_integers(client, djan
 
 
 @pytest.mark.django_db
-def test_stage27_bulk_signal_delete_is_owner_scoped(client, django_user_model):
+def test_stage28_bulk_signal_delete_alias_archives_and_is_owner_scoped(client, django_user_model):
     owner = django_user_model.objects.create_user(username="stage27-signals")
     other = django_user_model.objects.create_user(username="stage27-other")
     source = SignalSource.objects.create(owner=owner, name="manual", method="manual")
@@ -212,8 +212,8 @@ def test_stage27_bulk_signal_delete_is_owner_scoped(client, django_user_model):
     )
     assert response.status_code == 200, response.content
     assert response.json()["count"] == 2
-    assert not Signal.objects.filter(pk__in=ids).exists()
-    assert Signal.objects.filter(pk=other_signal.pk).exists()
+    assert Signal.objects.filter(pk__in=ids, archived_at__isnull=False).count() == 2
+    assert Signal.objects.filter(pk=other_signal.pk, archived_at__isnull=True).exists()
 
 
 @pytest.mark.django_db

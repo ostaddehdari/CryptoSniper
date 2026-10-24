@@ -91,8 +91,8 @@ def test_stage28_signal_archive_restore_and_default_active_filter(client, django
     )
     assert response.status_code == 200, response.content
     assert response.json()["archived"] is True
-    assert client.get(reverse("api-inbox-list")).json()["items"] == []
-    archived = client.get(reverse("api-inbox-list") + "?view=archive").json()["items"]
+    assert client.get(reverse("api-inbox")).json()["items"] == []
+    archived = client.get(reverse("api-inbox") + "?view=archive").json()["items"]
     assert [row["id"] for row in archived] == [signal.pk]
 
     restored = client.post(
@@ -102,7 +102,7 @@ def test_stage28_signal_archive_restore_and_default_active_filter(client, django
     )
     assert restored.status_code == 200
     assert restored.json()["archived"] is False
-    assert [row["id"] for row in client.get(reverse("api-inbox-list")).json()["items"]] == [
+    assert [row["id"] for row in client.get(reverse("api-inbox")).json()["items"]] == [
         signal.pk
     ]
 

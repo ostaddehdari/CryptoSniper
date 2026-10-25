@@ -52,7 +52,7 @@ jobs:
           PIN=$(git rev-parse HEAD)
           export PIN
           mkdir -p dist
-          git archive --format=zip --prefix=CryptoSniper/ -o dist/CryptoSniper-Stage24-Rebuild-v0.24.0rc2-r4.zip "$PIN"
+          git archive --format=zip --prefix=CryptoSniper/ -o dist/CryptoSniper-Stage24-Rebuild-v0.24.0rc2-r5.zip "$PIN"
           git show "$PIN":scripts/cryptosniper-stage24-rebuild-run.sh > dist/cryptosniper-stage24-rebuild-run.sh
           python3 - <<'PY'
           import hashlib, os, re, subprocess
@@ -60,7 +60,7 @@ jobs:
           pin = os.environ['PIN']
           def blob(path):
               return subprocess.check_output(['git', 'rev-parse', pin + ':' + path], text=True).strip()
-          archive = Path('dist/CryptoSniper-Stage24-Rebuild-v0.24.0rc2-r4.zip')
+          archive = Path('dist/CryptoSniper-Stage24-Rebuild-v0.24.0rc2-r5.zip')
           substitutions = {
               '__SOURCE_COMMIT__': pin,
               '__STAGE24_ARCHIVE_SHA256__': hashlib.file_digest(archive.open('rb'), 'sha256').hexdigest(),
@@ -124,8 +124,8 @@ jobs:
           chmod +x dist/cryptosniper-stage24-rebuild-run.sh
           bash -n dist/cryptosniper-stage24-rebuild-run.sh
           printf 'SOURCE=%s\nCI=https://github.com/ostaddehdari/CryptoSniper/commit/%s/checks\nMODE=live charts, unified trades, archive lifecycle and real read-refresh; Live writes default OFF\n' "$PIN" "$PIN" > dist/runlog.txt
-          bash dist/cryptosniper-stage24-rebuild-run.sh --check dist/CryptoSniper-Stage24-Rebuild-v0.24.0rc2-r4.zip | tee -a dist/runlog.txt
-          (cd dist && sha256sum CryptoSniper-Stage24-Rebuild-v0.24.0rc2-r4.zip cryptosniper-stage24-rebuild-run.sh runlog.txt > SHA256SUMS.txt)
+          bash dist/cryptosniper-stage24-rebuild-run.sh --check dist/CryptoSniper-Stage24-Rebuild-v0.24.0rc2-r5.zip | tee -a dist/runlog.txt
+          (cd dist && sha256sum CryptoSniper-Stage24-Rebuild-v0.24.0rc2-r5.zip cryptosniper-stage24-rebuild-run.sh runlog.txt > SHA256SUMS.txt)
       - name: Save exact deployment bytes for independent verification
         uses: actions/upload-artifact@v4
         with:
@@ -138,13 +138,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          TAG=stage24-rebuild-v0.24.0rc2-deploy-r4
+          TAG=stage24-rebuild-v0.24.0rc2-deploy-r5
           PIN=$(git rev-parse HEAD)
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo 'Release already exists; immutable assets were not replaced.'
           else
             gh release create "$TAG" dist/* --target "$PIN" --prerelease \
-              --title "CryptoSniper Stage24 Rebuild — v0.24.0rc2 installer r4" \
+              --title "CryptoSniper Stage24 Rebuild — v0.24.0rc2 installer r5" \
               --notes "Stage24 Rebuild is based directly on the final Stage23 source. It preserves the Cornix-like workspace with sidebar-only navigation, restores live USDT/USD and USDT/Toman header tickers, and adds live charts, signal card/table views, archive lifecycle, unified internal/live/external trades and real read-refresh. Live writes remain disabled by default."
           fi
           cat dist/SHA256SUMS.txt
@@ -155,7 +155,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          for OLD_TAG in stage24-v0.24.0rc1-deploy stage24-rebuild-v0.24.0rc2-deploy stage24-rebuild-v0.24.0rc2-deploy-r1 stage24-rebuild-v0.24.0rc2-deploy-r2 stage24-rebuild-v0.24.0rc2-deploy-r3; do
+          for OLD_TAG in stage24-v0.24.0rc1-deploy stage24-rebuild-v0.24.0rc2-deploy stage24-rebuild-v0.24.0rc2-deploy-r1 stage24-rebuild-v0.24.0rc2-deploy-r2 stage24-rebuild-v0.24.0rc2-deploy-r3 stage24-rebuild-v0.24.0rc2-deploy-r4; do
             if gh release view "$OLD_TAG" >/dev/null 2>&1; then
               gh release delete "$OLD_TAG" --yes --cleanup-tag
               echo "REMOVED: $OLD_TAG"

@@ -192,11 +192,16 @@ class Stage23NginxUpgradeTests(NginxUpgradeTests):
 
 
 class Stage24ManagedSourceUpgradeTests(unittest.TestCase):
-    def test_r5_installed_source_is_explicitly_accepted(self):
+    def test_recent_stage24_installed_sources_are_explicitly_accepted(self):
         installer = (ROOT / "scripts/cryptosniper-stage24-rebuild-run.sh").read_text()
-        r5 = "5e7aa3f3ede973448035d75566a230636a61851e"
-        self.assertIn(f"STAGE24_R5_SOURCE_COMMIT={r5}", installer)
-        self.assertIn("os.environ['STAGE24_R5_SOURCE_COMMIT']", installer)
+        expected = {
+            "R5": "5e7aa3f3ede973448035d75566a230636a61851e",
+            "R6": "292fadb628de3476edc2009708d63fe29145c61f",
+            "R7": "515920691b168139a21dee0014e5cf31e35f4ab0",
+        }
+        for label, commit in expected.items():
+            self.assertIn(f"STAGE24_{label}_SOURCE_COMMIT={commit}", installer)
+            self.assertIn(f"os.environ['STAGE24_{label}_SOURCE_COMMIT']", installer)
 
 
 if __name__ == "__main__":

@@ -6,3 +6,6 @@ EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 STORAGES["staticfiles"] = {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}
 # Deterministic, test-only AES-256 key. Production must supply its own versioned keyring.
 EXCHANGE_CREDENTIAL_KEYS = ["1:MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA="]
+
+# Browser smoke exercises the real chart endpoint with seeded candles; no external HTTP dependency.
+MARKETDATA_REMOTE_HISTORY_ENABLED = False

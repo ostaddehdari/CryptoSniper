@@ -1,0 +1,32 @@
+name: S24 rebuild one-shot Ruff
+on:
+  push:
+    branches: [stage24-rebuild-from-s23]
+permissions:
+  contents: write
+jobs:
+  format:
+    if: ${{ !contains(github.event.head_commit.message, '[s24-rebuild-ruff]') }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: stage24-rebuild-from-s23
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.12.19'
+      - run: uv sync --frozen
+      - run: |
+          uv run ruff check backend tests scripts --fix
+          uv run ruff format backend tests scripts
+      - run: |
+          if git diff --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend tests scripts
+          git commit -m "fix(S24-rebuild): Ruff exact format [s24-rebuild-ruff]"
+          git push origin HEAD:stage24-rebuild-from-s23

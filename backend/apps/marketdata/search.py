@@ -36,11 +36,13 @@ def market_is_readable(user, market):
     return eligible_markets(user).filter(pk=market.pk).exists()
 
 
-def search_markets(user, search="", limit=30):
+def search_markets(user, search="", limit=30, *, exchange_id=None):
     term = str(search).strip().upper()
     if not SEARCH_TERM.fullmatch(term):
         return []
     queryset = eligible_markets(user)
+    if exchange_id is not None:
+        queryset = queryset.filter(exchange_id=exchange_id)
     if term:
         queryset = queryset.filter(
             Q(symbol__icontains=term)
@@ -50,7 +52,7 @@ def search_markets(user, search="", limit=30):
         )
     now = timezone.now()
     results = []
-    for market in queryset[: max(1, min(int(limit), 50))]:
+    for market in queryset[: max(1, min(int(limit), 150))]:
         metadata_fresh = bool(market.synced_at and now - market.synced_at <= timedelta(days=2))
         results.append(
             {

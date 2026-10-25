@@ -1,100 +1,174 @@
-{% extends "shell.html" %}{% load static %}
-{% block title %}CryptoSniper{% endblock %}
-{% block breadcrumb %}مرکز کنترل معاملات{% endblock %}
+{% extends "base.html" %}{% load static %}
+{% block title %}CryptoSniper · Workspace{% endblock %}
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/stage24-rebuild.css' %}">
 {% endblock %}
-{% block topbar_extra %}
-<div class="cs-header-live"><i></i><span>LIVE</span><small data-header-time>—</small></div>
-<div class="cs-tickers" aria-label="قیمت‌های مرجع">
-  <div class="cs-ticker"><span>USDT / USD</span><strong data-usdt-usd>—</strong><small data-usdt-usd-source>در حال دریافت</small></div>
-  <div class="cs-ticker"><span>USDT / تومان</span><strong data-usdt-toman>—</strong><small data-usdt-toman-source>در حال دریافت</small></div>
-</div>
-{% endblock %}
-{% block content %}
-<div class="cs-app cs-app-embedded" data-cs24-root data-api-root="{% url 'home' %}">
-  <section class="cs-page" data-page="overview" hidden>
-    <div class="cs-page-title"><div><h1>نمای کلی</h1><p>خلاصه وضعیت حساب و معاملات</p></div></div>
-    <div class="cs-stats">
-      <article><span>معاملات باز</span><strong data-overview-open>—</strong></article>
-      <article><span>معاملات امروز</span><strong data-overview-today>—</strong></article>
-      <article><span>سیگنال‌های فعال</span><strong data-overview-signals>—</strong></article>
-    </div>
-    <div class="cs-panel">
-      <div class="cs-panel-head"><strong>حساب‌ها</strong><div class="cs-overview-meta"><span data-overview-connection>در حال اتصال…</span><span data-overview-asof>—</span></div></div>
-      <div data-overview-accounts class="cs-account-list"><div class="cs-empty">در حال دریافت اطلاعات…</div></div>
-    </div>
-  </section>
+{% block body %}
+<div class="s24-shell" data-stage24-root data-cs24-root>
+  <aside class="s24-sidebar">
+    <a class="s24-brand" href="#/overview"><span class="s24-brand-mark">⌁</span><span><strong>CryptoSniper</strong><small>مرکز کنترل معاملات واقعی</small></span></a>
+    <nav class="s24-nav" aria-label="ناوبری اصلی">
+      <a href="#/overview" data-route-link="overview">نمای کلی</a>
+      <a href="#/trades" data-route-link="trades">معاملات</a>
+      <a href="#/inbox" data-route-link="inbox">صندوق سیگنال</a>
+      <a href="/cryptosniper/exchanges/">صرافی‌ها</a>
+      <a href="/cryptosniper/settings/telegram/">تلگرام و سیگنال‌ها</a>
+      <a href="/cryptosniper/alerts/">هشدارها</a>
+      <a href="/cryptosniper/reports/">گزارش‌ها</a>
+      <a href="/cryptosniper/system/">وضعیت سیستم</a>
+      <a href="/cryptosniper/settings/trading/">تنظیمات</a>
+    </nav>
+    <div class="s24-sidebar-foot"><span>{{ request.user.username }}</span><a href="/cryptosniper/auth/logout/">خروج</a></div>
+  </aside>
 
-  <section class="cs-page" data-page="inbox" hidden>
-    <div class="cs-page-title">
-      <div><h1>صندوق سیگنال</h1><p>سیگنال را انتخاب کنید تا چارت زنده و وضعیت تحقق نمایش داده شود.</p></div>
-      <div class="cs-controls">
-        <div class="cs-segment" data-signal-view><button data-view="active" class="active">فعال</button><button data-view="archive">بایگانی</button><button data-view="all">همه</button></div>
-        <div class="cs-segment" data-signal-layout><button data-layout="cards" class="active">کارت</button><button data-layout="table">جدول</button></div>
+  <main class="s24-workspace" id="main">
+    <header class="s24-topbar">
+      <div class="s24-tabs">
+        <a href="#/overview" data-route-link="overview">نمای کلی</a>
+        <a href="#/newtrade" data-route-link="newtrade">معامله دستی</a>
+        <a href="#/inbox" data-route-link="inbox">تحلیل سیگنال</a>
+        <a href="#/trades" data-route-link="trades">معاملات</a>
       </div>
-    </div>
-    <div class="cs-focus-grid">
-      <article class="cs-panel">
-        <div class="cs-panel-head"><div><strong data-signal-symbol>یک سیگنال را انتخاب کنید</strong><span data-signal-source>—</span></div><div class="cs-legend"><b class="e">Entry</b><b class="t">TP</b><b class="s">SL</b></div></div>
-        <div class="cs-chart"><canvas data-signal-chart></canvas><div class="cs-chart-empty" data-signal-chart-empty>برای نمایش چارت یک سیگنال انتخاب کنید.</div></div>
-      </article>
-      <article class="cs-panel cs-signal-detail-panel">
-        <div class="cs-panel-head"><strong>جزئیات سیگنال</strong><span class="cs-badge" data-signal-status>—</span></div>
-        <div data-signal-detail><div class="cs-empty">سیگنالی انتخاب نشده است.</div></div>
-      </article>
-    </div>
-    <div class="cs-panel cs-list-panel">
-      <div class="cs-panel-head"><strong>فهرست سیگنال‌ها</strong><button class="cs-refresh" data-signals-reload>↻ تازه‌سازی</button></div>
-      <div data-signal-list class="cs-card-grid"></div>
-    </div>
-  </section>
-
-  <section class="cs-page" data-page="newtrade" hidden>
-    <div class="cs-page-title"><div><h1>معامله جدید</h1><p>کندل زنده بازار؛ معاملات باز قبلی روی این چارت overlay نمی‌شوند.</p></div></div>
-    <div class="cs-trade-grid">
-      <article class="cs-panel">
-        <div class="cs-panel-head">
-          <div><strong data-newtrade-symbol>بازار را انتخاب کنید</strong><span data-newtrade-exchange>—</span></div>
-          <div class="cs-segment compact" data-newtrade-interval><button data-interval="1m">1m</button><button data-interval="5m" class="active">5m</button><button data-interval="15m">15m</button><button data-interval="1h">1h</button><button data-interval="4h">4h</button></div>
+      <div class="s24-topbar-right">
+        <div class="s24-tickers">
+          <div class="s24-ticker"><span>USDT / USD</span><strong data-usdt-usd>—</strong></div>
+          <div class="s24-ticker"><span>USDT / تومان</span><strong data-usdt-toman>—</strong></div>
         </div>
-        <div class="cs-chart cs-chart-tall"><canvas data-newtrade-chart></canvas><div class="cs-chart-empty" data-newtrade-empty>حساب و بازار را انتخاب کنید.</div></div>
-      </article>
-      <article class="cs-panel">
-        <div class="cs-panel-head"><strong>تعریف معامله</strong><span class="cs-badge">SPOT / MARGIN</span></div>
-        <form class="cs-trade-form" data-newtrade-form>
-          <label>حساب صرافی<select name="account" required data-account-select><option value="">انتخاب حساب</option></select></label>
-          <label>بازار<div class="cs-market-picker"><input type="search" data-market-search placeholder="مثال BTC یا ETH"><div class="cs-market-results" data-market-results hidden></div></div><input type="hidden" name="market" data-market-hidden required></label>
-          <div class="cs-form-row"><label>جهت<select name="side"><option value="long">Long</option><option value="short">Short</option></select></label><label>حجم ورود<input name="capital" type="number" min="1" step="1" required></label></div>
-          <label>Entry<input name="entry_price" inputmode="decimal" dir="ltr" required></label>
-          <div class="cs-form-row"><label>TP1<input name="tp1" inputmode="decimal" dir="ltr" required></label><label>TP2<input name="tp2" inputmode="decimal" dir="ltr"></label></div>
-          <div class="cs-form-row"><label>TP3<input name="tp3" inputmode="decimal" dir="ltr"></label><label>Stop Loss<input name="stop_loss" inputmode="decimal" dir="ltr" required></label></div>
-          <div class="cs-form-row"><label class="cs-check"><input name="trailing_sl" type="checkbox" checked>Trailing SL</label><label class="cs-check"><input name="percentage_trailing" type="checkbox" checked>Trailing TP</label></div>
-          <div class="cs-form-row"><label>شروع Trailing<select name="trailing_trigger"><option value="tp1">TP1</option><option value="tp2">TP2</option><option value="tp3">TP3</option></select></label><label>فاصله Trailing %<input name="trailing_distance" type="number" min="1" max="99" step="1" value="1"></label></div>
-          <input type="hidden" name="source" value="manual"><input type="hidden" name="leverage" value="1">
-          <button class="cs-primary" type="submit">ساخت برنامه معامله</button>
-          <div class="cs-form-status" data-newtrade-status></div>
-        </form>
-      </article>
-    </div>
-  </section>
+        <div class="s24-live-pill"><i></i><span>LIVE</span><small data-live-time>—</small></div>
+      </div>
+    </header>
 
-  <section class="cs-page" data-page="trades" hidden>
-    <div class="cs-page-title">
-      <div><h1>معاملات</h1><p>معاملات داخلی، Live و External در یک فهرست.</p></div>
-      <div class="cs-controls"><div class="cs-segment" data-trade-view><button data-view="active" class="active">فعال</button><button data-view="archive">بایگانی</button><button data-view="all">همه</button></div><button class="cs-refresh strong" data-trades-refresh>↻ تازه‌سازی واقعی</button></div>
-    </div>
-    <div class="cs-focus-grid">
-      <article class="cs-panel">
-        <div class="cs-panel-head"><div><strong data-trade-symbol>یک معامله را انتخاب کنید</strong><span data-trade-origin>—</span></div><span class="cs-badge" data-trade-status>—</span></div>
-        <div class="cs-chart"><canvas data-trade-chart></canvas><div class="cs-chart-empty" data-trade-chart-empty>برای نمایش چارت یک معامله انتخاب کنید.</div></div>
-      </article>
-      <article class="cs-panel"><div class="cs-panel-head"><strong>خلاصه معامله</strong><span data-trade-refresh-state>—</span></div><div data-trade-detail><div class="cs-empty">معامله‌ای انتخاب نشده است.</div></div></article>
-    </div>
-    <div class="cs-panel cs-list-panel"><div class="cs-panel-head"><strong>فهرست معاملات</strong><span data-trade-count>—</span></div><div class="cs-table-wrap"><table class="cs-table"><thead><tr><th>بازار</th><th>مبدأ</th><th>جهت</th><th>Entry</th><th>وضعیت</th><th>زمان</th><th></th></tr></thead><tbody data-trade-list></tbody></table></div></div>
-  </section>
+    <section class="s24-page" data-page="overview" hidden>
+      <div class="s24-section-head">
+        <div><h1>نمای کلی</h1><p>خلاصه زنده حساب، معاملات و سیگنال‌ها در همان Workspace اصلی.</p></div>
+        <div class="s24-actions">
+          <a class="s24-button primary" href="#/newtrade">＋ معامله جدید</a>
+          <a class="s24-button" href="#/inbox">صندوق سیگنال</a>
+          <a class="s24-button" href="#/trades">معاملات</a>
+        </div>
+      </div>
+      <div class="s24-overview-cards">
+        <article class="s24-panel"><span class="s24-overview-label">معاملات باز</span><strong class="s24-overview-number" data-overview-open>—</strong></article>
+        <article class="s24-panel"><span class="s24-overview-label">معاملات امروز</span><strong class="s24-overview-number" data-overview-today>—</strong></article>
+        <article class="s24-panel"><span class="s24-overview-label">سیگنال‌های فعال</span><strong class="s24-overview-number" data-overview-signals>—</strong></article>
+      </div>
+      <div class="s24-grid s24-overview-grid">
+        <article class="s24-panel">
+          <div class="s24-panel-head"><strong>حساب‌ها و موجودی</strong><span class="s24-muted" data-overview-asof>—</span></div>
+          <div data-overview-accounts class="s24-overview-accounts"><div class="s24-empty-inline">در حال دریافت اطلاعات…</div></div>
+        </article>
+        <article class="s24-panel">
+          <div class="s24-panel-head"><strong>دسترسی سریع</strong><span class="s24-status">LIVE</span></div>
+          <div class="s24-overview-links">
+            <a href="#/newtrade">معامله دستی</a>
+            <a href="#/inbox">تحلیل سیگنال</a>
+            <a href="#/trades">معاملات و بایگانی</a>
+            <a href="/cryptosniper/exchanges/">مدیریت صرافی‌ها</a>
+          </div>
+        </article>
+      </div>
+    </section>
 
+    <section class="s24-page" data-page="inbox" hidden>
+      <div class="s24-section-head">
+        <div><h1>صندوق سیگنال</h1><p>انتخاب هر سیگنال، چارت زنده و نقاط تحقق را بالای صفحه نشان می‌دهد.</p></div>
+        <div class="s24-actions">
+          <div class="s24-segment" data-signal-view>
+            <button type="button" data-view="active" class="active">فعال</button>
+            <button type="button" data-view="archive">بایگانی</button>
+            <button type="button" data-view="all">همه</button>
+          </div>
+          <div class="s24-segment" data-signal-layout>
+            <button type="button" data-layout="cards" class="active">کارت</button>
+            <button type="button" data-layout="table">جدول</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="s24-grid s24-inbox-focus">
+        <article class="s24-panel s24-chart-panel">
+          <div class="s24-panel-head"><div><strong data-signal-symbol>یک سیگنال را انتخاب کنید</strong><small data-signal-source>—</small></div><div class="s24-chart-legend"><span class="entry">Entry</span><span class="tp">TP</span><span class="sl">SL</span></div></div>
+          <div class="s24-chart-wrap"><canvas data-signal-chart></canvas><div class="s24-empty" data-signal-chart-empty>برای نمایش چارت، یک سیگنال دارای بازار انتخاب کنید.</div></div>
+        </article>
+        <article class="s24-panel s24-scheme-panel">
+          <div class="s24-panel-head"><strong>توضیحات سیگنال</strong><span class="s24-status" data-signal-status>—</span></div>
+          <div data-signal-detail class="s24-signal-detail"><div class="s24-empty-inline">سیگنالی انتخاب نشده است.</div></div>
+        </article>
+      </div>
+
+      <div class="s24-panel s24-list-panel">
+        <div class="s24-panel-head"><strong>فهرست سیگنال‌ها</strong><button type="button" class="s24-button ghost" data-signals-reload>تازه‌سازی</button></div>
+        <div data-signal-list class="s24-card-grid"></div>
+      </div>
+    </section>
+
+    <section class="s24-page" data-page="newtrade" hidden>
+      <div class="s24-section-head">
+        <div><h1>معامله جدید</h1><p>حساب را انتخاب کنید؛ بازارهای همان صرافی فوراً نمایش داده می‌شوند و نمودار زنده بازار در کنار فرم قرار دارد.</p></div>
+        <div class="s24-market-status"><span class="s24-live-dot"></span><strong data-market-live-label>LIVE MARKET</strong><small data-market-provider>—</small></div>
+      </div>
+      <div class="s24-grid s24-newtrade-grid">
+        <article class="s24-panel s24-chart-panel">
+          <div class="s24-panel-head">
+            <div><strong data-newtrade-symbol>بازار را انتخاب کنید</strong><small data-newtrade-exchange>—</small></div>
+            <div class="s24-segment compact" data-newtrade-interval>
+              <button type="button" data-interval="1m">1m</button><button type="button" data-interval="5m" class="active">5m</button><button type="button" data-interval="15m">15m</button><button type="button" data-interval="1h">1h</button><button type="button" data-interval="4h">4h</button>
+            </div>
+          </div>
+          <div class="s24-chart-wrap tall"><canvas data-newtrade-chart></canvas><div class="s24-empty" data-newtrade-empty>ابتدا حساب صرافی و سپس بازار را انتخاب کنید.</div></div>
+        </article>
+        <article class="s24-panel s24-form-panel">
+          <div class="s24-panel-head"><strong>تعریف معامله</strong><span class="s24-status">SPOT / MARGIN</span></div>
+          <form class="s24-trade-form" data-newtrade-form>
+            <label>حساب صرافی<select name="account" required data-account-select><option value="">انتخاب حساب</option></select></label>
+            <label>بازار
+              <div class="s24-market-picker">
+                <input type="search" autocomplete="off" data-market-search placeholder="بعد از انتخاب صرافی، بازارها اینجا نمایش داده می‌شوند">
+                <div class="s24-search-results s24-account-markets" data-market-results hidden></div>
+              </div>
+              <input type="hidden" name="market" data-market-hidden required>
+            </label>
+            <div class="s24-form-row"><label>جهت<select name="side"><option value="long">Long</option><option value="short">Short</option></select></label><label>مبلغ ورود<input name="capital" type="number" min="1" step="1" required></label></div>
+            <label>Entry<input name="entry_price" inputmode="decimal" dir="ltr" required></label>
+            <div class="s24-form-row"><label>TP1<input name="tp1" inputmode="decimal" dir="ltr" required></label><label>TP2<input name="tp2" inputmode="decimal" dir="ltr"></label></div>
+            <div class="s24-form-row"><label>TP3<input name="tp3" inputmode="decimal" dir="ltr"></label><label>Stop Loss<input name="stop_loss" inputmode="decimal" dir="ltr" required></label></div>
+            <div class="s24-form-row"><label class="s24-check"><input name="trailing_sl" type="checkbox" checked>Trailing SL</label><label class="s24-check"><input name="percentage_trailing" type="checkbox" checked>Trailing TP</label></div>
+            <div class="s24-form-row"><label>شروع Trailing<select name="trailing_trigger"><option value="tp1">TP1</option><option value="tp2">TP2</option><option value="tp3">TP3</option></select></label><label>فاصله Trailing %<input name="trailing_distance" type="number" min="1" max="99" step="1" value="1"></label></div>
+            <input type="hidden" name="source" value="manual"><input type="hidden" name="leverage" value="1">
+            <button class="s24-button primary s24-submit" type="submit">ساخت برنامه معامله</button>
+            <div class="s24-form-status" data-newtrade-status></div>
+          </form>
+        </article>
+      </div>
+    </section>
+
+    <section class="s24-page" data-page="trades" hidden>
+      <div class="s24-section-head">
+        <div><h1>معاملات</h1><p>معاملات داخل سایت و معاملات مشاهده‌شده در صرافی در یک فهرست؛ حذف به معنی بایگانی است.</p></div>
+        <div class="s24-actions">
+          <div class="s24-segment" data-trade-view><button data-view="active" class="active">فعال</button><button data-view="archive">بایگانی</button><button data-view="all">همه</button></div>
+          <button type="button" class="s24-button primary" data-trades-refresh>↻ تازه‌سازی واقعی</button>
+        </div>
+      </div>
+
+      <div class="s24-grid s24-trades-focus">
+        <article class="s24-panel s24-chart-panel">
+          <div class="s24-panel-head"><div><strong data-trade-symbol>یک معامله را انتخاب کنید</strong><small data-trade-origin>داخلی یا خارجی</small></div><span class="s24-status" data-trade-status>—</span></div>
+          <div class="s24-chart-wrap"><canvas data-trade-chart></canvas><div class="s24-empty" data-trade-chart-empty>با انتخاب معامله، Entry/TP/SL و نقاط ورود/خروج روی نمودار نمایش داده می‌شود.</div></div>
+        </article>
+        <article class="s24-panel">
+          <div class="s24-panel-head"><strong>خلاصه معامله</strong><span data-trade-refresh-state class="s24-muted"></span></div>
+          <div data-trade-detail class="s24-trade-detail"><div class="s24-empty-inline">معامله‌ای انتخاب نشده است.</div></div>
+        </article>
+      </div>
+
+      <div class="s24-panel s24-list-panel">
+        <div class="s24-panel-head"><strong>فهرست معاملات</strong><span class="s24-muted" data-trade-count>—</span></div>
+        <div class="s24-table-scroll"><table class="s24-table"><thead><tr><th>بازار</th><th>مبدأ</th><th>جهت</th><th>Entry</th><th>وضعیت</th><th>زمان</th><th></th></tr></thead><tbody data-trade-list></tbody></table></div>
+      </div>
+    </section>
+  </main>
 </div>
-<form class="cs-csrf" hidden>{% csrf_token %}</form>
+<form class="s24-csrf" aria-hidden="true">{% csrf_token %}</form>
 {% endblock %}
 {% block extra_scripts %}<script src="{% static 'js/stage24-rebuild.js' %}" defer></script>{% endblock %}

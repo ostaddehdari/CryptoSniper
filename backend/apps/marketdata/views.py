@@ -14,6 +14,7 @@ from django.views.decorators.http import require_GET
 
 from apps.accounts.security import session_api_required
 from apps.exchanges.adapters import AdapterError, get_adapter
+from apps.exchanges.models import UserExchangeAccount
 
 from .feeds import get_quote
 from .search import eligible_markets, search_markets
@@ -104,8 +105,42 @@ def _state(markets):
 @never_cache
 @require_GET
 def api_search(request):
-    results = search_markets(request.user, request.GET.get("q", ""))
-    return JsonResponse({"results": results, "mode": "display_only"})
+    account_id = request.GET.get("account")
+    exchange_id = None
+    if account_id:
+        if not account_id.isascii() or not account_id.isdecimal():
+            return JsonResponse({"error": "invalid_account"}, status=400)
+        account = (
+            UserExchangeAccount.objects.for_user(request.user)
+            .select_related("exchange")
+            .filter(
+                pk=int(account_id),
+                status__in=(
+                    UserExchangeAccount.Status.CONNECTED,
+                    UserExchangeAccount.Status.RESTRICTED,
+                ),
+            )
+            .first()
+        )
+        if not account:
+            return JsonResponse({"error": "account_not_found"}, status=404)
+        if account.permissions.get("can_read") is not True:
+            return JsonResponse({"error": "market_read_permission_required"}, status=403)
+        exchange_id = account.exchange_id
+
+    results = search_markets(
+        request.user,
+        request.GET.get("q", ""),
+        limit=100 if account_id else 30,
+        exchange_id=exchange_id,
+    )
+    return JsonResponse(
+        {
+            "results": results,
+            "mode": "display_only",
+            "account": int(account_id) if account_id else None,
+        }
+    )
 
 
 @session_api_required

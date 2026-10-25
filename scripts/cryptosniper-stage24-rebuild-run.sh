@@ -453,8 +453,16 @@ if [[ -f $APP_DIR/.installed-source.sha256 ]]; then
     CURRENT_ARCHIVE_SHA=$(cat "$APP_DIR/.installed-source.sha256")
 fi
 if [[ $CURRENT_ARCHIVE_SHA != "$ARCHIVE_SHA256" ]]; then
-    if [[ -n $CURRENT_ARCHIVE_SHA && $CURRENT_ARCHIVE_SHA != "$STAGE22_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$STAGE21_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$STAGE20_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$STAGE18_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$STAGE16_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$STAGE14_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$PREVIOUS_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$STAGE10_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$STAGE08_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$STAGE06_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$STAGE05_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$STAGE04_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$STAGE03_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$STAGE02_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$STAGE01_ARCHIVE_SHA256" && $CURRENT_ARCHIVE_SHA != "$OLDER_STAGE03_ARCHIVE_SHA256" ]]; then
-        fail 'Existing application checksum is not an allowed managed prior release; no files were replaced.'
+    if [[ -n $CURRENT_ARCHIVE_SHA && ! $CURRENT_ARCHIVE_SHA =~ ^[0-9a-f]{64}$ ]]; then
+        fail 'Existing managed source marker is malformed; no files were replaced.'
+    fi
+    if $MANAGED; then
+        printf 'PASS: trusted managed install metadata already validated; replacing the managed application source while preserving private data.\n'
+        if [[ -n $CURRENT_ARCHIVE_SHA ]]; then
+            printf 'INFO: previous managed archive marker: %s\n' "$CURRENT_ARCHIVE_SHA"
+        fi
+    elif [[ -n $CURRENT_ARCHIVE_SHA ]]; then
+        fail 'An unmanaged application source marker exists; no files were replaced.'
     fi
     python3 - "$ARCHIVE" "$TMP_DIR" <<'PY'
 import sys, zipfile

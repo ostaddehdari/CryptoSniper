@@ -186,7 +186,8 @@ def main():
                 page.get_by_text("BTC/USDT", exact=True).first.wait_for()
                 page.screenshot(path=str(artifacts / "exchange-detail-desktop.png"), full_page=True)
 
-                # Unified Cornix workspace must execute the real account -> market -> chart -> draft path.
+                # Unified Cornix workspace must execute the real account -> market ->
+                # chart -> draft path.
                 smoke_market = ExchangeMarket.objects.get(
                     exchange=account.exchange, symbol="BTC/USDT", market_type="spot"
                 )
@@ -236,9 +237,17 @@ def main():
                         "button", name="ساخت برنامه معامله"
                     ).click()
                 assert draft_response.value.status in {200, 201}
-                wait_for(lambda: TradePlan.objects.filter(owner=user).count() == drafts_before + 1)
-                page.locator("[data-newtrade-status]").get_by_text("ساخته شد", exact=False).wait_for()
-                page.screenshot(path=str(artifacts / "cornix-newtrade-real-draft.png"), full_page=True)
+                wait_for(
+                    lambda: TradePlan.objects.filter(owner=user).count()
+                    == drafts_before + 1
+                )
+                page.locator("[data-newtrade-status]").get_by_text(
+                    "ساخته شد", exact=False
+                ).wait_for()
+                page.screenshot(
+                    path=str(artifacts / "cornix-newtrade-real-draft.png"),
+                    full_page=True,
+                )
                 print("PASS Cornix workspace real account -> market -> chart -> draft journey")
 
                 page.goto(base + "/smart-paste/")

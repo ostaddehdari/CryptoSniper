@@ -16,6 +16,7 @@ from apps.operations.models import ExternalObservation, ExternalTradePolicy
 from apps.signals.models import Signal, SignalOutcome
 from apps.trading.models import PaperExitFill, Trade
 
+from .feeds import get_quote, refresh_quote
 from .history import INTERVAL_MS, fetch_binance_history
 from .models import HistoricalCandle
 from .search import eligible_markets
@@ -254,6 +255,39 @@ def api_chart(request):
         ).order_by("-open_time")[:bars]
     )
     candles.reverse()
+
+    quote = get_quote(market)
+    if not quote or quote.get("stale"):
+        refresh_quote(market)
+        quote = get_quote(market)
+
+    candle_payloads = [_candle_payload(row) for row in candles]
+    provider_label = "Binance public candles"
+    if quote and quote.get("price"):
+        live_price = float(quote["price"])
+        live_point = {
+            "time": int(now.timestamp()),
+            "open": live_price,
+            "high": live_price,
+            "low": live_price,
+            "close": live_price,
+            "volume": 0.0,
+            "live": True,
+        }
+        if candle_payloads and candle_payloads[-1]["time"] == live_point["time"]:
+            candle_payloads[-1] = live_point
+        else:
+            candle_payloads.append(live_point)
+        source = str(quote.get("source") or market.exchange.adapter_code)
+        if market.exchange.adapter_code == "binance":
+            provider_label = f"{source} live + Binance public candles"
+        elif candles:
+            provider_label = f"{source} live · Binance history reference"
+        else:
+            provider_label = f"{source} live · history unavailable"
+    elif market.exchange.adapter_code != "binance":
+        provider_label = f"{market.exchange.code} · live quote unavailable"
+
     overlay = None
     if request.GET.get("signal"):
         overlay = _signal_overlay(request.user, request.GET["signal"], candles)
@@ -270,8 +304,9 @@ def api_chart(request):
                 "exchange": market.exchange.code,
             },
             "interval": interval,
-            "provider": "binance_public_display_reference",
-            "candles": [_candle_payload(row) for row in candles],
+            "provider": str(quote.get("source")) if quote else "binance_public_display_reference",
+            "provider_label": provider_label,
+            "candles": candle_payloads,
             "overlay": overlay,
             "as_of": now.isoformat(),
             "display_only": True,

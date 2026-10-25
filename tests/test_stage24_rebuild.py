@@ -72,6 +72,36 @@ def test_dashboard_uses_same_rebuilt_workspace(client, django_user_model):
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize(
+    "route_name",
+    [
+        "exchange-center",
+        "watchlists",
+        "alerts",
+        "reports",
+        "operations",
+        "system",
+        "profile",
+        "trading-preferences",
+        "telegram-settings",
+        "manual-list",
+    ],
+)
+def test_all_primary_pages_use_global_cornix_shell(client, django_user_model, route_name):
+    user = django_user_model.objects.create_user(username=f"cornix-{route_name}")
+    client.force_login(user)
+    response = client.get(reverse(route_name))
+    assert response.status_code == 200
+    body = response.content.decode()
+    assert 'data-cornix-shell' in body
+    assert 'class="s24-sidebar sidebar"' in body
+    assert 'class="s24-topbar topbar"' in body
+    assert "stage24-rebuild.css" in body
+    assert "cornix-shell.js" in body
+
+
+
+@pytest.mark.django_db
 def test_header_ticker_endpoint_is_private_and_structured(client, django_user_model):
     user = django_user_model.objects.create_user(username="s24-ticker")
     unauthenticated = client.get(reverse("api-header-ticker"))

@@ -49,12 +49,14 @@ def test_rebuilt_workspace_keeps_cornix_shell_and_clean_header(client, django_us
     assert 'data-page="inbox"' in body
     assert 'data-page="newtrade"' in body
     assert 'data-page="trades"' in body
-    assert 'class="app-layout"' in body
-    assert 'class="sidebar"' in body
-    assert 'class="topbar"' in body
-    assert 'class="cs-sidebar"' not in body
-    header = body.split('<header class="topbar">', 1)[1].split("</header>", 1)[0]
-    assert "cs-ticker" in header
+    assert 'class="s24-shell"' in body
+    assert 'class="s24-sidebar"' in body
+    assert 'class="s24-topbar"' in body
+    assert 'class="app-layout"' not in body
+    header = body.split('<header class="s24-topbar">', 1)[1].split("</header>", 1)[0]
+    assert "s24-ticker" in header
+    assert "data-account-select" in body
+    assert "data-market-results" in body
     assert "#/newtrade" in body and "#/trades" in body and "#/inbox" in body
 
 
@@ -65,6 +67,7 @@ def test_dashboard_uses_same_rebuilt_workspace(client, django_user_model):
     response = client.get(reverse("dashboard"))
     assert response.status_code == 200
     assert b"data-cs24-root" in response.content
+    assert b"s24-shell" in response.content
     assert b"ACCOUNT WORKSPACE" not in response.content
 
 
@@ -88,6 +91,24 @@ def test_header_ticker_endpoint_is_private_and_structured(client, django_user_mo
     assert payload["usdt_usd"] == "1.0001"
     assert payload["usdt_toman"] == "118500"
     assert payload["display_only"] is True
+
+
+@pytest.mark.django_db
+def test_selected_exchange_account_returns_markets_without_search_text(client, django_user_model):
+    user = django_user_model.objects.create_user(username="s24-account-markets")
+    trade = paper_trade(user)
+    trade.account.permissions = {"can_read": True, "can_trade": False}
+    trade.account.status = "connected"
+    trade.account.save(update_fields=("permissions", "status", "updated_at"))
+    client.force_login(user)
+
+    response = client.get(reverse("api-market-search") + f"?account={trade.account_id}&q=")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["account"] == trade.account_id
+    assert payload["results"]
+    assert all(row["exchange"] == trade.account.exchange.code for row in payload["results"])
+    assert any(row["id"] == trade.market_id for row in payload["results"])
 
 
 @pytest.mark.django_db

@@ -6,6 +6,8 @@
 
   const qs = (s, p = document) => p.querySelector(s);
   const qsa = (s, p = document) => Array.from(p.querySelectorAll(s));
+  const appRoot = (root.dataset.apiRoot || "/").replace(/\/$/, "");
+  const appPath = (path) => `${appRoot}${path.startsWith("/") ? path : "/" + path}`;
   const csrf = qs(".s24-csrf input[name=csrfmiddlewaretoken]")?.value || "";
   const state = {
     route: "overview",
@@ -90,7 +92,7 @@
 
   async function loadTicker() {
     try {
-      const payload = await api("/cryptosniper/api/v1/markets/header-ticker/");
+      const payload = await api(appPath("/api/v1/markets/header-ticker/"));
       const usd = qs("[data-usdt-usd]"), toman = qs("[data-usdt-toman]");
       if (usd) usd.textContent = n(payload.usdt_usd);
       if (toman) toman.textContent = n(payload.usdt_toman);
@@ -104,7 +106,7 @@
     const select = qs("[data-account-select]");
     if (!select) return;
     try {
-      const payload = await api("/cryptosniper/api/v1/exchanges/");
+      const payload = await api(appPath("/api/v1/exchanges/"));
       state.accounts = (payload.accounts || []).filter((a) => ["connected", "restricted"].includes(a.status));
       select.innerHTML = '<option value="">انتخاب حساب</option>' + state.accounts.map((a) =>
         `<option value="${a.id}" data-exchange="${esc(a.exchange)}">${esc(a.label)} · ${esc(a.exchange)}</option>`
@@ -116,7 +118,7 @@
 
   async function loadOverview() {
     try {
-      const payload = await api("/cryptosniper/api/v1/dashboard/");
+      const payload = await api(appPath("/api/v1/dashboard/"));
       const openNode = qs("[data-overview-open]");
       const todayNode = qs("[data-overview-today]");
       const signalsNode = qs("[data-overview-signals]");
@@ -264,7 +266,7 @@
 
   async function chartFor(params, canvas, empty) {
     const query = new URLSearchParams(params);
-    const payload = await api("/cryptosniper/api/v1/markets/chart/?" + query.toString());
+    const payload = await api(appPath("/api/v1/markets/chart/?") + query.toString());
     drawChart(canvas, payload, empty);
     return payload;
   }
@@ -313,7 +315,7 @@
         if (!item) return;
         button.disabled = true;
         try {
-          await api(`/cryptosniper/api/v1/inbox/${item.id}/archive/`, {
+          await api(appPath(`/api/v1/inbox/${item.id}/archive/`), {
             method: "POST", body: JSON.stringify({ archived: !item.archived_at })
           });
           toast(item.archived_at ? "سیگنال به فهرست فعال برگشت." : "سیگنال بایگانی شد.");
@@ -343,7 +345,7 @@
 
   async function loadSignals() {
     try {
-      const payload = await api(`/cryptosniper/api/v1/inbox/?view=${state.signalView}`);
+      const payload = await api(appPath(`/api/v1/inbox/?view=${state.signalView}`));
       state.signals = payload.items || [];
       if (state.selectedSignal && !state.signals.some(x => x.id === state.selectedSignal.id)) {
         state.selectedSignal = null;
@@ -382,7 +384,7 @@
     qs("[data-signal-symbol]").textContent = item.symbol || ("Signal #" + item.id);
     qs("[data-signal-source]").textContent = item.source_name || item.source_method || "—";
     try {
-      const detail = await api(`/cryptosniper/api/v1/inbox/${item.id}/`);
+      const detail = await api(appPath(`/api/v1/inbox/${item.id}/`));
       state.selectedSignalDetail = detail;
       qs("[data-signal-status]").textContent = detail.signal.outcome?.status || detail.signal.status;
       qs("[data-signal-detail]").innerHTML = signalScheme(detail);
@@ -425,7 +427,7 @@
         const item = state.trades.find((x) => x.key === button.dataset.tradeArchive);
         if (!item) return;
         try {
-          await api("/cryptosniper/api/v1/trades/archive/", {
+          await api(appPath("/api/v1/trades/archive/"), {
             method: "POST",
             body: JSON.stringify({ kind: item.kind, id: item.id, archived: !item.archived_at })
           });
@@ -438,7 +440,7 @@
 
   async function loadTrades() {
     try {
-      const payload = await api(`/cryptosniper/api/v1/trades/?view=${state.tradeView}`);
+      const payload = await api(appPath(`/api/v1/trades/?view=${state.tradeView}`));
       state.trades = payload.trades || [];
       renderTrades();
       if (!state.selectedTrade && state.trades.length) selectTrade(state.trades[0]);
@@ -476,7 +478,7 @@
     const stateNode = qs("[data-trade-refresh-state]");
     button.disabled = true; stateNode.textContent = "در حال Sync واقعی صرافی…";
     try {
-      const payload = await api("/cryptosniper/api/v1/trades/refresh/", { method: "POST", body: "{}" });
+      const payload = await api(appPath("/api/v1/trades/refresh/"), { method: "POST", body: "{}" });
       stateNode.textContent = `آخرین Sync: ${faDate(payload.as_of)} · ${payload.open} باز`;
       state.trades = payload.trades || [];
       renderTrades();
@@ -516,7 +518,7 @@
     }
     try {
       const query = new URLSearchParams({account: account.value, q: term.trim()});
-      const payload = await api("/cryptosniper/api/v1/markets/search/?" + query.toString());
+      const payload = await api(appPath("/api/v1/markets/search/?") + query.toString());
       const rows = payload.results || [];
       box.innerHTML = rows.map((m) =>
         `<button type="button" data-market-id="${m.id}" data-market-symbol="${esc(m.symbol)}" data-market-exchange="${esc(m.exchange)}">
@@ -569,8 +571,8 @@
     };
     status.textContent = "در حال ساخت برنامه معامله…";
     try {
-      const payload = await api("/cryptosniper/api/v1/manual/plans/", {method:"POST", body:JSON.stringify(body)});
-      status.innerHTML = `برنامه #${payload.plan.id} ساخته شد. <a href="/cryptosniper/manual/${payload.plan.id}/">مشاهده و تأیید</a>`;
+      const payload = await api(appPath("/api/v1/manual/plans/"), {method:"POST", body:JSON.stringify(body)});
+      status.innerHTML = `برنامه #${payload.plan.id} ساخته شد. <a href="${appPath(`/manual/${payload.plan.id}/`)}">مشاهده و تأیید</a>`;
       toast("برنامه معامله ساخته شد.");
     } catch (error) {
       status.textContent = error.message;

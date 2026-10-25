@@ -93,7 +93,7 @@ def test_all_primary_pages_use_global_cornix_shell(client, django_user_model, ro
     response = client.get(reverse(route_name))
     assert response.status_code == 200
     body = response.content.decode()
-    assert 'data-cornix-shell' in body
+    assert "data-cornix-shell" in body
     assert 'class="s24-sidebar sidebar"' in body
     assert 'class="s24-topbar topbar"' in body
     assert "stage24-rebuild.css" in body

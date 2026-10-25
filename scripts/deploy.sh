@@ -5,12 +5,12 @@
 set -Eeuo pipefail
 umask 077
 
-RELEASE_TAG='stage24-rebuild-v0.24.0rc2-deploy'
-ZIP_NAME='CryptoSniper-Stage24-Rebuild-v0.24.0rc2.zip'
+RELEASE_TAG='stage24-rebuild-v0.24.0rc2-deploy-r1'
+ZIP_NAME='CryptoSniper-Stage24-Rebuild-v0.24.0rc2-r1.zip'
 INSTALLER_NAME='cryptosniper-stage24-rebuild-run.sh'
-ZIP_SHA256='ceafb7355693a725313e5bce5ad5f2b0386077c87a052bf80f61972d59052ed0'
-INSTALLER_SHA256='d0c09a687bf5773db07fbc5a4306013f51e78fcaa679aee7d2576cf6e9789e9d'
-SOURCE_COMMIT='8795af30a0bcf32d8e6fdc93b253aca315829c3a'
+ZIP_SHA256='57617f371e18a16eb74fb23a8dc2cbebfb71b549e205cebc2287d75f1ea01719'
+INSTALLER_SHA256='ded204ad5c0d2938f4b63f039fc0ba81871e4ff264aed81287dbe7f573dccc41'
+SOURCE_COMMIT='229614a585f37849de0cfd3a79d198ffe4f64de7'
 RELEASE_BASE="https://github.com/ostaddehdari/CryptoSniper/releases/download/$RELEASE_TAG"
 MODE="${1:-install}"
 if [[ "$MODE" != 'install' && "$MODE" != '--check' ]]; then

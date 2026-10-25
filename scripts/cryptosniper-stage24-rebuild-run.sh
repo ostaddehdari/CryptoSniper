@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # CryptoSniper Stage 24 Rebuild v0.24.0rc2 — Ubuntu 24.04 fresh install / safe upgrade.
-# Usage: sudo bash /tmp/run.sh [/tmp/CryptoSniper-Stage24-Rebuild-v0.24.0rc2-r3.zip]
+# Usage: sudo bash /tmp/run.sh [/tmp/CryptoSniper-Stage24-Rebuild-v0.24.0rc2-r4.zip]
 # Validate only (no installation): bash run.sh --check /path/to/package.zip
 # Installation and verification output is appended to runlog.txt beside this script.
 # Installs cumulative Stages 01-23; real Spot writes remain feature-gated and disabled by default.
@@ -109,7 +109,7 @@ step() { printf '\n===== %s | %s =====\n' "$*" "$(date -Is)"; }
 CHECK_ONLY=false
 if [[ ${1:-} == --check ]]; then CHECK_ONLY=true; shift; fi
 [[ $# -le 1 ]] || fail 'Usage: bash run.sh [--check] [package.zip]'
-ARCHIVE=${1:-/tmp/CryptoSniper-Stage24-Rebuild-v0.24.0rc2-r3.zip}
+ARCHIVE=${1:-/tmp/CryptoSniper-Stage24-Rebuild-v0.24.0rc2-r4.zip}
 export SERVER_HOST URL_PREFIX WEB_PORT PG_PORT REDIS_PORT SOURCE_COMMIT
 export PREVIOUS_STAGE24_SOURCE_COMMIT STAGE23_SOURCE_COMMIT STAGE22_SOURCE_COMMIT STAGE22_ARCHIVE_SHA256 STAGE21_SOURCE_COMMIT STAGE21_ARCHIVE_SHA256 STAGE20_SOURCE_COMMIT STAGE20_ARCHIVE_SHA256 STAGE18_SOURCE_COMMIT STAGE18_ARCHIVE_SHA256 STAGE16_SOURCE_COMMIT STAGE16_ARCHIVE_SHA256 STAGE14_SOURCE_COMMIT STAGE14_ARCHIVE_SHA256 STAGE10_SOURCE_COMMIT STAGE10_ARCHIVE_SHA256 STAGE08_SOURCE_COMMIT STAGE08_ARCHIVE_SHA256 PREVIOUS_SOURCE_COMMIT STAGE06_SOURCE_COMMIT STAGE05_SOURCE_COMMIT STAGE04_SOURCE_COMMIT STAGE03_SOURCE_COMMIT STAGE01_SOURCE_COMMIT STAGE02_SOURCE_COMMIT PREVIOUS_ARCHIVE_SHA256 STAGE06_ARCHIVE_SHA256 STAGE05_ARCHIVE_SHA256 STAGE04_ARCHIVE_SHA256 STAGE03_ARCHIVE_SHA256 STAGE02_ARCHIVE_SHA256 STAGE01_ARCHIVE_SHA256 OLDER_STAGE03_ARCHIVE_SHA256 OFFICIAL_STAGE24_ARCHIVE_SHA256
 export APP_DIR APP_ROOT CONFIG_DIR STATE_DIR LOGIN_FILE
@@ -126,8 +126,8 @@ actual_sha256 = hashlib.file_digest(path.open('rb'), 'sha256').hexdigest()
 if actual_sha256 != os.environ['OFFICIAL_STAGE24_ARCHIVE_SHA256']:
     raise SystemExit(
         'Incorrect Stage24 ZIP (SHA-256 mismatch). Download the EXACT release asset '
-        'CryptoSniper-Stage24-Rebuild-v0.24.0rc2-r3.zip from '
-        'https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage24-rebuild-v0.24.0rc2-deploy-r3'
+        'CryptoSniper-Stage24-Rebuild-v0.24.0rc2-r4.zip from '
+        'https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage24-rebuild-v0.24.0rc2-deploy-r4'
         f'(received SHA256: {actual_sha256}). Nothing was changed.'
     )
 # Pin the release by checking the Git blob SHA-1 of independent immutable files.

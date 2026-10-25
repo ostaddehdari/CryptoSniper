@@ -148,3 +148,16 @@ jobs:
           fi
           cat dist/SHA256SUMS.txt
           gh release view "$TAG" --json assets,url
+
+      - name: Remove superseded broken Stage24 release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          OLD_TAG=stage24-v0.24.0rc1-deploy
+          if gh release view "$OLD_TAG" >/dev/null 2>&1; then
+            gh release delete "$OLD_TAG" --yes --cleanup-tag
+            echo "REMOVED: $OLD_TAG"
+          else
+            echo "Old Stage24 release already absent."
+          fi

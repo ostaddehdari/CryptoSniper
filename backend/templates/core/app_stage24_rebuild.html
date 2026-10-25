@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="{% static 'css/stage24-rebuild.css' %}">
 {% endblock %}
 {% block body %}
-<div class="s24-shell" data-stage24-root data-cs24-root>
+<div class="s24-shell" data-stage24-root data-cs24-root data-api-root="{% url 'home' %}">
   <aside class="s24-sidebar">
     <a class="s24-brand" href="#/overview"><span class="s24-brand-mark">⌁</span><span><strong>CryptoSniper</strong><small>مرکز کنترل معاملات واقعی</small></span></a>
     <nav class="s24-nav" aria-label="ناوبری اصلی">

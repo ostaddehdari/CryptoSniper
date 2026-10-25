@@ -214,8 +214,7 @@ def main():
                 page.get_by_role("heading", name="معامله جدید").wait_for()
                 with page.expect_response(
                     lambda res: (
-                        "/api/v1/markets/search/" in res.url
-                        and f"account={account.pk}" in res.url
+                        "/api/v1/markets/search/" in res.url and f"account={account.pk}" in res.url
                     )
                 ) as market_response:
                     page.locator("[data-account-select]").select_option(str(account.pk))
@@ -235,8 +234,7 @@ def main():
                 page.locator('[data-newtrade-form] [name="capital"]').fill("50")
                 drafts_before = TradePlan.objects.filter(owner=user).count()
                 with page.expect_response(
-                    lambda res: "/api/v1/manual/plans/" in res.url
-                    and res.request.method == "POST"
+                    lambda res: "/api/v1/manual/plans/" in res.url and res.request.method == "POST"
                 ) as draft_response:
                     page.locator("[data-newtrade-form]").get_by_role(
                         "button", name="ساخت برنامه معامله"

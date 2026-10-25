@@ -5,6 +5,7 @@ Candles are display-only public market data. Trade/signal overlays are private a
 
 from datetime import timedelta
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.http import JsonResponse
 from django.utils import timezone
@@ -234,17 +235,18 @@ def api_chart(request):
     now = timezone.now()
     step_ms = INTERVAL_MS[interval]
     start = now - timedelta(milliseconds=step_ms * (bars + 10))
-    try:
-        fetch_binance_history(
-            market.symbol,
-            start,
-            now + timedelta(minutes=1),
-            interval=interval,
-            max_pages=2,
-        )
-    except ValidationError:
-        # Keep the UI useful when the public reference provider does not list a pair.
-        pass
+    if getattr(settings, "MARKETDATA_REMOTE_HISTORY_ENABLED", True):
+        try:
+            fetch_binance_history(
+                market.symbol,
+                start,
+                now + timedelta(minutes=1),
+                interval=interval,
+                max_pages=2,
+            )
+        except ValidationError:
+            # Keep the UI useful when the public reference provider does not list a pair.
+            pass
 
     candles = list(
         HistoricalCandle.objects.filter(

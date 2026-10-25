@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from datetime import timedelta
 from decimal import Decimal
 from pathlib import Path
 
@@ -184,6 +185,62 @@ def main():
                 page.reload()
                 page.get_by_text("BTC/USDT", exact=True).first.wait_for()
                 page.screenshot(path=str(artifacts / "exchange-detail-desktop.png"), full_page=True)
+
+                # Unified Cornix workspace must execute the real account -> market -> chart -> draft path.
+                smoke_market = ExchangeMarket.objects.get(
+                    exchange=account.exchange, symbol="BTC/USDT", market_type="spot"
+                )
+                from apps.marketdata.models import HistoricalCandle
+                from django.utils import timezone
+                now = timezone.now()
+                HistoricalCandle.objects.update_or_create(
+                    provider="binance_public",
+                    symbol="BTC/USDT",
+                    interval="5m",
+                    open_time=now - timedelta(minutes=5),
+                    defaults={
+                        "close_time": now,
+                        "open_price": Decimal("64000"),
+                        "high_price": Decimal("66000"),
+                        "low_price": Decimal("63000"),
+                        "close_price": Decimal("65000"),
+                        "volume": Decimal("12"),
+                    },
+                )
+                page.goto(base + "/app/#/newtrade")
+                page.locator("[data-cs24-root]").wait_for()
+                page.get_by_role("heading", name="معامله جدید").wait_for()
+                with page.expect_response(
+                    lambda res: "/api/v1/markets/search/" in res.url
+                    and f"account={account.pk}" in res.url
+                ) as market_response:
+                    page.locator("[data-account-select]").select_option(str(account.pk))
+                assert market_response.value.status == 200
+                page.locator(f'[data-market-id="{smoke_market.pk}"]').wait_for()
+                with page.expect_response(
+                    lambda res: "/api/v1/markets/chart/" in res.url
+                    and f"market={smoke_market.pk}" in res.url
+                ) as chart_response:
+                    page.locator(f'[data-market-id="{smoke_market.pk}"]').click()
+                assert chart_response.value.status == 200
+                page.locator('[data-newtrade-form] [name="entry_price"]').fill("65000")
+                page.locator('[data-newtrade-form] [name="tp1"]').fill("70000")
+                page.locator('[data-newtrade-form] [name="stop_loss"]').fill("60000")
+                page.locator('[data-newtrade-form] [name="capital"]').fill("50")
+                drafts_before = TradePlan.objects.filter(owner=user).count()
+                with page.expect_response(
+                    lambda res: "/api/v1/manual/plans/" in res.url
+                    and res.request.method == "POST"
+                ) as draft_response:
+                    page.locator("[data-newtrade-form]").get_by_role(
+                        "button", name="ساخت برنامه معامله"
+                    ).click()
+                assert draft_response.value.status in {200, 201}
+                wait_for(lambda: TradePlan.objects.filter(owner=user).count() == drafts_before + 1)
+                page.locator("[data-newtrade-status]").get_by_text("ساخته شد", exact=False).wait_for()
+                page.screenshot(path=str(artifacts / "cornix-newtrade-real-draft.png"), full_page=True)
+                print("PASS Cornix workspace real account -> market -> chart -> draft journey")
+
                 page.goto(base + "/smart-paste/")
                 page.get_by_role("heading", name="چسباندن هوشمند سیگنال").wait_for()
                 page.locator('[name="text"]').fill(

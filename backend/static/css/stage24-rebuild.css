@@ -44,4 +44,4 @@ body{margin:0;background:var(--cs-bg);color:var(--cs-text);font-family:Vazirmatn
 .topbar .cs-tickers{display:flex;gap:8px;direction:ltr}
 .topbar .cs-ticker{min-width:128px;padding:6px 9px;border-radius:10px;background:var(--bg)}
 @media(max-width:1100px){.topbar .cs-ticker{min-width:108px}.topbar .cs-ticker small{display:none}}
-@media(max-width:800px){.topbar .cs-tickers{display:none}.topbar .cs-header-live{display:none}}
+@media(max-width:800px){.topbar{height:auto;min-height:76px;padding-top:8px;padding-bottom:8px}.topbar-actions{flex:1;flex-wrap:wrap;justify-content:flex-end}.topbar .cs-header-live{display:none}.topbar .cs-tickers{display:flex;order:20;width:100%;flex-basis:100%;gap:6px}.topbar .cs-ticker{flex:1;min-width:0;padding:5px 7px}.topbar .cs-ticker small{display:none}}

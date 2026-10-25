@@ -149,7 +149,8 @@ def main():
                 page.get_by_text("USDT / USD", exact=True).wait_for()
                 page.get_by_text("USDT / تومان", exact=True).wait_for()
                 assert page.locator(".cs-tickers a").count() == 0
-                assert page.locator(".sidebar").count() == 1\n                page.locator("[data-overview-open]").wait_for()
+                assert page.locator(".sidebar").count() == 1
+                page.locator("[data-overview-open]").wait_for()
                 page.set_viewport_size({"width": 390, "height": 844})
                 assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
                 page.screenshot(path=str(artifacts / "dashboard13-mobile.png"), full_page=True)

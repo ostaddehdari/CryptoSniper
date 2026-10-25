@@ -49,7 +49,7 @@ def test_rebuilt_workspace_keeps_cornix_shell_and_clean_header(client, django_us
     assert 'data-page="inbox"' in body
     assert 'data-page="newtrade"' in body
     assert 'data-page="trades"' in body
-    assert 'class="s24-shell"' in body
+    assert 'class="s24-shell app-layout"' in body
     assert 'class="s24-sidebar"' in body
     assert 'class="s24-topbar"' in body
     assert 'class="app-layout"' not in body

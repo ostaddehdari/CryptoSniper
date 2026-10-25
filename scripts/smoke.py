@@ -193,6 +193,7 @@ def main():
                 )
                 from apps.marketdata.models import HistoricalCandle
                 from django.utils import timezone
+
                 now = timezone.now()
                 HistoricalCandle.objects.update_or_create(
                     provider="binance_public",
@@ -212,15 +213,19 @@ def main():
                 page.locator("[data-cs24-root]").wait_for()
                 page.get_by_role("heading", name="معامله جدید").wait_for()
                 with page.expect_response(
-                    lambda res: "/api/v1/markets/search/" in res.url
-                    and f"account={account.pk}" in res.url
+                    lambda res: (
+                        "/api/v1/markets/search/" in res.url
+                        and f"account={account.pk}" in res.url
+                    )
                 ) as market_response:
                     page.locator("[data-account-select]").select_option(str(account.pk))
                 assert market_response.value.status == 200
                 page.locator(f'[data-market-id="{smoke_market.pk}"]').wait_for()
                 with page.expect_response(
-                    lambda res: "/api/v1/markets/chart/" in res.url
-                    and f"market={smoke_market.pk}" in res.url
+                    lambda res: (
+                        "/api/v1/markets/chart/" in res.url
+                        and f"market={smoke_market.pk}" in res.url
+                    )
                 ) as chart_response:
                     page.locator(f'[data-market-id="{smoke_market.pk}"]').click()
                 assert chart_response.value.status == 200
@@ -237,10 +242,7 @@ def main():
                         "button", name="ساخت برنامه معامله"
                     ).click()
                 assert draft_response.value.status in {200, 201}
-                wait_for(
-                    lambda: TradePlan.objects.filter(owner=user).count()
-                    == drafts_before + 1
-                )
+                wait_for(lambda: TradePlan.objects.filter(owner=user).count() == drafts_before + 1)
                 page.locator("[data-newtrade-status]").get_by_text(
                     "ساخته شد", exact=False
                 ).wait_for()

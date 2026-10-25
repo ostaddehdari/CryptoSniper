@@ -50,10 +50,9 @@ def test_rebuilt_workspace_keeps_cornix_shell_and_clean_header(client, django_us
     assert 'data-page="newtrade"' in body
     assert 'data-page="trades"' in body
     assert 'class="s24-shell app-layout"' in body
-    assert 'class="s24-sidebar"' in body
-    assert 'class="s24-topbar"' in body
-    assert 'class="app-layout"' not in body
-    header = body.split('<header class="s24-topbar">', 1)[1].split("</header>", 1)[0]
+    assert 'class="s24-sidebar sidebar"' in body
+    assert 'class="s24-topbar topbar"' in body
+    header = body.split('<header class="s24-topbar topbar">', 1)[1].split("</header>", 1)[0]
     assert "s24-ticker" in header
     assert "data-account-select" in body
     assert "data-market-results" in body

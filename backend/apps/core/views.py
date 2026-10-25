@@ -33,7 +33,7 @@ def app_shell(request):
     return render(
         request,
         "core/app_stage24_rebuild.html",
-        {"nav": "app", "release": settings.RELEASE_VERSION},
+        {"nav": "dashboard", "release": settings.RELEASE_VERSION},
     )
 
 
@@ -112,7 +112,11 @@ def service_worker(request):
 @never_cache
 @require_GET
 def dashboard(request):
-    return redirect("app-shell")
+    return render(
+        request,
+        "core/app_stage24_rebuild.html",
+        {"nav": "dashboard", "release": settings.RELEASE_VERSION},
+    )
 
 
 def system_context():

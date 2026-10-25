@@ -1,5 +1,6 @@
 name: Build Stage24 Rebuild cumulative deployment
 # exact-source release trigger after green Stage24 CI
+# unified-cornix-r8-final
 on:
   push:
     branches: [main]

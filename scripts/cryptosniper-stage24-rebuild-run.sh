@@ -127,7 +127,7 @@ if actual_sha256 != os.environ['OFFICIAL_STAGE24_ARCHIVE_SHA256']:
     raise SystemExit(
         'Incorrect Stage24 ZIP (SHA-256 mismatch). Download the EXACT release asset '
         'CryptoSniper-Stage24-Rebuild-v0.24.0rc2-r1.zip from '
-        'https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage24-rebuild-v0.24.0rc2-deploy-r1 '
+        'https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage24-rebuild-v0.24.0rc2-deploy-r1'
         f'(received SHA256: {actual_sha256}). Nothing was changed.'
     )
 # Pin the release by checking the Git blob SHA-1 of independent immutable files.

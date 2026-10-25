@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# CryptoSniper Stage 24 v0.24.0rc1 — Ubuntu 24.04 fresh install / safe upgrade.
-# Usage: sudo bash /tmp/run.sh [/tmp/CryptoSniper-Stage24-v0.24.0rc1.zip]
+# CryptoSniper Stage 24 Rebuild v0.24.0rc2 — Ubuntu 24.04 fresh install / safe upgrade.
+# Usage: sudo bash /tmp/run.sh [/tmp/CryptoSniper-Stage24-Rebuild-v0.24.0rc2.zip]
 # Validate only (no installation): bash run.sh --check /path/to/package.zip
 # Installation and verification output is appended to runlog.txt beside this script.
 # Installs cumulative Stages 01-23; real Spot writes remain feature-gated and disabled by default.
@@ -108,7 +108,7 @@ step() { printf '\n===== %s | %s =====\n' "$*" "$(date -Is)"; }
 CHECK_ONLY=false
 if [[ ${1:-} == --check ]]; then CHECK_ONLY=true; shift; fi
 [[ $# -le 1 ]] || fail 'Usage: bash run.sh [--check] [package.zip]'
-ARCHIVE=${1:-/tmp/CryptoSniper-Stage24-v0.24.0rc1.zip}
+ARCHIVE=${1:-/tmp/CryptoSniper-Stage24-Rebuild-v0.24.0rc2.zip}
 export SERVER_HOST URL_PREFIX WEB_PORT PG_PORT REDIS_PORT SOURCE_COMMIT
 export STAGE23_SOURCE_COMMIT STAGE22_SOURCE_COMMIT STAGE22_ARCHIVE_SHA256 STAGE21_SOURCE_COMMIT STAGE21_ARCHIVE_SHA256 STAGE20_SOURCE_COMMIT STAGE20_ARCHIVE_SHA256 STAGE18_SOURCE_COMMIT STAGE18_ARCHIVE_SHA256 STAGE16_SOURCE_COMMIT STAGE16_ARCHIVE_SHA256 STAGE14_SOURCE_COMMIT STAGE14_ARCHIVE_SHA256 STAGE10_SOURCE_COMMIT STAGE10_ARCHIVE_SHA256 STAGE08_SOURCE_COMMIT STAGE08_ARCHIVE_SHA256 PREVIOUS_SOURCE_COMMIT STAGE06_SOURCE_COMMIT STAGE05_SOURCE_COMMIT STAGE04_SOURCE_COMMIT STAGE03_SOURCE_COMMIT STAGE01_SOURCE_COMMIT STAGE02_SOURCE_COMMIT PREVIOUS_ARCHIVE_SHA256 STAGE06_ARCHIVE_SHA256 STAGE05_ARCHIVE_SHA256 STAGE04_ARCHIVE_SHA256 STAGE03_ARCHIVE_SHA256 STAGE02_ARCHIVE_SHA256 STAGE01_ARCHIVE_SHA256 OLDER_STAGE03_ARCHIVE_SHA256 OFFICIAL_STAGE24_ARCHIVE_SHA256
 export APP_DIR APP_ROOT CONFIG_DIR STATE_DIR LOGIN_FILE
@@ -125,8 +125,8 @@ actual_sha256 = hashlib.file_digest(path.open('rb'), 'sha256').hexdigest()
 if actual_sha256 != os.environ['OFFICIAL_STAGE24_ARCHIVE_SHA256']:
     raise SystemExit(
         'Incorrect Stage24 ZIP (SHA-256 mismatch). Download the EXACT release asset '
-        'CryptoSniper-Stage24-v0.24.0rc1.zip from '
-        'https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage24-v0.24.0rc1-deploy '
+        'CryptoSniper-Stage24-Rebuild-v0.24.0rc2.zip from '
+        'https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage24-rebuild-v0.24.0rc2-deploy '
         f'(received SHA256: {actual_sha256}). Nothing was changed.'
     )
 # Pin the release by checking the Git blob SHA-1 of independent immutable files.
@@ -168,12 +168,15 @@ trusted_blobs = {
     'backend/apps/exchanges/bitunix.py': '__BLOB_BITUNIX__',
     'scripts/security_scan.py': '__BLOB_SECURITY_SCAN__',
     'backend/apps/marketdata/chart.py': '__BLOB_STAGE24_CHART__',
+    'backend/apps/marketdata/views.py': '__BLOB_STAGE24_TICKER__',
+    'backend/config/urls.py': '__BLOB_STAGE24_URLS__',
+    'backend/templates/base.html': '__BLOB_STAGE24_BASE_TEMPLATE__',
     'backend/apps/portfolio/api_stage24.py': '__BLOB_STAGE24_TRADES_API__',
     'backend/apps/signals/archive.py': '__BLOB_STAGE24_SIGNAL_ARCHIVE__',
-    'backend/templates/core/app_stage24.html': '__BLOB_STAGE24_APP_TEMPLATE__',
-    'backend/static/js/stage24-app.js': '__BLOB_STAGE24_APP_JS__',
-    'backend/static/css/stage24-app.css': '__BLOB_STAGE24_APP_CSS__',
-    'docs/reports/stage-24.md': '__BLOB_STAGE24_REPORT__',
+    'backend/templates/core/app_stage24_rebuild.html': '__BLOB_STAGE24_APP_TEMPLATE__',
+    'backend/static/js/stage24-rebuild.js': '__BLOB_STAGE24_APP_JS__',
+    'backend/static/css/stage24-rebuild.css': '__BLOB_STAGE24_APP_CSS__',
+    'docs/reports/stage-24-rebuild.md': '__BLOB_STAGE24_REPORT__',
 }
 
 host = os.environ['SERVER_HOST']
@@ -202,14 +205,14 @@ with zipfile.ZipFile(path) as z:
     for name in ('backend/manage.py', 'uv.lock', 'docs/setup.md', 'backend/config/settings/production.py'):
         z.getinfo('CryptoSniper/' + name)
     project = tomllib.loads(z.read('CryptoSniper/pyproject.toml').decode())
-    if project['project']['version'] != '0.24.0rc1':
+    if project['project']['version'] != '0.24.0rc2':
         raise SystemExit('Unexpected project version.')
     for relative_path, expected_hash in trusted_blobs.items():
         data = z.read('CryptoSniper/' + relative_path)
         git_hash = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
         if git_hash != expected_hash:
             raise SystemExit('Stage22 Git source content mismatch: ' + relative_path)
-print('PASS: pinned Stage24 source blobs, safe paths and version 0.24.0rc1.')
+print('PASS: pinned Stage24 source blobs, safe paths and version 0.24.0rc2.')
 print(f'HTTPS URL: https://{host}{os.environ["URL_PREFIX"]}/auth/login/')
 PY
 [[ -f /etc/os-release ]] || fail 'Ubuntu 24.04 is required.'
@@ -487,7 +490,7 @@ env = {
     'DJANGO_PROXY_SSL_HEADER': 'true',
     'DJANGO_HSTS_SECONDS': '0',
     'LOG_LEVEL': 'INFO',
-    'CRYPTOSNIPER_RELEASE': '0.24.0rc1',
+    'CRYPTOSNIPER_RELEASE': '0.24.0rc2',
     'CRYPTOSNIPER_SOURCE_REVISION': os.environ['SOURCE_COMMIT'],
     'CRYPTOSNIPER_ENVIRONMENT': 'production',
     'HOSTING_BACKUP_DIR': os.environ['STATE_DIR'] + '/backups',
@@ -515,7 +518,7 @@ if not any(line.startswith('EXCHANGE_CREDENTIAL_KEYS=') for line in lines):
 else:
     print('Preserved existing encrypted-exchange keyring.')
 desired = {
-    'CRYPTOSNIPER_RELEASE': '0.24.0rc1',
+    'CRYPTOSNIPER_RELEASE': '0.24.0rc2',
     'CRYPTOSNIPER_SOURCE_REVISION': os.environ['SOURCE_COMMIT'],
     'CRYPTOSNIPER_ENVIRONMENT': 'production',
     'HOSTING_BACKUP_DIR': os.environ['STATE_DIR'] + '/backups',
@@ -1055,10 +1058,10 @@ path.write_text(json.dumps(state, indent=2) + '\n')
 path.chmod(0o600)
 PY
 APP_BACKUP=""
-printf '\nINSTALL_OK: CryptoSniper Stage24 v0.24.0rc1\n'
+printf '\nINSTALL_OK: CryptoSniper Stage24 Rebuild v0.24.0rc2\n'
 printf 'Login: https://%s%s/auth/login/\n' "$SERVER_HOST" "$URL_PREFIX"
 printf 'Private login credentials: %s (root only; not printed in this log)\n' "$LOGIN_FILE"
 printf 'Installer log: %s\n' "$LOG_FILE"
 printf 'Service logs: journalctl -u cryptosniper-web -u cryptosniper-orders -u cryptosniper-reports -u cryptosniper-beat -u cryptosniper-telegram\n'
 printf 'Nginx uses the existing srun.ir HTTPS certificate; no temporary certificate was created.\n'
-printf 'Stage24: live charts, unified internal/external trades, archive lifecycle and real read-refresh installed; Live writes remain fail-closed by default.\n'
+printf 'Stage24 Rebuild: Stage23-based Cornix-like UI, live charts, ticker, archive and real read-refresh installed; Live writes remain fail-closed by default.\n'

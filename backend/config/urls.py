@@ -127,6 +127,7 @@ urlpatterns = [
     path("api/v1/markets/quotes/", market_views.api_quotes, name="api-market-quotes"),
     path("api/v1/markets/stream/", market_views.api_stream, name="api-market-stream"),
     path("api/v1/markets/chart/", market_chart_views.api_chart, name="api-market-chart"),
+    path("api/v1/markets/header-ticker/", market_views.api_header_ticker, name="api-header-ticker"),
     path(
         "api/v1/exchange-accounts/<int:pk>/",
         exchange_views.api_exchange_account,
@@ -137,7 +138,7 @@ urlpatterns = [
         account_views.api_trading_preferences,
         name="api-trading-preferences",
     ),
-    path("dashboard/", portfolio_views.dashboard, name="dashboard"),
+    path("dashboard/", views.app_shell, name="dashboard"),
     path("paper/", paper_views.list_trades, name="paper-trades"),
     path("paper/<int:pk>/", paper_views.trade_detail, name="paper-trade-detail"),
     path("paper/launch/<int:plan_id>/", paper_views.launch_trade, name="paper-launch"),

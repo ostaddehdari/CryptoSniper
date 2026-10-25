@@ -23,23 +23,17 @@ from .tasks import infrastructure_probe
 
 
 def home(request):
-    if request.user.is_authenticated:
-        return redirect(f'{reverse("app-shell")}#/overview')
-    return redirect("login")
+    return redirect("app-shell" if request.user.is_authenticated else "login")
 
 
 @login_required
 @never_cache
 @require_GET
 def app_shell(request):
-    """Stage24 hash-routed trading workspace backed by the canonical private APIs."""
     return render(
         request,
-        "core/app_stage24.html",
-        {
-            "nav": "app",
-            "release": settings.RELEASE_VERSION,
-        },
+        "core/app_stage24_rebuild.html",
+        {"nav": "app", "release": settings.RELEASE_VERSION},
     )
 
 
@@ -53,7 +47,7 @@ def web_manifest(request):
             "description": "فضای مدیریت معاملات Paper و گزارش عملکرد",
             "lang": "fa",
             "dir": "rtl",
-            "start_url": f'{reverse("app-shell")}#/overview',
+            "start_url": reverse("app-shell"),
             "scope": reverse("home"),
             "display": "standalone",
             "background_color": "#f3f6f5",
@@ -77,9 +71,9 @@ def web_manifest(request):
 def service_worker(request):
     assets = [
         static("css/app.css"),
-        static("css/stage24-app.css"),
+        static("css/stage24-rebuild.css"),
         static("js/app.js"),
-        static("js/stage24-app.js"),
+        static("js/stage24-rebuild.js"),
         static("js/pwa.js"),
         static("img/mark.svg"),
         static("img/pwa-icon.svg"),
@@ -88,7 +82,7 @@ def service_worker(request):
     ]
     source = (
         "'use strict';\n"
-        "const CACHE='cryptosniper-static-v24-cornix-r1';\n"
+        "const CACHE='cryptosniper-static-v24-rebuild';\n"
         f"const ASSETS={assets!r};\n"
         "self.addEventListener('install',event=>event.waitUntil("
         "caches.open(CACHE).then(c=>c.addAll(ASSETS))));\n"
@@ -118,8 +112,7 @@ def service_worker(request):
 @never_cache
 @require_GET
 def dashboard(request):
-    """Compatibility guard: the removed legacy dashboard can never render again."""
-    return redirect(f'{reverse("app-shell")}#/overview')
+    return redirect("app-shell")
 
 
 def system_context():

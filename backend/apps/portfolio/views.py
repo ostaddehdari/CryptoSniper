@@ -3,8 +3,7 @@ from time import perf_counter
 from django.contrib.auth.decorators import login_required
 from django.db import DatabaseError
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
+from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
@@ -85,8 +84,15 @@ def dashboard_context(user, params):
 @never_cache
 @require_GET
 def dashboard(request):
-    """Legacy dashboard URL is permanently bridged to the Cornix-like workspace."""
-    return redirect(f'{reverse("app-shell")}#/overview')
+    return render(
+        request,
+        "core/dashboard.html",
+        {
+            "nav": "dashboard",
+            "accounts": UserExchangeAccount.objects.filter(owner=request.user),
+            "selected_account": request.GET.get("account", ""),
+        },
+    )
 
 
 @login_required

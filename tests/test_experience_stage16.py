@@ -16,11 +16,14 @@ def test_login_and_primary_mobile_navigation(client, django_user_model):
     assert b'autocomplete="username"' in login.content
     assert b'autocomplete="current-password"' in login.content
     client.force_login(user)
-    for name in ("dashboard", "watchlists"):
-        response = client.get(reverse(name))
-        assert response.status_code == 200
-        assert b"mobile-primary-nav" in response.content
-        assert b"minimum-scale" not in response.content
+    dashboard = client.get(reverse("dashboard"))
+    assert dashboard.status_code == 200
+    assert b"data-cs24-root" in dashboard.content
+    assert b"minimum-scale" not in dashboard.content
+
+    watchlist = client.get(reverse("watchlists"))
+    assert watchlist.status_code == 200
+    assert b"mobile-primary-nav" in watchlist.content
 
 
 @pytest.mark.django_db
@@ -83,7 +86,7 @@ def test_pwa_manifest_and_worker_cache_static_assets_only(client):
     assert manifest.status_code == worker.status_code == 200
     assert manifest["Content-Type"].startswith("application/manifest+json")
     body = worker.content
-    assert b"cryptosniper-static-v24" in body
+    assert b"cryptosniper-static-v24-rebuild" in body
     assert b"event.request.method!=='GET'" in body
     assert b"startsWith(staticPrefix)" in body
     assert b"Background Sync" not in body and b"indexedDB" not in body

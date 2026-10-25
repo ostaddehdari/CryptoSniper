@@ -1,11 +1,10 @@
-name: Build Stage24 cumulative deployment
+name: Build Stage24 Rebuild cumulative deployment
 # exact-source release trigger after green Stage24 CI
-# final-cornix-ui-hotfix-source
 on:
   push:
     branches: [main]
     paths:
-      - .github/workflows/release-stage24.yml
+      - .github/workflows/release-stage24-rebuild.yml
   workflow_dispatch:
 permissions:
   contents: write
@@ -20,7 +19,7 @@ jobs:
           fetch-depth: 0
       - name: Installer upgrade, unmanaged config and rollback regression tests
         run: |
-          bash -n scripts/cryptosniper-stage24-run.sh
+          bash -n scripts/cryptosniper-stage24-rebuild-run.sh
           python3 -m unittest discover -s tests -p test_installer_nginx.py -v
       - name: Require successful integration checks for the exact source
         env:
@@ -53,15 +52,15 @@ jobs:
           PIN=$(git rev-parse HEAD)
           export PIN
           mkdir -p dist
-          git archive --format=zip --prefix=CryptoSniper/ -o dist/CryptoSniper-Stage24-v0.24.0rc1.zip "$PIN"
-          git show "$PIN":scripts/cryptosniper-stage24-run.sh > dist/cryptosniper-stage24-run.sh
+          git archive --format=zip --prefix=CryptoSniper/ -o dist/CryptoSniper-Stage24-Rebuild-v0.24.0rc2.zip "$PIN"
+          git show "$PIN":scripts/cryptosniper-stage24-rebuild-run.sh > dist/cryptosniper-stage24-rebuild-run.sh
           python3 - <<'PY'
           import hashlib, os, re, subprocess
           from pathlib import Path
           pin = os.environ['PIN']
           def blob(path):
               return subprocess.check_output(['git', 'rev-parse', pin + ':' + path], text=True).strip()
-          archive = Path('dist/CryptoSniper-Stage24-v0.24.0rc1.zip')
+          archive = Path('dist/CryptoSniper-Stage24-Rebuild-v0.24.0rc2.zip')
           substitutions = {
               '__SOURCE_COMMIT__': pin,
               '__STAGE24_ARCHIVE_SHA256__': hashlib.file_digest(archive.open('rb'), 'sha256').hexdigest(),
@@ -101,14 +100,17 @@ jobs:
               '__BLOB_BITUNIX__': blob('backend/apps/exchanges/bitunix.py'),
               '__BLOB_SECURITY_SCAN__': blob('scripts/security_scan.py'),
               '__BLOB_STAGE24_CHART__': blob('backend/apps/marketdata/chart.py'),
+              '__BLOB_STAGE24_TICKER__': blob('backend/apps/marketdata/views.py'),
+              '__BLOB_STAGE24_URLS__': blob('backend/config/urls.py'),
+              '__BLOB_STAGE24_BASE_TEMPLATE__': blob('backend/templates/base.html'),
               '__BLOB_STAGE24_TRADES_API__': blob('backend/apps/portfolio/api_stage24.py'),
               '__BLOB_STAGE24_SIGNAL_ARCHIVE__': blob('backend/apps/signals/archive.py'),
-              '__BLOB_STAGE24_APP_TEMPLATE__': blob('backend/templates/core/app_stage24.html'),
-              '__BLOB_STAGE24_APP_JS__': blob('backend/static/js/stage24-app.js'),
-              '__BLOB_STAGE24_APP_CSS__': blob('backend/static/css/stage24-app.css'),
-              '__BLOB_STAGE24_REPORT__': blob('docs/reports/stage-24.md'),
+              '__BLOB_STAGE24_APP_TEMPLATE__': blob('backend/templates/core/app_stage24_rebuild.html'),
+              '__BLOB_STAGE24_APP_JS__': blob('backend/static/js/stage24-rebuild.js'),
+              '__BLOB_STAGE24_APP_CSS__': blob('backend/static/css/stage24-rebuild.css'),
+              '__BLOB_STAGE24_REPORT__': blob('docs/reports/stage-24-rebuild.md'),
           }
-          path = Path('dist/cryptosniper-stage24-run.sh')
+          path = Path('dist/cryptosniper-stage24-rebuild-run.sh')
           text = path.read_text()
           for old, new in substitutions.items():
               if old not in text:
@@ -118,15 +120,15 @@ jobs:
               raise SystemExit('Unexpanded placeholders')
           path.write_text(text)
           PY
-          chmod +x dist/cryptosniper-stage24-run.sh
-          bash -n dist/cryptosniper-stage24-run.sh
+          chmod +x dist/cryptosniper-stage24-rebuild-run.sh
+          bash -n dist/cryptosniper-stage24-rebuild-run.sh
           printf 'SOURCE=%s\nCI=https://github.com/ostaddehdari/CryptoSniper/commit/%s/checks\nMODE=live charts, unified trades, archive lifecycle and real read-refresh; Live writes default OFF\n' "$PIN" "$PIN" > dist/runlog.txt
-          bash dist/cryptosniper-stage24-run.sh --check dist/CryptoSniper-Stage24-v0.24.0rc1.zip | tee -a dist/runlog.txt
-          (cd dist && sha256sum CryptoSniper-Stage24-v0.24.0rc1.zip cryptosniper-stage24-run.sh runlog.txt > SHA256SUMS.txt)
+          bash dist/cryptosniper-stage24-rebuild-run.sh --check dist/CryptoSniper-Stage24-Rebuild-v0.24.0rc2.zip | tee -a dist/runlog.txt
+          (cd dist && sha256sum CryptoSniper-Stage24-Rebuild-v0.24.0rc2.zip cryptosniper-stage24-rebuild-run.sh runlog.txt > SHA256SUMS.txt)
       - name: Save exact deployment bytes for independent verification
         uses: actions/upload-artifact@v4
         with:
-          name: stage24-deployment
+          name: stage24-rebuild-deployment
           path: dist/*
           if-no-files-found: error
           retention-days: 7
@@ -135,14 +137,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          TAG=stage24-v0.24.0rc1-deploy-r1
+          TAG=stage24-rebuild-v0.24.0rc2-deploy
           PIN=$(git rev-parse HEAD)
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo 'Release already exists; immutable assets were not replaced.'
           else
             gh release create "$TAG" dist/* --target "$PIN" --prerelease \
-              --title "CryptoSniper Stage24 — v0.24.0rc1 UI hotfix r1" \
-              --notes "Stage24 UI hotfix r1: Cornix-like workspace is the permanent primary UI; the legacy dashboard template is removed, legacy pages use the same shell, and Stage24 live charts/archive/refresh capabilities are preserved. Live remains disabled by default. Exact-source checks: https://github.com/ostaddehdari/CryptoSniper/commit/$PIN/checks."
+              --title "CryptoSniper Stage24 Rebuild — cumulative v0.24.0rc2" \
+              --notes "Stage24 Rebuild is based directly on the final Stage23 source. It preserves the Cornix-like workspace with sidebar-only navigation, restores live USDT/USD and USDT/Toman header tickers, and adds live charts, signal card/table views, archive lifecycle, unified internal/live/external trades and real read-refresh. Live writes remain disabled by default."
           fi
           cat dist/SHA256SUMS.txt
           gh release view "$TAG" --json assets,url

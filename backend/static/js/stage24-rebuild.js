@@ -25,6 +25,9 @@
     poller: null,
   };
 
+  let tickerInFlight = false;
+  let tickerLastAt = 0;
+
   const colors = {
     entry: "#2563eb",
     tp1: "#1fa86f",
@@ -90,15 +93,23 @@
     return payload;
   }
 
-  async function loadTicker() {
+  async function loadTicker(force = false) {
+    const now = Date.now();
+    const time = qs("[data-live-time]");
+    if (time) time.textContent = new Date().toLocaleTimeString("fa-IR", {hour:"2-digit",minute:"2-digit",second:"2-digit"});
+    if (!force && (tickerInFlight || now - tickerLastAt < 15000)) return;
+    tickerInFlight = true;
+    tickerLastAt = now;
     try {
       const payload = await api(appPath("/api/v1/markets/header-ticker/"));
       const usd = qs("[data-usdt-usd]"), toman = qs("[data-usdt-toman]");
       if (usd) usd.textContent = n(payload.usdt_usd);
       if (toman) toman.textContent = n(payload.usdt_toman);
-    } catch (_) {}
-    const time = qs("[data-live-time]");
-    if (time) time.textContent = new Date().toLocaleTimeString("fa-IR", {hour:"2-digit",minute:"2-digit",second:"2-digit"});
+    } catch (_) {
+      // The workspace remains usable when a public reference feed is unavailable.
+    } finally {
+      tickerInFlight = false;
+    }
   }
 
   async function loadAccounts() {
@@ -633,7 +644,7 @@
   });
   document.addEventListener("visibilitychange", restartPolling);
 
-  loadTicker();
+  loadTicker(true);
   route();
   restartPolling();
 })();

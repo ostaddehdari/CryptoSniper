@@ -74,6 +74,7 @@ def service_worker(request):
         static("css/stage24-rebuild.css"),
         static("js/app.js"),
         static("js/stage24-rebuild.js"),
+        static("js/cornix-shell.js"),
         static("js/pwa.js"),
         static("img/mark.svg"),
         static("img/pwa-icon.svg"),
@@ -82,7 +83,7 @@ def service_worker(request):
     ]
     source = (
         "'use strict';\n"
-        "const CACHE='cryptosniper-static-v24-rebuild';\n"
+        "const CACHE='cryptosniper-static-v24-unified-cornix';\n"
         f"const ASSETS={assets!r};\n"
         "self.addEventListener('install',event=>event.waitUntil("
         "caches.open(CACHE).then(c=>c.addAll(ASSETS))));\n"

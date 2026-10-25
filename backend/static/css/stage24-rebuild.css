@@ -56,3 +56,24 @@
 .s24-submit{width:100%;justify-content:center}.s24-form-status{min-height:20px;font-size:10px;color:#627089}.s24-form-status a{color:#2563eb;font-weight:700}
 @media(max-width:900px){.s24-topbar-right{width:100%;justify-content:space-between}.s24-tickers{flex:1}.s24-ticker{flex:1;min-width:0}}
 @media(max-width:760px){.s24-topbar-right{display:grid;gap:8px}.s24-tickers{width:100%}.s24-ticker{padding:6px 8px}.s24-form-row{grid-template-columns:1fr}}
+
+@media(max-width:900px){
+  .s24-sidebar{position:static;width:100%;height:auto;inset:auto}
+  .s24-shell{display:block;overflow-x:hidden}
+  .s24-workspace{margin:0;width:100%;min-width:0}
+  .s24-nav{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .s24-sidebar-foot{display:none}
+  .s24-topbar{top:0;height:auto;min-height:72px;padding:10px;display:grid;gap:8px}
+  .s24-tabs{max-width:100%;overflow:auto}
+  .s24-page{max-width:100%;padding:12px;overflow-x:hidden}
+  .s24-section-head{display:grid}
+  .s24-inbox-focus,.s24-trades-focus,.s24-newtrade-grid,.s24-overview-grid{grid-template-columns:minmax(0,1fr)}
+  .s24-panel{max-width:100%;overflow:hidden}
+  .s24-chart-wrap,.s24-chart-wrap.tall{max-width:100%}
+  .s24-market-search,.s24-market-picker{min-width:0;width:100%}
+}
+@media(max-width:520px){
+  .s24-nav{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .s24-tickers{display:grid;grid-template-columns:1fr 1fr}
+  .s24-ticker{min-width:0}
+}

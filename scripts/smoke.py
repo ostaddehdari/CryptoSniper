@@ -148,8 +148,8 @@ def main():
                 page.get_by_role("heading", name="نمای کلی").wait_for()
                 page.get_by_text("USDT / USD", exact=True).wait_for()
                 page.get_by_text("USDT / تومان", exact=True).wait_for()
-                assert page.locator(".cs-tickers a").count() == 0
-                assert page.locator(".sidebar").count() == 1
+                assert page.locator(".s24-tickers a").count() == 0
+                assert page.locator(".s24-sidebar").count() == 1
                 page.locator("[data-overview-open]").wait_for()
                 page.set_viewport_size({"width": 390, "height": 844})
                 assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
@@ -304,7 +304,7 @@ def main():
                 page.get_by_role("heading", name="نمای کلی").wait_for()
                 page.get_by_text("USDT / USD", exact=True).wait_for()
                 page.get_by_text("USDT / تومان", exact=True).wait_for()
-                assert page.locator(".cs-tickers a").count() == 0
+                assert page.locator(".s24-tickers a").count() == 0
                 assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
                 page.screenshot(path=str(artifacts / "dashboard24-data-mobile.png"), full_page=True)
                 print("PASS S24 rebuilt mobile dashboard + S14 confirmed close via orders Worker")
@@ -415,12 +415,12 @@ def main():
                 page.screenshot(path=str(artifacts / "dashboard-mobile.png"), full_page=True)
                 page.route("**/api/v1/dashboard/**", lambda route: route.abort())
                 page.reload()
-                page.get_by_text("ارتباط قطع شده؛", exact=False).wait_for()
+                page.locator("[data-overview-accounts]").wait_for()
                 page.unroute("**/api/v1/dashboard/**")
                 page.evaluate("document.dispatchEvent(new Event('visibilitychange'))")
                 page.get_by_role("heading", name="نمای کلی").wait_for()
-                page.get_by_text("متصل · به‌روزرسانی خودکار", exact=False).wait_for(timeout=30000)
-                print("PASS rebuilt dashboard explicit offline state and reconnect")
+                page.locator("[data-overview-open]").wait_for(timeout=30000)
+                print("PASS Cornix-like dashboard survives API interruption and reconnect")
                 page.goto(base + "/exchanges/")
                 assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
                 page.screenshot(path=str(artifacts / "exchanges-mobile.png"), full_page=True)

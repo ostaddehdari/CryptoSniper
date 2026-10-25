@@ -83,7 +83,7 @@ jobs:
                       print(prop.attrib['name']+'='+prop.attrib['value'])
           PYMETRICS
       - name: Install browser for UI smoke
-        run: uv run playwright install --with-deps chromium
+        run: uv run playwright install chromium
       - name: Real Worker, Beat, HTTP and mobile/desktop smoke
         run: uv run python scripts/smoke.py
       - name: Upload verification evidence

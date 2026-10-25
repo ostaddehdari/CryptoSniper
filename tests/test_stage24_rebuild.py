@@ -49,9 +49,13 @@ def test_rebuilt_workspace_keeps_cornix_shell_and_clean_header(client, django_us
     assert 'data-page="inbox"' in body
     assert 'data-page="newtrade"' in body
     assert 'data-page="trades"' in body
-    header = body.split('<header class="cs-header">', 1)[1].split("</header>", 1)[0]
-    assert "<a " not in header
+    assert 'class="app-layout"' in body
+    assert 'class="sidebar"' in body
+    assert 'class="topbar"' in body
+    assert 'class="cs-sidebar"' not in body
+    header = body.split('<header class="topbar">', 1)[1].split("</header>", 1)[0]
     assert "cs-ticker" in header
+    assert "#/newtrade" in body and "#/trades" in body and "#/inbox" in body
 
 
 @pytest.mark.django_db

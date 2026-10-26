@@ -146,6 +146,9 @@ class UserExchangeAccount(UserOwnedModel):
     permissions = models.JSONField(default=dict, blank=True)
     last_verified_at = models.DateTimeField(null=True, blank=True)
     last_sync_at = models.DateTimeField(null=True, blank=True)
+    last_error_code = models.CharField(max_length=80, blank=True)
+    last_error_message = models.CharField(max_length=240, blank=True)
+    last_error_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -12,15 +12,24 @@ from .external_utils import normalized_external
 
 class ExternalTradePolicyForm(forms.Form):
     version = forms.IntegerField(required=False, min_value=1)
-    entry_price = forms.DecimalField(label="Entry تأییدشده", max_digits=32, decimal_places=16)
+    entry_price = forms.DecimalField(
+        label="Entry تأییدشده",
+        max_digits=32,
+        decimal_places=16,
+        min_value=Decimal("0.0000000000000001"),
+    )
     remaining_amount = forms.DecimalField(
         label="حجم باقی‌مانده",
         max_digits=32,
         decimal_places=16,
         min_value=Decimal("0.0000000000000001"),
     )
-    stop_loss = forms.DecimalField(label="SL", max_digits=32, decimal_places=16)
-    tp1 = forms.DecimalField(label="TP1", max_digits=32, decimal_places=16)
+    stop_loss = forms.DecimalField(
+        label="SL", max_digits=32, decimal_places=16, min_value=Decimal("0.0000000000000001")
+    )
+    tp1 = forms.DecimalField(
+        label="TP1", max_digits=32, decimal_places=16, min_value=Decimal("0.0000000000000001")
+    )
     tp2 = forms.DecimalField(label="TP2", max_digits=32, decimal_places=16, required=False)
     tp3 = forms.DecimalField(label="TP3", max_digits=32, decimal_places=16, required=False)
     trailing_sl_enabled = forms.BooleanField(label="Trailing SL", required=False, initial=True)

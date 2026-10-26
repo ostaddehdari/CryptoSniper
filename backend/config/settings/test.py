@@ -9,3 +9,13 @@ EXCHANGE_CREDENTIAL_KEYS = ["1:MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA="]
 
 # Browser smoke exercises the real chart endpoint with seeded candles; no external HTTP dependency.
 MARKETDATA_REMOTE_HISTORY_ENABLED = False
+
+# Isolated queue for the Stage31 real-process contract worker; never used in production.
+import os  # noqa: E402
+
+if os.environ.get("STAGE31_TEST_QUEUE", "").startswith("s31-"):
+    _stage31_queue = os.environ["STAGE31_TEST_QUEUE"]
+    CELERY_TASK_QUEUES = {
+        **CELERY_TASK_QUEUES,
+        _stage31_queue: {"exchange": _stage31_queue, "routing_key": _stage31_queue},
+    }

@@ -59,6 +59,16 @@ def apply_external_policy(owner, observation_id, data):
         and LiveSpotOrder.objects.filter(account=item.account, external_order_id=canonical).exists()
     ):
         raise ValidationError("این سفارش داخلی است؛ دوباره به عنوان خارجی پذیرفته نمی‌شود.")
+    reference = canonical or str(
+        item.payload.get("tradeId") or item.payload.get("id") or item.external_id
+    )
+    if (
+        len(reference) > 120
+        or ManagedSpotPosition.objects.filter(
+            account=item.account, source_reference=reference
+        ).exists()
+    ):
+        raise ValidationError("این شناسهٔ اجرا قبلاً به مدیریت واگذار شده یا معتبر نیست.")
     if policy and hasattr(policy, "managed_position"):
         # Existing policies use the versioned condition editor; adoption is one-time.
         raise ValidationError("این مشاهده قبلاً واگذار شده است؛ شرایط معامله را ویرایش کنید.")
@@ -87,6 +97,7 @@ def apply_external_policy(owner, observation_id, data):
             "حجم آزاد تازه پس از کسر موجودی مدیریت‌شده کافی نیست؛ Sync و بررسی کنید."
         )
     policy = policy or ExternalTradePolicy(observation=item)
+    policy.market = data["market"]
     for name in (
         "entry_price",
         "remaining_amount",
@@ -108,6 +119,7 @@ def apply_external_policy(owner, observation_id, data):
         account=item.account,
         market=data["market"],
         external_policy=policy,
+        source_reference=reference,
         acquired=data["remaining_amount"],
         snapshot=_snapshot(data, owner),
         effective_stop=data["stop_loss"],

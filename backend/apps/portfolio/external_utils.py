@@ -44,7 +44,7 @@ def normalized_external(item):
     payload = item.payload if isinstance(item.payload, dict) else {}
     symbol = _symbol(payload.get("symbol"))
     side = str(payload.get("side", "")).lower()
-    if not side and "isBuyer" in payload:
+    if not side and isinstance(payload.get("isBuyer"), bool):
         side = "buy" if payload.get("isBuyer") else "sell"
     entry = next(
         (

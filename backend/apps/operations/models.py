@@ -169,6 +169,7 @@ class ManagedSpotPosition(models.Model):
         on_delete=models.PROTECT,
         related_name="managed_position",
     )
+    source_reference = models.CharField(max_length=120, blank=True)
     snapshot = models.JSONField(default=dict)
     acquired = models.DecimalField(max_digits=32, decimal_places=16, default=0)
     exited = models.DecimalField(max_digits=32, decimal_places=16, default=0)
@@ -196,6 +197,11 @@ class ManagedSpotPosition(models.Model):
                     | Q(entry_order__isnull=True, external_policy__isnull=False)
                 ),
                 name="managed_spot_one_source",
+            ),
+            models.UniqueConstraint(
+                fields=("account", "source_reference"),
+                condition=~Q(source_reference=""),
+                name="managed_spot_reference_unique",
             ),
             models.CheckConstraint(
                 condition=Q(acquired__gte=0)

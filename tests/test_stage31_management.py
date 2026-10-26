@@ -1,5 +1,6 @@
 import os
 import subprocess
+import tempfile
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
@@ -36,6 +37,7 @@ def managed(workspace, settings, monkeypatch):
         account=account,
         market=market,
         client_order_id="s31-entry-" + uuid.uuid4().hex,
+        order_type="limit",
         side="buy",
         amount=1,
         price=100,
@@ -378,8 +380,15 @@ def test_real_celery_worker_restart_keeps_trailing_and_one_exit(managed):
     env["LIVE_TRADING_ENABLED"] = env["LIVE_EXIT_MANAGEMENT_ENABLED"] = "true"
     env["C_FORCE_ROOT"] = "true"
     queue = "s31-" + uuid.uuid4().hex
+    env["STAGE31_TEST_QUEUE"] = queue
+    from kombu import Exchange, Queue
+
+    monitor_managed_spot.app.amqp.queues.add(
+        Queue(queue, exchange=Exchange(queue), routing_key=queue)
+    )
 
     def run_worker():
+        log = tempfile.TemporaryFile(mode="w+")
         process = subprocess.Popen(
             [
                 str(root / ".venv/bin/python"),
@@ -402,12 +411,19 @@ def test_real_celery_worker_restart_keeps_trailing_and_one_exit(managed):
             ],
             cwd=root / "backend",
             env=env,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            stdout=log,
+            stderr=subprocess.STDOUT,
         )
         try:
-            result = monitor_managed_spot.apply_async(queue=queue)
+            result = monitor_managed_spot.apply_async(
+                queue=queue, exchange=queue, routing_key=queue
+            )
             assert result.get(timeout=35, disable_sync_subtasks=False)
+        except Exception:
+            log.flush()
+            log.seek(0)
+            print("Contract worker diagnostic: " + log.read()[-5000:])
+            raise
         finally:
             process.terminate()
             try:
@@ -415,6 +431,7 @@ def test_real_celery_worker_restart_keeps_trailing_and_one_exit(managed):
             except subprocess.TimeoutExpired:
                 process.kill()
                 process.wait(timeout=5)
+            log.close()
 
     run_worker()
     p.refresh_from_db()

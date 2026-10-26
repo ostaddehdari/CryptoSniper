@@ -140,6 +140,7 @@ if actual_sha256 != os.environ['OFFICIAL_STAGE31_ARCHIVE_SHA256']:
 # Pin the release by checking the Git blob SHA-1 of independent immutable files.
 # GitHub-generated ZIP bytes can vary even while source contents stay identical.
 trusted_blobs = {
+    'backend/apps/operations/migrations/0006_stage31_unique_external_claim.py': '__BLOB_S31_REFERENCE_MIGRATION__',
     'backend/apps/portfolio/live_management.py': '__BLOB_S31_EXIT_ENGINE__',
     'backend/apps/portfolio/management_api.py': '__BLOB_S31_MANAGEMENT_API__',
     'backend/apps/operations/models.py': '__BLOB_S31_MODELS__',

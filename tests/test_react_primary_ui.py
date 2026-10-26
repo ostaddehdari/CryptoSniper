@@ -31,7 +31,7 @@ def test_react_bootstrap_exposes_real_non_simulator_accounts(
     exchange = Exchange.objects.create(
         code="reactx",
         name="React Exchange",
-        adapter_code="lbank",
+        adapter_code="react_test_adapter",
         enabled=True,
         spot_supported=True,
     )
@@ -60,7 +60,7 @@ def test_react_account_market_picker_returns_markets_immediately(
     exchange = Exchange.objects.create(
         code="marketx",
         name="Market Exchange",
-        adapter_code="bitunix",
+        adapter_code="market_test_adapter",
         enabled=True,
         spot_supported=True,
     )

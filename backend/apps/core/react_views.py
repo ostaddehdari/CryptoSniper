@@ -72,7 +72,7 @@ def legacy_react_page(request, page="dashboard", **kwargs):
     return render(
         request,
         "react_app.html",
-        {"release": "stage25-react-cornix", "initial_page": page},
+        {"release": "stage25-react-cornix", "initial_page": page, "initial_subpage": kwargs.get("subpage", "")},
     )
 
 
@@ -165,7 +165,7 @@ def react_app(request):
     return render(
         request,
         "react_app.html",
-        {"release": "stage25-react-cornix", "initial_page": "dashboard"},
+        {"release": "stage25-react-cornix", "initial_page": "dashboard", "initial_subpage": ""},
     )
 
 

@@ -298,6 +298,12 @@ def test_atomic_submission_uses_server_quantity_and_stable_key(client, workspace
     assert order.source_plan.status == "ready"
     assert order.source_plan.trailing_sl and order.source_plan.percentage_trailing
     assert len(queued) == 1
+    rows = client.get(reverse("api-stage24-trades")).json()["trades"]
+    row = next(x for x in rows if x["key"] == f"live:{order.pk}")
+    assert row["plan_id"] == order.source_plan_id
+    assert Decimal(row["stop_loss"]) == Decimal("95")
+    assert [Decimal(x) for x in row["tp"]] == [Decimal("110"), Decimal("120"), Decimal("130")]
+    assert row["automatic_exits_active"] is False
     conflict = client.post(
         reverse("api-manual-submit"), {**data, "capital": "300"}, content_type="application/json"
     )

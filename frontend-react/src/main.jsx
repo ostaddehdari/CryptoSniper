@@ -165,8 +165,8 @@ function Trades({decimals,notify,setPage}){
       </tbody></table>{!rows.length&&<Empty/>}</div>
     </div>
     {selected&&<div className="grid2 sectionGap">
-      <div className="card chartPanel"><div className="cardHead"><div><h3>{selected.symbol||selected.key}</h3><p>{selected.origin_label} · {selected.exchange}</p></div><Status value={selected.state}/></div><MarketChart marketId={selected.market_id} trade={selected}/></div>
-      <div className="card"><div className="cardHead"><div><h3>جزئیات معامله</h3><p>{selected.kind==="external"?"فقط پایش؛ مدیریت بدون واگذاری صریح غیرفعال است":"مدیریت‌شده توسط CryptoSniper"}</p></div></div><div className="analysisGrid"><Info label="Entry" value={selected.entry||"—"}/><Info label="Amount" value={selected.amount||selected.position_amount||"—"}/><Info label="Stop Loss" value={selected.stop_loss||"—"}/><Info label="TP" value={(selected.tp||[]).join(" / ")||"—"}/><Info label="وضعیت" value={selected.state||"—"}/><Info label="مبدأ" value={selected.origin_label}/></div></div>
+      <div className="card chartPanel"><div className="cardHead"><div><h3>{selected.symbol||selected.key}</h3><p>{selected.origin_label} · {selected.exchange}</p></div><Status value={selected.state}/></div><MarketChart marketId={selected.market_id} trade={selected} levels={selected.kind==="live"?{entry:selected.entry,stop:selected.stop_loss,targets:selected.tp}:null}/></div>
+      <div className="card"><div className="cardHead"><div><h3>جزئیات معامله</h3><p>{selected.kind==="external"?"فقط پایش؛ مدیریت بدون واگذاری صریح غیرفعال است":selected.kind==="live"?"برنامهٔ خروج ذخیره شده؛ اجرای خودکار خروج فعال نیست":"مدیریت‌شده توسط CryptoSniper"}</p></div></div><div className="analysisGrid"><Info label="Entry" value={selected.entry||"—"}/><Info label="Amount" value={selected.amount||selected.position_amount||"—"}/><Info label="Stop Loss" value={selected.stop_loss||"—"}/><Info label="TP" value={(selected.tp||[]).join(" / ")||"—"}/><Info label="وضعیت" value={selected.state||"—"}/><Info label="مبدأ" value={selected.origin_label}/></div></div>
     </div>}
   </>
 }

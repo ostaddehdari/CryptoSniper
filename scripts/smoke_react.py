@@ -326,6 +326,10 @@ def main():
                 page.get_by_role("button", name="بررسی مجدد همان درخواست", exact=True).click()
                 page.get_by_role("heading", name="معاملات یکپارچه").wait_for()
                 assert LiveSpotOrder.objects.filter(owner=user).count() == before + 1
+                page.locator(".realChart text").filter(has_text="SL").first.wait_for()
+                page.get_by_text(
+                    "برنامهٔ خروج ذخیره شده؛ اجرای خودکار خروج فعال نیست", exact=True
+                ).wait_for()
                 plan = TradePlan.objects.filter(owner=user).latest("pk")
                 assert plan.status == "ready" and plan.trailing_sl and plan.percentage_trailing
                 assert plan.trailing_trigger == "tp2" and plan.trailing_distance == 2

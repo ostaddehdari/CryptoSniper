@@ -266,7 +266,7 @@ def main():
                 market_select = page.get_by_label("بازار")
                 market_select.wait_for()
                 assert market_select.locator(f'option[value="{market.pk}"]').count() == 1
-                page.locator(".candleChart").wait_for()
+                page.locator(".realChart svg").wait_for()
                 page.get_by_text("Trailing SL", exact=False).wait_for()
                 page.get_by_text("شروع Trailing TP", exact=True).wait_for()
 
@@ -290,14 +290,14 @@ def main():
                 page.get_by_role("button", name="صندوق سیگنال").click()
                 page.get_by_text("React Smoke Signal", exact=False).first.wait_for()
                 page.get_by_text("Signal", exact=False).first.click()
-                page.locator(".candleChart").wait_for()
+                page.locator(".realChart svg").wait_for()
                 page.locator(".candleChart text").filter(has_text="Entry").first.wait_for()
                 print("PASS React signal inbox + live overlay chart")
 
                 page.get_by_role("button", name="معاملات").click()
                 page.get_by_role("heading", name="معاملات یکپارچه").wait_for()
                 page.get_by_text("BTC/USDT", exact=True).first.wait_for()
-                page.locator(".candleChart").wait_for()
+                page.locator(".realChart svg").wait_for()
                 print("PASS React unified trades + live chart")
 
                 page.set_viewport_size({"width": 390, "height": 844})

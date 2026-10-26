@@ -46,9 +46,11 @@ function App(){
   const [page,setPage]=useHashPage();
   const [boot,setBoot]=useState(null); const [loading,setLoading]=useState(true); const [error,setError]=useState("");
   const [decimals,setDecimals]=useState(Number(localStorage.getItem("cs_decimals")||2));
-  const [toast,setToast]=useState(""); const [stepUp,setStepUp]=useState(false); const [manualSeed,setManualSeed]=useState(null);\n  const [ticker,setTicker]=useState({usdt_usd:null,usdt_toman:null,stale:false});
+  const [toast,setToast]=useState(""); const [stepUp,setStepUp]=useState(false); const [manualSeed,setManualSeed]=useState(null);
+  const [ticker,setTicker]=useState({usdt_usd:null,usdt_toman:null,stale:false});
   const refresh=async()=>{try{setError("");const b=await api("/api/v1/ui/bootstrap/");setBoot(b)}catch(e){setError(e.message)}finally{setLoading(false)}};
-  useEffect(()=>{refresh();const t=setInterval(refresh,60000);return()=>clearInterval(t)},[]);\n  useEffect(()=>{let stop=false;const load=()=>api("/api/v1/markets/header-ticker/").then(d=>{if(!stop)setTicker(d)}).catch(()=>{});load();const t=setInterval(load,15000);return()=>{stop=true;clearInterval(t)}},[]);
+  useEffect(()=>{refresh();const t=setInterval(refresh,60000);return()=>clearInterval(t)},[]);
+  useEffect(()=>{let stop=false;const load=()=>api("/api/v1/markets/header-ticker/").then(d=>{if(!stop)setTicker(d)}).catch(()=>{});load();const t=setInterval(load,15000);return()=>{stop=true;clearInterval(t)}},[]);
   const notify=m=>{setToast(m);setTimeout(()=>setToast(""),3500)};
   const toggle=()=>{const v=!collapsed;setCollapsed(v);localStorage.setItem("cs_sidebar_collapsed",v?"1":"0")};
   const updateDecimals=v=>{setDecimals(v);localStorage.setItem("cs_decimals",String(v))};

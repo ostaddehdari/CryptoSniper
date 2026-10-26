@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import "./styles.css";
 
-const BASE = (window.__CS_BASE__ || "/cryptosniper").replace(/\/$/, "");
+const BASE = (typeof window.__CS_BASE__ === "string" ? window.__CS_BASE__ : "/cryptosniper").replace(/\/$/, "");
 const fmt=(v,d=2)=>Number(v||0).toLocaleString("fa-IR",{minimumFractionDigits:d,maximumFractionDigits:d});
 const dt=v=>v?new Date(v).toLocaleString("fa-IR"):"—";
 const num=v=>{const n=Number(v);return Number.isFinite(n)?n:0};

@@ -96,7 +96,7 @@ def test_pwa_manifest_and_worker_cache_static_assets_only(client):
     assert manifest.status_code == worker.status_code == 200
     assert manifest["Content-Type"].startswith("application/manifest+json")
     body = worker.content
-    assert b"cryptosniper-static-v24-rebuild" in body
+    assert b"cryptosniper-static-v25-react-cornix" in body
     assert b"event.request.method!=='GET'" in body
     assert b"startsWith(staticPrefix)" in body
     assert b"Background Sync" not in body and b"indexedDB" not in body
@@ -117,4 +117,6 @@ def test_private_pages_are_no_store_and_expose_offline_status(client, django_use
     assert page.status_code == 200
     assert b'id="root"' in page.content
     assert b"static/react/app.js" in page.content
+    assert b"js/pwa.js" in page.content
+    assert b"offline-banner" in page.content
     assert "no-store" in page["Cache-Control"]

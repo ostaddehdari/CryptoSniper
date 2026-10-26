@@ -103,15 +103,15 @@ def build_preview(data, now=None):
         raise ValidationError("موجودی Quote تازه نیست؛ ابتدا همگام‌سازی حساب را انجام دهید.")
     if latest.free_balance < required_cash:
         raise ValidationError("موجودی آزاد Quote برای سرمایه انتخاب‌شده کافی نیست.")
-    percentage = (
-        [Decimal("100")]
-        if len(targets) == 1
-        else (
-            [Decimal("10"), Decimal("90")]
-            if len(targets) == 2
-            else [Decimal("10"), Decimal("10"), Decimal("80")]
-        )
-    )
+    distribution = [Decimal(str(v)) for v in (data.get("tp_distribution") or [10, 10, 80])]
+    if (
+        len(distribution) != 3
+        or sum(distribution) != 100
+        or any(not v.is_finite() or v < 0 or v != v.to_integral_value() for v in distribution)
+    ):
+        raise ValidationError("سهم TPها باید صحیح و مجموع آن‌ها ۱۰۰ باشد.")
+    percentage = distribution[: len(targets)]
+    percentage[-1] += sum(distribution[len(targets) :])
     trailing_distance = Decimal(str(data.get("trailing_distance") or "1"))
     trigger = data.get("trailing_trigger") or "tp1"
     if not data.get("percentage_trailing"):
@@ -144,6 +144,7 @@ def build_preview(data, now=None):
         "stop_loss": text(sl),
         "stop_distance_percent": text(risk_fraction),
         "targets": tp_info,
+        "tp_distribution": [text(v) for v in distribution],
         "capital": text(capital),
         "quantity": text(quantity),
         "notional": text(notional),

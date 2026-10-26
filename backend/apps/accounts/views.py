@@ -256,17 +256,17 @@ def api_me(request):
 
 def _trading_payload(preferences):
     return {
-        "default_order_amount": str(preferences.default_order_amount),
+        "default_order_amount": format(preferences.default_order_amount, ".0f"),
         "default_market": preferences.default_market,
         "tp_distribution": [
-            format(preferences.tp1_percent, ".2f"),
-            format(preferences.tp2_percent, ".2f"),
-            format(preferences.tp3_percent, ".2f"),
+            format(preferences.tp1_percent, ".0f"),
+            format(preferences.tp2_percent, ".0f"),
+            format(preferences.tp3_percent, ".0f"),
         ],
         "trailing_sl_enabled": preferences.trailing_sl_enabled,
         "trailing_tp_enabled": preferences.trailing_tp_enabled,
         "trailing_trigger": preferences.trailing_trigger,
-        "trailing_distance_percent": format(preferences.trailing_distance_percent, ".3f"),
+        "trailing_distance_percent": format(preferences.trailing_distance_percent, ".0f"),
     }
 
 

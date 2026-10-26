@@ -126,6 +126,7 @@ def approve_plan(owner, plan_id, expected_revision):
         "percentage_trailing": plan.percentage_trailing,
         "trailing_trigger": plan.trailing_trigger,
         "trailing_distance": plan.trailing_distance,
+        "tp_distribution": plan.preview.get("tp_distribution"),
     }
     # Re-check current market limits and cash, then freeze an independently
     # versioned JSON snapshot. Never silently mutate it due to later preferences.

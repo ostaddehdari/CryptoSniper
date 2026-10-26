@@ -22,6 +22,8 @@ from apps.operations.models import ExternalObservation, ExternalTradePolicy
 from apps.trading.models import Trade
 
 from .external_utils import normalized_external
+from .live_management import enabled
+from .management_api import position_payload
 
 
 def _archived_filter(qs, view):
@@ -68,7 +70,14 @@ def _paper_row(trade):
 
 
 def _live_row(order):
-    snapshot = order.source_plan.approved_snapshot if order.source_plan else {}
+    position = getattr(order, "entry_position", None)
+    snapshot = (
+        position.snapshot
+        if position
+        else order.source_plan.approved_snapshot
+        if order.source_plan
+        else {}
+    )
     return {
         "key": f"live:{order.pk}",
         "kind": "live",
@@ -81,9 +90,14 @@ def _live_row(order):
         "side": order.side,
         "entry": str(order.average_price or order.price or ""),
         "amount": str(order.amount),
-        "position_amount": str(order.filled_amount),
-        "state": order.state,
-        "open": order.state
+        "position_amount": str(position.remaining) if position else str(order.filled_amount),
+        "state": position.state if position else order.state,
+        "entry_state": order.state,
+        "management_id": position.pk if position else None,
+        "management": position_payload(position) if position else None,
+        "open": position.state not in {"closed", "cancelled"}
+        if position
+        else order.state
         in {
             LiveSpotOrder.State.PENDING,
             LiveSpotOrder.State.SUBMITTING,
@@ -92,9 +106,9 @@ def _live_row(order):
             LiveSpotOrder.State.UNCERTAIN,
         },
         "tp": [target["price"] for target in snapshot.get("targets", [])],
-        "stop_loss": snapshot.get("stop_loss"),
+        "stop_loss": str(position.effective_stop) if position else snapshot.get("stop_loss"),
         "plan_id": order.source_plan_id,
-        "automatic_exits_active": False,
+        "automatic_exits_active": bool(position and not position.paused and enabled()),
         "created_at": order.created_at.isoformat(),
         "updated_at": order.updated_at.isoformat(),
         "archived_at": order.archived_at.isoformat() if order.archived_at else None,
@@ -116,7 +130,8 @@ def _external_row(item):
             .order_by("market_type")
             .first()
         )
-    state = policy.state if policy else normalized["status"]
+    position = getattr(policy, "managed_position", None) if policy else None
+    state = position.state if position else policy.state if policy else normalized["status"]
     open_state = state in {
         "new",
         "open",
@@ -130,6 +145,8 @@ def _external_row(item):
     if policy:
         tp = [str(value) for value in (policy.tp1, policy.tp2, policy.tp3) if value is not None]
         stop = str(policy.effective_stop)
+    if position:
+        tp = [target["price"] for target in position.snapshot["targets"]]
     return {
         "key": f"external:{item.pk}",
         "kind": "external",
@@ -141,12 +158,15 @@ def _external_row(item):
         "exchange": item.account.exchange.code,
         "side": normalized["side"],
         "entry": str(normalized["entry"] or ""),
-        "amount": str(normalized["amount"] or ""),
-        "position_amount": str(normalized["amount"] or ""),
+        "amount": str(position.acquired) if position else str(normalized["amount"] or ""),
+        "position_amount": str(position.remaining) if position else str(normalized["amount"] or ""),
+        "management_id": position.pk if position else None,
+        "management": position_payload(position) if position else None,
+        "manageable": normalized["manageable"],
         "state": state or "observed",
-        "open": open_state,
+        "open": position.state not in {"closed", "cancelled"} if position else open_state,
         "tp": tp,
-        "stop_loss": stop,
+        "stop_loss": str(position.effective_stop) if position else stop,
         "created_at": normalized["exact_time"].isoformat(),
         "updated_at": item.observed_at.isoformat(),
         "archived_at": item.archived_at.isoformat() if item.archived_at else None,
@@ -167,7 +187,7 @@ def _rows(
     with_total=False,
 ):
     paper = Trade.objects.filter(owner=user)
-    live = LiveSpotOrder.objects.filter(owner=user)
+    live = LiveSpotOrder.objects.filter(owner=user, managed_exit__isnull=True)
     external = ExternalObservation.objects.filter(
         account__owner=user, kind__in=("order", "fill", "history")
     )
@@ -198,11 +218,23 @@ def _rows(
                     ]
                 )
             elif kind == "live":
-                condition = Q(state__in=["pending", "submitting", "open", "partial", "uncertain"])
+                condition = (
+                    Q(entry_position__isnull=False)
+                    & ~Q(entry_position__state__in=["closed", "cancelled"])
+                ) | Q(
+                    entry_position__isnull=True,
+                    state__in=["pending", "submitting", "open", "partial", "uncertain"],
+                )
             else:
                 condition = Q(
                     state__in=["queued", "submitting", "partially_filled", "open", "uncertain"]
                 )
+            if kind == "external":
+                managed = Q(management_policy__managed_position__isnull=False)
+                managed_open = managed & ~Q(
+                    management_policy__managed_position__state__in=["closed", "cancelled"]
+                )
+                condition = managed_open | (~managed & condition)
             qs = qs.filter(condition) if state == "open" else qs.exclude(condition)
         sources[kind] = qs
         pieces.append(
@@ -224,7 +256,7 @@ def _rows(
         if kind == "paper":
             qs = qs.select_related("market", "position", "protection").prefetch_related("targets")
         elif kind == "live":
-            qs = qs.select_related("market", "source_plan")
+            qs = qs.select_related("market", "source_plan", "entry_position")
         objects[kind] = qs.in_bulk()
     serializers = {"paper": _paper_row, "live": _live_row, "external": _external_row}
     rows = [serializers[r["_source"]](objects[r["_source"]][r["_id"]]) for r in page]

@@ -1,7 +1,9 @@
+from datetime import timedelta
 from decimal import Decimal
 
 from django import forms
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 from apps.exchanges.models import ExchangeMarket
 
@@ -9,6 +11,7 @@ from .external_utils import normalized_external
 
 
 class ExternalTradePolicyForm(forms.Form):
+    version = forms.IntegerField(required=False, min_value=1)
     entry_price = forms.DecimalField(label="Entry تأییدشده", max_digits=32, decimal_places=16)
     remaining_amount = forms.DecimalField(
         label="حجم باقی‌مانده",
@@ -69,6 +72,7 @@ class ExternalTradePolicyForm(forms.Form):
             account.environment != "live"
             or account.status != "connected"
             or not account.trading_enabled
+            or account.permissions.get("can_read") is not True
             or account.permissions.get("can_trade_spot") is not True
             or account.permissions.get("can_withdraw") is not False
         ):
@@ -104,12 +108,21 @@ class ExternalTradePolicyForm(forms.Form):
             self.add_error("remaining_amount", "حجم با Lot Step صرافی سازگار نیست.")
         if market.min_amount and amount < market.min_amount:
             self.add_error("remaining_amount", "حجم از حداقل بازار کمتر است.")
+        if normalized["amount"] is None or amount > normalized["amount"]:
+            self.add_error("remaining_amount", "حجم از اجرای قابل‌تأیید این مشاهده بیشتر است.")
+        for price in (entry, data["stop_loss"], *targets):
+            if not market.price_step or price % market.price_step:
+                raise ValidationError("قیمت با Tick Size بازار سازگار نیست.")
         latest = (
-            account.balance_snapshots.filter(asset=market.base_asset)
+            account.balance_snapshots.filter(asset=market.base_asset, wallet_scope="spot")
             .order_by("-captured_at")
             .first()
         )
-        if not latest or latest.free_balance < amount:
+        if (
+            not latest
+            or latest.free_balance < amount
+            or latest.captured_at < timezone.now() - timedelta(minutes=2)
+        ):
             self.add_error(
                 "remaining_amount",
                 "موجودی آزاد تازه برای این حجم کافی نیست؛ ابتدا حساب را همگام کنید.",

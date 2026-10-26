@@ -9,7 +9,7 @@ from apps.marketdata import views as market_views
 from apps.marketdata import watchlists as watchlist_views
 from apps.operations import views as operation_views
 from apps.portfolio import api_stage24 as portfolio_stage24_views
-from apps.portfolio import external_views
+from apps.portfolio import external_views, management_api
 from apps.portfolio import views as portfolio_views
 from apps.reports import views as report_views
 from apps.signals import views as inbox_views
@@ -37,6 +37,26 @@ def ready(request):
 
 
 urlpatterns = [
+    path(
+        "api/v1/live-orders/<int:pk>/management/",
+        management_api.api_enable_entry,
+        name="api-enable-entry-management",
+    ),
+    path(
+        "api/v1/external/<int:pk>/management/",
+        management_api.api_external_management,
+        name="api-external-management",
+    ),
+    path(
+        "api/v1/managed-positions/<int:pk>/",
+        management_api.api_position,
+        name="api-managed-position",
+    ),
+    path(
+        "api/v1/live-orders/<int:pk>/reconcile/",
+        management_api.api_reconcile_order,
+        name="api-live-reconcile",
+    ),
     path("api/v1/manual/submit/", api_submit, name="api-manual-submit"),
     path("manifest.webmanifest", views.web_manifest, name="web-manifest"),
     path("app/", react_views.react_app, name="app-shell"),

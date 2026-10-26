@@ -57,10 +57,12 @@ def reconcile_order(order_id, *, adapter=None, external_id=None, cancel=False):
     order_id_at_provider = order.external_order_id or external_id
     try:
         if order_id_at_provider:
-            if cancel:
-                # A cancellation acknowledgement is not assumed from HTTP success alone.
-                adapter.cancel_order(order_id_at_provider)
             receipt = adapter.fetch_order(order_id_at_provider)
+            _validate_receipt(order, receipt)
+            if cancel and receipt.status not in {OrderStatus.FILLED, OrderStatus.CANCELLED}:
+                # Verify identity BEFORE the side effect; then require terminal evidence.
+                adapter.cancel_order(order_id_at_provider)
+                receipt = adapter.fetch_order(order_id_at_provider)
         else:
             receipts = [
                 r

@@ -6,7 +6,7 @@ from django.utils.dateparse import parse_datetime
 
 
 def _decimal(value):
-    if value in {None, ""}:
+    if value is None or value == "":
         return None
     try:
         number = Decimal(str(value))
@@ -26,7 +26,7 @@ def _symbol(value):
 
 
 def _time(value, fallback):
-    if value in {None, ""}:
+    if value is None or value == "":
         return fallback
     if isinstance(value, datetime):
         return value if timezone.is_aware(value) else timezone.make_aware(value, UTC)
@@ -105,8 +105,13 @@ def normalized_external(item):
         ),
         item.observed_at,
     )
+    confirmed_fill = any(
+        _decimal(payload.get(k)) is not None and _decimal(payload.get(k)) > 0
+        for k in ("filled_amount", "executedQty", "matchedAmount", "dealVolume", "qty", "quantity")
+    )
     manageable = (
-        side == "buy"
+        (confirmed_fill or raw_status in {"filled", "done", "completed"})
+        and side == "buy"
         and amount is not None
         and amount > 0
         and (

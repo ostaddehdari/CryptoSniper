@@ -172,6 +172,7 @@ class ManagedSpotPosition(models.Model):
     snapshot = models.JSONField(default=dict)
     acquired = models.DecimalField(max_digits=32, decimal_places=16, default=0)
     exited = models.DecimalField(max_digits=32, decimal_places=16, default=0)
+    inventory_cap = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
     effective_stop = models.DecimalField(max_digits=32, decimal_places=16)
     high_water = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
     break_even_applied = models.BooleanField(default=False)

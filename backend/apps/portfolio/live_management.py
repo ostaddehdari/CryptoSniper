@@ -48,6 +48,8 @@ def _inventory(position):
     if position.entry_order_id:
         position.entry_order.refresh_from_db()
         position.acquired = position.entry_order.filled_amount
+        if position.inventory_cap is not None:
+            position.acquired = min(position.acquired, position.inventory_cap)
     exited = position.exits.aggregate(value=Sum("order__filled_amount"))["value"] or ZERO
     if exited > position.acquired:
         raise ValidationError("رسید خروج از موجودی تأییدشده بیشتر است؛ بررسی لازم است.")
@@ -265,6 +267,7 @@ def sync_inventory(position_id):
         .get(pk=position_id)
     )
     _inventory(position)
+    position.last_checked_at = timezone.now()
     position.save()
     return position
 

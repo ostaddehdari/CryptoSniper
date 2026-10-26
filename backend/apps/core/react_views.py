@@ -404,7 +404,8 @@ def api_bootstrap(request):
     return JsonResponse(
         {
             "live_trading_enabled": settings.LIVE_TRADING_ENABLED,
-            "automatic_exits_active": False,
+            "automatic_exits_active": settings.LIVE_EXIT_MANAGEMENT_ENABLED and settings.LIVE_TRADING_ENABLED,
+            "live_exit_management_enabled": settings.LIVE_EXIT_MANAGEMENT_ENABLED and settings.LIVE_TRADING_ENABLED,
             "user": {
                 "id": request.user.pk,
                 "name": request.user.preferred_name,

@@ -2,13 +2,13 @@
   "schema_version": "cryptosniper.stage-plan.v1",
   "project": "CryptoSniper",
   "repository": "https://github.com/ostaddehdari/CryptoSniper",
-  "plan_version": "1.2.0",
+  "plan_version": "2.0.0",
   "created_at": "2026-10-06",
-  "stage_count": 23,
-  "work_count": 115,
+  "stage_count": 28,
+  "work_count": 140,
   "execution_unit": "one_complete_stage",
-  "last_stage": "S23",
-  "default_mode": "paper",
+  "last_stage": "S33",
+  "default_mode": "live_manual_gated",
   "scope_v1": [
     "spot",
     "margin"
@@ -18,7 +18,7 @@
     "perpetual"
   ],
   "source_sha256": "4904fa47ca4d294e437081bce926368c0028602a0606a82c10d4b60c49dbfd7d",
-  "latest_user_decision": "Stage23 stabilizes manual trading, Trailing semantics, External Trade management, Signal Inbox analytics and exchange/order operations without removing prior capabilities.",
+  "latest_user_decision": "2026-10-26: پنج استیج پایانی S29 تا S33، React تأییدشده مبنا؛ اکنون فقط S29 اجرا شود. فعال‌سازی معامله واقعی از ساخت کد نتیجه نمی‌شود.",
   "stages": [
     {
       "id": "S01",
@@ -1355,6 +1355,266 @@
           "status": "done"
         }
       ]
+    },
+    {
+      "id": "S29",
+      "number": 29,
+      "title": "بازگردانی رابط اصلی React و تحویل نصب معتبر",
+      "depends_on": [],
+      "status": "in_progress",
+      "works": [
+        {
+          "id": "S29-W01",
+          "number": 1,
+          "title": "ادغام مبنای React و ثبت برنامه پایانی",
+          "deliverables": "حفظ Backend و migrationهای main، ادغام React Stage25 و قفل styles.css تأییدشده.",
+          "acceptance": "صفحات اصلی از root React استفاده کنند؛ migrationهای قدیمی حذف یا بازنویسی نشوند.",
+          "status": "in_progress"
+        },
+        {
+          "id": "S29-W02",
+          "number": 2,
+          "title": "تثبیت پوسته و ناوبری نهایی",
+          "deliverables": "سایدبار خلوت، هدر تتر، مسیرهای قدیمی سازگار، دکمه معامله جدید و خروج درست.",
+          "acceptance": "ناوبری و خروج در مرورگر واقعی کار کند؛ مسیر ناشناخته صفحه سفید نسازد.",
+          "status": "not_started"
+        },
+        {
+          "id": "S29-W03",
+          "number": 3,
+          "title": "دارایی‌های نسخه‌دار و PWA امن",
+          "deliverables": "Build قابل نصب بدون Node سرور، آدرس‌های مستقل از پیشوند، cache نسخه‌دار و محافظت Offline.",
+          "acceptance": "نسخه جدید bundle با cache قدیمی جایگزین نشود؛ درخواست مالی در Offline ارسال نشود.",
+          "status": "not_started"
+        },
+        {
+          "id": "S29-W04",
+          "number": 4,
+          "title": "آزمون یکپارچه و پذیرش رابط",
+          "deliverables": "Build، schema، PostgreSQL، API و مرورگر در عرض‌های 320،390،768،1440.",
+          "acceptance": "خروجی واقعی تست و تصاویر ثبت شود؛ ظاهر پایه حفظ و overflow افقی نداشته باشد.",
+          "status": "not_started"
+        },
+        {
+          "id": "S29-W05",
+          "number": 5,
+          "title": "Release و نصب‌کننده React",
+          "deliverables": "Release از همان SHA موفق CI، ZIP تجمیعی، SHA256، installer --check و deploy.sh پین‌شده.",
+          "acceptance": "بسته منتشرشده شامل React ساخته‌شده باشد؛ نصب داده و secrets قبلی را حفظ کند.",
+          "status": "not_started"
+        }
+      ]
+    },
+    {
+      "id": "S30",
+      "number": 30,
+      "title": "تکمیل معامله جدید و مدیریت ریسک",
+      "depends_on": [
+        "S29"
+      ],
+      "status": "not_started",
+      "works": [
+        {
+          "id": "S30-W01",
+          "number": 1,
+          "title": "بازارهای حساب و ارزهای منتخب",
+          "deliverables": "فهرست کامل/صفحه‌بندی بازار همان حساب، جست‌وجو و ارزهای منتخب هر صرافی با Drag & Drop.",
+          "acceptance": "انتخاب حساب یا نماد که تغییر کرد داده صرافی قبلی باقی نماند.",
+          "status": "not_started"
+        },
+        {
+          "id": "S30-W02",
+          "number": 2,
+          "title": "فرم نهایی دستی و تحلیل",
+          "deliverables": "دو تب، Entry خالی، حجم صحیح زیر Entry، درصد و رنگ TP/SL، Spot بدون اهرم.",
+          "acceptance": "قیمت بازار Entry دستی را پر یا بازنویسی نکند.",
+          "status": "not_started"
+        },
+        {
+          "id": "S30-W03",
+          "number": 3,
+          "title": "Fix Loss خودکار",
+          "deliverables": "موجودی تتر آزاد همان حساب، ریسک 1٪ قابل تغییر، محاسبه خودکار Decimal و پیشنهاد حجم.",
+          "acceptance": "1000 تتر و SL پنج درصد: ریسک1=200، ریسک2=400؛ کارمزد و محدودیت حجم آشکار باشند.",
+          "status": "not_started"
+        },
+        {
+          "id": "S30-W04",
+          "number": 4,
+          "title": "پیش‌فرض‌ها و تریلینگ",
+          "deliverables": "فقط Trailing و Trailing SL، TP1/2/3 و فاصله صحیح؛ SL در TP1 فقط یک بار Entry.",
+          "acceptance": "تنظیمات ذخیره‌شده در معامله جدید اعمال شوند؛ سهم TP جمعاً100 باشد.",
+          "status": "not_started"
+        },
+        {
+          "id": "S30-W05",
+          "number": 5,
+          "title": "گردش ارسال سفارش",
+          "deliverables": "حجم نهایی Backend، تأیید و idempotency، انتقال وضعیت سفارش به معاملات و آزمون sandbox.",
+          "acceptance": "دوبار کلیک یا retry امنیتی سفارش تکراری نسازد؛ بدون مجوز عملی سفارش واقعی ارسال نشود.",
+          "status": "not_started"
+        }
+      ]
+    },
+    {
+      "id": "S31",
+      "number": 31,
+      "title": "تکمیل موتور مدیریت معاملات",
+      "depends_on": [
+        "S30"
+      ],
+      "status": "not_started",
+      "works": [
+        {
+          "id": "S31-W01",
+          "number": 1,
+          "title": "معاملات یکپارچه",
+          "deliverables": "داخلی/خارجی، باز/بسته/بایگانی، جزئیات و فیلتر و sync واقعی.",
+          "acceptance": "نوع منبع و وضعیت با شواهد صرافی همخوان باشد.",
+          "status": "not_started"
+        },
+        {
+          "id": "S31-W02",
+          "number": 2,
+          "title": "چرخه خروج واقعی",
+          "deliverables": "برنامه TP/SL متصل به order/fill، مقدار باقی‌مانده و جلوگیری از فروش مضاعف.",
+          "acceptance": "fill جزئی، لغو و restart با PostgreSQL/Worker آزموده شوند.",
+          "status": "not_started"
+        },
+        {
+          "id": "S31-W03",
+          "number": 3,
+          "title": "اجرای دو تریلینگ",
+          "deliverables": "حرکت یکباره SL به Entry و Trailing درصدی با trigger انتخابی و حفظ stop در restart.",
+          "acceptance": "stop ضعیف‌تر نشود و موتور از مرورگر مستقل باشد.",
+          "status": "not_started"
+        },
+        {
+          "id": "S31-W04",
+          "number": 4,
+          "title": "مدیریت معاملات خارجی",
+          "deliverables": "پذیرش صریح مدیریت و ویرایش شرایط معتبر با حجم باقی‌مانده قابل‌تأیید.",
+          "acceptance": "داده مبهم معامله واقعی فرض نشود؛ Adoption و pause ثبت audit داشته باشد.",
+          "status": "not_started"
+        },
+        {
+          "id": "S31-W05",
+          "number": 5,
+          "title": "نمودار و بازیابی",
+          "deliverables": "Entry/TP/SL و markerها، منبع شفاف داده، تست قطع feed و recovery.",
+          "acceptance": "تاریخچه مرجع به نام صرافی حساب نمایش داده نشود؛ stale آشکار باشد.",
+          "status": "not_started"
+        }
+      ]
+    },
+    {
+      "id": "S32",
+      "number": 32,
+      "title": "تکمیل سیگنال و تلگرام",
+      "depends_on": [
+        "S31"
+      ],
+      "status": "not_started",
+      "works": [
+        {
+          "id": "S32-W01",
+          "number": 1,
+          "title": "Smart Paste قابل ارزیابی",
+          "deliverables": "مجموعه سیگنال‌های نمونه، فارسی/انگلیسی، قالب‌ها و ویرایش نتیجه تحلیل.",
+          "acceptance": "کیفیت روی نمونه برچسب‌خورده گزارش شود؛ متن مبهم به معامله نرود.",
+          "status": "not_started"
+        },
+        {
+          "id": "S32-W02",
+          "number": 2,
+          "title": "صندوق نهایی",
+          "deliverables": "تأیید و انتقال، ویرایش، دلیل اختیاری، حذف تکی/گروهی و دکمه‌های بدون تکرار.",
+          "acceptance": "داده تأییدشده دقیقاً داخل فرم دستی قرار بگیرد.",
+          "status": "not_started"
+        },
+        {
+          "id": "S32-W03",
+          "number": 3,
+          "title": "اتصال و آرشیو تلگرام",
+          "deliverables": "کد، 2FA، FloodWait، ادامه آرشیو و جلوگیری از تکرار پیام.",
+          "acceptance": "Session خصوصی و restart آرشیو آزموده شوند؛ تأیید حساب واقعی جدا ثبت شود.",
+          "status": "not_started"
+        },
+        {
+          "id": "S32-W04",
+          "number": 4,
+          "title": "قالب کانال و AI",
+          "deliverables": "Template/AI/Hybrid، خطاهای قابل فهم و کلید امن؛ سیاست استفاده و schema validation.",
+          "acceptance": "خروجی نامعتبر مدل اجرای سفارش را فعال نکند.",
+          "status": "not_started"
+        },
+        {
+          "id": "S32-W05",
+          "number": 5,
+          "title": "سنجش نتیجه و رابط",
+          "deliverables": "Card/Table، نمودار، بایگانی خودکار و آمار کانال با بیان منبع/محدودیت.",
+          "acceptance": "برخوردهای مبهم OHLC سود قطعی گزارش نشوند؛ گزارش پذیرش ثبت شود.",
+          "status": "not_started"
+        }
+      ]
+    },
+    {
+      "id": "S33",
+      "number": 33,
+      "title": "پذیرش نهایی و تحویل صاحب‌کار",
+      "depends_on": [
+        "S32"
+      ],
+      "status": "not_started",
+      "works": [
+        {
+          "id": "S33-W01",
+          "number": 1,
+          "title": "حساب‌ها و موجودی واقعی",
+          "deliverables": "اتصال/حذف/راهنما/لاگ، حساب حذف‌شده از وضعیت سیستم، تتر آزاد و موجودی‌های جمع‌شونده.",
+          "acceptance": "مقادیر و زمان دریافت با صرافی‌های مجاز واقعی تطبیق داده شوند.",
+          "status": "not_started"
+        },
+        {
+          "id": "S33-W02",
+          "number": 2,
+          "title": "نمای کلی و گزارش مالی",
+          "deliverables": "ویجت‌های کلیک‌پذیر، تب‌ها، سود ماهانه خالص از fill واقعی و fee معتبر.",
+          "acceptance": "Paper در آمار واقعی دخالت نکند؛ مقدار نامعلوم صفر ساختگی نشود.",
+          "status": "not_started"
+        },
+        {
+          "id": "S33-W03",
+          "number": 3,
+          "title": "پاکسازی محصول",
+          "deliverables": "حذف UI Paper، منوها/متن‌های اضافی، تنظیمات نمایش و آزمون همه دکمه‌ها.",
+          "acceptance": "مسیرهای معمول صاحب‌کار صفحه سفید یا عملیات بی‌اثر نداشته باشند.",
+          "status": "not_started"
+        },
+        {
+          "id": "S33-W04",
+          "number": 4,
+          "title": "پذیرش سرور و بازیابی",
+          "deliverables": "نصب آزمایشی و ارتقا، backup/rollback، health و تست موبایل/دسکتاپ روی دامنه هدف.",
+          "acceptance": "شواهد سرور واقعی و حفاظت داده و کلید ثبت شود؛ اجرای پول واقعی مجوز جدا دارد.",
+          "status": "not_started"
+        },
+        {
+          "id": "S33-W05",
+          "number": 5,
+          "title": "تحویل و مستندات",
+          "deliverables": "Release نهایی، دستور نصب یک‌خطی، راهنمای اپراتور، محدودیت‌های واقعی و صورت‌جلسه پذیرش.",
+          "acceptance": "صاحب‌کار با یک نسخه مشخص و معیارهای روشن تحویل بگیرد؛ مورد باز پنهان نماند.",
+          "status": "not_started"
+        }
+      ]
     }
+  ],
+  "finalization_stages": [
+    "S29",
+    "S30",
+    "S31",
+    "S32",
+    "S33"
   ]
 }

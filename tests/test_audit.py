@@ -45,12 +45,15 @@ def test_audit_ui_is_owner_scoped_and_masks_ip(client, django_user_model, rf):
     record_audit("profile.updated", request=request, user=owner, metadata={"fields": ["theme"]})
     record_audit("private.other_event", request=request, user=other)
     client.force_login(owner)
-    response = client.get(reverse("audit-events"))
-    body = response.content.decode()
+    page = client.get(reverse("audit-events"))
+    assert page.status_code == 200
+    assert b'id="root"' in page.content
+    response = client.get(reverse("api-ui-security"))
     assert response.status_code == 200
-    assert "profile.updated" in body
-    assert "private.other_event" not in body
-    assert "198.51.100.7" not in body
+    events = response.json()["audit"]
+    assert any(row["event_type"] == "profile.updated" for row in events)
+    assert all(row["event_type"] != "private.other_event" for row in events)
+    assert "198.51.100.7" not in json.dumps(events)
 
 
 @pytest.mark.django_db

@@ -1,0 +1,9 @@
+{% load static %}<!doctype html>
+<html lang="fa" dir="rtl"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#2f66d8">
+<title>CryptoSniper</title><link rel="icon" href="{% static 'img/mark.svg' %}" type="image/svg+xml"><link rel="manifest" href="{% url 'web-manifest' %}">
+<link rel="stylesheet" href="{% static 'react/app.css' %}">
+</head><body><div id="offline-banner" class="offlineBanner" role="status" aria-live="polite" hidden>اتصال قطع است؛ اطلاعات بازار تازه نیست و هیچ اقدام معاملاتی تا اتصال مجدد ارسال نمی‌شود.</div><div id="root"></div>
+<script>window.__CS_BASE__="{% url 'home' %}".replace(/\/$/,"");window.__CS_INITIAL_PAGE__="{{ initial_page|default:'dashboard'|escapejs }}";window.__CS_INITIAL_SUBPAGE__="{{ initial_subpage|default:''|escapejs }}";</script>
+<script type="module" src="{% static 'react/app.js' %}"></script><script defer src="{% static 'js/pwa.js' %}"></script>
+</body></html>

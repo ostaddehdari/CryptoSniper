@@ -35,69 +35,31 @@ def make_signal(user, market=None):
 
 
 @pytest.mark.django_db
-def test_rebuilt_workspace_keeps_cornix_shell_and_clean_header(client, django_user_model):
-    user = django_user_model.objects.create_user(username="s24-rebuild-shell")
+def test_stage24_features_are_exposed_through_primary_react_workspace(client, django_user_model):
+    user = django_user_model.objects.create_user(username="s25-react-stage24")
     client.force_login(user)
+
     response = client.get(reverse("app-shell"))
+
     assert response.status_code == 200
     body = response.content.decode()
-    assert "stage24-rebuild.css" in body
-    assert "stage24-rebuild.js" in body
-    assert "stage24-app.css" not in body
-    assert "stage24-app.js" not in body
-    assert "USDT / USD" in body
-    assert "USDT / تومان" in body
-    assert 'data-page="inbox"' in body
-    assert 'data-page="newtrade"' in body
-    assert 'data-page="trades"' in body
-    assert 'class="s24-shell"' in body
-    assert 'class="s24-sidebar"' in body
-    assert 'class="s24-topbar"' in body
-    header = body.split('<header class="s24-topbar">', 1)[1].split("</header>", 1)[0]
-    assert "s24-ticker" in header
-    assert "data-account-select" in body
-    assert "data-market-results" in body
-    assert "#/newtrade" in body and "#/trades" in body and "#/inbox" in body
+    assert 'id="root"' in body
+    assert "static/react/app.js" in body
+    assert "static/react/app.css" in body
+    assert "stage24-rebuild.css" not in body
+    assert "s24-shell" not in body
 
 
 @pytest.mark.django_db
-def test_dashboard_uses_same_rebuilt_workspace(client, django_user_model):
-    user = django_user_model.objects.create_user(username="s24-rebuild-dashboard")
+def test_dashboard_bookmark_renders_same_react_workspace(client, django_user_model):
+    user = django_user_model.objects.create_user(username="s25-react-dashboard")
     client.force_login(user)
+
     response = client.get(reverse("dashboard"))
-    assert response.status_code == 200
-    assert b"data-cs24-root" in response.content
-    assert b"s24-shell" in response.content
-    assert b"ACCOUNT WORKSPACE" not in response.content
 
-
-@pytest.mark.django_db
-@pytest.mark.parametrize(
-    "route_name",
-    [
-        "exchange-center",
-        "watchlists",
-        "alerts",
-        "reports",
-        "operations",
-        "system",
-        "profile",
-        "trading-preferences",
-        "telegram-settings",
-        "manual-list",
-    ],
-)
-def test_all_primary_pages_use_global_cornix_shell(client, django_user_model, route_name):
-    user = django_user_model.objects.create_user(username=f"cornix-{route_name}")
-    client.force_login(user)
-    response = client.get(reverse(route_name))
     assert response.status_code == 200
-    body = response.content.decode()
-    assert "data-cornix-shell" in body
-    assert 'class="s24-sidebar"' in body
-    assert 'class="s24-topbar"' in body
-    assert "stage24-rebuild.css" in body
-    assert "cornix-shell.js" in body
+    assert b'id="root"' in response.content
+    assert b"static/react/app.js" in response.content
 
 
 def test_global_shell_is_not_hybrid_legacy_markup():

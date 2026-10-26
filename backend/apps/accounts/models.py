@@ -195,6 +195,61 @@ class TradingPreferences(UserOwnedModel):
             raise ValidationError("مجموع سهم‌های TP باید دقیقاً ۱۰۰ درصد باشد.")
 
 
+class WalletConnection(UserOwnedModel):
+    """Non-custodial wallet reference. No seed phrase or private key is ever stored."""
+
+    class Provider(models.TextChoices):
+        METAMASK = "metamask", "MetaMask"
+        TRUST = "trust_wallet", "Trust Wallet"
+        WALLETCONNECT = "walletconnect", "WalletConnect"
+        LEDGER = "ledger", "Ledger"
+        TREZOR = "trezor", "Trezor"
+        EVM = "evm_address", "EVM Address"
+        TRON = "tron_address", "TRON Address"
+
+    class Status(models.TextChoices):
+        WATCH_ONLY = "watch_only", "فقط مشاهده"
+        CONNECTED = "connected", "متصل در مرورگر"
+        DISABLED = "disabled", "غیرفعال"
+
+    provider = models.CharField(max_length=24, choices=Provider.choices)
+    network = models.CharField(max_length=40, default="ethereum")
+    label = models.CharField(max_length=80)
+    address = models.CharField(max_length=160)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.WATCH_ONLY)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        constraints = [
+            models.UniqueConstraint(
+                fields=("owner", "provider", "network", "address"),
+                name="wallet_connection_owner_provider_address_unique",
+            )
+        ]
+        indexes = [models.Index(fields=("owner", "status"))]
+
+    def __str__(self):
+        return f"{self.label}:{self.network}:{self.address[:12]}"
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def clean(self):
+        super().clean()
+        self.label = self.label.strip()
+        self.network = self.network.strip().lower()
+        self.address = self.address.strip()
+        if not (6 <= len(self.address) <= 160):
+            raise ValidationError({"address": "آدرس کیف پول معتبر نیست."})
+        if any(key in self.metadata for key in ("private_key", "seed", "seed_phrase", "mnemonic")):
+            raise ValidationError("اطلاعات محرمانه کیف پول قابل ذخیره نیست.")
+
+
 _SENSITIVE_AUDIT_KEY = re.compile(
     r"password|secret|token|api.?key|credential|authorization|cookie|session.?key", re.I
 )

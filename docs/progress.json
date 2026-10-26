@@ -1,12 +1,12 @@
 {
   "schema_version": "cryptosniper.progress.v1",
-  "plan_version": "1.2.0",
+  "plan_version": "2.0.0",
   "completed_stages": [
     "S01",
     "S02"
   ],
-  "current_stage": "S23",
-  "next_stage": null,
+  "current_stage": "S29",
+  "next_stage": "S30",
   "last_completed_work": "S23-W05",
   "implementation_started": true,
   "stage_results": {
@@ -1184,6 +1184,41 @@
         "Target VPS installation and public HTTPS acceptance of 0.23 remain operator evidence."
       ],
       "implementation": "Five stabilization works are code-complete: manual market/default/trailing semantics, explicit External Trade adoption, Inbox soft-trash and approve-to-trade analytics, exchange/Broker error handling and a hardened durable Spot order boundary. Exact-source CI/release and VPS acceptance are recorded separately."
+    },
+    "S29": {
+      "status": "in_progress",
+      "completed_works": [],
+      "checks": [],
+      "blockers": [],
+      "baseline": {
+        "main": "8c0352ddb5b5cd8639208dbd95b2e790a0746104",
+        "react": "da00bf4a6574728861d08babc898d42f01600396",
+        "approved_styles_blob": "565980a9a4a5ba390f09fcc61c5a6ea9a6a82cdd"
+      }
+    },
+    "S30": {
+      "status": "not_started",
+      "completed_works": [],
+      "checks": [],
+      "blockers": []
+    },
+    "S31": {
+      "status": "not_started",
+      "completed_works": [],
+      "checks": [],
+      "blockers": []
+    },
+    "S32": {
+      "status": "not_started",
+      "completed_works": [],
+      "checks": [],
+      "blockers": []
+    },
+    "S33": {
+      "status": "not_started",
+      "completed_works": [],
+      "checks": [],
+      "blockers": []
     }
   }
 }

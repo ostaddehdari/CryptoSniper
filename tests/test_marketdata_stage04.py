@@ -51,6 +51,8 @@ def test_watchlist_account_scope_csrf_and_disconnected_visibility(client, django
     client.force_login(owner)
     page = client.get(reverse("watchlists"))
     assert page.status_code == 200
+    assert b'id="root"' in page.content
+    assert client.get(reverse("api-ui-watchlists")).status_code == 200
     wl = Watchlist.objects.get(owner=owner)
     assert (
         client.post(reverse("watchlist-add", args=[wl.pk]), {"market_id": market.pk}).status_code

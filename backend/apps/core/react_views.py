@@ -83,6 +83,174 @@ def paper_mode_removed(request, **kwargs):
     return JsonResponse({"error": "paper_mode_removed", "redirect": f"{reverse('app-shell')}#/trades"}, status=410)
 
 
+def _render_react_workspace(request, page, subpage=""):
+    return render(
+        request,
+        "react_app.html",
+        {
+            "release": "stage25-react-cornix",
+            "initial_page": page,
+            "initial_subpage": subpage,
+        },
+    )
+
+
+@login_required
+@never_cache
+@require_http_methods(["GET", "POST"])
+def legacy_profile_compat(request):
+    if request.method == "POST":
+        from apps.accounts.views import profile
+
+        return profile(request)
+    return _render_react_workspace(request, "settings", "profile")
+
+
+@login_required
+@never_cache
+@require_http_methods(["GET", "POST"])
+def legacy_trading_preferences_compat(request):
+    if request.method == "POST":
+        from apps.accounts.views import trading_preferences
+
+        return trading_preferences(request)
+    return _render_react_workspace(request, "settings", "trading")
+
+
+@login_required
+@never_cache
+@require_http_methods(["GET", "POST"])
+def legacy_security_step_up_compat(request):
+    if request.method == "POST":
+        from apps.accounts.views import security_step_up
+
+        return security_step_up(request)
+    return _render_react_workspace(request, "settings", "security")
+
+
+@login_required
+@never_cache
+@require_http_methods(["GET", "POST"])
+def legacy_exchange_add_compat(request):
+    if request.method == "POST":
+        from apps.exchanges.views import add_exchange_account
+
+        return add_exchange_account(request)
+    return _render_react_workspace(request, "exchanges")
+
+
+@login_required
+@never_cache
+@require_http_methods(["GET", "POST"])
+def legacy_source_settings_compat(request):
+    if request.method == "POST":
+        from apps.signals.views import source_settings
+
+        return source_settings(request)
+    return _render_react_workspace(request, "settings", "sources")
+
+
+@login_required
+@never_cache
+@require_http_methods(["GET", "POST"])
+def legacy_telegram_settings_compat(request):
+    if request.method == "POST":
+        from apps.signals.views import telegram_settings
+
+        return telegram_settings(request)
+    return _render_react_workspace(request, "telegram")
+
+
+@login_required
+@never_cache
+@require_http_methods(["GET", "POST"])
+def legacy_inbox_receive_compat(request):
+    if request.method == "POST":
+        from apps.signals.views import receive
+
+        return receive(request)
+    return _render_react_workspace(request, "inbox")
+
+
+@login_required
+@never_cache
+@require_http_methods(["GET", "POST"])
+def legacy_smart_paste_compat(request):
+    if request.method == "POST":
+        from apps.signals.views import smart_paste
+
+        return smart_paste(request)
+    return _render_react_workspace(request, "smart")
+
+
+@login_required
+@never_cache
+@require_http_methods(["GET", "POST"])
+def legacy_manual_new_compat(request):
+    if request.method == "POST":
+        from apps.tradeplans.views import new_plan
+
+        return new_plan(request)
+    return _render_react_workspace(request, "manual")
+
+
+@login_required
+@never_cache
+@require_http_methods(["GET", "POST"])
+def legacy_manual_edit_compat(request, pk):
+    if request.method == "POST":
+        from apps.tradeplans.views import edit_plan
+
+        return edit_plan(request, pk)
+    get_object_or_404(TradePlan.objects.filter(owner=request.user), pk=pk)
+    return _render_react_workspace(request, "plans")
+
+
+@login_required
+@never_cache
+@require_http_methods(["GET", "POST"])
+def legacy_alert_new_compat(request):
+    if request.method == "POST":
+        from apps.alerts.views import edit
+
+        return edit(request)
+    return _render_react_workspace(request, "alerts")
+
+
+@login_required
+@never_cache
+@require_http_methods(["GET", "POST"])
+def legacy_alert_edit_compat(request, pk):
+    if request.method == "POST":
+        from apps.alerts.views import edit
+
+        return edit(request, pk)
+    get_object_or_404(PriceAlert.objects.filter(owner=request.user), pk=pk)
+    return _render_react_workspace(request, "alerts")
+
+
+@login_required
+@never_cache
+@require_http_methods(["GET", "POST"])
+def legacy_notification_preferences_compat(request):
+    if request.method == "POST":
+        from apps.alerts.notifications import preferences
+
+        return preferences(request)
+    return _render_react_workspace(request, "settings", "notifications")
+
+
+@login_required
+@never_cache
+@require_http_methods(["GET", "POST"])
+def legacy_paper_risk_compat(request):
+    if request.method == "POST":
+        from apps.trading.risk import paper_risk
+
+        return paper_risk(request)
+    return _render_react_workspace(request, "settings", "trading")
+
+
 @login_required
 @never_cache
 @require_GET

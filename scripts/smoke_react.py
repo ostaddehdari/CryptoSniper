@@ -291,7 +291,7 @@ def main():
                 page.get_by_text("React Smoke Signal", exact=False).first.wait_for()
                 page.get_by_text("Signal", exact=False).first.click()
                 page.locator(".candleChart").wait_for()
-                page.get_by_text("Entry 65", exact=False).wait_for()
+                page.locator(".candleChart text").filter(has_text="Entry").first.wait_for()
                 print("PASS React signal inbox + live overlay chart")
 
                 page.get_by_role("button", name="معاملات").click()

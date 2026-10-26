@@ -26,7 +26,7 @@ async function api(path, opts={}){
   if(body && typeof body!=="string" && !(body instanceof FormData)){
     headers["Content-Type"]="application/json"; body=JSON.stringify(body);
   }
-  if(!["GET","HEAD"].includes(method.toUpperCase())) headers["X-CSRFToken"]=decodeURIComponent(cookie("cryptosniper_csrftoken"));
+  if(!["GET","HEAD"].includes(method.toUpperCase())) headers["X-CSRFToken"]=decodeURIComponent(cookie("csrftoken")||cookie("cryptosniper_csrftoken"));
   const res=await fetch(BASE+path,{credentials:"same-origin",...opts,method,headers,body});
   let data={}; try{data=await res.json()}catch{}
   if(res.status===401){location.href=BASE+"/auth/login/";throw new Error("authentication_required")}

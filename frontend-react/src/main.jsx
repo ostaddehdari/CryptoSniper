@@ -221,8 +221,9 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
     if(next===null||marketBusy)return;const version=selectionVersion.current;setMarketBusy(true);
     try{const d=await api(`/api/v1/exchange-accounts/${accountId}/markets/?offset=${next}&q=${encodeURIComponent(search)}`);if(version===selectionVersion.current){setMarkets(v=>[...v,...d.markets]);setNext(d.next_offset)}}catch(e){setFormError(e.message)}finally{if(version===selectionVersion.current)setMarketBusy(false)}
   };
-  const choose=m=>{setMarket(m);setQuote(null);setFixloss(null);setConfirmed(false);setSearch("");setPickerOpen(false);setLeverage("1");if(m.market_type==="spot")setSide("long")};
-  const changeAccount=value=>{setAccountId(value);setMarket(null);setMarkets([]);setSearch("");setQuote(null);setFixloss(null);setRiskError("");setConfirmed(false);setPickerOpen(true);setLeverage("1");};
+  const clearLevels=()=>{setEntry("");setTp1("");setTp2("");setTp3("");setSl("")};
+  const choose=m=>{if(market?.id!==m.id)clearLevels();setMarket(m);setQuote(null);setFixloss(null);setConfirmed(false);setSearch("");setPickerOpen(false);setLeverage("1");if(m.market_type==="spot")setSide("long")};
+  const changeAccount=value=>{clearLevels();setAccountId(value);setMarket(null);setMarkets([]);setSearch("");setQuote(null);setFixloss(null);setRiskError("");setConfirmed(false);setPickerOpen(true);setLeverage("1");};
   useEffect(()=>{
     setQuote(null);if(!market)return;let active=true;
     const load=()=>api(`/api/v1/markets/quotes/?market=${market.id}`).then(d=>{if(active)setQuote(d.markets?.[0]?.quote||null)}).catch(()=>{});
@@ -233,6 +234,7 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
     let active=true;const timer=setTimeout(()=>api("/api/v1/risk/fix-loss/",{method:"POST",body:{account_id:accountId,market_id:market.id,entry,stop:sl,risk_percent:risk,leverage,side}}).then(d=>{if(active)setFixloss(d)}).catch(e=>{if(active)setRiskError(e.message)}),250);
     return()=>{active=false;clearTimeout(timer)};
   },[accountId,market?.id,entry,sl,risk,leverage,side]);
+  useEffect(()=>setConfirmed(false),[accountId,market?.id,entry,tp1,tp2,tp3,sl,capital,leverage,trailingSL,trailing,trigger,distance]);
   const percent=value=>num(entry)&&num(value)?((num(value)-num(entry))/num(entry)*100)*(side==="short"?-1:1):null;
   const target=(label,value,setValue)=>{const pct=percent(value);return <div className="field"><label>{label}</label><div className="inputSuffix"><input aria-label={label} value={value} onChange={e=>setValue(e.target.value)} inputMode="decimal"/><span>USDT</span></div>{pct!==null&&<small className={(pct>=0?"up":"down")+" targetPercent"}>{pct>=0?"+":""}{fmt(pct,2)}٪</small>}</div>};
   const payload=()=>({account:accountId,market:market?.id,source:"manual",side,entry_price:entry,tp1,tp2:tp2||null,tp3:tp3||null,stop_loss:sl,capital,leverage:market?.market_type==="spot"?"1":leverage,trailing_sl:trailingSL,percentage_trailing:trailing,trailing_trigger:trigger,trailing_distance:distance,origin_signal:seed?.signal_id||seed?.origin_signal||null,confirmed});
@@ -269,7 +271,7 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
       </div>
       <div className="sectionTitle">اهداف و حد ضرر</div><div className="targetsGrid">{target("TP1",tp1,setTp1)}{target("TP2",tp2,setTp2)}{target("TP3",tp3,setTp3)}{target("Stop Loss",sl,setSl)}</div>
       <div className="fixBox"><div className="confirmLine"><input aria-label="Trailing SL" type="checkbox" checked={trailingSL} onChange={e=>{touched.current.trailing=true;setTrailingSL(e.target.checked)}}/><span>Trailing SL</span><small>TP1 → Entry</small></div><div className="confirmLine"><input aria-label="Trailing" type="checkbox" checked={trailing} onChange={e=>{touched.current.trailing=true;setTrailing(e.target.checked)}}/><span>Trailing</span></div><div className="formGrid"><div className="field"><label>شروع Trailing</label><select aria-label="شروع Trailing" value={trigger} onChange={e=>{touched.current.trailing=true;setTrigger(e.target.value)}}>{[1,2,3].map(n=><option key={n} value={"tp"+n}>{"TP"+n}</option>)}</select></div><div className="field"><label>فاصله Trailing (%)</label><input aria-label="فاصله Trailing" type="number" min="1" max="99" step="1" value={distance} onChange={e=>{touched.current.trailing=true;setDistance(e.target.value)}}/></div></div></div>
-      <div className="fixBox"><div className="fixHead"><div><ShieldCheck size={20}/><b>Fix Loss</b></div></div><div className="formGrid"><div className="field"><label>ریسک مجاز</label><div className="inputSuffix"><input aria-label="ریسک مجاز" value={risk} onChange={e=>setRisk(e.target.value)} inputMode="decimal"/><span>٪</span></div></div><div className="suggestion"><span>حجم پیشنهادی</span><strong data-fixloss-suggestion>{fixloss?`${fmt(fixloss.suggested_capital??fixloss.suggested_notional,0)} USDT`:"—"}</strong>{fixloss&&<button type="button" className="softBtn" onClick={()=>{touched.current.capital=true;setCapital(fixloss.suggested_capital??String(Math.floor(num(fixloss.suggested_notional))))}}>استفاده از پیشنهاد</button>}</div></div>{fixloss&&<div className="riskDetails"><span>تتر آزاد: {fmt(fixloss.available,2)}</span><span>ریسک: {fmt(fixloss.risk_budget,2)} USDT</span><span>فاصله SL: {fmt(fixloss.stop_distance_percent,2)}٪</span><small>پیشنهاد بر مبنای فاصله استاپ است؛ کارمزد و لغزش می‌توانند زیان واقعی را تغییر دهند.</small></div>}{riskError&&<ErrorBox text={riskError}/>}</div>
+      <div className="fixBox"><div className="fixHead"><div><ShieldCheck size={20}/><b>Fix Loss</b></div></div><div className="formGrid"><div className="field"><label>ریسک مجاز</label><div className="inputSuffix"><input aria-label="ریسک مجاز" value={risk} onChange={e=>setRisk(e.target.value)} inputMode="decimal"/><span>٪</span></div></div><div className="suggestion"><span>حجم پیشنهادی</span><strong data-fixloss-suggestion>{fixloss?`${fmt(fixloss.suggested_capital??fixloss.suggested_notional,0)} USDT`:"—"}</strong>{fixloss&&<button type="button" className="softBtn" onClick={()=>{touched.current.capital=true;setCapital(fixloss.suggested_capital??String(Math.floor(num(fixloss.suggested_notional))))}}>استفاده از پیشنهاد</button>}</div></div>{fixloss&&<div className="riskDetails"><span>تتر آزاد: {fmt(fixloss.available,2)}</span><span>ریسک: {fmt(fixloss.risk_budget,2)} USDT</span><span>فاصله SL: {fmt(fixloss.stop_distance_percent,2)}٪</span><small>پیشنهاد بر مبنای فاصله استاپ است؛ کارمزد و لغزش می‌توانند زیان واقعی را تغییر دهند.</small>{fixloss.warnings?.map(w=><small key={w} className="down">{w}</small>)}</div>}{riskError&&<ErrorBox text={riskError}/>}</div>
       <label className="confirmLine"><input aria-label="تأیید ارسال سفارش" type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/><span>مشخصات و ارسال سفارش را تأیید می‌کنم.</span></label>
     </fieldset>
     <div className="submitRow"><button type="button" className="primary large" disabled={busy||uncertain} onClick={submit}><Send size={17}/> ارسال سفارش</button>{uncertain&&<button type="button" className="secondary" disabled={busy} onClick={()=>perform(request.current)}>بررسی مجدد همان درخواست</button>}</div>
@@ -291,11 +293,11 @@ function FavoriteEditor({notify}){
 
 function ManualPlans({notify,setPage,setManualSeed}){const [plans,setPlans]=useState([]);const load=()=>api("/api/v1/ui/manual-plans/").then(d=>setPlans(d.plans||[])).catch(e=>notify(e.message));useEffect(()=>{load()},[]);const edit=x=>{setManualSeed({...x,plan_id:x.id});setPage("manual")};const confirmPlan=async x=>{try{await api(`/api/v1/manual/plans/${x.id}/confirm/`,{method:"POST",body:{revision:x.revision}});notify(`برنامه #${x.id} تأیید شد؛ هنوز سفارشی ارسال نشده است.`);load()}catch(e){notify(e.message)}};return <div className="card"><div className="cardHead"><div><h3>برنامه‌های معامله</h3><p>برنامه‌ها تنظیمات معامله‌اند؛ تأیید برنامه به‌تنهایی سفارش واقعی ارسال نمی‌کند.</p></div><div className="row gap"><button className="iconBtn" onClick={load}><RefreshCw size={17}/></button><button className="primary" onClick={()=>{setManualSeed(null);setPage("manual")}}><PlusCircle size={17}/> برنامه جدید</button></div></div><div className="tableScroll"><table><thead><tr><th>بازار</th><th>حساب</th><th>جهت</th><th>Entry</th><th>TP / SL</th><th>حجم</th><th>اهرم</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>{plans.map(x=><tr key={x.id}><td><b>{(x.symbol||"").replace("/USDT","")}</b><small className="blockMuted">{x.market_type}</small></td><td>{x.exchange} · {x.account}</td><td>{x.side==="long"?"لانگ":"شورت"}</td><td>{x.entry}</td><td><span className="up">TP1 {x.tp1}</span><small className="blockMuted down">SL {x.stop_loss}</small></td><td>{fmt(x.capital,2)} USDT</td><td>x{Number(x.leverage||1).toFixed(0)}</td><td><span className="pill">{x.status==="ready"?"تأییدشده":"پیش‌نویس"}</span></td><td><div className="row gap">{x.status==="draft"&&<button className="softBtn" onClick={()=>edit(x)}>ویرایش</button>}{x.status==="draft"&&<button className="primary" onClick={()=>confirmPlan(x)}><CheckCircle2 size={15}/> تأیید</button>}</div></td></tr>)}</tbody></table>{!plans.length&&<Empty/>}</div></div>}
 
-function MarketChart({marketId,signalId=null,trade=null}){
+function MarketChart({marketId,signalId=null,trade=null,levels:manualLevels=null}){
   const [payload,setPayload]=useState(null);
   const [interval,setIntervalValue]=useState("5m");
   useEffect(()=>{
-    if(!marketId){setPayload(null);return}
+    setPayload(null);if(!marketId)return
     let stop=false;
     const load=async()=>{
       try{
@@ -316,7 +318,7 @@ function MarketChart({marketId,signalId=null,trade=null}){
   const candles=payload?.candles||[];
   if(!candles.length)return <div className="chartEmpty">در انتظار کندل و قیمت زنده…</div>;
 
-  const levels=payload?.overlay?.levels||[];
+  const levels=manualLevels?[{kind:"entry",label:"Entry",price:manualLevels.entry},{kind:"sl",label:"SL",price:manualLevels.stop},...(manualLevels.targets||[]).map((price,i)=>({kind:"tp"+(i+1),label:"TP"+(i+1),price}))].filter(x=>num(x.price)>0):(payload?.overlay?.levels||[]);
   const values=[
     ...candles.flatMap(c=>[num(c.low),num(c.high)]),
     ...levels.map(x=>num(x.price)).filter(Boolean)

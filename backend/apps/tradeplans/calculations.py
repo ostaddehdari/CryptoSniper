@@ -96,7 +96,7 @@ def build_preview(data, now=None):
     if required_cash > capital:
         raise ValidationError("سرمایه اختصاص‌یافته برای کارمزد و حجم کافی نیست.")
     balances = BalanceSnapshot.objects.filter(
-        exchange_account=account, asset=market.quote_asset
+        exchange_account=account, asset=market.quote_asset, wallet_scope=market.market_type
     ).order_by("-captured_at")
     latest = balances.first()
     if not latest or latest.captured_at < now - timedelta(minutes=15):

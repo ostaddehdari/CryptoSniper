@@ -5,7 +5,9 @@
 .between{justify-content:space-between}
 .chartToolbar{align-items:center;justify-content:space-between}
 @media(max-width:560px){
-  .app,.main,.content,.grid2,.card,.chartPanel,.candleWrap,.tableScroll{min-width:0;max-width:100%}
+  html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
+  .app,.main,.content,.grid2,.card,.chartPanel,.candleWrap,.tableScroll,.row{min-width:0;max-width:100%}
+  .content{width:100%;overflow-x:hidden}
   .card{overflow-x:visible}
   .tableScroll{overflow-x:auto}
   .topbar{width:100%;min-width:0;gap:8px}
@@ -14,7 +16,13 @@
   .topActions{flex:0 0 auto;min-width:0}
   .cardHead{flex-wrap:wrap;gap:10px;align-items:flex-start}
   .cardHead>div{min-width:0;max-width:100%}
-  .cardHead>.row{max-width:100%;overflow-x:auto;padding-bottom:2px}
+  .cardHead>.row{width:100%;max-width:100%;overflow-x:auto;padding-bottom:2px}
+  .range{min-width:0;max-width:100%;overflow-x:auto;overflow-y:hidden;flex-wrap:nowrap}
+  .range button{flex:0 0 auto}
+  .analysisGrid,.grid2,.grid2.equal{grid-template-columns:minmax(0,1fr)!important}
+  .analysisGrid{padding:12px}
+  .infoBox{width:auto!important;min-width:0!important;max-width:100%!important;overflow:hidden}
+  .infoBox span,.infoBox b{min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:break-word}
   .chartToolbar{flex-wrap:wrap;align-items:flex-start}
   .submitRow{flex-wrap:wrap}
   .submitRow>*{flex:1 1 150px;min-width:0}

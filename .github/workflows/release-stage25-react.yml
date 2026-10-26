@@ -2,15 +2,9 @@ name: Build Stage25 React Cornix deployment
 
 on:
   push:
-    branches: [main]
+    branches: [stage25-react-cornix-rebuild]
     paths:
       - .github/workflows/release-stage25-react.yml
-      - frontend-react/**
-      - backend/apps/core/react_views.py
-      - backend/templates/react_app.html
-      - backend/config/urls.py
-      - backend/apps/exchanges/views.py
-      - scripts/cryptosniper-stage24-rebuild-run.sh
   workflow_dispatch:
 
 permissions:
@@ -35,7 +29,7 @@ jobs:
       - name: Validate installer upgrade path
         run: |
           set -euo pipefail
-          bash -n scripts/cryptosniper-stage24-rebuild-run.sh
+          bash -n scripts/cryptosniper-stage25-react-run.sh
           python3 -m unittest discover -s tests -p test_installer_nginx.py -v
 
       - name: Require successful integration checks for exact source
@@ -87,10 +81,10 @@ jobs:
 
           (
             cd stage
-            zip -qr ../dist/CryptoSniper-Stage25-React-Cornix-r1.zip CryptoSniper
+            zip -qr ../dist/CryptoSniper-Stage25-React-v0.25.0rc1-r1.zip CryptoSniper
           )
 
-          git show "$PIN":scripts/cryptosniper-stage24-rebuild-run.sh > dist/cryptosniper-stage25-react-run.sh
+          git show "$PIN":scripts/cryptosniper-stage25-react-run.sh > dist/cryptosniper-stage25-react-run.sh
 
           python3 - <<'PY'
           import hashlib, os, re, subprocess
@@ -103,10 +97,10 @@ jobs:
                   ["git", "rev-parse", pin + ":" + path], text=True
               ).strip()
 
-          archive = Path("dist/CryptoSniper-Stage25-React-Cornix-r1.zip")
+          archive = Path("dist/CryptoSniper-Stage25-React-v0.25.0rc1-r1.zip")
           substitutions = {
               "__SOURCE_COMMIT__": pin,
-              "__STAGE24_ARCHIVE_SHA256__": hashlib.file_digest(
+              "__STAGE25_ARCHIVE_SHA256__": hashlib.file_digest(
                   archive.open("rb"), "sha256"
               ).hexdigest(),
               "__BLOB_PYPROJECT__": blob("pyproject.toml"),
@@ -155,12 +149,26 @@ jobs:
               "__BLOB_STAGE24_APP_JS__": blob("backend/static/js/stage24-rebuild.js"),
               "__BLOB_STAGE24_APP_CSS__": blob("backend/static/css/stage24-rebuild.css"),
               "__BLOB_STAGE24_REPORT__": blob("docs/reports/stage-24-rebuild.md"),
-              "__BLOB_REACT_MAIN__": blob("frontend-react/src/main.jsx"),
-              "__BLOB_REACT_STYLES__": blob("frontend-react/src/styles.css"),
               "__BLOB_REACT_PACKAGE__": blob("frontend-react/package.json"),
+              "__BLOB_REACT_PACKAGE_LOCK__": blob("frontend-react/package-lock.json"),
               "__BLOB_REACT_VITE__": blob("frontend-react/vite.config.js"),
+              "__BLOB_REACT_MAIN__": blob("frontend-react/src/main.jsx"),
+              "__BLOB_REACT_APPROVED_CSS__": blob("frontend-react/src/styles.css"),
+              "__BLOB_REACT_STAGE25_CSS__": blob("frontend-react/src/stage25.css"),
               "__BLOB_REACT_VIEWS__": blob("backend/apps/core/react_views.py"),
               "__BLOB_REACT_TEMPLATE__": blob("backend/templates/react_app.html"),
+              "__BLOB_ACCOUNTS_MODELS__": blob("backend/apps/accounts/models.py"),
+              "__BLOB_MARKETDATA_MODELS__": blob("backend/apps/marketdata/models.py"),
+              "__BLOB_WALLET_MIGRATION__": blob(
+                  "backend/apps/accounts/migrations/0007_walletconnection.py"
+              ),
+              "__BLOB_FAVORITE_MIGRATION__": blob(
+                  "backend/apps/marketdata/migrations/0003_favoriteasset.py"
+              ),
+              "__BLOB_EXCHANGE_DIAGNOSTICS_MIGRATION__": blob(
+                  "backend/apps/exchanges/migrations/0008_react_connection_diagnostics.py"
+              ),
+              "__BLOB_STAGE25_REPORT__": blob("docs/reports/stage-25-react.md"),
               "__REACT_APP_JS_SHA256__": hashlib.file_digest(
                   Path("backend/static/react/app.js").open("rb"), "sha256"
               ).hexdigest(),
@@ -184,11 +192,11 @@ jobs:
           bash -n dist/cryptosniper-stage25-react-run.sh
 
           printf 'SOURCE=%s\nUI=React 18 + Vite; approved Cornix-like workspace; Django APIs/workers preserved\nLIVE_WRITES=fail-closed by default\n' "$PIN" > dist/runlog.txt
-          bash dist/cryptosniper-stage25-react-run.sh --check dist/CryptoSniper-Stage25-React-Cornix-r1.zip | tee -a dist/runlog.txt
+          bash dist/cryptosniper-stage25-react-run.sh --check dist/CryptoSniper-Stage25-React-v0.25.0rc1-r1.zip | tee -a dist/runlog.txt
 
           (
             cd dist
-            sha256sum CryptoSniper-Stage25-React-Cornix-r1.zip cryptosniper-stage25-react-run.sh runlog.txt > SHA256SUMS.txt
+            sha256sum CryptoSniper-Stage25-React-v0.25.0rc1-r1.zip cryptosniper-stage25-react-run.sh runlog.txt > SHA256SUMS.txt
           )
 
       - name: Save exact deployment bytes
@@ -204,14 +212,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          TAG=stage25-react-cornix-deploy-r1
+          TAG=stage25-react-v0.25.0rc1-deploy-r1
           PIN=$(git rev-parse HEAD)
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Release already exists; immutable assets were not replaced."
           else
             gh release create "$TAG" dist/* --target "$PIN" --prerelease \
-              --title "CryptoSniper Stage25 React Cornix UI — installer r1" \
-              --notes "Primary /cryptosniper workspace is the approved React/Vite Cornix-like UI. Stage24 backend, PostgreSQL, Redis, workers, Telegram, exchange connections, unified trades, live charts, signal archive, exchange-scoped markets, USDT tickers, trailing controls and fail-closed Live writes are preserved. The server does not need Node; the pinned React build is included in the release archive."
+              --title "CryptoSniper Stage25 React — v0.25.0rc1 installer r1" \
+              --notes "Primary /cryptosniper workspace is the approved React/Vite Cornix-like UI from the validated Stage23 React source. The approved base stylesheet is byte-locked; Stage25 adds live charts, signal overlays, unified internal/live/external trades, archive lifecycle, account-scoped markets, USDT/USD and USDT/Toman tickers, Telegram/exchange/settings integration and the current Trailing SL/TP rules. Stage24 backend, PostgreSQL, Redis, workers, database, login and encrypted credentials are preserved. The server does not need Node; the pinned React build is included. Live writes remain fail-closed by default."
           fi
           cat dist/SHA256SUMS.txt
           gh release view "$TAG" --json assets,url

@@ -1,19 +1,31 @@
-{% extends 'shell.html' %}{% load static %}{% block title %}Watchlist | CryptoSniper{% endblock %}{% block breadcrumb %}واچ‌لیست{% endblock %}{% block content %}
-<div class="page-heading"><div><span class="eyebrow">MARKET WORKSPACE · STAGE 04</span><h1>دیده‌بان بازار</h1><p class="muted">قیمت‌ها صرفاً نمایشی‌اند. دادهٔ قدیمی هرگز برای اجرای معامله معتبر نیست.</p></div><span class="mode-pill">DISPLAY ONLY</span></div>
-{% if messages %}{% for message in messages %}<div class="notice" role="status">{{ message }}</div>{% endfor %}{% endif %}
-<section class="market-toolbar panel">
-<form method="get" action="{% url 'watchlists' %}" class="market-control"><label for="list-select">فهرست من</label><select id="list-select" name="list" onchange="this.form.submit()">{% for wl in watchlists %}<option value="{{ wl.pk }}" {% if wl.pk == active.pk %}selected{% endif %}>{{ wl.name }}</option>{% endfor %}</select></form>
-<form method="post" action="{% url 'watchlist-create' %}" class="market-control">{% csrf_token %}<label for="list-name">فهرست جدید</label><div class="market-form-inline"><input id="list-name" name="name" maxlength="64" required placeholder="مثلاً پرتفوی روزانه"><button class="button button-soft" type="submit">ایجاد</button></div></form>
+{% extends 'shell.html' %}{% load static %}{% block title %}بازارها | CryptoSniper{% endblock %}{% block content %}
+<section class="s24-page">
+  <div class="s24-section-head">
+    <div><h1>بازارها و واچ‌لیست</h1><p>قیمت زنده، Feed و دسترسی مستقیم به هشدار و معامله.</p></div>
+    <span class="s24-status">DISPLAY ONLY</span>
+  </div>
+  {% if messages %}{% for message in messages %}<div class="s24-panel s24-notice">{{ message }}</div>{% endfor %}{% endif %}
+
+  <div class="s24-grid s24-newtrade-grid">
+    <article class="s24-panel">
+      <div class="s24-panel-head"><strong>بازارهای منتخب</strong><span class="s24-muted">Refresh هر ۱۵ ثانیه</span></div>
+      <form method="get" action="{% url 'watchlists' %}" class="s24-form-row" style="margin-bottom:12px">
+        <label>فهرست من<select name="list" onchange="this.form.submit()">{% for wl in watchlists %}<option value="{{ wl.pk }}" {% if wl.pk == active.pk %}selected{% endif %}>{{ wl.name }}</option>{% endfor %}</select></label>
+      </form>
+      {% if entries %}
+      <div class="s24-table-scroll"><table class="s24-table" data-watchlist-id="{{ active.pk }}" data-quotes-url="{% url 'api-market-quotes' %}" id="market-watchlist"><thead><tr><th>بازار</th><th>صرافی</th><th>قیمت</th><th>Feed</th><th>عملیات</th></tr></thead><tbody>
+        {% for entry in entries %}<tr data-market-id="{{ entry.market.pk }}"><td><strong dir="ltr">{{ entry.market.symbol }}</strong></td><td>{{ entry.market.exchange.name }}</td><td class="quote-price" dir="ltr">{% if entry.quote %}{{ entry.quote.price }}{% else %}—{% endif %}</td><td class="quote-status">{% if not entry.quote %}در انتظار{% elif entry.quote.stale %}قدیمی{% else %}تازه{% endif %}</td><td><div class="s24-actions"><form method="post" action="{% url 'watchlist-refresh' active.pk entry.market.pk %}">{% csrf_token %}<button class="s24-button ghost">↻</button></form><a class="s24-button ghost" href="{% url 'alert-new' %}?market={{ entry.market.pk }}">هشدار</a><a class="s24-button ghost" href="{% url 'app-shell' %}#/newtrade">معامله</a><form method="post" action="{% url 'watchlist-remove' active.pk entry.pk %}">{% csrf_token %}<button class="s24-button ghost" style="color:#d54848">حذف</button></form></div></td></tr>{% endfor %}
+      </tbody></table></div>
+      {% else %}<div class="s24-empty-inline">هنوز بازاری در این واچ‌لیست نیست.</div>{% endif %}
+    </article>
+
+    <aside class="s24-panel">
+      <div class="s24-panel-head"><strong>افزودن بازار</strong><span class="s24-status">SEARCH</span></div>
+      <form method="get" action="{% url 'watchlists' %}" class="s24-trade-form"><input type="hidden" name="list" value="{{ active.pk }}"><label>جست‌وجوی ارز یا Pair<input name="q" value="{{ request.GET.q|default:'' }}" maxlength="48" placeholder="BTC یا BTC/USDT"></label><button class="s24-button primary">جست‌وجو</button></form>
+      <div class="s24-trade-detail" style="margin-top:12px">{% for market in search_results %}<form method="post" action="{% url 'watchlist-add' active.pk %}" class="s24-fact">{% csrf_token %}<input type="hidden" name="market_id" value="{{ market.id }}"><span>{{ market.exchange_name }} · {{ market.market_type }}</span><strong dir="ltr">{{ market.symbol }}</strong><button class="s24-button ghost" type="submit">＋ افزودن</button></form>{% empty %}<div class="s24-empty-inline">بازار قابل‌خواندن پیدا نشد.</div>{% endfor %}</div>
+      <form method="post" action="{% url 'watchlist-create' %}" class="s24-trade-form" style="margin-top:14px">{% csrf_token %}<label>فهرست جدید<input name="name" maxlength="64" required placeholder="مثلاً پرتفوی روزانه"></label><button class="s24-button">ایجاد فهرست</button></form>
+    </aside>
+  </div>
 </section>
-<section class="market-workspace">
-<div class="panel"><div class="panel-heading"><h2>بازارهای منتخب</h2><span class="small-label">به‌روزرسانی کنترل‌شده هر ۱۵ ثانیه</span></div>
-{% if entries %}<div class="market-table-wrap"><table class="market-table" data-watchlist-id="{{ active.pk }}" data-quotes-url="{% url 'api-market-quotes' %}" id="market-watchlist"><thead><tr><th>بازار و صرافی</th><th>آخرین قیمت</th><th>وضعیت Feed</th><th>عملیات</th></tr></thead><tbody>
-{% for entry in entries %}<tr data-market-id="{{ entry.market.pk }}"><td data-label="بازار"><strong dir="ltr">{{ entry.market.symbol }}</strong><small>{{ entry.market.exchange.name }} · {{ entry.market.get_market_type_display }}</small></td><td data-label="آخرین قیمت" class="quote-price" dir="ltr">{% if entry.quote %}{{ entry.quote.price }}{% else %}—{% endif %}</td><td data-label="وضعیت Feed" class="quote-status">{% if not entry.quote %}در انتظار داده{% elif entry.quote.stale %}قدیمی{% else %}تازه{% endif %}</td><td data-label="عملیات"><div class="market-actions"><form method="post" action="{% url 'watchlist-remove' active.pk entry.pk %}">{% csrf_token %}<button type="submit" class="text-button">حذف</button></form><form method="post" action="{% url 'watchlist-refresh' active.pk entry.market.pk %}">{% csrf_token %}<button class="text-button" type="submit">بروزرسانی</button></form><a href="{% url 'alert-new' %}?market={{ entry.market.pk }}" class="inline-link">هشدار ({{ entry.alert_count }})</a><a href="{% url 'manual-new' %}" class="inline-link">سیگنال دستی</a><a href="{% url 'smart-paste' %}" class="inline-link">Smart Paste</a></div></td></tr>{% endfor %}
-</tbody></table></div>{% else %}<div class="market-empty"><strong>هنوز بازاری ثبت نشده است</strong><p>ابتدا از صفحهٔ صرافی‌ها یک حساب شبیه‌ساز بسازید و Sync کنید؛ سپس یک بازار را از قسمت جست‌وجو انتخاب کنید.</p><a class="button button-soft" href="{% url 'exchange-center' %}">مرکز صرافی‌ها</a></div>{% endif %}
-<p class="market-hint">قیمت‌ها داده معاملاتی معتبر نیستند. هنگام قطع فید، وضعیت «قدیمی» یا «ناموجود» نشان داده می‌شود.</p></div>
-<aside class="panel"><div class="panel-heading"><h2>افزودن بازار</h2><span class="small-label">Coin / Pair</span></div>
-<form method="get" action="{% url 'watchlists' %}" class="market-control"><input type="hidden" name="list" value="{{ active.pk }}"><label for="market-search">جست‌وجوی ارز یا نماد</label><div class="market-form-inline"><input id="market-search" name="q" value="{{ request.GET.q|default:'' }}" maxlength="48" placeholder="BTC یا BTC/USDT"><button class="button button-soft" type="submit">جست‌وجو</button></div></form>
-<div class="market-search-results">{% for market in search_results %}<form method="post" action="{% url 'watchlist-add' active.pk %}">{% csrf_token %}<input type="hidden" name="market_id" value="{{ market.id }}"><div><strong dir="ltr">{{ market.symbol }}</strong><small>{{ market.exchange_name }} · {{ market.market_type }}{% if not market.metadata_fresh %} · metadata قدیمی{% endif %}</small></div><button type="submit" class="button button-soft">＋</button></form>{% empty %}<p class="muted">بازار قابل‌خواندن پیدا نشد. ابتدا اتصال صرافی را همگام کنید.</p>{% endfor %}</div>
-</aside></section>
 <script src="{% static 'js/marketdata.js' %}" defer></script>
 {% endblock %}

@@ -34,9 +34,7 @@ def make_signal(user, market=None):
 
 
 @pytest.mark.django_db
-def test_stage24_features_are_exposed_through_primary_react_workspace(
-    client, django_user_model
-):
+def test_stage24_features_are_exposed_through_primary_react_workspace(client, django_user_model):
     user = django_user_model.objects.create_user(username="s25-react-stage24")
     client.force_login(user)
 

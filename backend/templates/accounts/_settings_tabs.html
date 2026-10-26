@@ -1,11 +1,11 @@
-<nav class="settings-tabs" aria-label="تنظیمات و اتصال‌ها">
-<a {% if request.resolver_match.url_name == 'profile' %}class="active" aria-current="page"{% endif %} href="{% url 'profile' %}">پروفایل</a>
-<a {% if request.resolver_match.url_name == 'sessions' %}class="active" aria-current="page"{% endif %} href="{% url 'sessions' %}">امنیت و نشست‌ها</a>
-<a {% if request.resolver_match.url_name == 'trading-preferences' %}class="active" aria-current="page"{% endif %} href="{% url 'trading-preferences' %}">پیش‌فرض‌های معامله</a>
-<a {% if request.resolver_match.url_name == 'source-settings' %}class="active" aria-current="page"{% endif %} href="{% url 'source-settings' %}">منابع سیگنال</a>
-<a {% if request.resolver_match.url_name == 'telegram-settings' %}class="active" aria-current="page"{% endif %} href="{% url 'telegram-settings' %}">Telegram</a>
+<nav class="s24-overview-links" aria-label="تنظیمات و اتصال‌ها">
+<a {% if request.resolver_match.url_name == 'profile' %}class="active"{% endif %} href="{% url 'profile' %}">پروفایل</a>
+<a {% if request.resolver_match.url_name == 'sessions' %}class="active"{% endif %} href="{% url 'sessions' %}">امنیت و نشست‌ها</a>
+<a {% if request.resolver_match.url_name == 'trading-preferences' %}class="active"{% endif %} href="{% url 'trading-preferences' %}">پیش‌فرض‌های معامله</a>
+<a {% if request.resolver_match.url_name == 'source-settings' %}class="active"{% endif %} href="{% url 'source-settings' %}">منابع سیگنال</a>
+<a {% if request.resolver_match.url_name == 'telegram-settings' %}class="active"{% endif %} href="{% url 'telegram-settings' %}">Telegram</a>
 <a href="{% url 'exchange-center' %}">اتصال صرافی‌ها</a>
 <a href="{% url 'alerts' %}">هشدارها</a>
 <a href="{% url 'reports' %}">گزارش عملکرد</a>
-<a {% if request.resolver_match.url_name == 'audit-events' %}class="active" aria-current="page"{% endif %} href="{% url 'audit-events' %}">گزارش امنیتی</a>
+<a {% if request.resolver_match.url_name == 'audit-events' %}class="active"{% endif %} href="{% url 'audit-events' %}">گزارش امنیتی</a>
 </nav>

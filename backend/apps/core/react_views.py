@@ -22,7 +22,7 @@ from apps.accounts.models import UserSession, WalletConnection
 from apps.accounts.security import has_recent_step_up, mark_step_up, session_api_required
 from apps.accounts.retention import retained_audit_events
 from apps.accounts.services import revoke_user_session
-from apps.alerts.models import Notification, NotificationPreference
+from apps.alerts.models import Notification, NotificationPreference, PriceAlert
 from apps.exchanges.forms import ExchangeConnectionForm, LiveSpotOrderForm
 from apps.exchanges.live_orders import queue_live_spot_order
 from apps.exchanges.models import BalanceSnapshot, ExchangeMarket, LiveSpotOrder, UserExchangeAccount
@@ -131,6 +131,18 @@ def legacy_plan_page(request, pk):
         request,
         "react_app.html",
         {"release": "stage25-react-cornix", "initial_page": "plans"},
+    )
+
+
+@login_required
+@never_cache
+@require_GET
+def legacy_alert_page(request, pk):
+    get_object_or_404(PriceAlert.objects.filter(owner=request.user), pk=pk)
+    return render(
+        request,
+        "react_app.html",
+        {"release": "stage25-react-cornix", "initial_page": "alerts"},
     )
 
 

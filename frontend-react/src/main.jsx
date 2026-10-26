@@ -390,7 +390,7 @@ function MarketChart({marketId,signalId=null,trade=null,levels:manualLevels=null
           let ix=0,dist=Infinity;
           times.forEach((t,j)=>{const d=Math.abs(t-Number(m.time));if(d<dist){ix=j;dist=d}});
           const x=pad+step*ix+step/2;
-          return <g key={"m"+i}><line x1={x} x2={x} y1={pad} y2={H-pad} stroke="#7d8aa0" strokeDasharray="3 5"/><text x={Math.min(W-70,x+6)} y={pad+15} direction="ltr" fill="#52637b" fontSize="10">{m.label}</text></g>
+          return <g key={"m"+i}><line x1={x} x2={x} y1={pad} y2={H-pad} stroke="#7d8aa0" strokeDasharray="3 5"/><text x={Math.min(W-pad-5,Math.max(pad+String(m.label).length*6,x+6))} y={pad+15+(i%4)*12} textAnchor="end" direction="ltr" fill="#52637b" fontSize="10">{m.label}</text></g>
         })}
       </svg>
     </div>

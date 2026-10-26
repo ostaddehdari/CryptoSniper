@@ -45,6 +45,7 @@ from apps.signals.models import RawSignal, Signal, SignalSource, SignalTarget  #
 from apps.tradeplans.models import TradePlan  # noqa: E402
 from django.contrib.auth import get_user_model  # noqa: E402
 from django.core.cache import cache  # noqa: E402
+from django.db import transaction  # noqa: E402
 from django.utils import timezone  # noqa: E402
 from playwright.sync_api import sync_playwright  # noqa: E402
 
@@ -424,6 +425,37 @@ def main():
                         external_policy__observation=external, snapshot__targets__0__price="71000"
                     ).exists()
                 )
+                with transaction.atomic():
+                    managed = ManagedSpotPosition.objects.get(external_policy__observation=external)
+                    proof = LiveSpotOrder.objects.create(
+                        owner=user,
+                        account=account,
+                        market=market,
+                        client_order_id="s31-browser-exit-proof",
+                        side="sell",
+                        order_type="limit",
+                        amount=Decimal("0.001"),
+                        price=Decimal("61750"),
+                        filled_amount=Decimal("0.0002"),
+                        average_price=Decimal("61750"),
+                        state="cancelled",
+                        external_order_id="s31-proof",
+                    )
+                    LiveExitAttempt.objects.create(
+                        position=managed,
+                        order=proof,
+                        sequence=1,
+                        reason="sl",
+                        trigger_price=Decimal("61750"),
+                    )
+                    managed.exited, managed.exit_sequence, managed.exit_latched = (
+                        Decimal("0.0002"),
+                        1,
+                        True,
+                    )
+                    managed.save()
+                page.goto(base + "/app/#/trades")
+                page.locator(".realChart text").filter(has_text="sl fill").first.wait_for()
                 page.wait_for_function("""() => [...document.querySelectorAll('.realChart text')]
                     .some(e => e.textContent.includes('TP1') && e.textContent.includes('۷۱'))""")
                 page.locator(".realChart text").filter(has_text="SL").first.wait_for()

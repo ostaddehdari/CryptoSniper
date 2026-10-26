@@ -274,7 +274,7 @@ from pathlib import Path
 
 SNIPPET = Path('/etc/nginx/snippets/cryptosniper-location.conf')
 INCLUDE = f'include {SNIPPET};'
-MARKER = '# Managed by CryptoSniper Stage25 React installer'
+MARKER = '# Managed by CryptoSniper Stage25 installer'
 KNOWN_MARKERS = tuple(f'# Managed by CryptoSniper Stage{stage:02d} installer' for stage in range(1, 25))
 plan_path = Path(sys.argv[2])
 

@@ -9,7 +9,7 @@
   <div class="s24-card-grid">
     {% for item in items %}
     <article class="s24-card">
-      <div class="s24-card-head"><div><div class="s24-card-title">{{ item.title }}</div><div class="s24-card-sub">{{ item.market.symbol }}{% if item.trade_id %} · Paper #{{ item.trade_id }}{% endif %}</div></div><span class="s24-card-badge">{% if item.enabled %}فعال{% else %}{{ item.status }}{% endif %}</span></div>
+      <div class="s24-card-head"><div><h2 class="s24-card-title">{{ item.title }}</h2><div class="s24-card-sub">{{ item.market.symbol }}{% if item.trade_id %} · Paper #{{ item.trade_id }}{% endif %}</div></div><span class="s24-card-badge">{% if item.enabled %}فعال{% else %}{{ item.status }}{% endif %}</span></div>
       <div class="s24-detail-facts" style="margin-top:12px">
         <div class="s24-fact"><span>نوع</span><strong>{{ item.get_kind_display }}</strong></div>
         <div class="s24-fact"><span>آستانه</span><strong dir="ltr">{{ item.threshold|floatformat:4 }}</strong></div>

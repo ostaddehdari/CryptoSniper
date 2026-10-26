@@ -1,74 +1,56 @@
-{% extends 'base.html' %}{% load static %}
-{% block extra_head %}<link rel="stylesheet" href="{% static 'css/stage24-rebuild.css' %}">{% endblock %}
+{% extends "base.html" %}{% load static %}
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/stage24-rebuild.css' %}">
+{% endblock %}
 {% block body %}
-<div class="s24-shell app-layout" data-cornix-shell data-api-root="{% url 'home' %}">
-  <button class="menu-scrim" x-show="menuOpen" x-cloak @click="menuOpen = false" aria-label="بستن منو"></button>
-  <aside class="s24-sidebar sidebar" aria-label="منوی اصلی">
-    <a class="s24-brand brand" href="{% url 'app-shell' %}#/overview">
+<div class="s24-shell" data-cornix-shell data-api-root="{% url 'home' %}">
+  <aside class="s24-sidebar">
+    <a class="s24-brand" href="{% url 'app-shell' %}#/overview">
       <span class="s24-brand-mark">⌁</span>
-      <span><strong>CryptoSniper</strong><small>Trading Command Center</small></span>
+      <span><strong>CryptoSniper</strong><small>مرکز کنترل معاملات واقعی</small></span>
     </a>
-
-    <nav class="s24-nav nav-links" aria-label="ناوبری اصلی">
-      <a href="{% url 'app-shell' %}#/overview" class="{% if nav == 'dashboard' %}active{% endif %}"><span>◈</span> نمای کلی</a>
-      <a href="{% url 'app-shell' %}#/newtrade"><span>＋</span> معامله جدید</a>
-      <a href="{% url 'app-shell' %}#/trades" class="{% if nav == 'paper' %}active{% endif %}"><span>◷</span> معاملات</a>
-      <a href="{% url 'app-shell' %}#/inbox" class="{% if nav == 'inbox' %}active{% endif %}"><span>▣</span> صندوق سیگنال</a>
-      <a href="{% url 'watchlists' %}" class="{% if nav == 'watchlist' %}active{% endif %}"><span>◉</span> بازارها و واچ‌لیست</a>
-      <a href="{% url 'exchange-center' %}" class="{% if nav == 'exchanges' %}active{% endif %}"><span>⇄</span> صرافی‌ها</a>
-      <a href="{% url 'manual-list' %}" class="{% if nav == 'manual' %}active{% endif %}"><span>✎</span> برنامه‌های معامله</a>
-      <a href="{% url 'alerts' %}" class="{% if nav == 'alerts' %}active{% endif %}"><span>♧</span> هشدارها</a>
-      <a href="{% url 'reports' %}" class="{% if nav == 'reports' %}active{% endif %}"><span>⌁</span> گزارش عملکرد</a>
-      <a href="{% url 'telegram-settings' %}" class="{% if nav == 'settings' %}active{% endif %}"><span>✈</span> تلگرام و منابع</a>
-      <a href="{% url 'operations' %}" class="{% if nav == 'operations' %}active{% endif %}"><span>◇</span> مرکز عملیات</a>
-      <a href="{% url 'system' %}" class="{% if nav == 'system' %}active{% endif %}"><span>⌘</span> وضعیت سرویس‌ها</a>
-      <a href="{% url 'profile' %}" class="{% if nav == 'settings' %}active{% endif %}"><span>⚙</span> تنظیمات حساب</a>
+    <nav class="s24-nav" aria-label="ناوبری اصلی">
+      <a href="{% url 'app-shell' %}#/overview" {% if nav == 'dashboard' %}class="active"{% endif %}>نمای کلی</a>
+      <a href="{% url 'app-shell' %}#/newtrade">معامله جدید</a>
+      <a href="{% url 'app-shell' %}#/trades" {% if nav == 'paper' %}class="active"{% endif %}>معاملات</a>
+      <a href="{% url 'app-shell' %}#/inbox" {% if nav == 'inbox' %}class="active"{% endif %}>صندوق سیگنال</a>
+      <a href="{% url 'watchlists' %}" {% if nav == 'watchlist' %}class="active"{% endif %}>بازارها</a>
+      <a href="{% url 'exchange-center' %}" {% if nav == 'exchanges' %}class="active"{% endif %}>صرافی‌ها</a>
+      <a href="{% url 'manual-list' %}" {% if nav == 'manual' %}class="active"{% endif %}>برنامه‌های معامله</a>
+      <a href="{% url 'alerts' %}" {% if nav == 'alerts' %}class="active"{% endif %}>هشدارها</a>
+      <a href="{% url 'reports' %}" {% if nav == 'reports' %}class="active"{% endif %}>گزارش‌ها</a>
+      <a href="{% url 'telegram-settings' %}" {% if nav == 'settings' %}class="active"{% endif %}>تلگرام و سیگنال‌ها</a>
+      <a href="{% url 'operations' %}" {% if nav == 'operations' %}class="active"{% endif %}>مرکز عملیات</a>
+      <a href="{% url 'system' %}" {% if nav == 'system' %}class="active"{% endif %}>وضعیت سیستم</a>
+      <a href="{% url 'trading-preferences' %}" {% if nav == 'settings' %}class="active"{% endif %}>تنظیمات</a>
     </nav>
-
     <div class="s24-sidebar-foot">
-      <span><i class="s24-online-dot"></i>{{ request.user.preferred_name|default:request.user.username }}</span>
+      <span>{{ request.user.preferred_name|default:request.user.username }}</span>
       <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit">خروج</button></form>
     </div>
   </aside>
 
-  <div class="s24-workspace workspace">
-    <header class="s24-topbar topbar">
-      <div class="s24-topbar-start">
-        <button class="s24-mobile-menu icon-button mobile-menu" @click="menuOpen = !menuOpen" :aria-expanded="menuOpen" aria-label="باز کردن منو">☰</button>
-        <div class="s24-tabs">
-          <a href="{% url 'app-shell' %}#/overview">نمای کلی</a>
-          <a href="{% url 'app-shell' %}#/newtrade">معامله</a>
-          <a href="{% url 'app-shell' %}#/inbox">سیگنال</a>
-          <a href="{% url 'app-shell' %}#/trades">پوزیشن‌ها</a>
-        </div>
+  <main class="s24-workspace" id="main">
+    <header class="s24-topbar">
+      <div class="s24-tabs">
+        <a href="{% url 'app-shell' %}#/overview">نمای کلی</a>
+        <a href="{% url 'app-shell' %}#/newtrade">معامله دستی</a>
+        <a href="{% url 'app-shell' %}#/inbox">تحلیل سیگنال</a>
+        <a href="{% url 'app-shell' %}#/trades">معاملات</a>
       </div>
       <div class="s24-topbar-right">
         {% block topbar_extra %}{% endblock %}
-        <div class="s24-tickers" aria-label="قیمت‌های مرجع">
+        <div class="s24-tickers">
           <div class="s24-ticker"><span>USDT / USD</span><strong data-shell-usdt-usd>—</strong></div>
           <div class="s24-ticker"><span>USDT / تومان</span><strong data-shell-usdt-toman>—</strong></div>
         </div>
         <div class="s24-live-pill"><i></i><span>LIVE</span><small data-shell-live-time>—</small></div>
-        <a class="s24-icon-link notification-bell" href="{% url 'notifications' %}" aria-label="اعلان‌ها">♧<span data-notification-count data-list-url="{% url 'api-notifications' %}" data-claim-url="{% url 'notification-browser-claim' %}">0</span></a>
-        <button class="s24-icon-link" @click="toggleTheme()" :aria-label="theme === 'light' ? 'فعال‌کردن حالت تیره' : 'فعال‌کردن حالت روشن'"><span x-text="theme === 'light' ? '☾' : '☀'">☾</span></button>
       </div>
     </header>
-
     <div id="offline-banner" class="offline-banner" role="status" aria-live="polite" hidden>آفلاین هستید؛ اطلاعات بازار تازه نیست و هیچ اقدام معاملاتی تا اتصال دوباره ارسال نمی‌شود.</div>
-    <main id="main" class="s24-page s24-global-content main-content">
-      {% block content %}{% endblock %}
-    </main>
-  </div>
-
-  <nav class="s24-mobile-primary mobile-primary-nav" aria-label="دسترسی سریع موبایل">
-    <a href="{% url 'app-shell' %}#/overview"><span>◈</span>خانه</a>
-    <a href="{% url 'watchlists' %}"><span>◉</span>بازار</a>
-    <a class="mobile-create" href="{% url 'app-shell' %}#/newtrade"><span>＋</span>معامله</a>
-    <a href="{% url 'app-shell' %}#/trades"><span>◷</span>معاملات</a>
-    <button type="button" @click="menuOpen = true"><span>☰</span>بیشتر</button>
-  </nav>
+    {% block content %}{% endblock %}
+  </main>
 </div>
-<form hidden aria-hidden="true">{% csrf_token %}</form>
-<script defer src="{% static 'js/notifications.js' %}"></script>
+<form class="s24-csrf" aria-hidden="true">{% csrf_token %}</form>
 {% endblock %}
-{% block extra_scripts %}<script defer src="{% static 'js/cornix-shell.js' %}"></script>{% endblock %}
+{% block extra_scripts %}<script src="{% static 'js/cornix-shell.js' %}" defer></script>{% endblock %}

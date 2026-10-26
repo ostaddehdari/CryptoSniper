@@ -42,6 +42,8 @@ from apps.tradeplans.models import TradePlan
 from apps.trading.models import Trade
 
 
+from apps.marketdata.workspace import api_account_markets, api_favorites
+
 SAFE_SYMBOL = re.compile(r"^[A-Z0-9]{2,20}$")
 
 
@@ -496,7 +498,7 @@ def api_watchlists_ui(request):
 @session_api_required
 @never_cache
 @require_http_methods(["GET", "POST"])
-def api_favorites(request):
+def api_legacy_favorites(request):
     if request.method == "GET":
         return JsonResponse(
             {
@@ -618,46 +620,6 @@ def api_exchange_create(request):
         return JsonResponse({"id": account.pk, "status": account.status}, status=201)
     except ValidationError as error:
         return JsonResponse({"error": error.messages}, status=400)
-
-
-@session_api_required
-@never_cache
-@require_GET
-def api_account_markets(request, pk):
-    account = get_object_or_404(
-        UserExchangeAccount.objects.for_user(request.user).select_related("exchange"),
-        pk=pk,
-        status__in=(
-            UserExchangeAccount.Status.CONNECTED,
-            UserExchangeAccount.Status.RESTRICTED,
-        ),
-        permissions__can_read=True,
-    )
-    markets = (
-        ExchangeMarket.objects.filter(exchange=account.exchange, active=True, quote_asset__symbol="USDT")
-        .select_related("base_asset", "quote_asset")
-        .order_by("base_asset__symbol", "market_type")[:1000]
-    )
-    return JsonResponse(
-        {
-            "account": {"id": account.pk, "exchange": account.exchange.code, "label": account.label},
-            "markets": [
-                {
-                    "id": m.pk,
-                    "base": m.base_asset.symbol,
-                    "symbol": m.symbol,
-                    "market_type": m.market_type,
-                    "max_leverage": str(m.max_leverage),
-                    "price_step": str(m.price_step) if m.price_step else None,
-                    "amount_step": str(m.amount_step) if m.amount_step else None,
-                    "min_notional": str(m.min_notional) if m.min_notional else None,
-                }
-                for m in markets
-            ],
-        }
-    )
-
-
 
 
 @session_api_required

@@ -5,8 +5,8 @@
     "S01",
     "S02"
   ],
-  "current_stage": "S29",
-  "next_stage": "S30",
+  "current_stage": "S30",
+  "next_stage": "S31",
   "last_completed_work": "S29-W05",
   "implementation_started": true,
   "stage_results": {
@@ -1228,8 +1228,7 @@
         }
       ],
       "blockers": [
-        "Default-branch mutation was rejected by automatic approval review; PR #3 awaits explicit merge authorization.",
-        "Production VPS installation and operator visual acceptance remain unverified."
+        "Main integration remains pending; installed release and visual UI accepted by operator."
       ],
       "baseline": {
         "main": "8c0352ddb5b5cd8639208dbd95b2e790a0746104",
@@ -1244,11 +1243,12 @@
         "r1": "failed",
         "error": "DuplicateTable accounts_walletconnection",
         "application_files_rollback": "confirmed_by_operator_log",
-        "r2": "published_waiting_operator_retry"
-      }
+        "r2": "passed_operator_log_INSTALL_OK_DEPLOY_OK"
+      },
+      "visual_acceptance": "confirmed_by_user"
     },
     "S30": {
-      "status": "not_started",
+      "status": "in_progress",
       "completed_works": [],
       "checks": [],
       "blockers": []

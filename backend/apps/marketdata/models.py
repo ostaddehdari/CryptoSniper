@@ -107,3 +107,23 @@ class FavoriteAsset(models.Model):
     def save(self, *args, **kwargs):
         self.symbol = self.symbol.strip().upper()
         return super().save(*args, **kwargs)
+
+
+class ExchangeFavorite(models.Model):
+    """An ordered favorite list scoped to one owner and one exchange."""
+
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    exchange = models.ForeignKey("exchanges.Exchange", on_delete=models.CASCADE)
+    symbol = models.CharField(max_length=20)
+    position = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ("position", "pk")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("owner", "exchange", "symbol"), name="exchange_favorite_owner_symbol"
+            )
+        ]
+        indexes = [
+            models.Index(fields=("owner", "exchange", "position"), name="exchange_favorite_order")
+        ]

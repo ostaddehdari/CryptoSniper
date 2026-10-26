@@ -305,8 +305,14 @@ def main():
                     path=str(artifacts / "react-workspace-mobile.png"),
                     full_page=True,
                 )
+                assert page.evaluate(
+                    "document.documentElement.scrollWidth <= window.innerWidth"
+                )
                 overflow = page.evaluate(
                     """() => Array.from(document.querySelectorAll('body *'))
+                    .filter(el => !el.closest(
+                      '.sidebar,.tableScroll,.tabs,.compactTabs,.cardHead > .row'
+                    ))
                     .map(el => {
                       const r = el.getBoundingClientRect();
                       return {

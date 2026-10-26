@@ -221,7 +221,16 @@ def main():
         )
         base = f"http://127.0.0.1:{port}"
         try:
-            wait_for(lambda: httpx.get(base + "/health/ready/", timeout=2).status_code == 200)
+            def ready():
+                try:
+                    return (
+                        httpx.get(base + "/health/ready/", timeout=2).status_code
+                        == 200
+                    )
+                except httpx.TransportError:
+                    return False
+
+            wait_for(ready)
             with sync_playwright() as playwright:
                 browser = playwright.chromium.launch()
                 context = browser.new_context(viewport={"width": 1440, "height": 1000})
@@ -306,6 +315,7 @@ def main():
                 process.kill()
                 process.wait(timeout=5)
             log.close()
+            LiveSpotOrder.objects.filter(owner=user).delete()
             get_user_model().objects.filter(pk=user.pk).delete()
             Exchange.objects.filter(pk=account.exchange_id).delete()
 

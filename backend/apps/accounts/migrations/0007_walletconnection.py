@@ -33,7 +33,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="walletconnection",
-            index=models.Index(fields=["owner", "status"], name="accounts_wa_owner_i_b59cb8_idx"),
+            index=models.Index(fields=["owner", "status"], name="accounts_wa_owner_i_e18d3d_idx"),
         ),
     ]
 # fmt: on

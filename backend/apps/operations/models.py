@@ -204,12 +204,12 @@ class ManagedSpotPosition(models.Model):
             ),
         ]
 
+    def __str__(self):
+        return f"Managed Spot {self.pk} ({self.state})"
+
     @property
     def remaining(self):
         return self.acquired - self.exited
-
-    def __str__(self):
-        return f"Managed Spot {self.pk} ({self.state})"
 
 
 class LiveExitAttempt(models.Model):

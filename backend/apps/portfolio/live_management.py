@@ -76,8 +76,30 @@ def _fresh_inputs(adapter, market):
 
 
 def _protection(position, price):
-    # S31-W03 supplies the monotonic trailing transitions here.
-    return None
+    snapshot = position.snapshot
+    targets = snapshot["targets"]
+    if (
+        snapshot.get("trailing_sl")
+        and not position.break_even_applied
+        and price >= Decimal(targets[0]["price"])
+    ):
+        position.effective_stop = max(position.effective_stop, Decimal(snapshot["entry_price"]))
+        position.break_even_applied = True
+    if not snapshot.get("percentage_trailing"):
+        return
+    trigger = int(snapshot.get("trailing_trigger", "tp1")[-1])
+    if trigger > len(targets) or trigger < 1:
+        raise ValidationError("هدف شروع Trailing معتبر نیست.")
+    # Once armed, high-water keeps advancing even after price drops below the trigger.
+    if price >= Decimal(targets[trigger - 1]["price"]):
+        position.trailing_active = True
+    if position.trailing_active:
+        position.high_water = max(position.high_water or price, price)
+        distance = Decimal(snapshot["trailing_distance_percent"])
+        if not 0 < distance < 100:
+            raise ValidationError("فاصله Trailing معتبر نیست.")
+        derived = _floor(position.high_water * (100 - distance) / 100, position.market.price_step)
+        position.effective_stop = max(position.effective_stop, derived)
 
 
 def _intent(position, price):

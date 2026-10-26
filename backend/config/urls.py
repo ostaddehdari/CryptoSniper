@@ -15,7 +15,6 @@ from apps.reports import views as report_views
 from apps.signals import views as inbox_views
 from apps.tradeplans import context as trade_context
 from apps.tradeplans import views as plan_views
-from apps.trading import risk as paper_risk_views
 from apps.trading import views as paper_views
 from django.http import JsonResponse
 from django.urls import path
@@ -170,11 +169,36 @@ urlpatterns = [
         account_views.password_reset_confirm,
         name="password-reset-confirm",
     ),
-    path("settings/profile/", react_views.legacy_react_page, {"page": "settings", "subpage": "profile"}, name="profile"),
-    path("settings/trading/", react_views.legacy_react_page, {"page": "settings", "subpage": "trading"}, name="trading-preferences"),
-    path("settings/security/audit/", react_views.legacy_react_page, {"page": "settings", "subpage": "security"}, name="audit-events"),
-    path("settings/security/step-up/", react_views.legacy_react_page, {"page": "settings", "subpage": "security"}, name="security-step-up"),
-    path("settings/security/sessions/", react_views.legacy_react_page, {"page": "settings", "subpage": "security"}, name="sessions"),
+    path(
+        "settings/profile/",
+        react_views.legacy_react_page,
+        {"page": "settings", "subpage": "profile"},
+        name="profile",
+    ),
+    path(
+        "settings/trading/",
+        react_views.legacy_react_page,
+        {"page": "settings", "subpage": "trading"},
+        name="trading-preferences",
+    ),
+    path(
+        "settings/security/audit/",
+        react_views.legacy_react_page,
+        {"page": "settings", "subpage": "security"},
+        name="audit-events",
+    ),
+    path(
+        "settings/security/step-up/",
+        react_views.legacy_react_page,
+        {"page": "settings", "subpage": "security"},
+        name="security-step-up",
+    ),
+    path(
+        "settings/security/sessions/",
+        react_views.legacy_react_page,
+        {"page": "settings", "subpage": "security"},
+        name="sessions",
+    ),
     path(
         "settings/security/sessions/<int:session_id>/revoke/",
         account_views.revoke_session,
@@ -204,7 +228,12 @@ urlpatterns = [
     path("paper/<int:pk>/status/", paper_views.trade_status, name="paper-status"),
     path("paper/<int:pk>/close/", paper_views.close_trade, name="paper-close"),
     path("paper/<int:pk>/cancel/", paper_views.cancel_trade, name="paper-cancel"),
-    path("paper/risk/", react_views.legacy_react_page, {"page": "settings", "subpage": "trading"}, name="paper-risk"),
+    path(
+        "paper/risk/",
+        react_views.legacy_react_page,
+        {"page": "settings", "subpage": "trading"},
+        name="paper-risk",
+    ),
     path("api/v1/paper/trades/", paper_views.api_trades, name="api-paper-trades"),
     path("api/v1/trades/", portfolio_stage24_views.api_trades, name="api-stage24-trades"),
     path(
@@ -221,9 +250,23 @@ urlpatterns = [
     path("inbox/", react_views.legacy_react_page, {"page": "inbox"}, name="inbox"),
     path("inbox/bulk/trash/", inbox_views.bulk_trash, name="inbox-bulk-trash"),
     path("inbox/bulk/restore/", inbox_views.bulk_restore, name="inbox-bulk-restore"),
-    path("settings/sources/", react_views.legacy_react_page, {"page": "settings", "subpage": "sources"}, name="source-settings"),
-    path("settings/telegram/", react_views.legacy_react_page, {"page": "telegram"}, name="telegram-settings"),
-    path("settings/telegram/channels/<int:pk>/", react_views.legacy_telegram_channel_page, name="telegram-channel-analytics"),
+    path(
+        "settings/sources/",
+        react_views.legacy_react_page,
+        {"page": "settings", "subpage": "sources"},
+        name="source-settings",
+    ),
+    path(
+        "settings/telegram/",
+        react_views.legacy_react_page,
+        {"page": "telegram"},
+        name="telegram-settings",
+    ),
+    path(
+        "settings/telegram/channels/<int:pk>/",
+        react_views.legacy_telegram_channel_page,
+        name="telegram-channel-analytics",
+    ),
     path(
         "api/v1/telegram/channels/<int:pk>/analytics/",
         inbox_views.api_telegram_channel_analytics,
@@ -273,8 +316,18 @@ urlpatterns = [
         name="watchlist-remove",
     ),
     path("api/v1/watchlists/<int:pk>/", watchlist_views.api_watchlist, name="api-watchlist"),
-    path("exchanges/", react_views.legacy_react_page, {"page": "exchanges"}, name="exchange-center"),
-    path("exchanges/add/", react_views.legacy_react_page, {"page": "exchanges"}, name="exchange-account-add"),
+    path(
+        "exchanges/",
+        react_views.legacy_react_page,
+        {"page": "exchanges"},
+        name="exchange-center",
+    ),
+    path(
+        "exchanges/add/",
+        react_views.legacy_react_page,
+        {"page": "exchanges"},
+        name="exchange-account-add",
+    ),
     path("exchanges/<int:pk>/", react_views.legacy_exchange_page, name="exchange-account-detail"),
     path(
         "exchanges/<int:pk>/sync/",

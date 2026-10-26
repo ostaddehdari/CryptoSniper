@@ -70,20 +70,15 @@ def web_manifest(request):
 @require_GET
 def service_worker(request):
     assets = [
-        static("css/app.css"),
-        static("css/stage24-rebuild.css"),
-        static("js/app.js"),
-        static("js/stage24-rebuild.js"),
-        static("js/cornix-shell.js"),
+        static("react/app.css"),
+        static("react/app.js"),
         static("js/pwa.js"),
         static("img/mark.svg"),
         static("img/pwa-icon.svg"),
-        static("vendor/htmx-2.0.8.min.js"),
-        static("vendor/alpine-3.14.9.min.js"),
     ]
     source = (
         "'use strict';\n"
-        "const CACHE='cryptosniper-static-v24-rebuild-unified-cornix';\n"
+        "const CACHE='cryptosniper-static-v25-react-cornix';\n"
         f"const ASSETS={assets!r};\n"
         "self.addEventListener('install',event=>event.waitUntil("
         "caches.open(CACHE).then(c=>c.addAll(ASSETS))));\n"
@@ -107,7 +102,6 @@ def service_worker(request):
     response["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response["Service-Worker-Allowed"] = reverse("home")
     return response
-
 
 @login_required
 @never_cache

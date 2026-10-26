@@ -1,6 +1,4 @@
-# fmt: off
 import django.db.models.deletion
-
 from django.conf import settings
 from django.db import migrations, models
 
@@ -31,4 +29,3 @@ class Migration(migrations.Migration):
             index=models.Index(fields=["owner", "position"], name="marketdata__owner_i_ec8b24_idx"),
         ),
     ]
-# fmt: on

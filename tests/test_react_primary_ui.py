@@ -1,9 +1,8 @@
 from pathlib import Path
 
 import pytest
-from django.urls import reverse
-
 from apps.exchanges.models import Asset, Exchange, ExchangeMarket, UserExchangeAccount
+from django.urls import reverse
 
 
 @pytest.mark.django_db

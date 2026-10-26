@@ -46,3 +46,16 @@
 ## اصلاح تصویری r2 پیش از تحویل اپراتور
 
 بازبینی تصویر نهایی، برچسب‌های SVG را در صفحه RTL در لبه راست نمودار بریده نشان داد. جهت متن labelهای Entry/TP/SL و marker به‌طور موضعی LTR شد؛ سبک پایه تغییر نکرد. آزمون مرورگر علاوه بر TP جدید71000، getBBox همه labelها را داخل viewBox بررسی می‌کند. r1 سابقه immutable باقی می‌ماند؛ نسخه تحویلی r2 پس از موفقیت آزمون همان source منتشر می‌شود. راهنمای اپراتور نیز داخل بسته قرار می‌گیرد.
+
+
+## نسخه تحویلی r2
+
+- Source: dc1e88ce99bfcf48c6500e559788be63f65136a0
+- CI: https://github.com/ostaddehdari/CryptoSniper/actions/runs/40374832869؛ 391 آزمون و مرورگر چهار عرض موفق. marker خروج جزئی و labelها داخل viewBox هستند؛ نمودار بعد از ویرایش TP/SL تازه می‌شود.
+- Release: https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage31-react-v0.31.0rc1-deploy-r2
+- ZIP: CryptoSniper-Stage31-React-v0.31.0rc1-r2.zip
+- ZIP SHA256: 16a7398accfca2f35ec28fdea5dff5b0460fa340db36c0e7209b04656a8d2108
+- Installer SHA256: 686df0e0279e97b2fda3ac901223effc0ae91d116a8c5d10a10e4d2865c3f984
+- r1 فقط سابقه است؛ scripts/deploy.sh نسخه r2 را پین می‌کند. نصب این نسخه روی VPS اپراتور و پذیرش Provider واقعی هنوز انجام نشده‌اند.
+
+دانلود واقعی assetهای r2 و SHA256 هر دو و scripts/deploy.sh --check موفق بود؛ CHECK_OK ثبت شد و هیچ نصبی انجام نشد. Artifact مرورگر و آزمون12673708555 است.

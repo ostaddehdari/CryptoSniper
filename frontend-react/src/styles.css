@@ -53,3 +53,5 @@ a.navItem{text-decoration:none}.fullLoading{min-height:100vh;display:flex;align-
   .submitRow>*{flex:1 1 150px;min-width:0}
   .primary.large{min-width:0}
 }
+
+.offlineBanner{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:200;background:#fff8e8;border:1px solid #f2ddaa;color:#735a1d;border-radius:10px;padding:9px 14px;font-size:10px;box-shadow:0 8px 24px #0d1c3315}.offlineBanner[hidden]{display:none}

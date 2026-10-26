@@ -18,6 +18,7 @@ def test_primary_surface_is_real_react_app(client, django_user_model):
     assert 'id="root"' in body
     assert "static/react/app.js" in body
     assert "static/react/app.css" in body
+    assert "js/pwa.js" in body
     assert "stage24-rebuild.css" not in body
     assert 'class="s24-shell"' not in body
     assert 'window.__CS_BASE__' in body

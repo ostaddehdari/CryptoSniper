@@ -305,28 +305,33 @@ def main():
                     path=str(artifacts / "react-workspace-mobile.png"),
                     full_page=True,
                 )
-                assert page.evaluate(
-                    "document.documentElement.scrollWidth <= window.innerWidth"
+                mobile_layout = page.evaluate(
+                    """() => ({
+                      viewport: window.innerWidth,
+                      htmlScrollWidth: document.documentElement.scrollWidth,
+                      bodyScrollWidth: document.body.scrollWidth,
+                      offenders: Array.from(document.querySelectorAll('body *'))
+                        .filter(el => !el.closest(
+                          '.sidebar,.tableScroll,.tabs,.compactTabs,.cardHead > .row'
+                        ))
+                        .map(el => {
+                          const r = el.getBoundingClientRect();
+                          return {
+                            tag: el.tagName,
+                            cls: el.className && String(el.className).slice(0, 120),
+                            left: Math.round(r.left),
+                            right: Math.round(r.right),
+                            width: Math.round(r.width)
+                          };
+                        })
+                        .filter(x => x.right > window.innerWidth + 1 || x.left < -1)
+                        .slice(0, 20)
+                    })"""
                 )
-                overflow = page.evaluate(
-                    """() => Array.from(document.querySelectorAll('body *'))
-                    .filter(el => !el.closest(
-                      '.sidebar,.tableScroll,.tabs,.compactTabs,.cardHead > .row'
-                    ))
-                    .map(el => {
-                      const r = el.getBoundingClientRect();
-                      return {
-                        tag: el.tagName,
-                        cls: el.className && String(el.className).slice(0, 120),
-                        left: Math.round(r.left),
-                        right: Math.round(r.right),
-                        width: Math.round(r.width)
-                      };
-                    })
-                    .filter(x => x.right > window.innerWidth + 1 || x.left < -1)
-                    .slice(0, 20)"""
-                )
-                assert not overflow, overflow
+                assert (
+                    mobile_layout["htmlScrollWidth"] <= mobile_layout["viewport"]
+                ), mobile_layout
+                assert not mobile_layout["offenders"], mobile_layout
                 assert not errors, errors
                 browser.close()
         except Exception:

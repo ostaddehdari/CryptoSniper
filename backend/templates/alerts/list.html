@@ -1,4 +1,25 @@
-{% extends 'shell.html' %}{% block title %}هشدارها | CryptoSniper{% endblock %}{% block breadcrumb %}هشدارها{% endblock %}{% block content %}{% for message in messages %}<div class="notice" role="status">{{ message }}</div>{% endfor %}
-<div class="page-heading"><div><span class="eyebrow">PRICE ALERTS</span><h1>هشدارهای قیمت و معامله</h1><p class="muted">با بسته شدن مرورگر، Worker پایش و ثبت اعلان را ادامه می‌دهد. هشدار هیچ خرید، فروش یا تغییر معامله‌ای انجام نمی‌دهد.</p></div><a class="button button-primary" href="{% url 'alert-new' %}">هشدار جدید</a></div>
-<div class="alert-grid">{% for item in items %}<article class="panel"><span class="mode-pill">{% if item.enabled %}فعال{% else %}{{ item.status }}{% endif %}</span><h2>{{ item.title }}</h2><p dir="ltr">{{ item.market.symbol }}{% if item.trade_id %} · Paper #{{ item.trade_id }}{% endif %}</p><p>{{ item.get_kind_display }} · {{ item.get_direction_display }} · {{ item.threshold|floatformat:4 }}</p><p class="muted">مبنای ثابت: {{ item.reference_price|floatformat:4 }} در {{ item.reference_at }}<br>اعلان ثبت‌شده: {{ item.fire_count }} · {% if item.repeat %}تکرارشونده{% else %}یک‌بارمصرف{% endif %}</p><a class="inline-link" href="{% url 'alert-edit' item.pk %}">ویرایش / بازفعال‌سازی</a>{% if item.enabled %}<form method="post" action="{% url 'alert-disable' item.pk %}">{% csrf_token %}<input type="hidden" name="version" value="{{ item.version }}"><button class="button button-secondary">خاموش کردن</button></form>{% endif %}</article>{% empty %}<section class="panel"><p>هشداری نساخته‌اید. از واچ‌لیست یا صفحهٔ معامله نیز می‌توانید هشدار بسازید.</p></section>{% endfor %}</div>
+{% extends 'shell.html' %}{% block title %}هشدارها | CryptoSniper{% endblock %}{% block content %}
+<section class="s24-page">
+  <div class="s24-section-head">
+    <div><h1>هشدارهای قیمت و معامله</h1><p>هشدار فقط اطلاع‌رسانی می‌کند و هیچ خرید، فروش یا تغییر معامله‌ای انجام نمی‌دهد.</p></div>
+    <a class="s24-button primary" href="{% url 'alert-new' %}">＋ هشدار جدید</a>
+  </div>
+  {% for message in messages %}<div class="s24-panel s24-notice">{{ message }}</div>{% endfor %}
+  {% if items %}
+  <div class="s24-card-grid">
+    {% for item in items %}
+    <article class="s24-card">
+      <div class="s24-card-head"><div><div class="s24-card-title">{{ item.title }}</div><div class="s24-card-sub">{{ item.market.symbol }}{% if item.trade_id %} · Paper #{{ item.trade_id }}{% endif %}</div></div><span class="s24-card-badge">{% if item.enabled %}فعال{% else %}{{ item.status }}{% endif %}</span></div>
+      <div class="s24-detail-facts" style="margin-top:12px">
+        <div class="s24-fact"><span>نوع</span><strong>{{ item.get_kind_display }}</strong></div>
+        <div class="s24-fact"><span>آستانه</span><strong dir="ltr">{{ item.threshold|floatformat:4 }}</strong></div>
+        <div class="s24-fact"><span>اعلان‌ها</span><strong>{{ item.fire_count }}</strong></div>
+        <div class="s24-fact"><span>رفتار</span><strong>{% if item.repeat %}تکرارشونده{% else %}یک‌بارمصرف{% endif %}</strong></div>
+      </div>
+      <div class="s24-card-actions" style="margin-top:12px"><a class="s24-button ghost" href="{% url 'alert-edit' item.pk %}">ویرایش</a>{% if item.enabled %}<form method="post" action="{% url 'alert-disable' item.pk %}">{% csrf_token %}<input type="hidden" name="version" value="{{ item.version }}"><button class="s24-button ghost" style="color:#d54848">خاموش</button></form>{% endif %}</div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}<div class="s24-panel"><div class="s24-empty-inline">هشداری نساخته‌اید.</div></div>{% endif %}
+</section>
 {% endblock %}

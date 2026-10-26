@@ -50,14 +50,15 @@ def test_stage24_features_are_exposed_through_primary_react_workspace(client, dj
 
 
 @pytest.mark.django_db
-def test_dashboard_bookmark_redirects_into_react_workspace(client, django_user_model):
+def test_dashboard_bookmark_renders_same_react_workspace(client, django_user_model):
     user = django_user_model.objects.create_user(username="s25-react-dashboard")
     client.force_login(user)
 
     response = client.get(reverse("dashboard"))
 
-    assert response.status_code == 302
-    assert response["Location"].endswith("/app/#/dashboard")
+    assert response.status_code == 200
+    assert b'id="root"' in response.content
+    assert b"static/react/app.js" in response.content
 
 
 @pytest.mark.django_db

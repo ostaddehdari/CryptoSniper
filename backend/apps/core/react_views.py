@@ -117,7 +117,7 @@ def api_step_up(request):
 @never_cache
 @require_GET
 def api_bootstrap(request):
-    accounts = list(UserExchangeAccount.objects.for_user(request.user).select_related("exchange").exclude(exchange__code="binance"))
+    accounts = list(\n        UserExchangeAccount.objects.for_user(request.user)\n        .select_related("exchange")\n        .exclude(status=UserExchangeAccount.Status.DISABLED)\n        .exclude(exchange__adapter_code="simulator")\n    )
     unread = Notification.objects.filter(owner=request.user, in_app=True, read_at__isnull=True).count()
     favorites = list(
         FavoriteAsset.objects.filter(owner=request.user).order_by("position", "pk").values_list("symbol", flat=True)

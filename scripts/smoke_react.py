@@ -263,7 +263,9 @@ def main():
                 page.get_by_role("button", name="معامله دستی").click()
                 page.get_by_role("heading", name="تعریف معامله واقعی").wait_for()
                 page.get_by_text("React Smoke Exchange", exact=True).wait_for()
-                page.get_by_text("BTC", exact=True).first.wait_for()
+                market_select = page.get_by_label("بازار")
+                market_select.wait_for()
+                assert market_select.locator(f'option[value="{market.pk}"]').count() == 1
                 page.locator(".candleChart").wait_for()
                 page.get_by_text("Trailing SL", exact=False).wait_for()
                 page.get_by_text("شروع Trailing TP", exact=True).wait_for()

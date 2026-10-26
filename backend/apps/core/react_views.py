@@ -65,21 +65,21 @@ def _body(request):
 
 def legacy_react_page(request, page="dashboard", **kwargs):
     """Keep old bookmarks working while the React workspace becomes the primary UI."""
-    return redirect(f"{reverse('react-app')}#/{page}")
+    return redirect(f"{reverse('app-shell')}#/{page}")
 
 
 def paper_mode_removed(request, **kwargs):
     """Paper/Demo HTTP surface is retired; legacy data remains read-only in the database."""
     if request.method == "GET":
         return legacy_react_page(request, page="trades")
-    return JsonResponse({"error": "paper_mode_removed", "redirect": f"{reverse('react-app')}#/trades"}, status=410)
+    return JsonResponse({"error": "paper_mode_removed", "redirect": f"{reverse('app-shell')}#/trades"}, status=410)
 
 
 @login_required
 @never_cache
 @require_GET
 def react_app(request):
-    return render(request, "react_app.html", {"release": "stage23-react"})
+    return render(request, "react_app.html", {"release": "stage25-react-cornix"})
 
 
 def _balance_payload(account):

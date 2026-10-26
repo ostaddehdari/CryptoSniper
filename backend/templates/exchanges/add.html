@@ -1,7 +1,29 @@
-{% extends 'shell.html' %}{% block title %}افزودن صرافی | CryptoSniper{% endblock %}{% block breadcrumb %}صرافی‌ها / اتصال جدید{% endblock %}{% block content %}
-<div class="page-heading"><div><span class="eyebrow">SECURE CONNECTION</span><h1>افزودن اتصال صرافی</h1><p class="muted">برای مشاهده سریع، شبیه‌ساز را انتخاب کنید؛ API Key لازم ندارد.</p></div><a class="button button-soft" href="{% url 'exchange-center' %}">بازگشت به صرافی‌ها</a></div>
-<div class="connection-form-layout"><section class="panel secure-form-card"><div class="form-intro"><span class="form-step">۰۱</span><div><h2>مشخصات اتصال</h2><p>Secret پس از ثبت دیگر در رابط نمایش داده نمی‌شود.</p></div></div><form method="post" class="exchange-form" autocomplete="off">{% csrf_token %}
-{% for field in form %}<div class="field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>{% endfor %}{% for error in form.non_field_errors %}<div class="form-error">{{ error }}</div>{% endfor %}
-<button class="button button-primary button-full" type="submit">ذخیره و بررسی امن اتصال</button></form></section>
-<aside class="security-guide"><span class="shield-mark">◇</span><span class="eyebrow">راهنمای امنیت</span><h2>کلید مناسب CryptoSniper</h2><ul><li><strong>Reading</strong><span>برای موجودی و بازار فعال باشد</span></li><li><strong>Spot/Margin Trading</strong><span>در صورت نیاز فعال باشد</span></li><li class="danger"><strong>Withdrawal</strong><span>حتماً خاموش باشد؛ کلید رد می‌شود</span></li><li><strong>IP Restriction</strong><span>بهتر است به IP سرور محدود شود</span></li></ul><div class="paper-note"><strong>برای شروع پیشنهاد می‌شود</strong><p>صرافی «شبیه‌ساز CryptoSniper» و محیط «شبیه‌ساز» را انتخاب کنید.</p></div></aside></div>
+{% extends 'shell.html' %}{% block title %}افزودن صرافی | CryptoSniper{% endblock %}{% block content %}
+<section class="s24-page">
+  <div class="s24-section-head">
+    <div><h1>افزودن اتصال صرافی</h1><p>اتصال امن حساب و بررسی مجوزهای واقعی API.</p></div>
+    <a class="s24-button" href="{% url 'exchange-center' %}">بازگشت</a>
+  </div>
+  <div class="s24-grid s24-newtrade-grid">
+    <article class="s24-panel">
+      <div class="s24-panel-head"><strong>مشخصات اتصال</strong><span class="s24-status">SECURE</span></div>
+      <form method="post" class="s24-trade-form" autocomplete="off">{% csrf_token %}
+        {% for field in form %}
+        <label>{{ field.label }}{{ field }}{% if field.help_text %}<small class="s24-muted">{{ field.help_text }}</small>{% endif %}{% for error in field.errors %}<small style="color:#d54848">{{ error }}</small>{% endfor %}</label>
+        {% endfor %}
+        {% for error in form.non_field_errors %}<div class="s24-panel" style="border-color:#f4d8dc;color:#c44756">{{ error }}</div>{% endfor %}
+        <button class="s24-button primary s24-submit" type="submit">ذخیره و بررسی امن اتصال</button>
+      </form>
+    </article>
+    <aside class="s24-panel">
+      <div class="s24-panel-head"><strong>راهنمای امنیت</strong><span class="s24-status">NO WITHDRAWAL</span></div>
+      <div class="s24-trade-detail">
+        <div class="s24-fact"><span>Reading</span><strong>برای دریافت موجودی و بازار فعال باشد</strong></div>
+        <div class="s24-fact"><span>Spot / Margin Trading</span><strong>فقط در صورت نیاز فعال باشد</strong></div>
+        <div class="s24-fact"><span>Withdrawal</span><strong style="color:#d54848">حتماً خاموش باشد</strong></div>
+        <div class="s24-fact"><span>IP Restriction</span><strong>ترجیحاً محدود به IP سرور</strong></div>
+      </div>
+    </aside>
+  </div>
+</section>
 {% endblock %}

@@ -198,6 +198,7 @@ class Stage24ManagedSourceUpgradeTests(unittest.TestCase):
             "R5": "5e7aa3f3ede973448035d75566a230636a61851e",
             "R6": "292fadb628de3476edc2009708d63fe29145c61f",
             "R7": "515920691b168139a21dee0014e5cf31e35f4ab0",
+            "R8": "3596a7f6c391b5203b5af02aa54a32f40bec078b",
         }
         for label, commit in expected.items():
             self.assertIn(f"STAGE24_{label}_SOURCE_COMMIT={commit}", installer)

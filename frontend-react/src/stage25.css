@@ -1,0 +1,24 @@
+/* Stage25 functionality extensions — approved Stage23 visual system remains the base. */
+.selectedRow{background:#f3f7ff!important}
+.signalCard.clickRow{cursor:pointer}
+.signalCard.active{border-color:#8fb0ef;box-shadow:0 7px 20px rgba(31,86,184,.08)}
+.between{justify-content:space-between}
+.chartToolbar{align-items:center;justify-content:space-between}
+@media(max-width:560px){
+  .app,.main,.content,.grid2,.card,.chartPanel,.candleWrap,.tableScroll{min-width:0;max-width:100%}
+  .card{overflow-x:visible}
+  .tableScroll{overflow-x:auto}
+  .topbar{width:100%;min-width:0;gap:8px}
+  .topbar>div:first-child{min-width:0}
+  .topbar h1{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .topActions{flex:0 0 auto;min-width:0}
+  .cardHead{flex-wrap:wrap;gap:10px;align-items:flex-start}
+  .cardHead>div{min-width:0;max-width:100%}
+  .cardHead>.row{max-width:100%;overflow-x:auto;padding-bottom:2px}
+  .chartToolbar{flex-wrap:wrap;align-items:flex-start}
+  .submitRow{flex-wrap:wrap}
+  .submitRow>*{flex:1 1 150px;min-width:0}
+  .primary.large{min-width:0}
+}
+
+.offlineBanner{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:200;background:#fff8e8;border:1px solid #f2ddaa;color:#735a1d;border-radius:10px;padding:9px 14px;font-size:10px;box-shadow:0 8px 24px #0d1c3315}.offlineBanner[hidden]{display:none}

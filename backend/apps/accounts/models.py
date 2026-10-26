@@ -246,10 +246,7 @@ class WalletConnection(UserOwnedModel):
         self.address = self.address.strip()
         if not (6 <= len(self.address) <= 160):
             raise ValidationError({"address": "آدرس کیف پول معتبر نیست."})
-        if any(
-            key in self.metadata
-            for key in ("private_key", "seed", "seed_phrase", "mnemonic")
-        ):
+        if any(key in self.metadata for key in ("private_key", "seed", "seed_phrase", "mnemonic")):
             raise ValidationError("اطلاعات محرمانه کیف پول قابل ذخیره نیست.")
 
 

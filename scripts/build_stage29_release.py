@@ -10,9 +10,9 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-ZIP_NAME = "CryptoSniper-Stage29-React-v0.29.0rc1-r1.zip"
+ZIP_NAME = "CryptoSniper-Stage29-React-v0.29.0rc1-r2.zip"
 INSTALLER = "cryptosniper-stage29-react-run.sh"
-TAG = "stage29-react-v0.29.0rc1-deploy-r1"
+TAG = "stage29-react-v0.29.0rc1-deploy-r2"
 
 
 def digest(data):

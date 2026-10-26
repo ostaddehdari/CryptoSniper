@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # CryptoSniper Stage 29 React Cornix v0.29.0rc1 — Ubuntu 24.04 fresh install / safe upgrade.
-# Usage: sudo bash /tmp/run.sh [/tmp/CryptoSniper-Stage29-React-v0.29.0rc1-r1.zip]
+# Usage: sudo bash /tmp/run.sh [/tmp/CryptoSniper-Stage29-React-v0.29.0rc1-r2.zip]
 # Validate only (no installation): bash run.sh --check /path/to/package.zip
 # Installation and verification output is appended to runlog.txt beside this script.
 # Installs cumulative Stages 01-29; React is the primary UI; real Spot writes remain fail-closed by default.
@@ -113,7 +113,7 @@ step() { printf '\n===== %s | %s =====\n' "$*" "$(date -Is)"; }
 CHECK_ONLY=false
 if [[ ${1:-} == --check ]]; then CHECK_ONLY=true; shift; fi
 [[ $# -le 1 ]] || fail 'Usage: bash run.sh [--check] [package.zip]'
-ARCHIVE=${1:-/tmp/CryptoSniper-Stage29-React-v0.29.0rc1-r1.zip}
+ARCHIVE=${1:-/tmp/CryptoSniper-Stage29-React-v0.29.0rc1-r2.zip}
 export SERVER_HOST URL_PREFIX WEB_PORT PG_PORT REDIS_PORT SOURCE_COMMIT
 export PREVIOUS_STAGE24_SOURCE_COMMIT STAGE24_R5_SOURCE_COMMIT STAGE24_R6_SOURCE_COMMIT STAGE24_R7_SOURCE_COMMIT STAGE24_R8_SOURCE_COMMIT STAGE23_SOURCE_COMMIT STAGE22_SOURCE_COMMIT STAGE22_ARCHIVE_SHA256 STAGE21_SOURCE_COMMIT STAGE21_ARCHIVE_SHA256 STAGE20_SOURCE_COMMIT STAGE20_ARCHIVE_SHA256 STAGE18_SOURCE_COMMIT STAGE18_ARCHIVE_SHA256 STAGE16_SOURCE_COMMIT STAGE16_ARCHIVE_SHA256 STAGE14_SOURCE_COMMIT STAGE14_ARCHIVE_SHA256 STAGE10_SOURCE_COMMIT STAGE10_ARCHIVE_SHA256 STAGE08_SOURCE_COMMIT STAGE08_ARCHIVE_SHA256 PREVIOUS_SOURCE_COMMIT STAGE06_SOURCE_COMMIT STAGE05_SOURCE_COMMIT STAGE04_SOURCE_COMMIT STAGE03_SOURCE_COMMIT STAGE01_SOURCE_COMMIT STAGE02_SOURCE_COMMIT PREVIOUS_ARCHIVE_SHA256 STAGE06_ARCHIVE_SHA256 STAGE05_ARCHIVE_SHA256 STAGE04_ARCHIVE_SHA256 STAGE03_ARCHIVE_SHA256 STAGE02_ARCHIVE_SHA256 STAGE01_ARCHIVE_SHA256 OLDER_STAGE03_ARCHIVE_SHA256 OFFICIAL_STAGE29_ARCHIVE_SHA256
 export APP_DIR APP_ROOT CONFIG_DIR STATE_DIR LOGIN_FILE
@@ -130,13 +130,14 @@ actual_sha256 = hashlib.file_digest(path.open('rb'), 'sha256').hexdigest()
 if actual_sha256 != os.environ['OFFICIAL_STAGE29_ARCHIVE_SHA256']:
     raise SystemExit(
         'Incorrect Stage29 React ZIP (SHA-256 mismatch). Download the EXACT release asset '
-        'CryptoSniper-Stage29-React-v0.29.0rc1-r1.zip from '
-        'https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage29-react-v0.29.0rc1-deploy-r1'
+        'CryptoSniper-Stage29-React-v0.29.0rc1-r2.zip from '
+        'https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage29-react-v0.29.0rc1-deploy-r2'
         f'(received SHA256: {actual_sha256}). Nothing was changed.'
     )
 # Pin the release by checking the Git blob SHA-1 of independent immutable files.
 # GitHub-generated ZIP bytes can vary even while source contents stay identical.
 trusted_blobs = {
+    'backend/apps/core/management/commands/reconcile_react_schema.py': '__BLOB_SCHEMA_RECONCILIATION__',
     'frontend-react/src/stage29.css': '__BLOB_FINAL_SHELL_CSS__',
     'frontend-react/src/routes.js': '__BLOB_FINAL_ROUTES__',
     'backend/apps/core/assets.py': '__BLOB_VERSIONED_ASSETS__',
@@ -872,6 +873,14 @@ systemctl enable --now cryptosniper-redis.service
 
 step 'MIGRATIONS, STATIC FILES AND FIRST LOGIN'
 run_app "$APP_DIR/.venv/bin/python" backend/manage.py check
+# Private recovery snapshot precedes schema reconciliation and all migrations.
+install -d -m 700 "$CONFIG_DIR/backups/database"
+PRE_MIGRATION_BACKUP="$CONFIG_DIR/backups/database/before-stage29-$(date +%Y%m%d-%H%M%S)-$$.dump"
+runuser -u postgres -- pg_dump --port "$PG_PORT" --format=custom cryptosniper > "$PRE_MIGRATION_BACKUP"
+chmod 600 "$PRE_MIGRATION_BACKUP"
+pg_restore --list "$PRE_MIGRATION_BACKUP" >/dev/null
+printf 'PASS: private pre-migration database backup validated.\n'
+run_app "$APP_DIR/.venv/bin/python" backend/manage.py reconcile_react_schema --apply
 run_app "$APP_DIR/.venv/bin/python" backend/manage.py migrate --noinput
 run_app "$APP_DIR/.venv/bin/python" backend/manage.py collectstatic --noinput
 if [[ ! -e $LOGIN_FILE ]]; then

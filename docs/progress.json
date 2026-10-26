@@ -1229,7 +1229,13 @@
       "implementation": "All five S29 works implemented and source tested/published on stage29-final-react; partial reflects pending main integration and production acceptance, not incomplete React code.",
       "release_commit": "69fb18cc5591ecbd8f80f648c8ad0ed0c45545ae",
       "release_tag": "stage29-react-v0.29.0rc1-deploy-r1",
-      "pull_request": "https://github.com/ostaddehdari/CryptoSniper/pull/3"
+      "pull_request": "https://github.com/ostaddehdari/CryptoSniper/pull/3",
+      "operator_installation": {
+        "r1": "failed",
+        "error": "DuplicateTable accounts_walletconnection",
+        "application_files_rollback": "confirmed_by_operator_log",
+        "r2": "in_progress"
+      }
     },
     "S30": {
       "status": "not_started",

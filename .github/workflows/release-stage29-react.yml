@@ -49,11 +49,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          TAG=stage29-react-v0.29.0rc1-deploy-r1
+          TAG=stage29-react-v0.29.0rc1-deploy-r2
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo 'Existing immutable Stage29 release retained; no assets replaced.'
             exit 0
           fi
           gh release create "$TAG" .runtime/stage29-release/* --target "$(git rev-parse HEAD)" --prerelease \
             --title 'CryptoSniper Stage29 — restored primary React workspace' \
-            --notes 'Finalization stage 1 of 5. Restores the approved React visual base, simplifies navigation and versions cached frontend assets. Contains the cumulative backend and prebuilt React; no production Node service is required. Does not claim real-provider or production-server acceptance. Stages30–33 remain pending.'
+            --notes 'Stage29 r2 verifies and reconciles compatible pre-existing preview schema before migrations, with a private database snapshot. Fixes DuplicateTable accounts_walletconnection on upgrades. Restores the approved React visual base, simplifies navigation and versions cached frontend assets. Contains the cumulative backend and prebuilt React; no production Node service is required. Does not claim real-provider or production-server acceptance. Stages30–33 remain pending.'

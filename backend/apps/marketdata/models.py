@@ -107,4 +107,3 @@ class FavoriteAsset(models.Model):
     def save(self, *args, **kwargs):
         self.symbol = self.symbol.strip().upper()
         return super().save(*args, **kwargs)
-

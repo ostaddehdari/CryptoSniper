@@ -181,7 +181,7 @@ def main():
         display_name="کاربر تست React",
     )
     account, market = seed_market(user)
-    signal = seed_signal(user, account, market)
+    seed_signal(user, account, market)
 
     LiveSpotOrder.objects.create(
         owner=user,

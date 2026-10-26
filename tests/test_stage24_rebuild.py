@@ -120,6 +120,7 @@ def test_primary_templates_do_not_use_legacy_ui_markup():
         "backend/templates/accounts/security_step_up.html",
         "backend/templates/tradeplans/list.html",
         "backend/templates/tradeplans/form.html",
+        "backend/templates/tradeplans/preview.html",
         "backend/templates/signals/inbox.html",
         "backend/templates/signals/detail.html",
         "backend/templates/signals/receive.html",

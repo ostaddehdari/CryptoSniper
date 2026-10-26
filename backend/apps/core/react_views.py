@@ -39,6 +39,7 @@ from apps.signals.models import Signal, SignalSource, TelegramAccount, TelegramB
 from apps.signals.telegram_client import available_channels, complete_login, configure_channel, request_login_code
 from apps.signals.telegram_security import revoke_telegram_credentials
 from apps.tradeplans.models import TradePlan
+from apps.trading.models import Trade
 
 
 SAFE_SYMBOL = re.compile(r"^[A-Z0-9]{2,20}$")
@@ -80,6 +81,81 @@ def paper_mode_removed(request, **kwargs):
     if request.method == "GET":
         return legacy_react_page(request, page="trades")
     return JsonResponse({"error": "paper_mode_removed", "redirect": f"{reverse('app-shell')}#/trades"}, status=410)
+
+
+@login_required
+@never_cache
+@require_GET
+def legacy_external_page(request, pk):
+    get_object_or_404(
+        ExternalObservation.objects.filter(account__owner=request.user),
+        pk=pk,
+    )
+    return render(
+        request,
+        "react_app.html",
+        {"release": "stage25-react-cornix", "initial_page": "trades"},
+    )
+
+
+@login_required
+@never_cache
+@require_GET
+def legacy_trade_page(request, pk):
+    get_object_or_404(Trade.objects.filter(owner=request.user), pk=pk)
+    return render(
+        request,
+        "react_app.html",
+        {"release": "stage25-react-cornix", "initial_page": "trades"},
+    )
+
+
+@login_required
+@never_cache
+@require_GET
+def legacy_signal_page(request, pk):
+    get_object_or_404(Signal.objects.filter(owner=request.user), pk=pk)
+    return render(
+        request,
+        "react_app.html",
+        {"release": "stage25-react-cornix", "initial_page": "inbox"},
+    )
+
+
+@login_required
+@never_cache
+@require_GET
+def legacy_plan_page(request, pk):
+    get_object_or_404(TradePlan.objects.filter(owner=request.user), pk=pk)
+    return render(
+        request,
+        "react_app.html",
+        {"release": "stage25-react-cornix", "initial_page": "plans"},
+    )
+
+
+@login_required
+@never_cache
+@require_GET
+def legacy_exchange_page(request, pk):
+    get_object_or_404(UserExchangeAccount.objects.for_user(request.user), pk=pk)
+    return render(
+        request,
+        "react_app.html",
+        {"release": "stage25-react-cornix", "initial_page": "exchanges"},
+    )
+
+
+@login_required
+@never_cache
+@require_GET
+def legacy_telegram_channel_page(request, pk):
+    get_object_or_404(TelegramChannel.objects.filter(account__owner=request.user), pk=pk)
+    return render(
+        request,
+        "react_app.html",
+        {"release": "stage25-react-cornix", "initial_page": "telegram"},
+    )
 
 
 @login_required

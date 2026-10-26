@@ -1,2 +1,2 @@
-<div class="service-list">{% for label, name, ok in services %}<div class="service-row"><div><strong>{{ label }}</strong><small dir="ltr">{{ name }}</small></div><span class="service-state {% if ok %}is-ok{% else %}is-waiting{% endif %}"><i></i>{% if ok %}فعال{% else %}در دسترس نیست{% endif %}</span></div>{% endfor %}</div>
-{% if not worker_alive %}<p class="status-note">ضربان Worker هنوز دریافت نشده است؛ پردازش پس‌زمینه و زمان‌بندی سرور را بررسی کنید.</p>{% endif %}
+<div class="s24-trade-detail">{% for label, name, ok in services %}<div class="s24-fact"><span dir="ltr">{{ name }}</span><strong>{{ label }} · {% if ok %}فعال{% else %}در دسترس نیست{% endif %}</strong></div>{% endfor %}</div>
+{% if not worker_alive %}<p class="s24-muted" role="alert">ضربان Worker هنوز دریافت نشده است؛ پردازش پس‌زمینه و زمان‌بندی سرور را بررسی کنید.</p>{% endif %}

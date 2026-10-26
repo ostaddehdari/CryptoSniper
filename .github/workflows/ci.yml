@@ -41,6 +41,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend-react/package-lock.json
       - uses: astral-sh/setup-uv@v6
         with:
           version: '0.12.19'
@@ -56,6 +61,14 @@ jobs:
           PY
       - name: Install locked dependencies
         run: uv sync --frozen
+      - name: Build React workspace
+        working-directory: frontend-react
+        run: |
+          npm ci
+          npm test
+          npm run build
+          test -s ../backend/static/react/app.js
+          test -s ../backend/static/react/app.css
       - name: Lint and format
         run: |
           uv run ruff check backend tests scripts
@@ -84,16 +97,24 @@ jobs:
           PYMETRICS
       - name: Install browser for UI smoke
         run: uv run playwright install chromium
-      - name: Real Worker, Beat, HTTP and mobile/desktop smoke
-        run: uv run python scripts/smoke.py
+      - name: Real React browser account-market-chart-draft smoke
+        run: uv run python scripts/smoke_react.py
       - name: Upload verification evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: stage-23-evidence
+          name: stage-29-react-evidence
           path: |
             .runtime/pytest.xml
             .runtime/screenshots/*.png
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 7
+
+  release-stage29:
+    needs: foundation
+    if: github.event_name == 'push' && github.ref == 'refs/heads/stage29-final-react'
+    permissions:
+      contents: write
+      actions: read
+    uses: ./.github/workflows/release-stage29-react.yml

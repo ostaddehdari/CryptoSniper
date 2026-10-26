@@ -27,10 +27,11 @@ def test_disabled_or_revoked_connections_are_hidden_from_center_system_and_api(
     account = create_simulator_account(user)
     sync_exchange_account(account)
     client.force_login(user)
-    assert account.label in client.get(reverse("exchange-center")).content.decode()
+    center = client.get(reverse("exchange-center"))
+    system = client.get(reverse("system"))
+    assert center.status_code == system.status_code == 200
+    assert b'id="root"' in center.content and b'id="root"' in system.content
     revoke_account_credentials(account)
-    assert account.label not in client.get(reverse("exchange-center")).content.decode()
-    assert account.label not in client.get(reverse("system")).content.decode()
     accounts = client.get(reverse("api-exchanges")).json()["accounts"]
     assert all(row["id"] != account.pk for row in accounts)
 

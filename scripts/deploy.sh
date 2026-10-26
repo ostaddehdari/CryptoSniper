@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # CryptoSniper: single-command, pinned verified deployment artifact.
 # Usage: curl -fsSL https://raw.githubusercontent.com/ostaddehdari/CryptoSniper/main/scripts/deploy.sh -o /tmp/cryptosniper-deploy.sh && sudo bash /tmp/cryptosniper-deploy.sh
-# Only the SHA256-verified Stage24 Rebuild ZIP and installer from the official release are executed.
+# Only the SHA256-verified Stage29 React ZIP and installer from the official release are executed.
 set -Eeuo pipefail
 umask 077
 
-RELEASE_TAG='stage24-rebuild-v0.24.0rc2-deploy-r8'
-ZIP_NAME='CryptoSniper-Stage24-Rebuild-v0.24.0rc2-r8.zip'
-INSTALLER_NAME='cryptosniper-stage24-rebuild-run.sh'
-ZIP_SHA256='737e1741fe72e196482a2be0c3c5425fac7804091f93c90d8a6c624a0498feaf'
-INSTALLER_SHA256='034fa89d0ebc970392ebbf668ebeb5fbe3dd1fd0d6a262b0180fc1aea38778fc'
-SOURCE_COMMIT='3596a7f6c391b5203b5af02aa54a32f40bec078b'
+RELEASE_TAG='stage29-react-v0.29.0rc1-deploy-r2'
+ZIP_NAME='CryptoSniper-Stage29-React-v0.29.0rc1-r2.zip'
+INSTALLER_NAME='cryptosniper-stage29-react-run.sh'
+ZIP_SHA256='54fea505753c9125d7dbf6d265ac75eca84cc9e441dd0132ab2060a8865b1700'
+INSTALLER_SHA256='aefec5a80898ab9a281be839d13659643562afea12a2b35dd2648f09609e63f2'
+SOURCE_COMMIT='83ed22c4669a446fd168783cdb91cf23e80ddae8'
 RELEASE_BASE="https://github.com/ostaddehdari/CryptoSniper/releases/download/$RELEASE_TAG"
 MODE="${1:-install}"
 if [[ "$MODE" != 'install' && "$MODE" != '--check' ]]; then
@@ -46,7 +46,7 @@ if [[ "$MODE" == '--check' ]]; then
     exit 0
 fi
 
-echo 'Running the verified Stage24 Rebuild installer; preserving existing managed installation data.'
-LOG_FILE=/root/cryptosniper-stage24-rebuild-runlog.txt \
+echo 'Running the verified Stage29 React installer; preserving existing managed installation data.'
+LOG_FILE=/root/cryptosniper-stage29-react-runlog.txt \
     bash "$WORKDIR/$INSTALLER_NAME" "$WORKDIR/$ZIP_NAME"
 echo 'DEPLOY_OK: https://srun.ir/cryptosniper/auth/login/'

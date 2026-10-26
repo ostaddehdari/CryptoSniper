@@ -1,7 +1,7 @@
 from apps.accounts import views as account_views
 from apps.alerts import notifications as notification_views
 from apps.alerts import views as alert_views
-from apps.core import views
+from apps.core import react_views, views
 from apps.core.health import dependency_status
 from apps.exchanges import views as exchange_views
 from apps.marketdata import chart as market_chart_views
@@ -15,7 +15,6 @@ from apps.reports import views as report_views
 from apps.signals import views as inbox_views
 from apps.tradeplans import context as trade_context
 from apps.tradeplans import views as plan_views
-from apps.trading import risk as paper_risk_views
 from apps.trading import views as paper_views
 from django.http import JsonResponse
 from django.urls import path
@@ -38,14 +37,80 @@ def ready(request):
 
 urlpatterns = [
     path("manifest.webmanifest", views.web_manifest, name="web-manifest"),
-    path("app/", views.app_shell, name="app-shell"),
+    path("app/", react_views.react_app, name="app-shell"),
     path("service-worker.js", views.service_worker, name="service-worker"),
-    path("reports/", report_views.center, name="reports"),
+    path("api/v1/ui/bootstrap/", react_views.api_bootstrap, name="api-ui-bootstrap"),
+    path("api/v1/security/step-up/", react_views.api_step_up, name="api-step-up"),
+    path("api/v1/ui/favorites/", react_views.api_favorites, name="api-ui-favorites"),
+    path("api/v1/ui/watchlists/", react_views.api_watchlists_ui, name="api-ui-watchlists"),
+    path("api/v1/ui/manual-plans/", react_views.api_manual_plans_ui, name="api-ui-manual-plans"),
+    path(
+        "api/v1/ui/signal-sources/",
+        react_views.api_signal_sources_ui,
+        name="api-ui-signal-sources",
+    ),
+    path(
+        "api/v1/ui/notification-preferences/",
+        react_views.api_notification_preferences_ui,
+        name="api-ui-notification-preferences",
+    ),
+    path("api/v1/ui/security/", react_views.api_security_state_ui, name="api-ui-security"),
+    path("api/v1/wallets/", react_views.api_wallets, name="api-wallets"),
+    path("api/v1/wallets/<int:pk>/", react_views.api_wallet_detail, name="api-wallet-detail"),
+    path(
+        "api/v1/exchange-connections/",
+        react_views.api_exchange_create,
+        name="api-exchange-create",
+    ),
+    path(
+        "api/v1/exchange-accounts/<int:pk>/markets/",
+        react_views.api_account_markets,
+        name="api-account-markets",
+    ),
+    path(
+        "api/v1/exchange-accounts/<int:pk>/diagnostics/",
+        react_views.api_exchange_diagnostics,
+        name="api-exchange-diagnostics",
+    ),
+    path(
+        "api/v1/exchange-accounts/<int:pk>/sync/",
+        react_views.api_exchange_sync,
+        name="api-react-exchange-sync",
+    ),
+    path(
+        "api/v1/exchange-accounts/<int:pk>/rotate/",
+        react_views.api_exchange_rotate,
+        name="api-react-exchange-rotate",
+    ),
+    path(
+        "api/v1/exchange-accounts/<int:pk>/revoke/",
+        react_views.api_exchange_revoke,
+        name="api-react-exchange-revoke",
+    ),
+    path("api/v1/risk/fix-loss/", react_views.api_fix_loss, name="api-fix-loss"),
+    path(
+        "api/v1/markets/<int:pk>/candles/",
+        react_views.api_market_candles,
+        name="api-market-candles",
+    ),
+    path("api/v1/live-orders/", react_views.api_live_orders, name="api-live-orders"),
+    path("api/v1/telegram/state/", react_views.api_telegram_state, name="api-telegram-state"),
+    path(
+        "api/v1/telegram/messages/",
+        react_views.api_telegram_messages,
+        name="api-telegram-messages",
+    ),
+    path(
+        "api/v1/telegram/action/",
+        react_views.api_telegram_action,
+        name="api-telegram-action",
+    ),
+    path("reports/", react_views.legacy_react_page, {"page": "reports"}, name="reports"),
     path("reports/export.csv", report_views.export_csv, name="report-csv"),
     path("reports/chart.svg", report_views.export_chart, name="report-chart"),
     path("api/v1/reports/", report_views.api_report, name="api-reports"),
-    path("external/", external_views.list_external, name="external-list"),
-    path("external/<int:pk>/", external_views.detail, name="external-detail"),
+    path("external/", react_views.legacy_react_page, {"page": "trades"}, name="external-list"),
+    path("external/<int:pk>/", react_views.legacy_external_page, name="external-detail"),
     path("external/<int:pk>/manage/", external_views.manage, name="external-manage"),
     path(
         "external/<int:pk>/manage/disable/",
@@ -59,15 +124,15 @@ urlpatterns = [
         operation_views.resolve_dead_letter,
         name="operations-resolve-dead-letter",
     ),
-    path("alerts/", alert_views.center, name="alerts"),
-    path("alerts/new/", alert_views.edit, name="alert-new"),
-    path("alerts/<int:pk>/edit/", alert_views.edit, name="alert-edit"),
+    path("alerts/", react_views.legacy_react_page, {"page": "alerts"}, name="alerts"),
+    path("alerts/new/", react_views.legacy_alert_new_compat, name="alert-new"),
+    path("alerts/<int:pk>/edit/", react_views.legacy_alert_edit_compat, name="alert-edit"),
     path("alerts/<int:pk>/disable/", alert_views.disable, name="alert-disable"),
     path("api/v1/alerts/", alert_views.api_list, name="api-alerts"),
-    path("notifications/", notification_views.center, name="notifications"),
+    path("notifications/", react_views.legacy_react_page, {"page": "alerts"}, name="notifications"),
     path(
         "notifications/preferences/",
-        notification_views.preferences,
+        react_views.legacy_notification_preferences_compat,
         name="notification-preferences",
     ),
     path("api/v1/notifications/", notification_views.api_list, name="api-notifications"),
@@ -77,7 +142,7 @@ urlpatterns = [
         notification_views.browser_claim,
         name="notification-browser-claim",
     ),
-    path("operations/", operation_views.center, name="operations"),
+    path("operations/", react_views.legacy_react_page, {"page": "operations"}, name="operations"),
     path("operations/<int:pk>/control/", operation_views.control, name="operations-control"),
     path("api/v1/operations/health/", operation_views.api_health, name="api-operations-health"),
     path("api/v1/acceptance/", operation_views.api_acceptance, name="api-acceptance"),
@@ -86,7 +151,7 @@ urlpatterns = [
         operation_views.api_host_capabilities,
         name="api-host-capabilities",
     ),
-    path("", views.home, name="home"),
+    path("", react_views.react_app, name="home"),
     path("auth/login/", account_views.SignInView.as_view(), name="login"),
     path("auth/logout/", account_views.sign_out, name="logout"),
     path("auth/password-reset/", account_views.password_reset_request, name="password-reset"),
@@ -103,19 +168,29 @@ urlpatterns = [
         account_views.password_reset_confirm,
         name="password-reset-confirm",
     ),
-    path("settings/profile/", account_views.profile, name="profile"),
+    path("settings/profile/", react_views.legacy_profile_compat, name="profile"),
     path(
         "settings/trading/",
-        account_views.trading_preferences,
+        react_views.legacy_trading_preferences_compat,
         name="trading-preferences",
     ),
-    path("settings/security/audit/", account_views.audit_events, name="audit-events"),
+    path(
+        "settings/security/audit/",
+        react_views.legacy_react_page,
+        {"page": "settings", "subpage": "security"},
+        name="audit-events",
+    ),
     path(
         "settings/security/step-up/",
-        account_views.security_step_up,
+        react_views.legacy_security_step_up_compat,
         name="security-step-up",
     ),
-    path("settings/security/sessions/", account_views.sessions, name="sessions"),
+    path(
+        "settings/security/sessions/",
+        react_views.legacy_react_page,
+        {"page": "settings", "subpage": "security"},
+        name="sessions",
+    ),
     path(
         "settings/security/sessions/<int:session_id>/revoke/",
         account_views.revoke_session,
@@ -138,14 +213,14 @@ urlpatterns = [
         account_views.api_trading_preferences,
         name="api-trading-preferences",
     ),
-    path("dashboard/", views.app_shell, name="dashboard"),
-    path("paper/", paper_views.list_trades, name="paper-trades"),
-    path("paper/<int:pk>/", paper_views.trade_detail, name="paper-trade-detail"),
+    path("dashboard/", react_views.react_app, name="dashboard"),
+    path("paper/", react_views.legacy_react_page, {"page": "trades"}, name="paper-trades"),
+    path("paper/<int:pk>/", react_views.legacy_trade_page, name="paper-trade-detail"),
     path("paper/launch/<int:plan_id>/", paper_views.launch_trade, name="paper-launch"),
     path("paper/<int:pk>/status/", paper_views.trade_status, name="paper-status"),
     path("paper/<int:pk>/close/", paper_views.close_trade, name="paper-close"),
     path("paper/<int:pk>/cancel/", paper_views.cancel_trade, name="paper-cancel"),
-    path("paper/risk/", paper_risk_views.paper_risk, name="paper-risk"),
+    path("paper/risk/", react_views.legacy_paper_risk_compat, name="paper-risk"),
     path("api/v1/paper/trades/", paper_views.api_trades, name="api-paper-trades"),
     path("api/v1/trades/", portfolio_stage24_views.api_trades, name="api-stage24-trades"),
     path(
@@ -159,14 +234,22 @@ urlpatterns = [
         name="api-stage24-trades-refresh",
     ),
     path("api/v1/paper/trades/<int:pk>/", paper_views.api_trade_detail, name="api-paper-detail"),
-    path("inbox/", inbox_views.inbox, name="inbox"),
+    path("inbox/", react_views.legacy_react_page, {"page": "inbox"}, name="inbox"),
     path("inbox/bulk/trash/", inbox_views.bulk_trash, name="inbox-bulk-trash"),
     path("inbox/bulk/restore/", inbox_views.bulk_restore, name="inbox-bulk-restore"),
-    path("settings/sources/", inbox_views.source_settings, name="source-settings"),
-    path("settings/telegram/", inbox_views.telegram_settings, name="telegram-settings"),
+    path(
+        "settings/sources/",
+        react_views.legacy_source_settings_compat,
+        name="source-settings",
+    ),
+    path(
+        "settings/telegram/",
+        react_views.legacy_telegram_settings_compat,
+        name="telegram-settings",
+    ),
     path(
         "settings/telegram/channels/<int:pk>/",
-        inbox_views.telegram_channel_analytics,
+        react_views.legacy_telegram_channel_page,
         name="telegram-channel-analytics",
     ),
     path(
@@ -174,10 +257,10 @@ urlpatterns = [
         inbox_views.api_telegram_channel_analytics,
         name="api-telegram-channel-analytics",
     ),
-    path("inbox/receive/", inbox_views.receive, name="inbox-receive"),
-    path("smart-paste/", inbox_views.smart_paste, name="smart-paste"),
+    path("inbox/receive/", react_views.legacy_inbox_receive_compat, name="inbox-receive"),
+    path("smart-paste/", react_views.legacy_smart_paste_compat, name="smart-paste"),
     path("api/v1/smart-paste/", inbox_views.api_smart_paste, name="api-smart-paste"),
-    path("inbox/<int:pk>/", inbox_views.detail, name="inbox-detail"),
+    path("inbox/<int:pk>/", react_views.legacy_signal_page, name="inbox-detail"),
     path("inbox/<int:pk>/trash/", inbox_views.trash_one, name="inbox-trash-one"),
     path(
         "inbox/<int:pk>/approve-trade/",
@@ -199,12 +282,12 @@ urlpatterns = [
         "api/v1/manual/plans/<int:pk>/confirm/", plan_views.api_confirm, name="api-manual-confirm"
     ),
     path("api/v1/manual/plans/<int:pk>/edit/", plan_views.api_edit, name="api-manual-edit"),
-    path("manual/", plan_views.list_plans, name="manual-list"),
-    path("manual/new/", plan_views.new_plan, name="manual-new"),
-    path("manual/<int:pk>/", plan_views.preview_plan, name="manual-preview"),
-    path("manual/<int:pk>/edit/", plan_views.edit_plan, name="manual-edit"),
+    path("manual/", react_views.legacy_react_page, {"page": "plans"}, name="manual-list"),
+    path("manual/new/", react_views.legacy_manual_new_compat, name="manual-new"),
+    path("manual/<int:pk>/", react_views.legacy_plan_page, name="manual-preview"),
+    path("manual/<int:pk>/edit/", react_views.legacy_manual_edit_compat, name="manual-edit"),
     path("manual/<int:pk>/confirm/", plan_views.confirm_plan, name="manual-confirm"),
-    path("watchlist/", watchlist_views.watchlist_page, name="watchlists"),
+    path("watchlist/", react_views.legacy_react_page, {"page": "watchlist"}, name="watchlists"),
     path("watchlist/create/", watchlist_views.create_watchlist, name="watchlist-create"),
     path("watchlist/<int:pk>/add/", watchlist_views.add_watchlist_item, name="watchlist-add"),
     path(
@@ -218,13 +301,18 @@ urlpatterns = [
         name="watchlist-remove",
     ),
     path("api/v1/watchlists/<int:pk>/", watchlist_views.api_watchlist, name="api-watchlist"),
-    path("exchanges/", exchange_views.exchange_center, name="exchange-center"),
-    path("exchanges/add/", exchange_views.add_exchange_account, name="exchange-account-add"),
     path(
-        "exchanges/<int:pk>/",
-        exchange_views.exchange_account_detail,
-        name="exchange-account-detail",
+        "exchanges/",
+        react_views.legacy_react_page,
+        {"page": "exchanges"},
+        name="exchange-center",
     ),
+    path(
+        "exchanges/add/",
+        react_views.legacy_exchange_add_compat,
+        name="exchange-account-add",
+    ),
+    path("exchanges/<int:pk>/", react_views.legacy_exchange_page, name="exchange-account-detail"),
     path(
         "exchanges/<int:pk>/sync/",
         exchange_views.request_account_sync,
@@ -250,7 +338,7 @@ urlpatterns = [
         exchange_views.revoke_exchange_account,
         name="exchange-account-revoke",
     ),
-    path("system/", views.system, name="system"),
+    path("system/", react_views.legacy_react_page, {"page": "operations"}, name="system"),
     path("system/status/", views.system_status, name="system-status"),
     path("api/v1/engine/readiness/", views.api_engine_readiness, name="api-engine-readiness"),
     path(

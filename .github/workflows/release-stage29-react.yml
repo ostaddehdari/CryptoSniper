@@ -1,0 +1,59 @@
+name: Build Stage29 validated React deployment
+on:
+  workflow_call:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: stage29-validated-release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Require exact tested source and package workflow
+        env:
+          TESTED_SHA: ${{ github.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$TESTED_SHA"
+          test -f scripts/build_stage29_release.py
+          test -f docs/reports/stage-29.md
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend-react/package-lock.json
+      - name: Build the exact tested React source
+        working-directory: frontend-react
+        run: |
+          npm ci
+          npm test
+          npm run build
+      - name: Verify installer upgrade and build cumulative package
+        run: |
+          python3 -m unittest discover -s tests -p test_installer_nginx.py -q
+          python3 scripts/build_stage29_release.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stage29-verified-react-release
+          path: .runtime/stage29-release/*
+          include-hidden-files: true
+          if-no-files-found: error
+      - name: Publish immutable package from the successful source
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG=stage29-react-v0.29.0rc1-deploy-r2
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo 'Existing immutable Stage29 release retained; no assets replaced.'
+            exit 0
+          fi
+          gh release create "$TAG" .runtime/stage29-release/* --target "$(git rev-parse HEAD)" --prerelease \
+            --title 'CryptoSniper Stage29 — restored primary React workspace' \
+            --notes 'Stage29 r2 verifies and reconciles compatible pre-existing preview schema before migrations, with a private database snapshot. Fixes DuplicateTable accounts_walletconnection on upgrades. Restores the approved React visual base, simplifies navigation and versions cached frontend assets. Contains the cumulative backend and prebuilt React; no production Node service is required. Does not claim real-provider or production-server acceptance. Stages30–33 remain pending.'

@@ -1,0 +1,7 @@
+/* Final shell refinements. The approved styles.css remains unchanged. */
+.sidebar nav{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.sidebarFoot{flex-shrink:0}.sidebarFoot form{margin:0}.sidebarFoot form button{width:100%}
+.notification .badge{max-width:36px;padding-inline:3px;white-space:nowrap}
+.newTradeTabs{margin-bottom:16px}
+@media(max-width:850px){.topbar{height:auto;min-height:86px;flex-wrap:wrap;padding-block:10px;gap:6px}.topActions{flex-wrap:wrap}.topActions .ticker{display:flex;border:0;padding:4px 6px;font-size:10px}.ticker b{font-size:10px}}
+@media(max-width:560px){.sidebar nav{flex-direction:row;overflow-x:auto;overflow-y:hidden;flex-shrink:0}.sidebar,.sidebar.collapsed{width:100%;height:72px}.sidebar .navItem{min-width:66px;height:56px;flex-direction:column;gap:3px;padding:4px}.sidebar .navItem span{display:block;font-size:9px}.main .content{padding-bottom:86px}.topbar{min-height:92px}.topbar>div:first-child{width:100%}.topActions{width:100%;justify-content:space-between}.topActions .iconBtn{display:inline-flex;width:30px;height:30px}.topActions .ticker{padding:2px;font-size:9px}.topActions .ticker b{font-size:9px}.sidebar nav{width:max-content;min-width:100%;flex:none}.newTradeTabs .tabs{flex-wrap:nowrap}.newTradeTabs .tabs button{white-space:nowrap;flex:1}}

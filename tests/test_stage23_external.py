@@ -45,4 +45,9 @@ def test_paper_external_observation_is_never_manageable_as_live(client, django_u
     client.force_login(user)
     response = client.get(f"/external/{item.pk}/")
     assert response.status_code == 200
-    assert "واگذاری مدیریت" in response.content.decode()
+    assert b'id="root"' in response.content
+    from apps.portfolio.external_management import apply_external_policy
+    from django.core.exceptions import ValidationError
+
+    with pytest.raises(ValidationError):
+        apply_external_policy(user, item.pk, {})

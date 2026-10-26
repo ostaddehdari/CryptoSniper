@@ -244,6 +244,7 @@ def _account_payload(account):
 def api_exchanges(request):
     catalog = [
         {
+            "id": exchange.pk,
             "code": exchange.code,
             "name": exchange.name,
             "spot": exchange.spot_supported,

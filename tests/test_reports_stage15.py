@@ -13,6 +13,7 @@ from apps.reports.service import report_dataset
 from apps.reports.stats import classify_result, report_statistics
 from apps.trading.exits_engine import process_paper_price
 from apps.trading.models import TradeFinanceEvent
+from django.urls import reverse
 from django.utils import timezone
 from test_stages09_exits import paper_trade
 
@@ -160,5 +161,7 @@ def test_fill_correction_invalidates_cache_and_rebuild_updates_drilldown(client,
     row = after["rows"][0]
     assert row.drill_query == f"exchange={trade.market.exchange.code}"
     client.force_login(owner)
-    response = client.get(f"/paper/?tab=history&{row.drill_query}")
-    assert response.status_code == 200 and str(trade.pk).encode() in response.content
+    page = client.get(f"/paper/?tab=history&{row.drill_query}")
+    assert page.status_code == 200 and b'id="root"' in page.content
+    payload = client.get(reverse("api-stage24-trades") + "?view=all").json()
+    assert any(item["key"] == f"paper:{trade.pk}" for item in payload["trades"])

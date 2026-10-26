@@ -4,7 +4,7 @@
 
 ## Stack و مرز مسئولیت
 
-Python با نسخه پشتیبانی‌شده متناسب با هاست، Django، REST API، Django Templates، HTMX، Alpine.js و static CSS/JS. PostgreSQL منبع دائمی؛ Redis برای cache/queue/co-ordination؛ Celery/Beat برای پردازش مستقل. انتخاب نسخه دقیق و pin وابستگی‌ها در S01 با بررسی پشتیبانی رسمی انجام می‌شود. نسخه یا provider آزمایش‌نشده وعده قطعی محسوب نمی‌شود.
+طبق تصمیم نهایی ۲۶ اکتبر ۲۰۲۶: React + Vite + Lucide رابط اصلی است؛ Django Templates فقط ورود و سازگاری Backend را ارائه می‌کنند. Python، Django و REST API حفظ می‌شوند. PostgreSQL منبع دائمی؛ Redis برای cache/queue/co-ordination؛ Celery/Beat برای پردازش مستقل. انتخاب نسخه دقیق و pin وابستگی‌ها در S01 با بررسی پشتیبانی رسمی انجام می‌شود. نسخه یا provider آزمایش‌نشده وعده قطعی محسوب نمی‌شود.
 
 Frontend کنترل و نمایش است. ورود سفارش، TP، SL، trailing، alerts و recovery با بستن مرورگر متوقف نمی‌شوند. WSGI/polling فقط نمایش realtime را جایگزین می‌کند؛ جای Worker دائمی نیست. اگر هاست Worker ندارد، deployment باید process جدا در میزبان مناسب داشته باشد.
 

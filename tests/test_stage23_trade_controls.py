@@ -34,9 +34,10 @@ def test_manual_trigger_integer_controls_and_fresh_entry(client, django_user_mod
     assert preview["trailing_distance_percent"] == "2"
     assert not ManualTradeForm(user, payload(account, market, capital="50.5")).is_valid()
     client.force_login(user)
-    html = client.get(reverse("manual-new")).content.decode()
-    assert 'data-no-draft="1"' in html
-    assert "data-market-search" in html
+    page = client.get(reverse("manual-new"))
+    assert page.status_code == 200
+    assert b'id="root"' in page.content
+    assert b"static/react/app.js" in page.content
 
 
 @pytest.mark.django_db

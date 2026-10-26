@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from datetime import timedelta
 from unittest.mock import patch
 
@@ -97,6 +98,58 @@ def test_all_primary_pages_use_global_cornix_shell(client, django_user_model, ro
     assert 'class="s24-topbar topbar"' in body
     assert "stage24-rebuild.css" in body
     assert "cornix-shell.js" in body
+
+
+def test_primary_templates_do_not_use_legacy_ui_markup():
+    root = Path(__file__).resolve().parents[1]
+    primary = [
+        "backend/templates/exchanges/center.html",
+        "backend/templates/exchanges/add.html",
+        "backend/templates/exchanges/detail.html",
+        "backend/templates/marketdata/watchlists.html",
+        "backend/templates/alerts/list.html",
+        "backend/templates/alerts/form.html",
+        "backend/templates/alerts/notifications.html",
+        "backend/templates/reports/center.html",
+        "backend/templates/core/system.html",
+        "backend/templates/operations/center.html",
+        "backend/templates/accounts/profile.html",
+        "backend/templates/accounts/trading_preferences.html",
+        "backend/templates/accounts/audit_events.html",
+        "backend/templates/accounts/sessions.html",
+        "backend/templates/accounts/security_step_up.html",
+        "backend/templates/tradeplans/list.html",
+        "backend/templates/tradeplans/form.html",
+        "backend/templates/signals/inbox.html",
+        "backend/templates/signals/detail.html",
+        "backend/templates/signals/receive.html",
+        "backend/templates/signals/smart_paste.html",
+        "backend/templates/signals/source_settings.html",
+        "backend/templates/signals/telegram_settings.html",
+        "backend/templates/signals/telegram_channel_analytics.html",
+        "backend/templates/trading/list.html",
+        "backend/templates/trading/detail.html",
+        "backend/templates/trading/risk.html",
+        "backend/templates/portfolio/external_list.html",
+        "backend/templates/portfolio/external.html",
+    ]
+    forbidden = (
+        'class="page-heading',
+        'class="panel',
+        'class="button ',
+        'class="button"',
+        'class="settings-layout',
+        'class="market-table',
+        'class="manual-grid',
+        'class="lower-grid',
+    )
+    for relative in primary:
+        body = (root / relative).read_text()
+        assert 'class="s24-' in body, relative
+        for token in forbidden:
+            assert token not in body, f"{relative} still contains legacy markup: {token}"
+
+
 
 
 @pytest.mark.django_db

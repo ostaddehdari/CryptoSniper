@@ -204,7 +204,7 @@ urlpatterns = [
         account_views.api_trading_preferences,
         name="api-trading-preferences",
     ),
-    path("dashboard/", react_views.legacy_react_page, {"page": "dashboard"}, name="dashboard"),
+    path("dashboard/", react_views.react_app, name="dashboard"),
     path("paper/", paper_views.list_trades, name="paper-trades"),
     path("paper/<int:pk>/", paper_views.trade_detail, name="paper-trade-detail"),
     path("paper/launch/<int:plan_id>/", paper_views.launch_trade, name="paper-launch"),

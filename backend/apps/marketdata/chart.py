@@ -13,7 +13,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 
 from apps.accounts.security import session_api_required
-from apps.operations.models import ExternalObservation, ExternalTradePolicy
+from apps.operations.models import ExternalObservation, ExternalTradePolicy, ManagedSpotPosition
 from apps.signals.models import Signal, SignalOutcome
 from apps.trading.models import PaperExitFill, Trade
 
@@ -211,6 +211,53 @@ def _external_overlay(user, observation_id):
     }
 
 
+def _managed_overlay(user, market_id, position_id=None, order_id=None):
+    rows = ManagedSpotPosition.objects.filter(
+        account__owner=user, market_id=market_id
+    ).select_related("entry_order")
+    position = (
+        rows.filter(pk=position_id).first()
+        if position_id
+        else rows.filter(entry_order_id=order_id).first()
+    )
+    if not position:
+        return None
+    levels = [
+        {"kind": "entry", "label": "Entry", "price": float(position.snapshot["entry_price"])},
+        {"kind": "sl", "label": "SL", "price": float(position.effective_stop)},
+    ]
+    levels += [
+        {"kind": f"tp{i + 1}", "label": f"TP{i + 1}", "price": float(t["price"])}
+        for i, t in enumerate(position.snapshot["targets"])
+    ]
+    markers = []
+    if position.entry_order and position.entry_order.filled_amount:
+        markers.append(
+            {
+                "kind": "entry",
+                "label": "Entry fill",
+                "time": int(position.entry_order.updated_at.timestamp()),
+            }
+        )
+    for attempt in position.exits.select_related("order").filter(order__filled_amount__gt=0):
+        markers.append(
+            {
+                "kind": attempt.reason,
+                "label": f"{attempt.reason} fill {attempt.order.filled_amount}",
+                "time": int(attempt.order.updated_at.timestamp()),
+            }
+        )
+    return {
+        "type": "managed_spot",
+        "id": position.pk,
+        "levels": levels,
+        "markers": markers,
+        "state": position.state,
+        "remaining": str(position.remaining),
+        "markers_are_receipts": True,
+    }
+
+
 @session_api_required
 @never_cache
 @require_GET
@@ -265,7 +312,7 @@ def api_chart(request):
 
     candle_payloads = [_candle_payload(row) for row in candles]
     provider_label = "Binance public candles"
-    if quote and quote.get("price"):
+    if quote and quote.get("price") and not quote.get("stale"):
         live_price = float(quote["price"])
         live_point = {
             "time": int(now.timestamp()),
@@ -290,8 +337,16 @@ def api_chart(request):
     elif market.exchange.adapter_code != "binance":
         provider_label = f"{market.exchange.code} · live quote unavailable"
 
+    if quote and quote.get("stale"):
+        provider_label = (
+            f"{quote.get('source', market.exchange.code)} quote stale · Binance history reference"
+        )
     overlay = None
-    if request.GET.get("signal"):
+    if request.GET.get("position") or request.GET.get("live_order"):
+        overlay = _managed_overlay(
+            request.user, market.pk, request.GET.get("position"), request.GET.get("live_order")
+        )
+    elif request.GET.get("signal"):
         overlay = _signal_overlay(request.user, request.GET["signal"], candles)
     elif request.GET.get("trade"):
         overlay = _trade_overlay(request.user, request.GET["trade"])
@@ -312,5 +367,12 @@ def api_chart(request):
             "overlay": overlay,
             "as_of": now.isoformat(),
             "display_only": True,
+            "candle_source": "binance_public_display_reference",
+            "feed": {
+                "stale": not quote or bool(quote.get("stale")),
+                "observed_at": quote.get("observed_at") if quote else None,
+                "age_seconds": quote.get("age_seconds") if quote else None,
+                "source": quote.get("source") if quote else None,
+            },
         }
     )

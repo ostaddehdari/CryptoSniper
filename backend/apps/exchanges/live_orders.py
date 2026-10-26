@@ -163,6 +163,10 @@ def _validate_receipt(order, receipt):
         raise InvalidProviderResponse("provider_order_symbol_mismatch")
     if receipt.side.lower() != order.side:
         raise InvalidProviderResponse("provider_order_side_mismatch")
+    if receipt.order_type.lower() != order.order_type:
+        raise InvalidProviderResponse("provider_order_type_mismatch")
+    if order.order_type == "limit" and receipt.price is not None and receipt.price != order.price:
+        raise InvalidProviderResponse("provider_order_price_mismatch")
     if receipt.amount != order.amount:
         raise InvalidProviderResponse("provider_order_amount_mismatch")
     if (

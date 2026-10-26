@@ -176,6 +176,7 @@ function Trades({decimals,notify,setPage,requestStepUp}){
 }
 
 function ManagementPanel({trade,notify,requestStepUp,onChanged}){
+  const [reconcileTarget,setReconcileTarget]=useState(String(trade.id));
   const [policyVersion,setPolicyVersion]=useState(null);
   const [position,setPosition]=useState(trade.management||null),[enabled,setEnabled]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState("");
   const [values,setValues]=useState({entry_price:trade.entry||"",remaining_amount:trade.position_amount||"",stop_loss:trade.stop_loss||"",tp1:trade.tp?.[0]||"",tp2:trade.tp?.[1]||"",tp3:trade.tp?.[2]||"",trailing_sl_enabled:true,trailing_enabled:true,trailing_trigger:"1",trailing_distance_percent:"1"}),[confirmed,setConfirmed]=useState(false),[editing,setEditing]=useState(false),[externalId,setExternalId]=useState("");
@@ -193,7 +194,7 @@ function ManagementPanel({trade,notify,requestStepUp,onChanged}){
   if(trade.kind==="paper")return null;
   return <div className="managementForm"><h4>مدیریت معامله</h4>{error&&<ErrorBox text={error}/>}<p className="riskDetails">{enabled?"اجرای خروج روی سرور مجاز است؛ فعال‌شدن برای این معامله به تأیید صریح وابسته است.":"اجرای خودکار خروج روی سرور خاموش است؛ پایش و تطبیق رسیدها ادامه دارد."}</p>{position&&<><div className="analysisGrid"><Info label="باقی‌مانده تأییدشده" value={position.remaining}/><Info label="SL مؤثر" value={position.effective_stop}/><Info label="آخرین قیمت صرافی" value={dt(position.last_price_at)}/><Info label="وضعیت پایش" value={position.paused?"متوقف":position.state}/></div>{position.error_code&&<p className="down">{({feed_or_receipt_unavailable:"داده یا رسید تازهٔ صرافی در دسترس نیست.",base_balance_or_fee_shortfall:"موجودی آزاد یا کارمزد ارز پایه نیاز به تطبیق دارد.",remaining_below_exchange_minimum:"باقی‌مانده از حداقل سفارش صرافی کمتر است.",exit_failed_review_required:"خروج ناموفق بوده؛ پیش از ادامه، نتیجه را بررسی کنید."})[position.error_code]||"این معامله نیاز به بررسی رسیدهای صرافی دارد."}</p>}<div className="row gap"><button className="softBtn" disabled={busy} onClick={()=>change(position.paused?"resume":"pause")}>{position.paused?"ادامه پایش":"توقف پایش جدید"}</button><button className="softBtn" disabled={busy} onClick={()=>setEditing(v=>!v)}>ویرایش شرایط</button></div><p className="riskDetails">توقف پایش، سفارش خروجِ قبلاً ثبت‌شده را لغو نمی‌کند. SL مؤثر قابل ضعیف‌کردن نیست.</p><div className="simpleList">{position.exits.map(x=><div key={x.id}><b>{x.reason} · #{x.id}</b><span>{x.state} · {x.filled} / {x.amount}</span></div>)}</div></>}
     {(!position||editing)&&((trade.kind==="external"&&trade.manageable)||position||trade.plan_id)&&<><div className="formGrid">{!position&&trade.kind==="external"&&input("entry_price","Entry تأییدشده")}{input("remaining_amount","حجم باقی‌مانده تأییدشده")}{(position||trade.kind==="external")&&[input("stop_loss","SL مدیریت"),input("tp1","TP1 مدیریت"),input("tp2","TP2 مدیریت"),input("tp3","TP3 مدیریت")]}</div>{(position||trade.kind==="external")&&<><label className="confirmLine"><input type="checkbox" checked={values.trailing_sl_enabled} onChange={e=>setValues(v=>({...v,trailing_sl_enabled:e.target.checked}))}/>Trailing SL</label><label className="confirmLine"><input type="checkbox" checked={values.trailing_enabled} onChange={e=>setValues(v=>({...v,trailing_enabled:e.target.checked}))}/>Trailing</label><div className="formGrid"><div className="field"><label>شروع Trailing مدیریت</label><select aria-label="شروع Trailing مدیریت" value={values.trailing_trigger} onChange={e=>setValues(v=>({...v,trailing_trigger:e.target.value}))}>{[1,2,3].map(n=><option key={n} value={n}>TP{n}</option>)}</select></div>{input("trailing_distance_percent","فاصله Trailing مدیریت")}</div></>}<label className="confirmLine"><input aria-label="تأیید واگذاری مدیریت" type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/>حجم باقی‌مانده و شرایط مدیریت را بررسی و تأیید می‌کنم.</label><button className="primary" disabled={busy||!enabled||!confirmed} onClick={save}>{position?"ثبت شرایط":"واگذاری مدیریت خروج"}</button></>}
-    {trade.kind==="live"&&["open","partial","uncertain","submitting","pending"].includes(trade.entry_state||trade.state)&&<div className="sectionGap"><input aria-label="شناسه سفارش صرافی برای تطبیق" placeholder="شناسه صرافی؛ فقط برای نتیجه نامعلوم" value={externalId} onChange={e=>setExternalId(e.target.value)}/><button className="softBtn" disabled={busy} onClick={()=>send(`/api/v1/live-orders/${trade.id}/reconcile/`,{external_id:externalId})}>بررسی رسید سفارش</button><button className="softBtn" disabled={busy} onClick={()=>send(`/api/v1/live-orders/${trade.id}/reconcile/`,{cancel:true})}>لغو باقی سفارش ورود</button></div>}
+    {(trade.kind==="live"||position?.exits?.length>0)&&<div className="sectionGap"><select aria-label="سفارش برای تطبیق" value={reconcileTarget} onChange={e=>setReconcileTarget(e.target.value)}>{trade.kind==="live"&&<option value={trade.id}>ورود #{trade.id}</option>}{position?.exits.map(x=><option key={x.id} value={x.id}>خروج {x.reason} #{x.id}</option>)}</select><input aria-label="شناسه سفارش صرافی برای تطبیق" placeholder="شناسه صرافی؛ فقط برای نتیجه نامعلوم" value={externalId} onChange={e=>setExternalId(e.target.value)}/><button className="softBtn" disabled={busy} onClick={()=>send(`/api/v1/live-orders/${reconcileTarget}/reconcile/`,{external_id:externalId})}>بررسی رسید سفارش</button><button className="softBtn" disabled={busy} onClick={()=>send(`/api/v1/live-orders/${reconcileTarget}/reconcile/`,{cancel:true})}>لغو باقی سفارش</button><p className="riskDetails">برای جلوگیری از ساخت خروج تازه پس از لغو، ابتدا پایش جدید را متوقف کنید.</p></div>}
   </div>;
 }
 
@@ -337,7 +338,9 @@ function MarketChart({marketId,signalId=null,trade=null,levels:manualLevels=null
         const q=new URLSearchParams({market:String(marketId),interval,bars:"140"});
         if(signalId)q.set("signal",String(signalId));
         if(trade?.kind==="paper")q.set("trade",String(trade.id));
-        if(trade?.kind==="external")q.set("external",String(trade.id));
+        if(trade?.management_id)q.set("position",String(trade.management_id));
+        else if(trade?.kind==="external")q.set("external",String(trade.id));
+        else if(trade?.kind==="live")q.set("live_order",String(trade.id));
         const d=await api("/api/v1/markets/chart/?"+q.toString());
         if(!stop)setPayload(d);
       }catch{if(!stop)setPayload(null)}
@@ -349,7 +352,7 @@ function MarketChart({marketId,signalId=null,trade=null,levels:manualLevels=null
 
   if(!marketId)return <div className="chartEmpty">یک بازار را انتخاب کنید.</div>;
   const candles=payload?.candles||[];
-  if(!candles.length)return <div className="chartEmpty">در انتظار کندل و قیمت زنده…</div>;
+  if(!candles.length)return <div className="chartEmpty">{payload?.feed?.stale?"قیمت تازه در دسترس نیست؛ نمودار مرجع نیز موجود نیست.":"در انتظار کندل و قیمت زنده…"}</div>;
 
   const levels=manualLevels?[{kind:"entry",label:"Entry",price:manualLevels.entry},{kind:"sl",label:"SL",price:manualLevels.stop},...(manualLevels.targets||[]).map((price,i)=>({kind:"tp"+(i+1),label:"TP"+(i+1),price}))].filter(x=>num(x.price)>0):(payload?.overlay?.levels||[]);
   const values=[
@@ -364,6 +367,7 @@ function MarketChart({marketId,signalId=null,trade=null,levels:manualLevels=null
   const colors={entry:"#2f66d8",sl:"#e05260",tp1:"#17a673",tp2:"#17a673",tp3:"#17a673"};
 
   return <div className="candleWrap">
+    {payload?.feed?.stale&&<p className="chartStale" role="status">قیمت صرافی تازه نیست؛ کندل‌ها مرجع نمایشی هستند و مبنای اجرای خروج نیستند.</p>}
     <div className="chartToolbar">
       <small className="muted">{payload?.provider_label||"Live market"}</small>
       <div className="range">{["1m","5m","15m","1h","4h"].map(v=><button key={v} className={interval===v?"active":""} onClick={()=>setIntervalValue(v)}>{v}</button>)}</div>

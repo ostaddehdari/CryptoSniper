@@ -53,6 +53,13 @@ def reconcile_order(order_id, *, adapter=None, external_id=None, cancel=False):
     order = LiveSpotOrder.objects.select_related("account__exchange", "market").get(pk=order_id)
     if order.state in TERMINAL and not external_id:
         return order.state
+    if cancel and not order.external_order_id and not external_id:
+        with transaction.atomic():
+            locked = LiveSpotOrder.objects.select_for_update().get(pk=order.pk)
+            if locked.state == "pending":
+                locked.state, locked.error_code = "cancelled", "user_cancelled_before_dispatch"
+                locked.save()
+                return "cancelled"
     adapter = adapter or account_adapter(order.account)
     order_id_at_provider = order.external_order_id or external_id
     try:

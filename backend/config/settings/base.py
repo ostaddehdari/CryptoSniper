@@ -97,7 +97,7 @@ API_RATE_LIMIT_PER_MINUTE = 120
 PARSER_RATE_LIMIT_PER_MINUTE = 10
 SUBSCRIPTION_RATE_LIMIT_PER_MINUTE = 60
 AUDIT_RETENTION_DAYS = 365
-RELEASE_VERSION = env("CRYPTOSNIPER_RELEASE", default="0.30.0rc1")
+RELEASE_VERSION = env("CRYPTOSNIPER_RELEASE", default="0.31.0rc1")
 SOURCE_REVISION = env("CRYPTOSNIPER_SOURCE_REVISION", default="development")
 DEPLOYMENT_ENVIRONMENT = env("CRYPTOSNIPER_ENVIRONMENT", default="development")
 HOSTING_EGRESS_PROBE_URL = env(
@@ -299,4 +299,11 @@ CELERY_BEAT_SCHEDULE["managed-live-spot"] = {
     "task": "operations.monitor_managed_spot",
     "schedule": 5.0,
     "options": {"queue": "trailing", "expires": 4},
+}
+
+CELERY_TASK_ROUTES["exchanges.reconcile_live_spot_orders"] = {"queue": "maintenance"}
+CELERY_BEAT_SCHEDULE["live-order-receipts"] = {
+    "task": "exchanges.reconcile_live_spot_orders",
+    "schedule": 15.0,
+    "options": {"queue": "maintenance", "expires": 14},
 }

@@ -39,6 +39,8 @@ def create_entry_position(order, snapshot):
             "market": order.market,
             "snapshot": snapshot,
             "effective_stop": Decimal(snapshot["stop_loss"]),
+            "acquired": order.filled_amount,
+            "state": "active" if order.filled_amount else "waiting_entry",
         },
     )
     return position
@@ -155,12 +157,14 @@ def _decide(position_id, ticker, balance):
     )
     account = UserExchangeAccount.objects.select_for_update().get(pk=account_id)
     position = (
-        ManagedSpotPosition.objects.select_for_update()
+        ManagedSpotPosition.objects.select_for_update(of=("self",))
         .select_related("account__owner", "market__base_asset", "entry_order")
         .get(pk=position_id)
     )
     _inventory(position)
     position.last_checked_at = timezone.now()
+    if not -5 <= (timezone.now() - ticker.observed_at).total_seconds() <= 25:
+        raise ValidationError("قیمت هنگام تصمیم‌گیری تازه نیست.")
     if position.paused or not enabled() or position.state == "closed":
         position.save()
         return {"status": "paused" if position.paused else position.state}
@@ -172,7 +176,18 @@ def _decide(position_id, ticker, balance):
     if active:
         position.state = "uncertain" if active.order.state == "uncertain" else "closing"
         position.save()
-        if intent and intent[0] == "sl" and active.reason.startswith("tp"):
+        if (
+            intent
+            and intent[0] == "sl"
+            and (
+                active.reason.startswith("tp")
+                or (
+                    active.reason == "sl"
+                    and active.order.state in {"open", "partial"}
+                    and active.order.price > ticker.price
+                )
+            )
+        ):
             if active.order.state == "pending":
                 LiveSpotOrder.objects.filter(pk=active.order_id, state="pending").update(
                     state="cancelled", error_code="superseded_by_stop"
@@ -262,7 +277,7 @@ def sync_inventory(position_id):
     )
     UserExchangeAccount.objects.select_for_update().get(pk=account_id)
     position = (
-        ManagedSpotPosition.objects.select_for_update()
+        ManagedSpotPosition.objects.select_for_update(of=("self",))
         .select_related("entry_order")
         .get(pk=position_id)
     )

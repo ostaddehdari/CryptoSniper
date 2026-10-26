@@ -17,13 +17,14 @@ def test_login_and_primary_mobile_navigation(client, django_user_model):
     assert b'autocomplete="current-password"' in login.content
     client.force_login(user)
     dashboard = client.get(reverse("dashboard"))
-    assert dashboard.status_code == 200
-    assert b"data-cs24-root" in dashboard.content
-    assert b"minimum-scale" not in dashboard.content
+    assert dashboard.status_code == 302
+    assert dashboard["Location"].endswith("/app/#/dashboard")
 
-    watchlist = client.get(reverse("watchlists"))
-    assert watchlist.status_code == 200
-    assert b"mobile-primary-nav" in watchlist.content
+    workspace = client.get(reverse("app-shell"))
+    assert workspace.status_code == 200
+    assert b'id="root"' in workspace.content
+    assert b"static/react/app.js" in workspace.content
+    assert b"minimum-scale" not in workspace.content
 
 
 @pytest.mark.django_db
@@ -103,7 +104,8 @@ def test_offline_submit_guard_tolerates_a_control_named_method():
 def test_private_pages_are_no_store_and_expose_offline_status(client, django_user_model):
     user = django_user_model.objects.create_user(username="pwa16")
     client.force_login(user)
-    page = client.get(reverse("dashboard"))
+    page = client.get(reverse("app-shell"))
     assert page.status_code == 200
-    assert b"offline-banner" in page.content and b"pwa.js" in page.content
+    assert b'id="root"' in page.content
+    assert b"static/react/app.js" in page.content
     assert "no-store" in page["Cache-Control"]

@@ -1,3 +1,4 @@
+# fmt: off
 from pathlib import Path
 
 import pytest
@@ -118,3 +119,4 @@ def test_react_source_contains_full_workspace_and_no_legacy_shell_contract():
     assert ".sidebar{" in styles
     assert ".topbar{" in styles
     assert "s24-shell" not in source
+# fmt: on

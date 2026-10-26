@@ -127,3 +127,6 @@ class ExchangeFavorite(models.Model):
         indexes = [
             models.Index(fields=("owner", "exchange", "position"), name="exchange_favorite_order")
         ]
+
+    def __str__(self):
+        return f"{self.owner_id}:{self.exchange_id}:{self.symbol}"

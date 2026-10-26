@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Case, IntegerField, Q, Value, When
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods
@@ -19,12 +19,17 @@ from .models import ExchangeFavorite
 
 
 def owned_exchange(user, code):
-    return get_object_or_404(
+    account = (
         UserExchangeAccount.objects.for_user(user)
         .exclude(status="disabled")
-        .select_related("exchange"),
-        exchange__code=str(code),
-    ).exchange
+        .filter(exchange__code=str(code))
+        .select_related("exchange")
+        .order_by("pk")
+        .first()
+    )
+    if account is None:
+        raise Http404
+    return account.exchange
 
 
 @session_api_required

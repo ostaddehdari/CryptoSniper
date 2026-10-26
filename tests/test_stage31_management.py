@@ -302,8 +302,24 @@ def test_external_adoption_is_explicit_scoped_and_cannot_overallocate(
         client.post(url, {**data, "confirmed": False}, content_type="application/json").status_code
         == 400
     )
+    assert (
+        client.post(url, {**data, "entry_price": "0"}, content_type="application/json").status_code
+        == 400
+    )
     r = client.post(url, data, content_type="application/json")
     assert r.status_code == 201, r.content
+    twin = ExternalObservation.objects.create(
+        account=p.account, kind="history", external_id="outside-1", payload=item.payload
+    )
+    assert (
+        client.post(
+            reverse("api-external-management", args=[twin.pk]),
+            data,
+            content_type="application/json",
+        ).status_code
+        == 400
+    )
+    assert ManagedSpotPosition.objects.count() == 2
     assert client.post(url, data, content_type="application/json").status_code == 400
     other = django_user_model.objects.create_user(username="s31-other")
     client.force_login(other)

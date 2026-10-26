@@ -96,6 +96,14 @@ def apply_external_policy(owner, observation_id, data):
         raise ValidationError(
             "حجم آزاد تازه پس از کسر موجودی مدیریت‌شده کافی نیست؛ Sync و بررسی کنید."
         )
+    previous_stop = policy.effective_stop if policy else data["stop_loss"]
+    previous_high = policy.high_water if policy else None
+    previous_trailing = policy.trailing_active if policy else False
+    if policy and policy.exit_order_id:
+        if policy.exit_order.state not in {"failed", "cancelled"}:
+            raise ValidationError("خروج قبلی این سیاست هنوز به بررسی نیاز دارد.")
+        if data["remaining_amount"] > policy.remaining_amount - policy.exit_order.filled_amount:
+            raise ValidationError("حجم اعلامی از باقی‌مانده پس از خروج قبلی بیشتر است.")
     policy = policy or ExternalTradePolicy(observation=item)
     policy.market = data["market"]
     for name in (
@@ -111,7 +119,7 @@ def apply_external_policy(owner, observation_id, data):
         "trailing_distance_percent",
     ):
         setattr(policy, name, data[name])
-    policy.effective_stop = data["stop_loss"]
+    policy.effective_stop = max(previous_stop, data["stop_loss"])
     policy.state = "active"
     policy.version += 1
     policy.save()
@@ -122,7 +130,10 @@ def apply_external_policy(owner, observation_id, data):
         source_reference=reference,
         acquired=data["remaining_amount"],
         snapshot=_snapshot(data, owner),
-        effective_stop=data["stop_loss"],
+        effective_stop=policy.effective_stop,
+        high_water=previous_high,
+        trailing_active=previous_trailing,
+        break_even_applied=policy.effective_stop >= policy.entry_price,
         state="active",
     )
     record_audit(

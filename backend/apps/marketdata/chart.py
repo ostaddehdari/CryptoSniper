@@ -255,6 +255,7 @@ def _managed_overlay(user, market_id, position_id=None, order_id=None):
         "state": position.state,
         "remaining": str(position.remaining),
         "markers_are_receipts": True,
+        "time_basis": "receipt_observed_at",
     }
 
 

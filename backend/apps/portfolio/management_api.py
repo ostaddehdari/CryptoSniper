@@ -107,6 +107,9 @@ def change_position(owner, pk, body):
     p = ManagedSpotPosition.objects.select_for_update().select_related("market").get(pk=pk)
     if body.get("confirmed") is not True or int(body.get("version", 0)) != p.version:
         raise ValidationError("تأیید صریح و نسخهٔ تازه لازم است.")
+    from .live_management import _inventory
+
+    _inventory(p)
     action = body.get("action")
     if action in {"pause", "resume"}:
         p.paused = action == "pause"

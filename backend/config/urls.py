@@ -1,7 +1,7 @@
 from apps.accounts import views as account_views
 from apps.alerts import notifications as notification_views
 from apps.alerts import views as alert_views
-from apps.core import views
+from apps.core import react_views, views
 from apps.core.health import dependency_status
 from apps.exchanges import views as exchange_views
 from apps.marketdata import chart as market_chart_views
@@ -38,8 +38,70 @@ def ready(request):
 
 urlpatterns = [
     path("manifest.webmanifest", views.web_manifest, name="web-manifest"),
-    path("app/", views.app_shell, name="app-shell"),
+    path("app/", react_views.react_app, name="app-shell"),
     path("service-worker.js", views.service_worker, name="service-worker"),
+    path("api/v1/ui/bootstrap/", react_views.api_bootstrap, name="api-ui-bootstrap"),
+    path("api/v1/security/step-up/", react_views.api_step_up, name="api-step-up"),
+    path("api/v1/ui/favorites/", react_views.api_favorites, name="api-ui-favorites"),
+    path("api/v1/ui/watchlists/", react_views.api_watchlists_ui, name="api-ui-watchlists"),
+    path("api/v1/ui/manual-plans/", react_views.api_manual_plans_ui, name="api-ui-manual-plans"),
+    path("api/v1/ui/signal-sources/", react_views.api_signal_sources_ui, name="api-ui-signal-sources"),
+    path(
+        "api/v1/ui/notification-preferences/",
+        react_views.api_notification_preferences_ui,
+        name="api-ui-notification-preferences",
+    ),
+    path("api/v1/ui/security/", react_views.api_security_state_ui, name="api-ui-security"),
+    path("api/v1/wallets/", react_views.api_wallets, name="api-wallets"),
+    path("api/v1/wallets/<int:pk>/", react_views.api_wallet_detail, name="api-wallet-detail"),
+    path(
+        "api/v1/exchange-connections/",
+        react_views.api_exchange_create,
+        name="api-exchange-create",
+    ),
+    path(
+        "api/v1/exchange-accounts/<int:pk>/markets/",
+        react_views.api_account_markets,
+        name="api-account-markets",
+    ),
+    path(
+        "api/v1/exchange-accounts/<int:pk>/diagnostics/",
+        react_views.api_exchange_diagnostics,
+        name="api-exchange-diagnostics",
+    ),
+    path(
+        "api/v1/exchange-accounts/<int:pk>/sync/",
+        react_views.api_exchange_sync,
+        name="api-react-exchange-sync",
+    ),
+    path(
+        "api/v1/exchange-accounts/<int:pk>/rotate/",
+        react_views.api_exchange_rotate,
+        name="api-react-exchange-rotate",
+    ),
+    path(
+        "api/v1/exchange-accounts/<int:pk>/revoke/",
+        react_views.api_exchange_revoke,
+        name="api-react-exchange-revoke",
+    ),
+    path("api/v1/risk/fix-loss/", react_views.api_fix_loss, name="api-fix-loss"),
+    path(
+        "api/v1/markets/<int:pk>/candles/",
+        react_views.api_market_candles,
+        name="api-market-candles",
+    ),
+    path("api/v1/live-orders/", react_views.api_live_orders, name="api-live-orders"),
+    path("api/v1/telegram/state/", react_views.api_telegram_state, name="api-telegram-state"),
+    path(
+        "api/v1/telegram/messages/",
+        react_views.api_telegram_messages,
+        name="api-telegram-messages",
+    ),
+    path(
+        "api/v1/telegram/action/",
+        react_views.api_telegram_action,
+        name="api-telegram-action",
+    ),
     path("reports/", report_views.center, name="reports"),
     path("reports/export.csv", report_views.export_csv, name="report-csv"),
     path("reports/chart.svg", report_views.export_chart, name="report-chart"),
@@ -86,7 +148,7 @@ urlpatterns = [
         operation_views.api_host_capabilities,
         name="api-host-capabilities",
     ),
-    path("", views.home, name="home"),
+    path("", react_views.react_app, name="home"),
     path("auth/login/", account_views.SignInView.as_view(), name="login"),
     path("auth/logout/", account_views.sign_out, name="logout"),
     path("auth/password-reset/", account_views.password_reset_request, name="password-reset"),
@@ -138,7 +200,7 @@ urlpatterns = [
         account_views.api_trading_preferences,
         name="api-trading-preferences",
     ),
-    path("dashboard/", views.app_shell, name="dashboard"),
+    path("dashboard/", react_views.legacy_react_page, {"page": "dashboard"}, name="dashboard"),
     path("paper/", paper_views.list_trades, name="paper-trades"),
     path("paper/<int:pk>/", paper_views.trade_detail, name="paper-trade-detail"),
     path("paper/launch/<int:plan_id>/", paper_views.launch_trade, name="paper-launch"),

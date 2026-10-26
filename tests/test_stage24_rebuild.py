@@ -150,8 +150,6 @@ def test_primary_templates_do_not_use_legacy_ui_markup():
             assert token not in body, f"{relative} still contains legacy markup: {token}"
 
 
-
-
 @pytest.mark.django_db
 def test_header_ticker_endpoint_is_private_and_structured(client, django_user_model):
     user = django_user_model.objects.create_user(username="s24-ticker")

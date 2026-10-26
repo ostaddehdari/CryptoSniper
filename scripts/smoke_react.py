@@ -270,10 +270,10 @@ def main():
                 page.get_by_text("Trailing SL", exact=False).wait_for()
                 page.get_by_text("شروع Trailing TP", exact=True).wait_for()
 
-                page.get_by_label("Entry").fill("65000")
-                page.get_by_label("TP1").fill("70000")
-                page.get_by_label("Stop Loss").fill("60000")
-                page.get_by_label("حجم ورود").fill("100")
+                page.get_by_label("Entry", exact=True).fill("65000")
+                page.get_by_label("TP1", exact=True).fill("70000")
+                page.get_by_label("Stop Loss", exact=True).fill("60000")
+                page.get_by_label("حجم ورود", exact=True).fill("100")
                 plans_before = TradePlan.objects.filter(owner=user).count()
                 page.get_by_role("button", name="ذخیره برنامه TP/SL").click()
                 wait_for(

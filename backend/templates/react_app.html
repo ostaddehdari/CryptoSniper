@@ -4,6 +4,6 @@
 <title>CryptoSniper</title><link rel="icon" href="{% static 'img/mark.svg' %}" type="image/svg+xml">
 <link rel="stylesheet" href="{% static 'react/app.css' %}">
 </head><body><div id="root"></div>
-<script>window.__CS_BASE__="{% url 'home' %}".replace(/\/$/,"");</script>
+<script>window.__CS_BASE__="{% url 'home' %}".replace(/\/$/,"");window.__CS_INITIAL_PAGE__="{{ initial_page|default:'dashboard'|escapejs }}";</script>
 <script type="module" src="{% static 'react/app.js' %}"></script>
 </body></html>

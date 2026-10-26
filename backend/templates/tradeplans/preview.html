@@ -1,15 +1,50 @@
-{% extends 'shell.html' %}{% block title %}پیش‌نمایش برنامه | CryptoSniper{% endblock %}{% block breadcrumb %}برنامه معامله / پیش‌نمایش{% endblock %}{% block content %}
-<div class="page-heading"><div><span class="eyebrow">PLAN PREVIEW · NO LIVE ORDER</span><h1>برنامه {{ plan.market.symbol }}</h1><p class="muted">{{ plan.exchange_account.label }} · {{ plan.get_side_display }} · {{ plan.get_status_display }}</p></div><a class="button button-soft" href="{% url 'manual-list' %}">همه برنامه‌ها</a></div>
-{% if messages %}{% for message in messages %}<div class="notice" role="status">{{ message }}</div>{% endfor %}{% endif %}
-<div class="manual-preview-status">{% if plan.status == 'ready' %}Snapshot تأییدشده؛ تغییر تنظیمات حساب آن را عوض نمی‌کند.{% else %}پیش‌نویس قابل اصلاح؛ برای تأیید باید موجودی و قوانین بازار معتبر باشند.{% endif %}</div>
-<div class="manual-preview-grid">
-<article class="panel"><span class="eyebrow">ALLOCATION</span><h2>سرمایه و اندازه</h2><dl class="manual-stats"><div><dt>سرمایه</dt><dd>{{ snapshot.capital }} {{ snapshot.quote_asset }}</dd></div><div><dt>Quantity محاسبه‌شده</dt><dd>{{ snapshot.quantity }}</dd></div><div><dt>Notional</dt><dd>{{ snapshot.notional }}</dd></div><div><dt>اهرم</dt><dd>{{ snapshot.leverage }}x</dd></div><div><dt>کارمزد ورودی تخمینی</dt><dd>{{ snapshot.estimated_entry_fee }}</dd></div><div><dt>وثیقه و کارمزد</dt><dd>{{ snapshot.estimated_collateral_and_entry_fee }}</dd></div></dl></article>
-<article class="panel"><span class="eyebrow">RISK & EXITS</span><h2>ورود و خروج</h2><dl class="manual-stats"><div><dt>Entry</dt><dd>{{ snapshot.entry_price }}</dd></div><div><dt>Stop Loss</dt><dd>{{ snapshot.stop_loss }}</dd></div><div><dt>فاصله SL</dt><dd>{{ snapshot.stop_distance_percent }}٪</dd></div><div><dt>سیاست خروج</dt><dd>{{ snapshot.exit_policy }}</dd></div><div><dt>Trailing SL</dt><dd>{{ snapshot.trailing_sl|yesno:'فعال,خاموش' }}</dd></div><div><dt>Percentage Trailing</dt><dd>{{ snapshot.percentage_trailing|yesno:'فعال,خاموش' }}</dd></div></dl></article>
-</div>
-<section class="panel manual-target-panel"><h2>اهداف سود</h2><div class="manual-targets">{% for target in snapshot.targets %}<div><strong>TP{{ forloop.counter }}</strong><span>{{ target.price }}</span><small>سهم {{ target.share_percent }}٪ · فاصله {{ target.distance_percent }}٪</small></div>{% endfor %}</div><p class="muted">مقادیر Fee تخمینی‌اند؛ قیمت بازار می‌تواند تغییر کند. هیچ سفارش یا پوزیشنی ایجاد نشده است.</p>
-<div class="manual-preview-actions">{% if plan.status == 'draft' %}<a class="button button-soft" href="{% url 'manual-edit' plan.pk %}">ویرایش طرح</a><form method="post" action="{% url 'manual-confirm' plan.pk %}">{% csrf_token %}<input type="hidden" name="revision" value="{{ plan.revision }}"><button class="button button-primary" type="submit">تأیید و تثبیت Snapshot (بدون سفارش)</button></form>{% else %}<span class="status-badge">تأییدشده · فقط برای بررسی</span>{% endif %}</div></section>
-{% if plan.status == 'ready' %}
-<section class="panel"><h2>اجرای آزمایشی Paper</h2><p class="muted">فقط حساب شبیه‌ساز و Spot Long با اهرم ۱؛ دستور واقعی به Binance ارسال نمی‌شود.</p>
-<form method="post" action="{% url 'paper-launch' plan.pk %}">{% csrf_token %}<input type="hidden" name="request_key" value="{{ paper_request_key }}"><button type="submit" class="button button-primary">ثبت درخواست اجرای Paper با تأیید من</button></form></section>
-{% endif %}
+{% extends 'shell.html' %}{% block title %}پیش‌نمایش برنامه | CryptoSniper{% endblock %}{% block content %}
+<section class="s24-page">
+  <div class="s24-section-head">
+    <div><h1>برنامه {{ plan.market.symbol }}</h1><p>{{ plan.exchange_account.label }} · {{ plan.get_side_display }} · {{ plan.get_status_display }}</p></div>
+    <a class="s24-button" href="{% url 'manual-list' %}">همه برنامه‌ها</a>
+  </div>
+  {% if messages %}{% for message in messages %}<div class="s24-panel s24-notice" role="status">{{ message }}</div>{% endfor %}{% endif %}
+  <div class="s24-panel" style="margin-bottom:16px"><div class="s24-panel-head"><strong>وضعیت Snapshot</strong><span class="s24-status">{{ plan.status|upper }}</span></div><p class="s24-muted">{% if plan.status == 'ready' %}Snapshot تأییدشده؛ تغییر تنظیمات حساب آن را عوض نمی‌کند.{% else %}پیش‌نویس قابل اصلاح؛ برای تأیید باید موجودی و قوانین بازار معتبر باشند.{% endif %}</p></div>
+
+  <div class="s24-grid s24-trades-focus">
+    <article class="s24-panel">
+      <div class="s24-panel-head"><h2>سرمایه و اندازه</h2><span class="s24-status">ALLOCATION</span></div>
+      <div class="s24-detail-facts">
+        <div class="s24-fact"><span>سرمایه</span><strong>{{ snapshot.capital }} {{ snapshot.quote_asset }}</strong></div>
+        <div class="s24-fact"><span>Quantity محاسبه‌شده</span><strong>{{ snapshot.quantity }}</strong></div>
+        <div class="s24-fact"><span>Notional</span><strong>{{ snapshot.notional }}</strong></div>
+        <div class="s24-fact"><span>اهرم</span><strong>{{ snapshot.leverage }}x</strong></div>
+        <div class="s24-fact"><span>کارمزد ورودی تخمینی</span><strong>{{ snapshot.estimated_entry_fee }}</strong></div>
+        <div class="s24-fact"><span>وثیقه و کارمزد</span><strong>{{ snapshot.estimated_collateral_and_entry_fee }}</strong></div>
+      </div>
+    </article>
+    <article class="s24-panel">
+      <div class="s24-panel-head"><h2>ورود و خروج</h2><span class="s24-status">RISK & EXITS</span></div>
+      <div class="s24-detail-facts">
+        <div class="s24-fact"><span>Entry</span><strong>{{ snapshot.entry_price }}</strong></div>
+        <div class="s24-fact"><span>Stop Loss</span><strong>{{ snapshot.stop_loss }}</strong></div>
+        <div class="s24-fact"><span>فاصله SL</span><strong>{{ snapshot.stop_distance_percent }}٪</strong></div>
+        <div class="s24-fact"><span>سیاست خروج</span><strong>{{ snapshot.exit_policy }}</strong></div>
+        <div class="s24-fact"><span>Trailing SL</span><strong>{{ snapshot.trailing_sl|yesno:'فعال,خاموش' }}</strong></div>
+        <div class="s24-fact"><span>Percentage Trailing</span><strong>{{ snapshot.percentage_trailing|yesno:'فعال,خاموش' }}</strong></div>
+      </div>
+    </article>
+  </div>
+
+  <div class="s24-panel s24-list-panel">
+    <div class="s24-panel-head"><h2>اهداف سود</h2><span class="s24-status">TARGETS</span></div>
+    <div class="s24-card-grid">{% for target in snapshot.targets %}<article class="s24-card"><div class="s24-card-head"><div><div class="s24-card-title">TP{{ forloop.counter }}</div><div class="s24-card-sub">فاصله {{ target.distance_percent }}٪</div></div><span class="s24-card-badge">{{ target.share_percent }}٪</span></div><div class="s24-fact" style="margin-top:10px"><span>قیمت</span><strong>{{ target.price }}</strong></div></article>{% endfor %}</div>
+    <p class="s24-muted">Feeها تخمینی‌اند؛ هیچ سفارش یا Position واقعی در Preview ایجاد نشده است.</p>
+    <div class="s24-actions">{% if plan.status == 'draft' %}<a class="s24-button" href="{% url 'manual-edit' plan.pk %}">ویرایش طرح</a><form method="post" action="{% url 'manual-confirm' plan.pk %}">{% csrf_token %}<input type="hidden" name="revision" value="{{ plan.revision }}"><button class="s24-button primary" type="submit">تأیید و تثبیت Snapshot (بدون سفارش)</button></form>{% else %}<span class="s24-status">تأییدشده · فقط برای بررسی</span>{% endif %}</div>
+  </div>
+
+  {% if plan.status == 'ready' %}
+  <div class="s24-panel s24-list-panel">
+    <div class="s24-panel-head"><h2>اجرای آزمایشی Paper</h2><span class="s24-status">PAPER ONLY</span></div>
+    <p class="s24-muted">فقط حساب Simulator و Spot Long با اهرم ۱؛ دستور واقعی به صرافی ارسال نمی‌شود.</p>
+    <form method="post" action="{% url 'paper-launch' plan.pk %}">{% csrf_token %}<input type="hidden" name="request_key" value="{{ paper_request_key }}"><button type="submit" class="s24-button primary">ثبت درخواست اجرای Paper با تأیید من</button></form>
+  </div>
+  {% endif %}
+</section>
 {% endblock %}

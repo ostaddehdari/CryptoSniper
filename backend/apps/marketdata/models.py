@@ -77,3 +77,30 @@ class HistoricalCandle(models.Model):
 
     def __str__(self):
         return f"{self.provider}:{self.symbol}:{self.interval}:{self.open_time.isoformat()}"
+
+class FavoriteAsset(models.Model):
+    """User-ordered asset symbols shown first across connected exchanges."""
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="favorite_assets",
+    )
+    symbol = models.CharField(max_length=20)
+    position = models.PositiveSmallIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("position", "pk")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("owner", "symbol"),
+                name="favorite_asset_owner_symbol_unique",
+            )
+        ]
+        indexes = [models.Index(fields=("owner", "position"))]
+
+    def save(self, *args, **kwargs):
+        self.symbol = self.symbol.strip().upper()
+        return super().save(*args, **kwargs)
+

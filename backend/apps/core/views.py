@@ -103,6 +103,7 @@ def service_worker(request):
     response["Service-Worker-Allowed"] = reverse("home")
     return response
 
+
 @login_required
 @never_cache
 @require_GET

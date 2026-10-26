@@ -13,6 +13,7 @@ from apps.reports.service import report_dataset
 from apps.reports.stats import classify_result, report_statistics
 from apps.trading.exits_engine import process_paper_price
 from apps.trading.models import TradeFinanceEvent
+from django.urls import reverse
 from django.utils import timezone
 from test_stages09_exits import paper_trade
 

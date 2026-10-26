@@ -1,73 +1,40 @@
-{% extends 'shell.html' %}{% load tz static %}{% block title %}Paper #{{ trade.pk }} | CryptoSniper{% endblock %}{% block breadcrumb %}Paper / جزئیات{% endblock %}{% block content %}{% timezone request.user.timezone %}<a class="button button-secondary" href="{% url 'alert-new' %}?market={{ trade.market_id }}&amp;trade={{ trade.pk }}">ساخت هشدار این معامله</a>
-<div class="page-heading"><div><span class="eyebrow">DURABLE PAPER POSITION</span><h1>معامله #{{ trade.pk }} — {{ trade.market.symbol }}</h1><p class="muted">{{ trade.get_state_display }} · {{ trade.market.get_market_type_display }} · {{ trade.side|upper }} · {{ trade.mode|upper }}؛ بدون Binance Live</p></div><a class="button button-soft" href="{% url 'paper-trades' %}">همه معاملات</a></div>
-<div class="trade-facts" aria-label="مشخصات حیاتی معامله"><span>صرافی <b>{{ trade.market.exchange.name }}</b></span><span>حساب <b>{{ trade.account.label }}</b></span><span>اهرم <b>{{ trade.plan.leverage|default:1 }}×</b></span><span>SL <b>{{ protection.effective_stop|default:'—' }}</b></span><span>Trailing <b>پله‌ای {{ protection.step_enabled|yesno:'روشن,خاموش' }} / درصدی {{ protection.percentage_enabled|yesno:'روشن,خاموش' }}</b></span><span>P/L <b>{{ trade.stats.realized|default_if_none:'نامعلوم' }} {{ trade.stats.currency }}</b></span></div>
-{% if messages %}{% for msg in messages %}<div class="notice">{{ msg }}</div>{% endfor %}{% endif %}
-<section class="panel manual-target-panel" id="trade-status" data-status-url="{% url 'paper-status' trade.pk %}" data-state="{{ trade.state }}" data-revision="{{ trade.revision }}"><h2>وضعیت اجرا و درخواست‌ها</h2>
-{% if recovery_open %}<p class="notice">تطبیق حساب اختلاف باز دارد؛ نتیجهٔ سفارش را در مرکز عملیات بررسی کنید.</p>{% endif %}{% if needs_reconciliation %}<p class="notice">نتیجهٔ ورود هنوز قطعی نیست. Timeout به معنی شکست سفارش نیست؛ برای جلوگیری از ورود یا خروج تکراری ابتدا تطبیق کنید.</p><a class="button button-soft" href="{% url 'operations' %}">مرکز عملیات و تطبیق</a>{% elif trade.state == 'failed' %}<p>ورود ناموفق است؛ علت را در رویدادها و مرکز عملیات بررسی کنید.</p>{% elif trade.state == 'queued' %}<p>منتظر Worker؛ هنوز رسید اجرا تأیید نشده است.</p>{% endif %}
-{% for action in actions %}<p class="action-state" data-id="{{ action.pk }}" data-state="{{ action.state }}">بستن #{{ action.pk }} · {{ action.get_state_display }} · {{ action.code }}{% if action.state == 'waiting_feed' %} — قیمت قدیمی است؛ پس از دریافت قیمت معتبر دوباره بررسی می‌شود.{% elif action.state == 'rejected' %} — تطبیق لازم است؛ بستن انجام نشده است.{% endif %}</p>{% empty %}<p>درخواست بستن ثبت نشده است.</p>{% endfor %}<p id="status-network" role="status" class="muted">وضعیت هر ۵ ثانیه تازه می‌شود.</p><a href="">تازه‌سازی وضعیت</a><a href="{% url 'operations' %}">توقف ورود جدید و بازیابی</a></section>
-<div class="manual-preview-grid"><article class="panel"><h2>اطلاعات سفارش</h2><dl class="manual-stats"><div><dt>حجم سفارش</dt><dd>{{ trade.quantity }}</dd></div><div><dt>حجم اجراشده</dt><dd>{{ trade.filled_quantity }}</dd></div><div><dt>قیمت ورود برنامه</dt><dd>{{ trade.entry_price }}</dd></div><div><dt>موجودی رزروشده</dt><dd>{{ trade.capital_reserved }}</dd></div><div><dt>Mode</dt><dd>PAPER</dd></div></dl></article>
-<article class="panel"><h2>Position از Fillهای ثبت‌شده</h2><dl class="manual-stats"><div><dt>Quantity</dt><dd>{{ position.quantity|default:0 }}</dd></div><div><dt>Avg Entry</dt><dd>{{ position.average_entry|default:0 }}</dd></div><div><dt>Fees</dt><dd>{{ position.total_fees|default:0 }}</dd></div></dl></article></div>
-{% if trade.state == 'open' %}<section class="panel manual-target-panel detail-action-panel"><h2>بستن مقدار باقی‌مانده</h2><p>تمام مقدار باقی‌مانده در Worker با قیمت معتبر شبیه‌ساز بسته می‌شود؛ نتیجه پس از ثبت Fill قطعی است.</p><form method="post" action="{% url 'paper-close' trade.pk %}" id="close-remaining">{% csrf_token %}<input name="request_key" type="hidden" value="{{ request_key }}"><input name="revision" type="hidden" value="{{ trade.revision }}"><label><input type="checkbox" name="confirmed" required> پیامد این عملیات Paper را بررسی و تأیید می‌کنم.</label><button class="button button-primary">تأیید و ارسال بستن باقی‌مانده</button></form></section>{% endif %}
-{% if trade.state == 'queued' %}<form method="post" action="{% url 'paper-cancel' trade.pk %}">{% csrf_token %}<label><input type="checkbox" name="confirmed" required> پیامد این عملیات Paper را بررسی و تأیید می‌کنم.</label><button class="button button-soft" type="submit">لغو قبل از ارسال</button></form>{% endif %}
-<section class="panel manual-target-panel"><h2>رویدادهای پایدار</h2><ol class="trade-timeline">{% for event in events %}<li><span>{{ event.event_type }}<small>{{ event.safe_payload }}</small></span><time datetime="{{ event.occurred_at|date:'c' }}">{{ event.occurred_at|date:'Y/m/d H:i:s' }}</time></li>{% empty %}<li>رویدادی ثبت نشده است.</li>{% endfor %}</ol>{% if event_page.has_previous %}<a href="?events={{ event_page.previous_page_number }}">رویدادهای جدیدتر</a>{% endif %} {% if event_page.has_next %}<a href="?events={{ event_page.next_page_number }}">رویدادهای قدیمی‌تر</a>{% endif %}<p class="muted">Outbox نامعلوم عمداً خودکار دوباره ارسال نمی‌شود؛ وضعیت آن باید در مرحله تطبیق Stage11 بررسی شود.</p></section>
-{% if protection %}
-<section class="panel manual-target-panel">
-<h2>پوشش خروج و وضعیت Trailing</h2>
-<p class="muted"><strong>فقط Paper · Stop تحت مدیریت Worker، نه سفارش Native صرافی.</strong> هنگام قطعی سرور یا فید، خروج تضمین نمی‌شود. معامله واقعی غیرفعال است.</p>
-<dl class="manual-stats">
-<div><dt>پوشش</dt><dd>{{ protection.get_coverage_display }}</dd></div>
-<div><dt>Stop اولیه</dt><dd>{{ protection.initial_stop }}</dd></div>
-<div><dt>Stop مؤثر</dt><dd>{{ protection.effective_stop }}</dd></div>
-<div><dt>آخرین قیمت پردازش‌شده</dt><dd>{{ protection.last_price|default:'ناموجود' }}</dd></div>
-<div><dt>فعال‌سازی Percentage</dt><dd>{% if protection.percentage_active %}فعال{% else %}منتظر {{ protection.trigger_price }}{% endif %}</dd></div>
-<div><dt>بیشترین قیمت از فعال‌سازی</dt><dd>{{ protection.high_water|default:'—' }}</dd></div>
-<div><dt>مقدار باقی‌مانده</dt><dd>{{ position.quantity|default:'0' }}</dd></div>
-</dl>
-<div class="market-table-wrap"><table class="market-table"><thead><tr><th>هدف</th><th>قیمت</th><th>سهم</th><th>تخصیص</th><th>اجراشده</th><th>وضعیت</th></tr></thead><tbody>
-{% for target in targets %}<tr><td>TP{{ target.position }}</td><td>{{ target.price }}</td><td>{{ target.share_percent }}٪</td><td>{{ target.allocated_quantity }}</td><td>{{ target.filled_quantity }}</td><td>{{ target.get_state_display }}</td></tr>{% endfor %}
-</tbody></table></div>
-{% if trade.state == 'open' or trade.state == 'partially_filled' %}
-<div class="exit-controls">
-<form method="post" action="{% url 'paper-stop' trade.pk %}">{% csrf_token %}
-<h3>تغییر Stop</h3><input type="hidden" name="version" value="{{ protection.version }}">
-<label>روش <select class="input" name="mode"><option value="breakeven">انتقال به Entry</option><option value="previous_tp">انتقال به TP قبلی</option><option value="manual">مقدار دستی</option></select></label>
-<label>قیمت دستی<input class="input" type="number" step="any" name="price" placeholder="فقط برای حالت دستی"></label>
-<label>علت تغییر<input class="input" name="reason" minlength="3" required></label>
-<label><input type="checkbox" name="confirmed" required> پیامد این عملیات Paper را بررسی و تأیید می‌کنم.</label><button class="button button-soft" type="submit">ثبت Stop جدید</button></form>
-<form method="post" action="{% url 'paper-trailing' trade.pk %}">{% csrf_token %}
-<h3>Trailing</h3><input type="hidden" name="version" value="{{ protection.version }}">
-<label><input type="checkbox" name="step_enabled" {% if protection.step_enabled %}checked{% endif %}> Trailing پله‌ای</label>
-<label><input type="checkbox" name="percentage_enabled" {% if protection.percentage_enabled %}checked{% endif %}> Percentage Trailing (Trigger = TP1)</label>
-<label>فاصله درصدی<input class="input" type="number" step="0.001" min="0.001" max="99.999" name="distance_percent" value="{{ protection.distance_percent }}" required></label>
-<label>علت تغییر<input class="input" name="reason" minlength="3" required></label>
-<label><input type="checkbox" name="confirmed" required> پیامد این عملیات Paper را بررسی و تأیید می‌کنم.</label><button class="button button-soft" type="submit">به‌روزرسانی قوانین Paper</button></form>
-</div>
-{% if not protection.paper_scenario %}
-<form method="post" action="{% url 'paper-scenario' trade.pk %}">{% csrf_token %}
-<input type="hidden" name="version" value="{{ protection.version }}">
-<button class="button button-soft" type="submit">شروع سناریوی قیمت دستی Paper (توقف فید خودکار همین معامله)</button>
-</form>
-{% else %}
-<form method="post" action="{% url 'paper-tick' trade.pk %}" class="paper-price-form">{% csrf_token %}
-<label>قیمت آزمایشی بعدی <input type="number" step="any" min="0.00000001" name="price" required class="input" placeholder="مثلاً 70000 یا 69300"></label>
-<button class="button button-primary" type="submit">ارسال Tick آزمایشی به موتور Paper</button>
-<p class="muted">این قیمت ساختگی است و فقط Position شبیه‌ساز همین حساب را تغییر می‌دهد. برای بازگشت به فید خودکار، معامله Paper جدیدی ایجاد کنید.</p>
-</form>
-{% endif %}
-{% endif %}
-</section>
-<section class="panel manual-target-panel"><h2>خروج‌های ثبت‌شده</h2>
-{% for fill in exit_fills %}<div class="service-row"><span>{{ fill.reason }} · {{ fill.quantity }} @ {{ fill.price }}</span><span>کارمزد {{ fill.fee }}</span></div>{% empty %}<p class="muted">هنوز خروجی ثبت نشده است.</p>{% endfor %}
-</section>
-{% else %}<section class="panel manual-target-panel"><p>طرح حفاظت در انتظار اولین Fill ورودی است.</p></section>{% endif %}
+{% extends 'shell.html' %}{% load tz static %}{% block title %}Paper #{{ trade.pk }} | CryptoSniper{% endblock %}{% block content %}{% timezone request.user.timezone %}
+<section class="s24-page">
+  <div class="s24-section-head"><div><h1>معامله #{{ trade.pk }} — {{ trade.market.symbol }}</h1><p>{{ trade.get_state_display }} · {{ trade.market.get_market_type_display }} · {{ trade.side|upper }} · {{ trade.mode|upper }}</p></div><div class="s24-actions"><a class="s24-button" href="{% url 'alert-new' %}?market={{ trade.market_id }}&trade={{ trade.pk }}">ساخت هشدار</a><a class="s24-button" href="{% url 'paper-trades' %}">همه معاملات</a></div></div>
+  {% for msg in messages %}<div class="s24-panel s24-notice">{{ msg }}</div>{% endfor %}
 
-<section class="panel manual-target-panel"><h2>مبدأ و تصمیم معامله</h2><p>Snapshot تثبیت‌شده: {{ execution_snapshot }}</p>
-<p>{{ trade.account.label }} · {{ trade.market.exchange.name }} · {{ trade.market.get_market_type_display }} · {{ trade.get_side_display }} · اهرم {{ trade.plan.leverage|default:1 }}</p>
-{% if trade.signal %}<p>منبع: {{ trade.signal.source.name }} · نسخه {{ trade.signal.revision }} · {{ trade.signal.get_status_display }}</p><h3>متن اصلی سیگنال</h3><pre class="raw-signal">{{ trade.signal.raw_signal.original_text }}</pre><h3>مقادیر ساختارمند</h3><p>{{ trade.signal.side }} · Entry {{ trade.signal.entry_price }} · SL {{ trade.signal.stop_loss }} · {{ trade.signal.parser_version }}</p>{% else %}<p>ورود دستی؛ سیگنال خارجی ندارد.</p>{% endif %}
-{% if trade.plan %}<p>Plan #{{ trade.plan_id }} · سرمایه {{ trade.plan.capital }} · Entry {{ trade.plan.entry_price }} · SL {{ trade.plan.stop_loss }} · TP {{ trade.plan.tp1 }} / {{ trade.plan.tp2|default:'—' }} / {{ trade.plan.tp3|default:'—' }}</p>{% endif %}
-<p>سود محقق‌شده {{ trade.stats.realized|default_if_none:'نامعلوم' }} {{ trade.stats.currency }} · سود باز {{ trade.stats.unrealized|default_if_none:'نرخ معتبر موجود نیست' }} · هزینه ثبت‌شده {{ trade.stats.paid_fees }} · مدت {{ trade.stats.duration_seconds }} ثانیه</p>
+  <div class="s24-overview-cards">
+    <article class="s24-panel"><span class="s24-overview-label">صرافی</span><strong class="s24-overview-number" style="font-size:16px">{{ trade.market.exchange.name }}</strong></article>
+    <article class="s24-panel"><span class="s24-overview-label">اهرم</span><strong class="s24-overview-number">{{ trade.plan.leverage|default:1 }}×</strong></article>
+    <article class="s24-panel"><span class="s24-overview-label">P/L</span><strong class="s24-overview-number" dir="ltr">{{ trade.stats.realized|default_if_none:'—' }}</strong></article>
+  </div>
+
+  <div class="s24-grid s24-trades-focus">
+    <article class="s24-panel" id="trade-status" data-status-url="{% url 'paper-status' trade.pk %}" data-state="{{ trade.state }}" data-revision="{{ trade.revision }}"><div class="s24-panel-head"><strong>وضعیت اجرا و درخواست‌ها</strong><span class="s24-status">{{ trade.get_state_display }}</span></div>{% if recovery_open %}<div class="s24-fact">تطبیق حساب اختلاف باز دارد؛ مرکز عملیات را بررسی کنید.</div>{% endif %}{% if needs_reconciliation %}<div class="s24-fact">نتیجه ورود قطعی نیست؛ ابتدا تطبیق کنید.</div>{% endif %}<div class="s24-trade-detail">{% for action in actions %}<div class="s24-fact action-state" data-id="{{ action.pk }}" data-state="{{ action.state }}"><span>بستن #{{ action.pk }}</span><strong>{{ action.get_state_display }} · {{ action.code }}</strong></div>{% empty %}<div class="s24-fact"><span>درخواست بستن</span><strong>ثبت نشده</strong></div>{% endfor %}</div><p id="status-network" class="s24-muted">وضعیت هر ۵ ثانیه تازه می‌شود.</p></article>
+    <article class="s24-panel"><div class="s24-panel-head"><strong>Position از Fillهای ثبت‌شده</strong><span class="s24-status">FILLS</span></div><div class="s24-detail-facts"><div class="s24-fact"><span>Quantity</span><strong>{{ position.quantity|default:0 }}</strong></div><div class="s24-fact"><span>Avg Entry</span><strong>{{ position.average_entry|default:0 }}</strong></div><div class="s24-fact"><span>Fees</span><strong>{{ position.total_fees|default:0 }}</strong></div><div class="s24-fact"><span>Reserved</span><strong>{{ trade.capital_reserved }}</strong></div></div></article>
+  </div>
+
+  {% if trade.state == 'open' %}<div class="s24-panel s24-list-panel"><div class="s24-panel-head"><strong>بستن مقدار باقی‌مانده</strong><span class="s24-status">CONFIRM</span></div><form method="post" action="{% url 'paper-close' trade.pk %}" id="close-remaining" class="s24-actions">{% csrf_token %}<input name="request_key" type="hidden" value="{{ request_key }}"><input name="revision" type="hidden" value="{{ trade.revision }}"><label class="s24-check"><input type="checkbox" name="confirmed" required>پیامد این عملیات Paper را تأیید می‌کنم</label><button class="s24-button primary">تأیید و ارسال بستن باقی‌مانده</button></form></div>{% endif %}
+
+  {% if protection %}
+  <div class="s24-panel s24-list-panel">
+    <div class="s24-panel-head"><strong>پوشش خروج و وضعیت Trailing</strong><span class="s24-status">WORKER MANAGED</span></div>
+    <div class="s24-detail-facts"><div class="s24-fact"><span>Stop اولیه</span><strong>{{ protection.initial_stop }}</strong></div><div class="s24-fact"><span>Stop مؤثر</span><strong>{{ protection.effective_stop }}</strong></div><div class="s24-fact"><span>Percentage</span><strong>{% if protection.percentage_active %}فعال{% else %}منتظر {{ protection.trigger_price }}{% endif %}</strong></div><div class="s24-fact"><span>High Water</span><strong>{{ protection.high_water|default:'—' }}</strong></div></div>
+    <div class="s24-table-scroll" style="margin-top:12px"><table class="s24-table"><thead><tr><th>هدف</th><th>قیمت</th><th>سهم</th><th>تخصیص</th><th>اجراشده</th><th>وضعیت</th></tr></thead><tbody>{% for target in targets %}<tr><td>TP{{ target.position }}</td><td>{{ target.price }}</td><td>{{ target.share_percent }}٪</td><td>{{ target.allocated_quantity }}</td><td>{{ target.filled_quantity }}</td><td>{{ target.get_state_display }}</td></tr>{% endfor %}</tbody></table></div>
+    {% if trade.state == 'open' or trade.state == 'partially_filled' %}
+    <div class="s24-grid s24-trades-focus" style="margin-top:14px">
+      <form method="post" action="{% url 'paper-stop' trade.pk %}" class="s24-trade-form s24-fact">{% csrf_token %}<input type="hidden" name="version" value="{{ protection.version }}"><strong>تغییر Stop</strong><label>روش<select name="mode"><option value="breakeven">انتقال به Entry</option><option value="previous_tp">انتقال به TP قبلی</option><option value="manual">مقدار دستی</option></select></label><label>قیمت دستی<input type="number" step="any" name="price"></label><label>علت تغییر<input name="reason" minlength="3" required></label><label class="s24-check"><input type="checkbox" name="confirmed" required>تأیید</label><button class="s24-button">ثبت Stop جدید</button></form>
+      <form method="post" action="{% url 'paper-trailing' trade.pk %}" class="s24-trade-form s24-fact">{% csrf_token %}<input type="hidden" name="version" value="{{ protection.version }}"><strong>Trailing</strong><label class="s24-check"><input type="checkbox" name="step_enabled" {% if protection.step_enabled %}checked{% endif %}>Trailing SL</label><label class="s24-check"><input type="checkbox" name="percentage_enabled" {% if protection.percentage_enabled %}checked{% endif %}>Percentage Trailing</label><label>فاصله درصدی<input type="number" step="0.001" min="0.001" max="99.999" name="distance_percent" value="{{ protection.distance_percent }}" required></label><label>علت تغییر<input name="reason" minlength="3" required></label><label class="s24-check"><input type="checkbox" name="confirmed" required>تأیید</label><button class="s24-button">به‌روزرسانی قوانین Paper</button></form>
+    </div>
+    {% if not protection.paper_scenario %}<form method="post" action="{% url 'paper-scenario' trade.pk %}" style="margin-top:12px">{% csrf_token %}<input type="hidden" name="version" value="{{ protection.version }}"><button class="s24-button">شروع سناریوی قیمت دستی Paper (توقف فید خودکار همین معامله)</button></form>{% else %}<form method="post" action="{% url 'paper-tick' trade.pk %}" class="paper-price-form s24-actions" style="margin-top:12px">{% csrf_token %}<label>قیمت آزمایشی بعدی <input type="number" step="any" min="0.00000001" name="price" required></label><button class="s24-button primary">ارسال Tick آزمایشی به موتور Paper</button></form>{% endif %}
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="s24-grid s24-trades-focus">
+    <article class="s24-panel"><div class="s24-panel-head"><strong>رویدادهای پایدار</strong><span class="s24-muted">EVENTS</span></div><div class="s24-trade-detail">{% for event in events %}<div class="s24-fact"><span>{{ event.occurred_at|date:'Y/m/d H:i:s' }}</span><strong>{{ event.event_type }}</strong><small>{{ event.safe_payload }}</small></div>{% empty %}<div class="s24-empty-inline">رویدادی ثبت نشده است.</div>{% endfor %}</div></article>
+    <article class="s24-panel"><div class="s24-panel-head"><strong>خروج‌های ثبت‌شده</strong><span class="s24-status">FILLS</span></div><div class="s24-trade-detail">{% for fill in exit_fills %}<div class="s24-fact"><span>{{ fill.reason }}</span><strong>{{ fill.quantity }} @ {{ fill.price }}</strong><small>کارمزد {{ fill.fee }}</small></div>{% empty %}<div class="s24-empty-inline">هنوز خروجی ثبت نشده است.</div>{% endfor %}</div></article>
+  </div>
 </section>
-<section class="panel manual-target-panel"><h2>سفارش‌ها و رسید اجرا</h2>
-{% for order in orders %}<article><h3>#{{ order.pk }} · {{ order.get_state_display }}</h3><p>Client ID: {{ order.client_order_id }} · شناسه رسید: {{ order.external_order_id|default:'هنوز دریافت نشده' }}</p><p>ارسال: {{ order.sent_at|default:'ارسال نشده' }} · مقدار {{ order.quantity }} · اجراشده {{ order.filled_quantity }}</p>{% for fill in order.fills.all %}<p>Fill {{ fill.exchange_fill_id }} · {{ fill.quantity }} @ {{ fill.price }} · کارمزد {{ fill.fee }} · {{ fill.occurred_at }}</p>{% empty %}<p>Fill تأییدشده موجود نیست.</p>{% endfor %}</article>{% endfor %}
-</section>
-<script src="{% static 'js/trade-status.js' %}" defer></script>{% endtimezone %}{% endblock %}
+<script src="{% static 'js/trade-status.js' %}" defer></script>
+{% endtimezone %}{% endblock %}

@@ -17,6 +17,7 @@ from redis.exceptions import RedisError
 
 from apps.operations.readiness import engine_readiness
 
+from .assets import asset_url
 from .health import dependency_status
 from .models import ServiceProbe
 from .tasks import infrastructure_probe
@@ -30,11 +31,9 @@ def home(request):
 @never_cache
 @require_GET
 def app_shell(request):
-    return render(
-        request,
-        "core/app_stage24_rebuild.html",
-        {"nav": "dashboard", "release": settings.RELEASE_VERSION},
-    )
+    from .react_views import react_app
+
+    return react_app(request)
 
 
 @require_GET
@@ -44,14 +43,14 @@ def web_manifest(request):
             "id": reverse("home"),
             "name": "CryptoSniper",
             "short_name": "CryptoSniper",
-            "description": "فضای مدیریت معاملات Paper و گزارش عملکرد",
+            "description": "مرکز کنترل معاملات، سیگنال‌ها و حساب‌های صرافی",
             "lang": "fa",
             "dir": "rtl",
             "start_url": reverse("app-shell"),
             "scope": reverse("home"),
             "display": "standalone",
             "background_color": "#f3f6f5",
-            "theme_color": "#087f73",
+            "theme_color": "#2f66d8",
             "icons": [
                 {
                     "src": static("img/pwa-icon.svg"),
@@ -70,20 +69,20 @@ def web_manifest(request):
 @require_GET
 def service_worker(request):
     assets = [
-        static("react/app.css"),
-        static("react/app.js"),
+        asset_url("react/app.css"),
+        asset_url("react/app.js"),
         static("js/pwa.js"),
         static("img/mark.svg"),
         static("img/pwa-icon.svg"),
     ]
     source = (
         "'use strict';\n"
-        "const CACHE='cryptosniper-static-v25-react-cornix';\n"
+        f"const CACHE='cryptosniper-static-{assets[0].split('=')[-1]}-{assets[1].split('=')[-1]}';\n"
         f"const ASSETS={assets!r};\n"
         "self.addEventListener('install',event=>event.waitUntil("
-        "caches.open(CACHE).then(c=>c.addAll(ASSETS))));\n"
+        "caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));\n"
         "self.addEventListener('activate',event=>event.waitUntil(caches.keys().then("
-        "keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))"
+        "keys=>Promise.all(keys.filter(k=>k.startsWith('cryptosniper-static-')&&k!==CACHE).map(k=>caches.delete(k))))"
         ".then(()=>self.clients.claim())));\n"
         "self.addEventListener('fetch',event=>{\n"
         "  const url=new URL(event.request.url);\n"
@@ -108,11 +107,9 @@ def service_worker(request):
 @never_cache
 @require_GET
 def dashboard(request):
-    return render(
-        request,
-        "core/app_stage24_rebuild.html",
-        {"nav": "dashboard", "release": settings.RELEASE_VERSION},
-    )
+    from .react_views import react_app
+
+    return react_app(request)
 
 
 def system_context():

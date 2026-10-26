@@ -24,6 +24,7 @@ function cookie(name){
 }
 async function api(path, opts={}){
   const method=opts.method||"GET";
+  if(!navigator.onLine && !["GET","HEAD"].includes(method.toUpperCase())) throw new Error("اتصال قطع است؛ درخواست ذخیره یا ارسال نشد.");
   const headers={Accept:"application/json",...(opts.headers||{})};
   let body=opts.body;
   if(body && typeof body!=="string" && !(body instanceof FormData)){

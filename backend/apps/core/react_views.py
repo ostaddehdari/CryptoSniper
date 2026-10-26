@@ -72,7 +72,7 @@ def legacy_react_page(request, page="dashboard", **kwargs):
     return render(
         request,
         "react_app.html",
-        {"release": "stage25-react-cornix", "initial_page": page, "initial_subpage": kwargs.get("subpage", "")},
+        {"release": "stage29-react-primary", "initial_page": page, "initial_subpage": kwargs.get("subpage", "")},
     )
 
 
@@ -88,7 +88,7 @@ def _render_react_workspace(request, page, subpage=""):
         request,
         "react_app.html",
         {
-            "release": "stage25-react-cornix",
+            "release": "stage29-react-primary",
             "initial_page": page,
             "initial_subpage": subpage,
         },
@@ -262,7 +262,7 @@ def legacy_external_page(request, pk):
     return render(
         request,
         "react_app.html",
-        {"release": "stage25-react-cornix", "initial_page": "trades"},
+        {"release": "stage29-react-primary", "initial_page": "trades"},
     )
 
 
@@ -274,7 +274,7 @@ def legacy_trade_page(request, pk):
     return render(
         request,
         "react_app.html",
-        {"release": "stage25-react-cornix", "initial_page": "trades"},
+        {"release": "stage29-react-primary", "initial_page": "trades"},
     )
 
 
@@ -286,7 +286,7 @@ def legacy_signal_page(request, pk):
     return render(
         request,
         "react_app.html",
-        {"release": "stage25-react-cornix", "initial_page": "inbox"},
+        {"release": "stage29-react-primary", "initial_page": "inbox"},
     )
 
 
@@ -298,7 +298,7 @@ def legacy_plan_page(request, pk):
     return render(
         request,
         "react_app.html",
-        {"release": "stage25-react-cornix", "initial_page": "plans"},
+        {"release": "stage29-react-primary", "initial_page": "plans"},
     )
 
 
@@ -310,7 +310,7 @@ def legacy_alert_page(request, pk):
     return render(
         request,
         "react_app.html",
-        {"release": "stage25-react-cornix", "initial_page": "alerts"},
+        {"release": "stage29-react-primary", "initial_page": "alerts"},
     )
 
 
@@ -322,7 +322,7 @@ def legacy_exchange_page(request, pk):
     return render(
         request,
         "react_app.html",
-        {"release": "stage25-react-cornix", "initial_page": "exchanges"},
+        {"release": "stage29-react-primary", "initial_page": "exchanges"},
     )
 
 
@@ -334,7 +334,7 @@ def legacy_telegram_channel_page(request, pk):
     return render(
         request,
         "react_app.html",
-        {"release": "stage25-react-cornix", "initial_page": "telegram"},
+        {"release": "stage29-react-primary", "initial_page": "telegram"},
     )
 
 
@@ -345,7 +345,7 @@ def react_app(request):
     return render(
         request,
         "react_app.html",
-        {"release": "stage25-react-cornix", "initial_page": "dashboard", "initial_subpage": ""},
+        {"release": "stage29-react-primary", "initial_page": "dashboard", "initial_subpage": ""},
     )
 
 

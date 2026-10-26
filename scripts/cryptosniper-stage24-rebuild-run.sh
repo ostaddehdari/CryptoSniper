@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# CryptoSniper Stage 24 Rebuild v0.24.0rc2 — Ubuntu 24.04 fresh install / safe upgrade.
-# Usage: sudo bash /tmp/run.sh [/tmp/CryptoSniper-Stage24-Rebuild-v0.24.0rc2-r8.zip]
+# CryptoSniper Stage25 React Cornix UI on v0.24.0rc2 core — Ubuntu 24.04 safe upgrade.
+# Usage: sudo bash /tmp/run.sh [/tmp/CryptoSniper-Stage25-React-Cornix-r1.zip]
 # Validate only (no installation): bash run.sh --check /path/to/package.zip
 # Installation and verification output is appended to runlog.txt beside this script.
 # Installs cumulative Stages 01-23; real Spot writes remain feature-gated and disabled by default.
@@ -24,6 +24,7 @@ PREVIOUS_STAGE24_SOURCE_COMMIT=5232976399a13a725726989261e82a5905bc088f
 STAGE24_R5_SOURCE_COMMIT=5e7aa3f3ede973448035d75566a230636a61851e
 STAGE24_R6_SOURCE_COMMIT=292fadb628de3476edc2009708d63fe29145c61f
 STAGE24_R7_SOURCE_COMMIT=515920691b168139a21dee0014e5cf31e35f4ab0
+STAGE24_R8_SOURCE_COMMIT=3596a7f6c391b5203b5af02aa54a32f40bec078b
 STAGE23_SOURCE_COMMIT=657071e06c6f08b67298835972a153f8f547bc81
 STAGE22_SOURCE_COMMIT=cfce4d3a19f0bc2df56aae15175b80255a940f51
 STAGE21_SOURCE_COMMIT=e315e1983bb916ed8867a721b583e9b2c55eb93a
@@ -112,9 +113,9 @@ step() { printf '\n===== %s | %s =====\n' "$*" "$(date -Is)"; }
 CHECK_ONLY=false
 if [[ ${1:-} == --check ]]; then CHECK_ONLY=true; shift; fi
 [[ $# -le 1 ]] || fail 'Usage: bash run.sh [--check] [package.zip]'
-ARCHIVE=${1:-/tmp/CryptoSniper-Stage24-Rebuild-v0.24.0rc2-r8.zip}
+ARCHIVE=${1:-/tmp/CryptoSniper-Stage25-React-Cornix-r1.zip}
 export SERVER_HOST URL_PREFIX WEB_PORT PG_PORT REDIS_PORT SOURCE_COMMIT
-export PREVIOUS_STAGE24_SOURCE_COMMIT STAGE24_R5_SOURCE_COMMIT STAGE24_R6_SOURCE_COMMIT STAGE24_R7_SOURCE_COMMIT STAGE23_SOURCE_COMMIT STAGE22_SOURCE_COMMIT STAGE22_ARCHIVE_SHA256 STAGE21_SOURCE_COMMIT STAGE21_ARCHIVE_SHA256 STAGE20_SOURCE_COMMIT STAGE20_ARCHIVE_SHA256 STAGE18_SOURCE_COMMIT STAGE18_ARCHIVE_SHA256 STAGE16_SOURCE_COMMIT STAGE16_ARCHIVE_SHA256 STAGE14_SOURCE_COMMIT STAGE14_ARCHIVE_SHA256 STAGE10_SOURCE_COMMIT STAGE10_ARCHIVE_SHA256 STAGE08_SOURCE_COMMIT STAGE08_ARCHIVE_SHA256 PREVIOUS_SOURCE_COMMIT STAGE06_SOURCE_COMMIT STAGE05_SOURCE_COMMIT STAGE04_SOURCE_COMMIT STAGE03_SOURCE_COMMIT STAGE01_SOURCE_COMMIT STAGE02_SOURCE_COMMIT PREVIOUS_ARCHIVE_SHA256 STAGE06_ARCHIVE_SHA256 STAGE05_ARCHIVE_SHA256 STAGE04_ARCHIVE_SHA256 STAGE03_ARCHIVE_SHA256 STAGE02_ARCHIVE_SHA256 STAGE01_ARCHIVE_SHA256 OLDER_STAGE03_ARCHIVE_SHA256 OFFICIAL_STAGE24_ARCHIVE_SHA256
+export PREVIOUS_STAGE24_SOURCE_COMMIT STAGE24_R5_SOURCE_COMMIT STAGE24_R6_SOURCE_COMMIT STAGE24_R7_SOURCE_COMMIT STAGE24_R8_SOURCE_COMMIT STAGE23_SOURCE_COMMIT STAGE22_SOURCE_COMMIT STAGE22_ARCHIVE_SHA256 STAGE21_SOURCE_COMMIT STAGE21_ARCHIVE_SHA256 STAGE20_SOURCE_COMMIT STAGE20_ARCHIVE_SHA256 STAGE18_SOURCE_COMMIT STAGE18_ARCHIVE_SHA256 STAGE16_SOURCE_COMMIT STAGE16_ARCHIVE_SHA256 STAGE14_SOURCE_COMMIT STAGE14_ARCHIVE_SHA256 STAGE10_SOURCE_COMMIT STAGE10_ARCHIVE_SHA256 STAGE08_SOURCE_COMMIT STAGE08_ARCHIVE_SHA256 PREVIOUS_SOURCE_COMMIT STAGE06_SOURCE_COMMIT STAGE05_SOURCE_COMMIT STAGE04_SOURCE_COMMIT STAGE03_SOURCE_COMMIT STAGE01_SOURCE_COMMIT STAGE02_SOURCE_COMMIT PREVIOUS_ARCHIVE_SHA256 STAGE06_ARCHIVE_SHA256 STAGE05_ARCHIVE_SHA256 STAGE04_ARCHIVE_SHA256 STAGE03_ARCHIVE_SHA256 STAGE02_ARCHIVE_SHA256 STAGE01_ARCHIVE_SHA256 OLDER_STAGE03_ARCHIVE_SHA256 OFFICIAL_STAGE24_ARCHIVE_SHA256
 export APP_DIR APP_ROOT CONFIG_DIR STATE_DIR LOGIN_FILE
 
 step 'VERIFY PACKAGE AND SETTINGS'
@@ -129,8 +130,8 @@ actual_sha256 = hashlib.file_digest(path.open('rb'), 'sha256').hexdigest()
 if actual_sha256 != os.environ['OFFICIAL_STAGE24_ARCHIVE_SHA256']:
     raise SystemExit(
         'Incorrect Stage24 ZIP (SHA-256 mismatch). Download the EXACT release asset '
-        'CryptoSniper-Stage24-Rebuild-v0.24.0rc2-r8.zip from '
-        'https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage24-rebuild-v0.24.0rc2-deploy-r8'
+        'CryptoSniper-Stage25-React-Cornix-r1.zip from '
+        'https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage25-react-cornix-deploy-r1'
         f'(received SHA256: {actual_sha256}). Nothing was changed.'
     )
 # Pin the release by checking the Git blob SHA-1 of independent immutable files.
@@ -182,6 +183,12 @@ trusted_blobs = {
     'backend/static/js/stage24-rebuild.js': '__BLOB_STAGE24_APP_JS__',
     'backend/static/css/stage24-rebuild.css': '__BLOB_STAGE24_APP_CSS__',
     'docs/reports/stage-24-rebuild.md': '__BLOB_STAGE24_REPORT__',
+    'frontend-react/src/main.jsx': '__BLOB_REACT_MAIN__',
+    'frontend-react/src/styles.css': '__BLOB_REACT_STYLES__',
+    'frontend-react/package.json': '__BLOB_REACT_PACKAGE__',
+    'frontend-react/vite.config.js': '__BLOB_REACT_VITE__',
+    'backend/apps/core/react_views.py': '__BLOB_REACT_VIEWS__',
+    'backend/templates/react_app.html': '__BLOB_REACT_TEMPLATE__',
 }
 
 host = os.environ['SERVER_HOST']
@@ -217,7 +224,15 @@ with zipfile.ZipFile(path) as z:
         git_hash = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
         if git_hash != expected_hash:
             raise SystemExit('Stage22 Git source content mismatch: ' + relative_path)
-print('PASS: pinned Stage24 source blobs, safe paths and version 0.24.0rc2.')
+    generated_sha256 = {
+        'backend/static/react/app.js': '__REACT_APP_JS_SHA256__',
+        'backend/static/react/app.css': '__REACT_APP_CSS_SHA256__',
+    }
+    for relative_path, expected_hash in generated_sha256.items():
+        data = z.read('CryptoSniper/' + relative_path)
+        if hashlib.sha256(data).hexdigest() != expected_hash:
+            raise SystemExit('React build content mismatch: ' + relative_path)
+print('PASS: pinned Stage25 React source/build, safe paths and core version 0.24.0rc2.')
 print(f'HTTPS URL: https://{host}{os.environ["URL_PREFIX"]}/auth/login/')
 PY
 [[ -f /etc/os-release ]] || fail 'Ubuntu 24.04 is required.'
@@ -404,8 +419,8 @@ state = json.loads((Path(os.environ['CONFIG_DIR']) / 'install.json').read_text()
 expected = {key: os.environ[key] for key in ('SERVER_HOST', 'URL_PREFIX', 'WEB_PORT', 'PG_PORT', 'REDIS_PORT')}
 if any(state.get(key) != value for key, value in expected.items()):
     raise SystemExit('Existing installer configuration differs. No automatic upgrade/configuration replacement.')
-if state.get('SOURCE_COMMIT') not in {os.environ['STAGE01_SOURCE_COMMIT'], os.environ['STAGE02_SOURCE_COMMIT'], os.environ['STAGE03_SOURCE_COMMIT'], os.environ['STAGE04_SOURCE_COMMIT'], os.environ['STAGE05_SOURCE_COMMIT'], os.environ['STAGE06_SOURCE_COMMIT'], os.environ['STAGE08_SOURCE_COMMIT'], os.environ['PREVIOUS_SOURCE_COMMIT'], os.environ['STAGE10_SOURCE_COMMIT'], os.environ['STAGE14_SOURCE_COMMIT'], os.environ['STAGE16_SOURCE_COMMIT'], os.environ['STAGE18_SOURCE_COMMIT'], os.environ['STAGE20_SOURCE_COMMIT'], os.environ['STAGE21_SOURCE_COMMIT'], os.environ['STAGE22_SOURCE_COMMIT'], os.environ['PREVIOUS_STAGE24_SOURCE_COMMIT'], os.environ['STAGE24_R5_SOURCE_COMMIT'], os.environ['STAGE24_R6_SOURCE_COMMIT'], os.environ['STAGE24_R7_SOURCE_COMMIT'], os.environ['STAGE23_SOURCE_COMMIT'], os.environ['SOURCE_COMMIT']}:
-    raise SystemExit('Existing installation source is not a supported managed Stage01-24 release.')
+if state.get('SOURCE_COMMIT') not in {os.environ['STAGE01_SOURCE_COMMIT'], os.environ['STAGE02_SOURCE_COMMIT'], os.environ['STAGE03_SOURCE_COMMIT'], os.environ['STAGE04_SOURCE_COMMIT'], os.environ['STAGE05_SOURCE_COMMIT'], os.environ['STAGE06_SOURCE_COMMIT'], os.environ['STAGE08_SOURCE_COMMIT'], os.environ['PREVIOUS_SOURCE_COMMIT'], os.environ['STAGE10_SOURCE_COMMIT'], os.environ['STAGE14_SOURCE_COMMIT'], os.environ['STAGE16_SOURCE_COMMIT'], os.environ['STAGE18_SOURCE_COMMIT'], os.environ['STAGE20_SOURCE_COMMIT'], os.environ['STAGE21_SOURCE_COMMIT'], os.environ['STAGE22_SOURCE_COMMIT'], os.environ['PREVIOUS_STAGE24_SOURCE_COMMIT'], os.environ['STAGE24_R5_SOURCE_COMMIT'], os.environ['STAGE24_R6_SOURCE_COMMIT'], os.environ['STAGE24_R7_SOURCE_COMMIT'], os.environ['STAGE24_R8_SOURCE_COMMIT'], os.environ['STAGE23_SOURCE_COMMIT'], os.environ['SOURCE_COMMIT']}:
+    raise SystemExit('Existing installation source is not a supported managed CryptoSniper release.')
 print('Existing managed installation detected; private configuration, database and login will be preserved.')
 PY
     MANAGED=true
@@ -1071,10 +1086,10 @@ path.write_text(json.dumps(state, indent=2) + '\n')
 path.chmod(0o600)
 PY
 APP_BACKUP=""
-printf '\nINSTALL_OK: CryptoSniper Stage24 Rebuild v0.24.0rc2\n'
+printf '\nINSTALL_OK: CryptoSniper Stage25 React Cornix UI (core v0.24.0rc2)\n'
 printf 'Login: https://%s%s/auth/login/\n' "$SERVER_HOST" "$URL_PREFIX"
 printf 'Private login credentials: %s (root only; not printed in this log)\n' "$LOGIN_FILE"
 printf 'Installer log: %s\n' "$LOG_FILE"
 printf 'Service logs: journalctl -u cryptosniper-web -u cryptosniper-orders -u cryptosniper-reports -u cryptosniper-beat -u cryptosniper-telegram\n'
 printf 'Nginx uses the existing srun.ir HTTPS certificate; no temporary certificate was created.\n'
-printf 'Stage24 Rebuild: Stage23-based Cornix-like UI, live charts, ticker, archive and real read-refresh installed; Live writes remain fail-closed by default.\n'
+printf 'Stage25 React: approved Cornix-like React workspace installed on /cryptosniper with live charts, unified trades, signal archive, exchange-scoped markets and real APIs; Live writes remain fail-closed by default.\n'

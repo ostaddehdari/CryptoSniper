@@ -169,6 +169,7 @@ def seed_signal(user, account, market):
         signal=signal,
         position=1,
         price=Decimal("70000"),
+        share_percent=Decimal("100"),
     )
     return signal
 

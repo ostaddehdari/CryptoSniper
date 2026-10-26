@@ -1,5 +1,6 @@
-{% extends 'shell.html' %}{% block title %}گزارش امنیتی | CryptoSniper{% endblock %}{% block breadcrumb %}تنظیمات / گزارش امنیتی{% endblock %}{% block content %}
-<div class="page-heading"><div><span class="eyebrow">SECURITY AUDIT</span><h1>گزارش امنیتی حساب</h1><p class="muted">صد رویداد اخیر حساب؛ داده‌های حساس در این گزارش ذخیره و نمایش داده نمی‌شوند.</p></div></div>
-<div class="settings-layout">{% include 'accounts/_settings_tabs.html' %}<section class="panel settings-panel"><div class="audit-list">
-{% for event in events %}<article class="audit-row"><div><strong>{{ event.event_type }}</strong><span>{{ event.created_at|date:'Y/m/d H:i:s' }} UTC</span></div><code>{% if event.ip_hash %}IP: {{ event.ip_hash|slice:':8' }}…{% else %}IP: —{% endif %}</code>{% if event.metadata %}<small>{{ event.metadata }}</small>{% endif %}</article>{% empty %}<p class="muted">هنوز رویدادی ثبت نشده است.</p>{% endfor %}
-</div></section></div>{% endblock %}
+{% extends 'shell.html' %}{% block title %}گزارش امنیتی | CryptoSniper{% endblock %}{% block content %}
+<section class="s24-page">
+  <div class="s24-section-head"><div><h1>گزارش امنیتی حساب</h1><p>صد رویداد اخیر بدون ذخیره یا نمایش داده حساس.</p></div><span class="s24-status">SECURITY AUDIT</span></div>
+  <div class="s24-panel"><div class="s24-table-scroll"><table class="s24-table"><thead><tr><th>رویداد</th><th>زمان</th><th>IP Hash</th><th>جزئیات</th></tr></thead><tbody>{% for event in events %}<tr><td><strong>{{ event.event_type }}</strong></td><td>{{ event.created_at|date:'Y/m/d H:i:s' }} UTC</td><td><code>{% if event.ip_hash %}{{ event.ip_hash|slice:':8' }}…{% else %}—{% endif %}</code></td><td>{{ event.metadata|default:'—' }}</td></tr>{% empty %}<tr><td colspan="4">هنوز رویدادی ثبت نشده است.</td></tr>{% endfor %}</tbody></table></div></div>
+</section>
+{% endblock %}

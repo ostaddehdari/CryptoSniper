@@ -5,9 +5,9 @@
     "S01",
     "S02"
   ],
-  "current_stage": "S30",
-  "next_stage": "S31",
-  "last_completed_work": "S30-W05",
+  "current_stage": "S31",
+  "next_stage": "S32",
+  "last_completed_work": "S31-W05",
   "implementation_started": true,
   "stage_results": {
     "S01": {
@@ -1286,19 +1286,107 @@
         }
       ],
       "blockers": [
-        "Real-provider credential acceptance and target VPS installation of Stage30 have not been performed.",
+        "Real-provider credential acceptance remains open; Stage30 VPS upgrade passed operator log.",
         "Main integration pending through PR #3 and stacked PR #4; no merge claimed."
       ],
       "implementation": "Five S30 works are code-complete and validated. Real order exits remain explicitly inactive and belong to S31. Synthetic-provider tests enqueue durable orders but never use real money.",
       "release_commit": "5f17849f720d476790c2fa6c2196ec8f4be8fff6",
       "pull_request": "https://github.com/ostaddehdari/CryptoSniper/pull/4",
-      "release_tag": "stage30-react-v0.30.0rc1-deploy-r1"
+      "release_tag": "stage30-react-v0.30.0rc1-deploy-r1",
+      "operator_installation": {
+        "status": "passed_operator_log_INSTALL_OK_DEPLOY_OK",
+        "release_tag": "stage30-react-v0.30.0rc1-deploy-r1",
+        "migrations": "both_stage30_migrations_OK",
+        "readiness": "PostgreSQL/Redis and Nginx200",
+        "queues": "seven_fresh_receipts",
+        "backups": "encrypted_daily_weekly_active"
+      }
     },
     "S31": {
-      "status": "not_started",
-      "completed_works": [],
-      "checks": [],
-      "blockers": []
+      "status": "partial",
+      "completed_works": [
+        "S31-W01",
+        "S31-W02",
+        "S31-W03",
+        "S31-W04",
+        "S31-W05"
+      ],
+      "checks": [
+        {
+          "name": "PostgreSQL/Redis, real Celery process restart, concurrency, full suite and React browser",
+          "status": "passed",
+          "tested_commit": "00bd4db54aa83d073154ce513a0f7ce8447e8b26",
+          "run_url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/40372668544",
+          "pytest_passed": 391,
+          "responsive_widths": [
+            320,
+            390,
+            768,
+            1440
+          ]
+        },
+        {
+          "name": "Exact final candidate, full PostgreSQL/Redis/Celery restart and React browser including refreshed TP/SL",
+          "status": "passed",
+          "tested_commit": "d8cc1fb7ccfa8e614d61a97a0b03f0b9ed19f587",
+          "run_url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/40373406457",
+          "pytest_passed": 391,
+          "installer_tests_included": 74,
+          "artifact_id": 12674475459,
+          "responsive_widths": [
+            320,
+            390,
+            768,
+            1440
+          ]
+        },
+        {
+          "name": "Cumulative GitHub Release from the exact successful candidate",
+          "status": "passed",
+          "tested_commit": "d8cc1fb7ccfa8e614d61a97a0b03f0b9ed19f587",
+          "release_tag": "stage31-react-v0.31.0rc1-deploy-r1",
+          "archive_sha256": "90f26887daff618b75b919b60db0a8280203105c98ba6adf903abcdcb4ac6a5a",
+          "installer_sha256": "a66eb3a7594e7ca9a9e71486cc353610c8d95d1b9ebeb3615aa6691269e1ba92"
+        },
+        {
+          "name": "Final r2 PostgreSQL/Redis, Celery restart, full suite, React TP/SL and partial-exit marker bounds",
+          "status": "passed",
+          "tested_commit": "dc1e88ce99bfcf48c6500e559788be63f65136a0",
+          "run_url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/40374832869",
+          "pytest_passed": 391,
+          "installer_tests_included": 74,
+          "responsive_widths": [
+            320,
+            390,
+            768,
+            1440
+          ],
+          "artifact_id": 12673708555
+        },
+        {
+          "name": "Exact-tested-source r2 cumulative GitHub Release",
+          "status": "passed",
+          "tested_commit": "dc1e88ce99bfcf48c6500e559788be63f65136a0",
+          "release_tag": "stage31-react-v0.31.0rc1-deploy-r2",
+          "archive_sha256": "16a7398accfca2f35ec28fdea5dff5b0460fa340db36c0e7209b04656a8d2108",
+          "installer_sha256": "686df0e0279e97b2fda3ac901223effc0ae91d116a8c5d10a10e4d2865c3f984"
+        },
+        {
+          "name": "Downloaded official r2 assets, exact SHA256 and deploy.sh --check",
+          "status": "passed",
+          "installation_performed": false,
+          "release_tag": "stage31-react-v0.31.0rc1-deploy-r2"
+        }
+      ],
+      "blockers": [
+        "Real-provider credential and actual exchange order acceptance are unavailable; contract provider and synthetic data were used.",
+        "Target VPS installation of Stage31 has not been performed. Both live flags remain off by default; per-trade consent is required.",
+        "Stacked branches await main integration; no merge is claimed."
+      ],
+      "implementation": "Five S31 works code-complete. Final r2 source passed391 tests,74 installer tests, real isolated Celery restart, PostgreSQL/Redis, concurrent monitors and browser at four widths. TP/SL refresh and all label/partial-exit marker bounds verified. Immutable cumulative release published; real-provider/VPS acceptance and main merge remain open. Default live gates remain off.",
+      "release_commit": "dc1e88ce99bfcf48c6500e559788be63f65136a0",
+      "release_tag": "stage31-react-v0.31.0rc1-deploy-r2",
+      "pull_request": "https://github.com/ostaddehdari/CryptoSniper/pull/5"
     },
     "S32": {
       "status": "not_started",

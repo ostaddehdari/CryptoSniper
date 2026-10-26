@@ -1,0 +1,59 @@
+name: Build Stage31 validated React deployment
+on:
+  workflow_call:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: stage31-validated-release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Require exact tested source and package workflow
+        env:
+          TESTED_SHA: ${{ github.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$TESTED_SHA"
+          test -f scripts/build_stage31_release.py
+          test -f docs/reports/stage-31.md
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend-react/package-lock.json
+      - name: Build the exact tested React source
+        working-directory: frontend-react
+        run: |
+          npm ci
+          npm test
+          npm run build
+      - name: Verify installer upgrade and build cumulative package
+        run: |
+          python3 -m unittest discover -s tests -p test_installer_nginx.py -q
+          python3 scripts/build_stage31_release.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stage31-verified-react-release
+          path: .runtime/stage31-release/*
+          include-hidden-files: true
+          if-no-files-found: error
+      - name: Publish immutable package from the successful source
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG=stage31-react-v0.31.0rc1-deploy-r2
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo 'Existing immutable Stage31 release retained; no assets replaced.'
+            exit 0
+          fi
+          gh release create "$TAG" .runtime/stage31-release/* --target "$(git rev-parse HEAD)" --prerelease \
+            --title 'CryptoSniper Stage31 — durable Spot management and recovery' \
+            --notes 'Stage31: unified paginated/filterable trades and provider receipts; explicit Spot-long inventory, cumulative partial fills, verified cancellation before replacement, TP/SL and monotonic trailing independent of browser, explicit external adoption and versioned pause/edit, chart provenance and stale-feed recovery. Both live flags and per-trade consent are required; defaults remain off and old orders are not auto-adopted. Conditional exits use limit orders with confirmed cancel/reprice, not guaranteed immediate fills. Real-provider and target VPS acceptance remain separate.'

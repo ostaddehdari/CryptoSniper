@@ -92,3 +92,20 @@ def monitor_external_trades():
     from apps.portfolio.external_management import monitor_active_external_trades
 
     return monitor_active_external_trades()
+
+
+@shared_task(name="operations.monitor_managed_spot", acks_late=True, time_limit=120)
+def monitor_managed_spot():
+    from apps.portfolio.live_management import monitor_position
+
+    from .models import ManagedSpotPosition
+
+    with lease("managed-spot", seconds=125) as acquired:
+        if not acquired:
+            return {"status": "busy"}
+        ids = list(
+            ManagedSpotPosition.objects.exclude(state="closed")
+            .order_by("last_checked_at", "pk")
+            .values_list("pk", flat=True)[:20]
+        )
+        return {str(pk): monitor_position(pk) for pk in ids}

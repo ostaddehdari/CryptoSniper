@@ -12,13 +12,14 @@ import "./styles.css";
 import "./stage25.css";
 import "./stage29.css";
 import "./stage30.css";
+import "./stage31.css";
 import { resolvePage } from "./routes.js";
 
 const BASE = (typeof window.__CS_BASE__ === "string" ? window.__CS_BASE__ : "/cryptosniper").replace(/\/$/, "");
 const fmt=(v,d=2)=>Number(v||0).toLocaleString("fa-IR",{minimumFractionDigits:d,maximumFractionDigits:d});
 const dt=v=>v?new Date(v).toLocaleString("fa-IR"):"—";
 const num=v=>{const n=Number(v);return Number.isFinite(n)?n:0};
-const statusFa={connected:"متصل",restricted:"محدود",pending:"در انتظار",error:"خطا",disabled:"غیرفعال",open:"باز",filled:"تکمیل",partial:"بخشی",cancelled:"لغو",failed:"ناموفق",uncertain:"نامعلوم",submitting:"در حال ارسال",new:"جدید",parsed:"تحلیل‌شده",needs_review:"نیازمند بررسی",approved:"تأییدشده",rejected:"ردشده",complete:"کامل",running:"در حال اجرا",paused:"متوقف",completed:"کامل"};
+const statusFa={active:"فعال",waiting_entry:"در انتظار ورود",closing:"در حال خروج",closed:"بسته",review:"نیازمند تطبیق",dust:"باقی‌مانده کمتر از حداقل",connected:"متصل",restricted:"محدود",pending:"در انتظار",error:"خطا",disabled:"غیرفعال",open:"باز",filled:"تکمیل",partial:"بخشی",cancelled:"لغو",failed:"ناموفق",uncertain:"نامعلوم",submitting:"در حال ارسال",new:"جدید",parsed:"تحلیل‌شده",needs_review:"نیازمند بررسی",approved:"تأییدشده",rejected:"ردشده",complete:"کامل",running:"در حال اجرا",paused:"متوقف",completed:"کامل"};
 
 function cookie(name){
   return document.cookie.split(";").map(v=>v.trim()).find(v=>v.startsWith(name+"="))?.slice(name.length+1)||"";
@@ -80,7 +81,7 @@ function App(){
       <section className="content">
         {error&&<ErrorBox text={error}/>}
         {page==="dashboard"&&<Dashboard boot={boot} decimals={decimals} refreshBoot={refresh} setPage={setPage}/>}
-        {page==="trades"&&<Trades decimals={decimals} notify={notify} setPage={setPage}/>}
+        {page==="trades"&&<Trades decimals={decimals} notify={notify} setPage={setPage} requestStepUp={action=>{setResumeAction(()=>action);setStepUp(true)}}/>}
         {["manual","smart"].includes(page)&&<div className="card newTradeTabs"><div className="tabs" aria-label="نوع معامله جدید"><button className={page==="manual"?"active":""} onClick={()=>setPage("manual")}>معامله دستی</button><button className={page==="smart"?"active":""} onClick={()=>setPage("smart")}>تحلیل سیگنال</button></div></div>}
         {["manual","smart"].includes(page)&&<div hidden={page!=="manual"}><Manual key={JSON.stringify(manualSeed)} boot={boot} decimals={decimals} notify={notify} requestStepUp={action=>{setResumeAction(()=>action);setStepUp(true)}} seed={manualSeed}/></div>}
         {page==="plans"&&<ManualPlans notify={notify} setPage={setPage} setManualSeed={setManualSeed}/>}
@@ -124,24 +125,26 @@ function Dashboard({boot,decimals,refreshBoot,setPage}){
 }
 function DashboardTabs({extra,decimals,setPage}){const [tab,setTab]=useState("trades");return <div className="card"><div className="tabs">{[["trades","آخرین معاملات"],["signals","آخرین سیگنال‌ها"],["alerts","آخرین هشدارها"],["notifications","اعلان‌ها"]].map(([id,l])=><button className={tab===id?"active":""} onClick={()=>setTab(id)} key={id}>{l}</button>)}</div>{tab==="trades"&&<TradesTable rows={extra.orders.slice(0,8)} decimals={decimals}/>} {tab==="signals"&&<SignalCards items={extra.signals.slice(0,6)} onMore={()=>setPage("inbox")}/>} {tab==="alerts"&&<div className="simpleList">{extra.alerts.slice(0,8).map(x=><div key={x.id}><b>{x.title}</b><span>{x.kind} · {x.threshold}</span></div>)}</div>} {tab==="notifications"&&<div className="simpleList">{extra.notifications.slice(0,8).map(x=><div key={x.id}><b>{x.title}</b><span>{x.body}</span></div>)}</div>}</div>}
 
-function Trades({decimals,notify,setPage}){
+function Trades({decimals,notify,setPage,requestStepUp}){
   const [data,setData]=useState({trades:[],counts:{}});
   const [view,setView]=useState("active");
   const [selected,setSelected]=useState(null);
   const [busy,setBusy]=useState(false);
+  const [life,setLife]=useState("all"),[origin,setOrigin]=useState("all"),[query,setQuery]=useState(""),[offset,setOffset]=useState(0);
   const load=async(next=view)=>{
     try{
-      const d=await api(`/api/v1/trades/?view=${next}`);
+      const params=new URLSearchParams({view:next,state:life,origin,q:query,offset:String(offset)});
+      const d=await api(`/api/v1/trades/?${params}`);
       setData(d);
       setSelected(previous=>d.trades?.find(x=>x.key===previous?.key)||d.trades?.[0]||null);
     }catch(e){notify(e.message)}
   };
-  useEffect(()=>{load(view);const timer=setInterval(()=>load(view),5000);return()=>clearInterval(timer)},[view]);
+  useEffect(()=>{load(view);const timer=setInterval(()=>load(view),5000);return()=>clearInterval(timer)},[view,life,origin,query,offset]);
   const refresh=async()=>{
     try{
       setBusy(true);
       const d=await api("/api/v1/trades/refresh/",{method:"POST",body:{}});
-      setData({trades:d.trades||[],counts:{open:d.open}});
+      await load();
       notify("اطلاعات واقعی صرافی‌ها تازه‌سازی شد");
     }catch(e){notify(e.message)}finally{setBusy(false)}
   };
@@ -158,17 +161,42 @@ function Trades({decimals,notify,setPage}){
     <div className="card">
       <div className="cardHead">
         <div><h3>معاملات یکپارچه</h3><p>Internal · Live · External در یک فهرست</p></div>
-        <div className="row gap"><button className="primary" onClick={()=>setPage("manual")}><PlusCircle size={18}/> معامله جدید</button><div className="range">{[["active","فعال"],["archive","بایگانی"],["all","همه"]].map(([v,l])=><button key={v} className={view===v?"active":""} onClick={()=>setView(v)}>{l}</button>)}</div><button className="softBtn" disabled={busy} onClick={refresh}><RefreshCw size={17}/> تازه‌سازی واقعی</button></div>
+        <div className="row gap"><button className="primary" onClick={()=>setPage("manual")}><PlusCircle size={18}/> معامله جدید</button><div className="range">{[["active","فعال"],["archive","بایگانی"],["all","همه"]].map(([v,l])=><button key={v} className={view===v?"active":""} onClick={()=>{setView(v);setOffset(0)}}>{l}</button>)}</div><button className="softBtn" disabled={busy} onClick={refresh}><RefreshCw size={17}/> تازه‌سازی واقعی</button></div>
       </div>
+      <div className="tradeFilters"><input aria-label="جستجوی معاملات" placeholder="جستجوی نماد" value={query} onChange={e=>{setQuery(e.target.value);setOffset(0)}}/><select aria-label="وضعیت معاملات" value={life} onChange={e=>{setLife(e.target.value);setOffset(0)}}>{[["all","همه وضعیت‌ها"],["open","باز"],["closed","بسته"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select><select aria-label="مبدأ معاملات" value={origin} onChange={e=>{setOrigin(e.target.value);setOffset(0)}}>{[["all","همه مبدأها"],["live","داخلی واقعی"],["external","خارجی"],["paper","آزمایشی"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select><small>{data.total??0} مورد</small><button className="softBtn" disabled={!offset} onClick={()=>setOffset(Math.max(0,offset-100))}>قبلی</button><button className="softBtn" disabled={data.next_offset==null} onClick={()=>setOffset(data.next_offset)}>بعدی</button></div>
       <div className="tableScroll"><table><thead><tr><th>بازار</th><th>مبدأ</th><th>جهت</th><th>Entry</th><th>وضعیت</th><th>زمان</th><th></th></tr></thead><tbody>
         {rows.map(x=><tr key={x.key} onClick={()=>setSelected(x)} className={"clickRow "+(selected?.key===x.key?"selectedRow":"")}><td><b>{x.symbol||"—"}</b><small className="blockMuted">{x.exchange}</small></td><td><span className={"pill "+(x.kind==="external"?"external":"")}>{x.origin_label}</span></td><td>{x.side||"—"}</td><td>{x.entry||"—"}</td><td><Status value={x.state}/></td><td>{dt(x.updated_at)}</td><td><button className="linkBtn dangerLite" onClick={e=>{e.stopPropagation();archive(x)}}>{x.archived_at?"بازیابی":"بایگانی"}</button></td></tr>)}
       </tbody></table>{!rows.length&&<Empty/>}</div>
     </div>
     {selected&&<div className="grid2 sectionGap">
       <div className="card chartPanel"><div className="cardHead"><div><h3>{selected.symbol||selected.key}</h3><p>{selected.origin_label} · {selected.exchange}</p></div><Status value={selected.state}/></div><MarketChart marketId={selected.market_id} trade={selected} levels={selected.kind==="live"?{entry:selected.entry,stop:selected.stop_loss,targets:selected.tp}:null}/></div>
-      <div className="card"><div className="cardHead"><div><h3>جزئیات معامله</h3><p>{selected.kind==="external"?"فقط پایش؛ مدیریت بدون واگذاری صریح غیرفعال است":selected.kind==="live"?"برنامهٔ خروج ذخیره شده؛ اجرای خودکار خروج فعال نیست":"مدیریت‌شده توسط CryptoSniper"}</p></div></div><div className="analysisGrid"><Info label="Entry" value={selected.entry||"—"}/><Info label="Amount" value={selected.amount||selected.position_amount||"—"}/><Info label="Stop Loss" value={selected.stop_loss||"—"}/><Info label="TP" value={(selected.tp||[]).join(" / ")||"—"}/><Info label="وضعیت" value={selected.state||"—"}/><Info label="مبدأ" value={selected.origin_label}/></div></div>
+      <div className="card"><div className="cardHead"><div><h3>جزئیات معامله</h3><p>{selected.kind==="external"?(selected.management_id?"مدیریت واگذارشده؛ وضعیت پایش در جزئیات نمایش داده می‌شود":"فقط پایش؛ مدیریت بدون واگذاری صریح غیرفعال است"):selected.kind==="live"?(selected.automatic_exits_active?"مدیریت خروج با رسید صرافی":"برنامهٔ خروج ذخیره شده؛ اجرای خودکار خروج فعال نیست"):"مدیریت‌شده توسط CryptoSniper"}</p></div></div><div className="analysisGrid"><Info label="Entry" value={selected.entry||"—"}/><Info label="Amount" value={selected.amount||selected.position_amount||"—"}/><Info label="Stop Loss" value={selected.stop_loss||"—"}/><Info label="TP" value={(selected.tp||[]).join(" / ")||"—"}/><Info label="وضعیت" value={selected.state||"—"}/><Info label="مبدأ" value={selected.origin_label}/></div><ManagementPanel key={selected.key} trade={selected} notify={notify} requestStepUp={requestStepUp} onChanged={()=>load()}/></div>
     </div>}
   </>
+}
+
+function ManagementPanel({trade,notify,requestStepUp,onChanged}){
+  const [reconcileTarget,setReconcileTarget]=useState(String(trade.id));
+  const [policyVersion,setPolicyVersion]=useState(null);
+  const [position,setPosition]=useState(trade.management||null),[enabled,setEnabled]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState("");
+  const [values,setValues]=useState({entry_price:trade.entry||"",remaining_amount:trade.position_amount||"",stop_loss:trade.stop_loss||"",tp1:trade.tp?.[0]||"",tp2:trade.tp?.[1]||"",tp3:trade.tp?.[2]||"",trailing_sl_enabled:true,trailing_enabled:true,trailing_trigger:"1",trailing_distance_percent:"1"}),[confirmed,setConfirmed]=useState(false),[editing,setEditing]=useState(false),[externalId,setExternalId]=useState("");
+  const targetOrder=(trade.kind==="live"&&String(trade.id)===reconcileTarget)||position?.exits?.some(x=>String(x.id)===reconcileTarget)?reconcileTarget:String(position?.exits?.[0]?.id||trade.id);
+  const initial=p=>{const s=p.snapshot;setValues(v=>({...v,entry_price:s.entry_price,remaining_amount:p.remaining,stop_loss:p.effective_stop,tp1:s.targets[0]?.price||"",tp2:s.targets[1]?.price||"",tp3:s.targets[2]?.price||"",trailing_sl_enabled:s.trailing_sl,trailing_enabled:s.percentage_trailing,trailing_trigger:String(s.trailing_trigger||"tp1").slice(-1),trailing_distance_percent:s.trailing_distance_percent}));setPosition(p)};
+  useEffect(()=>{let active=true;const load=async()=>{try{const boot=await api("/api/v1/ui/bootstrap/");if(!active)return;setEnabled(!!boot.live_exit_management_enabled);if(trade.management_id){const d=await api(`/api/v1/managed-positions/${trade.management_id}/`);if(active)initial(d.position)}else if(trade.kind==="external"){const d=await api(`/api/v1/external/${trade.id}/management/`);if(active)setPolicyVersion(d.policy_version)}}catch(e){if(active)setError(e.message)}};load();return()=>{active=false}},[trade.key,trade.management_id]);
+  useEffect(()=>{if(trade.management&&!editing)setPosition(trade.management)},[trade.management,editing]);
+  const send=async(path,body)=>{if(busy)return;setBusy(true);setError("");try{const d=await api(path,{method:"POST",body});if(d.position)initial(d.position);setConfirmed(false);setEditing(false);notify("وضعیت مدیریت ثبت شد");onChanged()}catch(e){if(e.status===403&&e.data?.error==="step_up_required")requestStepUp(()=>send(path,body));else setError(e.message)}finally{setBusy(false)}};
+  const change=action=>send(`/api/v1/managed-positions/${position.id}/`,{action,version:position.version,confirmed:true});
+  const save=()=>{if(!confirmed){setError("تأیید صریح شرایط و حجم لازم است.");return}
+    if(position)send(`/api/v1/managed-positions/${position.id}/`,{action:"update",version:position.version,confirmed,...values,trailing_sl:values.trailing_sl_enabled,percentage_trailing:values.trailing_enabled,trailing_trigger:"tp"+values.trailing_trigger});
+    else if(trade.kind==="external")send(`/api/v1/external/${trade.id}/management/`,{...values,version:policyVersion,confirmed});
+    else send(`/api/v1/live-orders/${trade.id}/management/`,{confirmed,remaining_amount:values.remaining_amount});
+  };
+  const input=(key,label)=> <div className="field" key={key}><label>{label}</label><input aria-label={label} value={values[key]} onChange={e=>{setConfirmed(false);setValues(v=>({...v,[key]:e.target.value}))}} inputMode="decimal"/></div>;
+  if(trade.kind==="paper")return null;
+  return <div className="managementForm"><h4>مدیریت معامله</h4>{error&&<ErrorBox text={error}/>}<p className="riskDetails">{enabled?"اجرای خروج روی سرور مجاز است؛ فعال‌شدن برای این معامله به تأیید صریح وابسته است.":"اجرای خودکار خروج روی سرور خاموش است؛ پایش و تطبیق رسیدها ادامه دارد."}</p>{position&&<><div className="analysisGrid"><Info label="باقی‌مانده تأییدشده" value={position.remaining}/><Info label="SL مؤثر" value={position.effective_stop}/><Info label="آخرین قیمت صرافی" value={dt(position.last_price_at)}/><Info label="وضعیت پایش" value={position.paused?"متوقف":position.state}/></div>{position.error_code&&<p className="down">{({feed_or_receipt_unavailable:"داده یا رسید تازهٔ صرافی در دسترس نیست.",base_balance_or_fee_shortfall:"موجودی آزاد یا کارمزد ارز پایه نیاز به تطبیق دارد.",remaining_below_exchange_minimum:"باقی‌مانده از حداقل سفارش صرافی کمتر است.",exit_failed_review_required:"خروج ناموفق بوده؛ پیش از ادامه، نتیجه را بررسی کنید."})[position.error_code]||"این معامله نیاز به بررسی رسیدهای صرافی دارد."}</p>}<div className="row gap"><button className="softBtn" disabled={busy} onClick={()=>change(position.paused?"resume":"pause")}>{position.paused?"ادامه پایش":"توقف پایش جدید"}</button><button className="softBtn" disabled={busy} onClick={()=>setEditing(v=>!v)}>ویرایش شرایط</button></div><p className="riskDetails">توقف پایش، سفارش خروجِ قبلاً ثبت‌شده را لغو نمی‌کند. SL مؤثر قابل ضعیف‌کردن نیست.</p><div className="simpleList">{position.exits.map(x=><div key={x.id}><b>{x.reason} · #{x.id}</b><span>{x.state} · {x.filled} / {x.amount}</span></div>)}</div></>}
+    {(!position||editing)&&((trade.kind==="external"&&trade.manageable)||position||trade.plan_id)&&<><div className="formGrid">{!position&&trade.kind==="external"&&input("entry_price","Entry تأییدشده")}{input("remaining_amount","حجم باقی‌مانده تأییدشده")}{(position||trade.kind==="external")&&[input("stop_loss","SL مدیریت"),input("tp1","TP1 مدیریت"),input("tp2","TP2 مدیریت"),input("tp3","TP3 مدیریت")]}</div>{(position||trade.kind==="external")&&<><label className="confirmLine"><input type="checkbox" checked={values.trailing_sl_enabled} onChange={e=>setValues(v=>({...v,trailing_sl_enabled:e.target.checked}))}/>Trailing SL</label><label className="confirmLine"><input type="checkbox" checked={values.trailing_enabled} onChange={e=>setValues(v=>({...v,trailing_enabled:e.target.checked}))}/>Trailing</label><div className="formGrid"><div className="field"><label>شروع Trailing مدیریت</label><select aria-label="شروع Trailing مدیریت" value={values.trailing_trigger} onChange={e=>setValues(v=>({...v,trailing_trigger:e.target.value}))}>{[1,2,3].map(n=><option key={n} value={n}>TP{n}</option>)}</select></div>{input("trailing_distance_percent","فاصله Trailing مدیریت")}</div></>}<label className="confirmLine"><input aria-label="تأیید واگذاری مدیریت" type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/>حجم باقی‌مانده و شرایط مدیریت را بررسی و تأیید می‌کنم.</label><button className="primary" disabled={busy||(!position&&!enabled)||!confirmed} onClick={save}>{position?"ثبت شرایط":"واگذاری مدیریت خروج"}</button></>}
+    {(trade.kind==="live"||position?.exits?.length>0)&&<div className="sectionGap"><select aria-label="سفارش برای تطبیق" value={targetOrder} onChange={e=>setReconcileTarget(e.target.value)}>{trade.kind==="live"&&<option value={trade.id}>ورود #{trade.id}</option>}{position?.exits.map(x=><option key={x.id} value={x.id}>خروج {x.reason} #{x.id}</option>)}</select><input aria-label="شناسه سفارش صرافی برای تطبیق" placeholder="شناسه صرافی؛ فقط برای نتیجه نامعلوم" value={externalId} onChange={e=>setExternalId(e.target.value)}/><button className="softBtn" disabled={busy} onClick={()=>send(`/api/v1/live-orders/${targetOrder}/reconcile/`,{external_id:externalId})}>بررسی رسید سفارش</button><button className="softBtn" disabled={busy} onClick={()=>send(`/api/v1/live-orders/${targetOrder}/reconcile/`,{cancel:true})}>لغو باقی سفارش</button><p className="riskDetails">برای جلوگیری از ساخت خروج تازه پس از لغو، ابتدا پایش جدید را متوقف کنید.</p></div>}
+  </div>;
 }
 
 function TradesTable({rows,decimals,onSelect}){return <div className="tableScroll"><table><thead><tr><th>بازار</th><th>صرافی</th><th>جهت</th><th>قیمت</th><th>مقدار</th><th>پرشده</th><th>وضعیت</th><th>زمان</th></tr></thead><tbody>{rows.map(x=><tr key={x.id} className={onSelect?"clickRow":""} onClick={()=>onSelect?.(x)}><td><b>{(x.symbol||"").replace("/USDT","")}</b></td><td>{x.exchange}</td><td>{x.side==="buy"?"خرید":"فروش"}</td><td>{x.average_price||x.price?fmt(x.average_price||x.price,decimals):"—"}</td><td>{fmt(x.amount,decimals)}</td><td>{fmt(x.filled_amount,decimals)}</td><td><Status value={x.state}/></td><td>{dt(x.updated_at||x.created_at)}</td></tr>)}</tbody></table>{!rows.length&&<Empty/>}</div>}
@@ -186,6 +214,7 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
   const [tp3,setTp3]=useState(String(seed?.tp3||seed?.targets?.[2]?.price||""));
   const [sl,setSl]=useState(String(seed?.stop_loss||"")), [capital,setCapital]=useState(String(seed?.capital||""));
   const [risk,setRisk]=useState("1"), [leverage,setLeverage]=useState("1");
+  const [manageExits,setManageExits]=useState(false);
   const [quote,setQuote]=useState(null), [fixloss,setFixloss]=useState(null), [riskError,setRiskError]=useState("");
   const [formError,setFormError]=useState(""), [busy,setBusy]=useState(false), [uncertain,setUncertain]=useState(false);
   const [confirmed,setConfirmed]=useState(false), [trailingSL,setTrailingSL]=useState(true), [trailing,setTrailing]=useState(true);
@@ -237,7 +266,7 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
   useEffect(()=>setConfirmed(false),[accountId,market?.id,entry,tp1,tp2,tp3,sl,capital,leverage,trailingSL,trailing,trigger,distance]);
   const percent=value=>num(entry)&&num(value)?((num(value)-num(entry))/num(entry)*100)*(side==="short"?-1:1):null;
   const target=(label,value,setValue)=>{const pct=percent(value);return <div className="field"><label>{label}</label><div className="inputSuffix"><input aria-label={label} value={value} onChange={e=>setValue(e.target.value)} inputMode="decimal"/><span>USDT</span></div>{pct!==null&&<small className={(pct>=0?"up":"down")+" targetPercent"}>{pct>=0?"+":""}{fmt(pct,2)}٪</small>}</div>};
-  const payload=()=>({account:accountId,market:market?.id,source:"manual",side,entry_price:entry,tp1,tp2:tp2||null,tp3:tp3||null,stop_loss:sl,capital,leverage:market?.market_type==="spot"?"1":leverage,trailing_sl:trailingSL,percentage_trailing:trailing,trailing_trigger:trigger,trailing_distance:distance,tp_distribution:distribution,origin_signal:seed?.signal_id||seed?.origin_signal||null,confirmed});
+  const payload=()=>({account:accountId,market:market?.id,source:"manual",side,entry_price:entry,tp1,tp2:tp2||null,tp3:tp3||null,stop_loss:sl,capital,leverage:market?.market_type==="spot"?"1":leverage,trailing_sl:trailingSL,percentage_trailing:trailing,trailing_trigger:trigger,trailing_distance:distance,tp_distribution:distribution,origin_signal:seed?.signal_id||seed?.origin_signal||null,manage_exits:manageExits,confirmed});
   const perform=async operation=>{
     if(submitting.current)return;submitting.current=true;setBusy(true);setFormError("");
     try{
@@ -259,7 +288,7 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
   return <div className="manualLayout"><div className="card tradeForm">
     <div className="cardHead"><div><h3>تعریف معامله واقعی</h3><p>بازار حساب انتخابی و مدیریت ریسک</p></div><span className="liveBadge"><span/> LIVE</span></div>
     {formError&&<ErrorBox text={formError}/>}
-    <p className="warningFoot">ثبت برنامهٔ TP/SL به‌تنهایی سفارش خروج حفاظتی در صرافی ایجاد نمی‌کند.</p>
+    <p className="warningFoot">اجرای خروج به مجوز سرور و واگذاری صریح مدیریت نیاز دارد؛ قیمت و نتیجهٔ اجرا تابع صرافی است.</p>
     {!boot?.live_trading_enabled&&<p className="riskDetails">ارسال واقعی روی سرور فعال نیست.</p>}
     <fieldset className="tradeFields" disabled={busy||uncertain}>
       <div className="formGrid">
@@ -276,6 +305,7 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
       <div className="sectionTitle">اهداف و حد ضرر</div><div className="targetsGrid">{target("TP1",tp1,setTp1)}{target("TP2",tp2,setTp2)}{target("TP3",tp3,setTp3)}{target("Stop Loss",sl,setSl)}</div><p className="riskDetails">سهم پیش‌فرض TPها: {distribution.join(" / ")}٪؛ سهم هدف حذف‌شده به آخرین هدف منتقل می‌شود.</p>
       <div className="fixBox"><div className="confirmLine"><input aria-label="Trailing SL" type="checkbox" checked={trailingSL} onChange={e=>{touched.current.trailing=true;setTrailingSL(e.target.checked)}}/><span>Trailing SL</span><small>TP1 → Entry</small></div><div className="confirmLine"><input aria-label="Trailing" type="checkbox" checked={trailing} onChange={e=>{touched.current.trailing=true;setTrailing(e.target.checked)}}/><span>Trailing</span></div><div className="formGrid"><div className="field"><label>شروع Trailing</label><select aria-label="شروع Trailing" value={trigger} onChange={e=>{touched.current.trailing=true;setTrigger(e.target.value)}}>{[1,2,3].map(n=><option key={n} value={"tp"+n}>{"TP"+n}</option>)}</select></div><div className="field"><label>فاصله Trailing (%)</label><input aria-label="فاصله Trailing" type="number" min="1" max="99" step="1" value={distance} onChange={e=>{touched.current.trailing=true;setDistance(e.target.value)}}/></div></div></div>
       <div className="fixBox"><div className="fixHead"><div><ShieldCheck size={20}/><b>Fix Loss</b></div></div><div className="formGrid"><div className="field"><label>ریسک مجاز</label><div className="inputSuffix"><input aria-label="ریسک مجاز" value={risk} onChange={e=>setRisk(e.target.value)} inputMode="decimal"/><span>٪</span></div></div><div className="suggestion"><span>حجم پیشنهادی</span><strong data-fixloss-suggestion>{fixloss?`${fmt(fixloss.suggested_capital??fixloss.suggested_notional,0)} USDT`:"—"}</strong>{fixloss&&<button type="button" className="softBtn" onClick={()=>{touched.current.capital=true;setCapital(fixloss.suggested_capital??String(Math.floor(num(fixloss.suggested_notional))))}}>استفاده از پیشنهاد</button>}</div></div>{fixloss&&<div className="riskDetails"><span>تتر آزاد: {fmt(fixloss.available,2)}</span><span>ریسک: {fmt(fixloss.risk_budget,2)} USDT</span><span>فاصله SL: {fmt(fixloss.stop_distance_percent,2)}٪</span><small>پیشنهاد بر مبنای فاصله استاپ است؛ کارمزد و لغزش می‌توانند زیان واقعی را تغییر دهند.</small>{fixloss.warnings?.map(w=><small key={w} className="down">{w}</small>)}</div>}{riskError&&<ErrorBox text={riskError}/>}</div>
+      {boot?.live_exit_management_enabled&&<label className="confirmLine"><input aria-label="واگذاری مدیریت خروج این سفارش" type="checkbox" checked={manageExits} onChange={e=>{setManageExits(e.target.checked);setConfirmed(false)}}/>مدیریت TP/SL و Trailing این سفارش را پس از اجرای ورود تأیید می‌کنم.</label>}
       <label className="confirmLine"><input aria-label="تأیید ارسال سفارش" type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/><span>مشخصات و ارسال سفارش را تأیید می‌کنم.</span></label>
     </fieldset>
     <div className="submitRow"><button type="button" className="primary large" disabled={busy||uncertain} onClick={submit}><Send size={17}/> ارسال سفارش</button>{uncertain&&<button type="button" className="secondary" disabled={busy} onClick={()=>perform(request.current)}>بررسی مجدد همان درخواست</button>}</div>
@@ -309,7 +339,9 @@ function MarketChart({marketId,signalId=null,trade=null,levels:manualLevels=null
         const q=new URLSearchParams({market:String(marketId),interval,bars:"140"});
         if(signalId)q.set("signal",String(signalId));
         if(trade?.kind==="paper")q.set("trade",String(trade.id));
-        if(trade?.kind==="external")q.set("external",String(trade.id));
+        if(trade?.management_id)q.set("position",String(trade.management_id));
+        else if(trade?.kind==="external")q.set("external",String(trade.id));
+        else if(trade?.kind==="live")q.set("live_order",String(trade.id));
         const d=await api("/api/v1/markets/chart/?"+q.toString());
         if(!stop)setPayload(d);
       }catch{if(!stop)setPayload(null)}
@@ -317,11 +349,11 @@ function MarketChart({marketId,signalId=null,trade=null,levels:manualLevels=null
     load();
     const timer=setInterval(load,5000);
     return()=>{stop=true;clearInterval(timer)}
-  },[marketId,signalId,trade?.kind,trade?.id,interval]);
+  },[marketId,signalId,trade?.kind,trade?.id,trade?.management_id,trade?.management?.version,interval]);
 
   if(!marketId)return <div className="chartEmpty">یک بازار را انتخاب کنید.</div>;
   const candles=payload?.candles||[];
-  if(!candles.length)return <div className="chartEmpty">در انتظار کندل و قیمت زنده…</div>;
+  if(!candles.length)return <div className="chartEmpty">{payload?.feed?.stale?"قیمت تازه در دسترس نیست؛ نمودار مرجع نیز موجود نیست.":"در انتظار کندل و قیمت زنده…"}</div>;
 
   const levels=manualLevels?[{kind:"entry",label:"Entry",price:manualLevels.entry},{kind:"sl",label:"SL",price:manualLevels.stop},...(manualLevels.targets||[]).map((price,i)=>({kind:"tp"+(i+1),label:"TP"+(i+1),price}))].filter(x=>num(x.price)>0):(payload?.overlay?.levels||[]);
   const values=[
@@ -336,6 +368,7 @@ function MarketChart({marketId,signalId=null,trade=null,levels:manualLevels=null
   const colors={entry:"#2f66d8",sl:"#e05260",tp1:"#17a673",tp2:"#17a673",tp3:"#17a673"};
 
   return <div className="candleWrap">
+    {payload?.feed?.stale&&<p className="chartStale" role="status">قیمت صرافی تازه نیست؛ کندل‌ها مرجع نمایشی هستند و مبنای اجرای خروج نیستند.</p>}
     <div className="chartToolbar">
       <small className="muted">{payload?.provider_label||"Live market"}</small>
       <div className="range">{["1m","5m","15m","1h","4h"].map(v=><button key={v} className={interval===v?"active":""} onClick={()=>setIntervalValue(v)}>{v}</button>)}</div>
@@ -350,17 +383,18 @@ function MarketChart({marketId,signalId=null,trade=null,levels:manualLevels=null
         })}
         {levels.map((level,i)=>{
           const yy=y(level.price),color=colors[level.kind]||"#17a673";
-          return <g key={i}><line x1={pad} x2={W-pad} y1={yy} y2={yy} stroke={color} strokeWidth="1.5" strokeDasharray="7 5"/><text x={W-pad-5} y={Math.max(14,yy-6)} textAnchor="end" fill={color} fontSize="11" fontWeight="700">{level.label} {fmt(level.price,4)}</text></g>
+          return <g key={i}><line x1={pad} x2={W-pad} y1={yy} y2={yy} stroke={color} strokeWidth="1.5" strokeDasharray="7 5"/><text x={W-pad-5} y={Math.max(14,yy-6)} textAnchor="end" direction="ltr" fill={color} fontSize="11" fontWeight="700">{level.label} {fmt(level.price,4)}</text></g>
         })}
         {(payload?.overlay?.markers||[]).map((m,i)=>{
           const times=candles.map(c=>Number(c.time));
           let ix=0,dist=Infinity;
           times.forEach((t,j)=>{const d=Math.abs(t-Number(m.time));if(d<dist){ix=j;dist=d}});
           const x=pad+step*ix+step/2;
-          return <g key={"m"+i}><line x1={x} x2={x} y1={pad} y2={H-pad} stroke="#7d8aa0" strokeDasharray="3 5"/><text x={Math.min(W-70,x+6)} y={pad+15} fill="#52637b" fontSize="10">{m.label}</text></g>
+          return <g key={"m"+i}><line x1={x} x2={x} y1={pad} y2={H-pad} stroke="#7d8aa0" strokeDasharray="3 5"/><text x={Math.min(W-pad-5,Math.max(pad+String(m.label).length*6,x+6))} y={pad+15+(i%4)*12} textAnchor="end" direction="ltr" fill="#52637b" fontSize="10">{m.label}</text></g>
         })}
       </svg>
     </div>
+    {payload?.overlay?.time_basis==="receipt_observed_at"&&<p className="riskDetails">زمان نشانگرها، زمان دریافت رسید اجراست؛ زمان دقیق هر Fill در این داده موجود نیست.</p>}
     <div className="chartFoot"><span>{payload?.market?.symbol||""}</span><span>{payload?.as_of?dt(payload.as_of):""}</span></div>
   </div>
 }

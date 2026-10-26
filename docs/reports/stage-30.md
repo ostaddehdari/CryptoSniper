@@ -37,3 +37,6 @@
 - این دستور نسخه هدف را نصب می‌کند؛ نصب واقعی Stage30 روی سرور اپراتور در این اجرا انجام نشده است. تنظیمات خصوصی و داده قبلی و backup قبل از migration از r2 حفظ شده‌اند.
 
 دانلود واقعی هر دو asset از Release و کنترل SHA256 و اجرای scripts/deploy.sh --check موفق بود: CHECK_OK؛ هیچ نصبی انجام نشد.
+
+
+پذیرش نصب Stage30: لاگ اپراتور Pasted text(20261026-171558).txt با دو migration OK، هفت صف سالم، PostgreSQL/Redis ready، Nginx200 و backupهای فعال، INSTALL_OK و DEPLOY_OK دریافت شد. پذیرش معامله واقعی صرافی و ادغام main همچنان جداگانه باز است.

@@ -1,6 +1,6 @@
 [project]
 name = "cryptosniper"
-version = "0.30.0rc1"
+version = "0.31.0rc1"
 description = "Python trading management platform — Stage25 approved React Cornix workspace"
 requires-python = ">=3.12,<3.15"
 dependencies = [

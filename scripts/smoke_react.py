@@ -20,6 +20,7 @@ os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 os.environ["DJANGO_SETTINGS_MODULE"] = "config.settings.test"
 # Synthetic provider has no adapter/credentials; no exchange request can be sent.
 os.environ["LIVE_TRADING_ENABLED"] = "true"
+os.environ["LIVE_EXIT_MANAGEMENT_ENABLED"] = "true"
 
 import django  # noqa: E402
 
@@ -35,10 +36,16 @@ from apps.exchanges.models import (  # noqa: E402
     UserExchangeAccount,
 )
 from apps.marketdata.models import ExchangeFavorite, HistoricalCandle  # noqa: E402
+from apps.operations.models import (  # noqa: E402
+    ExternalObservation,
+    LiveExitAttempt,
+    ManagedSpotPosition,
+)
 from apps.signals.models import RawSignal, Signal, SignalSource, SignalTarget  # noqa: E402
 from apps.tradeplans.models import TradePlan  # noqa: E402
 from django.contrib.auth import get_user_model  # noqa: E402
 from django.core.cache import cache  # noqa: E402
+from django.db import transaction  # noqa: E402
 from django.utils import timezone  # noqa: E402
 from playwright.sync_api import sync_playwright  # noqa: E402
 
@@ -384,6 +391,84 @@ def main():
                 page.get_by_text("BTC/USDT", exact=True).first.wait_for()
                 page.locator(".realChart svg").wait_for()
                 print("PASS React unified trades + live chart")
+                external = ExternalObservation.objects.create(
+                    account=account,
+                    kind="fill",
+                    external_id="s31-browser-external",
+                    payload={"symbol": "BTC/USDT", "side": "buy", "qty": "0.001", "price": "65000"},
+                )
+                BalanceSnapshot.objects.create(
+                    exchange_account=account,
+                    asset=market.base_asset,
+                    wallet_scope="spot",
+                    free_balance=10,
+                    total_balance=10,
+                    captured_at=timezone.now(),
+                )
+                page.goto(base + "/app/#/trades")
+                page.locator(".clickRow").filter(has_text="خارج از CryptoSniper").first.click()
+                page.get_by_label("SL مدیریت", exact=True).fill("61750")
+                page.get_by_label("TP1 مدیریت", exact=True).fill("70000")
+                page.get_by_label("تأیید واگذاری مدیریت", exact=True).check()
+                page.get_by_role("button", name="واگذاری مدیریت خروج", exact=True).click()
+                page.get_by_role("button", name="توقف پایش جدید", exact=True).wait_for()
+                page.get_by_role("button", name="توقف پایش جدید", exact=True).click()
+                page.get_by_role("button", name="ادامه پایش", exact=True).wait_for()
+                page.get_by_role("button", name="ادامه پایش", exact=True).click()
+                page.get_by_role("button", name="توقف پایش جدید", exact=True).wait_for()
+                page.get_by_role("button", name="ویرایش شرایط", exact=True).click()
+                page.get_by_label("TP1 مدیریت", exact=True).fill("71000")
+                page.get_by_label("تأیید واگذاری مدیریت", exact=True).check()
+                page.get_by_role("button", name="ثبت شرایط", exact=True).click()
+                wait_for(
+                    lambda: ManagedSpotPosition.objects.filter(
+                        external_policy__observation=external, snapshot__targets__0__price="71000"
+                    ).exists()
+                )
+                with transaction.atomic():
+                    managed = ManagedSpotPosition.objects.get(external_policy__observation=external)
+                    proof = LiveSpotOrder.objects.create(
+                        owner=user,
+                        account=account,
+                        market=market,
+                        client_order_id="s31-browser-exit-proof",
+                        side="sell",
+                        order_type="limit",
+                        amount=Decimal("0.001"),
+                        price=Decimal("61750"),
+                        filled_amount=Decimal("0.0002"),
+                        average_price=Decimal("61750"),
+                        state="cancelled",
+                        external_order_id="s31-proof",
+                    )
+                    LiveExitAttempt.objects.create(
+                        position=managed,
+                        order=proof,
+                        sequence=1,
+                        reason="sl",
+                        trigger_price=Decimal("61750"),
+                    )
+                    managed.exited, managed.exit_sequence, managed.exit_latched = (
+                        Decimal("0.0002"),
+                        1,
+                        True,
+                    )
+                    managed.save()
+                page.goto(base + "/app/#/trades")
+                page.locator(".realChart text").filter(has_text="sl fill").first.wait_for()
+                page.wait_for_function("""() => [...document.querySelectorAll('.realChart text')]
+                    .some(e => e.textContent.includes('TP1') && e.textContent.includes('۷۱'))""")
+                page.locator(".realChart text").filter(has_text="SL").first.wait_for()
+                assert (
+                    page.locator(
+                        ".realChart svg"
+                    ).evaluate("""svg => [...svg.querySelectorAll('text')]
+                    .every(e => {const b=e.getBBox();return b.x >= 0 && b.x+b.width <= 1000;})""")
+                ), "Chart labels must remain inside the SVG"
+                page.screenshot(
+                    path=str(artifacts / "stage31-management-desktop.png"), full_page=True
+                )
+                print("PASS S31 React: explicit adoption, pause/resume, versioned edit")
 
                 for width in (320, 390, 768, 1440):
                     page.set_viewport_size({"width": width, "height": 900})
@@ -445,6 +530,8 @@ def main():
                 process.kill()
                 process.wait(timeout=5)
             log.close()
+            LiveExitAttempt.objects.filter(position__account__owner=user).delete()
+            ManagedSpotPosition.objects.filter(account__owner=user).delete()
             LiveSpotOrder.objects.filter(owner=user).delete()
             get_user_model().objects.filter(pk=user.pk).delete()
             Exchange.objects.filter(pk=account.exchange_id).delete()

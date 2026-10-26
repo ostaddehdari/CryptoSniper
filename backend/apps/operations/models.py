@@ -148,3 +148,95 @@ class PaperProviderOrder(models.Model):
 
     def __str__(self):
         return self.client_order_id
+
+
+class ManagedSpotPosition(models.Model):
+    """An explicitly authorized Spot-long inventory; order receipts are cumulative evidence."""
+
+    account = models.ForeignKey("exchanges.UserExchangeAccount", on_delete=models.PROTECT)
+    market = models.ForeignKey("exchanges.ExchangeMarket", on_delete=models.PROTECT)
+    entry_order = models.OneToOneField(
+        "exchanges.LiveSpotOrder",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="entry_position",
+    )
+    external_policy = models.OneToOneField(
+        ExternalTradePolicy,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="managed_position",
+    )
+    source_reference = models.CharField(max_length=120, blank=True)
+    snapshot = models.JSONField(default=dict)
+    acquired = models.DecimalField(max_digits=32, decimal_places=16, default=0)
+    exited = models.DecimalField(max_digits=32, decimal_places=16, default=0)
+    inventory_cap = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
+    effective_stop = models.DecimalField(max_digits=32, decimal_places=16)
+    high_water = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
+    break_even_applied = models.BooleanField(default=False)
+    trailing_active = models.BooleanField(default=False)
+    paused = models.BooleanField(default=False)
+    state = models.CharField(max_length=24, default="waiting_entry")
+    exit_latched = models.BooleanField(default=False)
+    exit_sequence = models.PositiveIntegerField(default=0)
+    version = models.PositiveIntegerField(default=1)
+    error_code = models.CharField(max_length=60, blank=True)
+    last_price = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
+    last_price_at = models.DateTimeField(null=True, blank=True)
+    last_checked_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    Q(entry_order__isnull=False, external_policy__isnull=True)
+                    | Q(entry_order__isnull=True, external_policy__isnull=False)
+                ),
+                name="managed_spot_one_source",
+            ),
+            models.UniqueConstraint(
+                fields=("account", "source_reference"),
+                condition=~Q(source_reference=""),
+                name="managed_spot_reference_unique",
+            ),
+            models.CheckConstraint(
+                condition=Q(acquired__gte=0)
+                & Q(exited__gte=0)
+                & Q(exited__lte=models.F("acquired")),
+                name="managed_spot_inventory_valid",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Managed Spot {self.pk} ({self.state})"
+
+    @property
+    def remaining(self):
+        return self.acquired - self.exited
+
+
+class LiveExitAttempt(models.Model):
+    position = models.ForeignKey(
+        ManagedSpotPosition, on_delete=models.PROTECT, related_name="exits"
+    )
+    order = models.OneToOneField(
+        "exchanges.LiveSpotOrder", on_delete=models.PROTECT, related_name="managed_exit"
+    )
+    sequence = models.PositiveIntegerField()
+    reason = models.CharField(max_length=16)
+    trigger_price = models.DecimalField(max_digits=32, decimal_places=16)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=("position", "sequence"), name="live_exit_sequence_unique"
+            )
+        ]
+
+    def __str__(self):
+        return f"Exit {self.position_id}:{self.sequence} ({self.reason})"

@@ -30,7 +30,7 @@ def _number(value, label):
     return number
 
 
-def validate_live_spot_intent(account, market, *, side, amount, price):
+def validate_live_spot_intent(account, market, *, side, amount, price, exclude_order_id=None):
     """Re-check every invariant at the durable boundary, not only in HTML forms."""
     amount = _number(amount, "مقدار")
     price = _number(price, "قیمت")
@@ -78,7 +78,24 @@ def validate_live_spot_intent(account, market, *, side, amount, price):
         required = notional * (Decimal("1") + fee_rate)
     else:
         required = amount
-    if balance.free_balance < required:
+    pending = LiveSpotOrder.objects.filter(
+        account=account, state__in=("pending", "submitting", "uncertain"), side=side
+    ).exclude(pk=exclude_order_id)
+    pending = (
+        pending.filter(market__quote_asset_id=asset_id)
+        if side == "buy"
+        else pending.filter(market__base_asset_id=asset_id)
+    )
+    reserved = sum(
+        (
+            o.amount * (o.price or Decimal(0)) * (1 + (o.market.taker_fee or Decimal(0)))
+            if side == "buy"
+            else o.amount - o.filled_amount
+            for o in pending.select_related("market")
+        ),
+        Decimal(0),
+    )
+    if balance.free_balance - reserved < required:
         raise ValidationError("موجودی آزاد برای این سفارش کافی نیست.")
     return amount, price
 
@@ -106,7 +123,10 @@ def queue_live_spot_order(owner, account, cleaned):
         raise ValidationError("Live trading روی سرور خاموش است.")
     from apps.operations.models import AccountControl
 
-    if AccountControl.objects.filter(account=account, paused=True).exists():
+    if (
+        not cleaned.get("protective_exit")
+        and AccountControl.objects.filter(account=account, paused=True).exists()
+    ):
         raise ValidationError("ورود جدید این حساب در وضعیت سیستم متوقف شده است.")
     market = cleaned["market"]
     amount, price = validate_live_spot_intent(
@@ -143,12 +163,26 @@ def _validate_receipt(order, receipt):
         raise InvalidProviderResponse("provider_order_symbol_mismatch")
     if receipt.side.lower() != order.side:
         raise InvalidProviderResponse("provider_order_side_mismatch")
+    if receipt.order_type.lower() != order.order_type:
+        raise InvalidProviderResponse("provider_order_type_mismatch")
+    if order.order_type == "limit" and receipt.price is not None and receipt.price != order.price:
+        raise InvalidProviderResponse("provider_order_price_mismatch")
     if receipt.amount != order.amount:
         raise InvalidProviderResponse("provider_order_amount_mismatch")
-    if receipt.filled_amount < 0 or receipt.filled_amount > order.amount:
+    if (
+        not receipt.filled_amount.is_finite()
+        or receipt.filled_amount < 0
+        or receipt.filled_amount > order.amount
+    ):
         raise InvalidProviderResponse("provider_order_fill_invalid")
     if receipt.client_order_id and receipt.client_order_id != order.client_order_id:
         raise InvalidProviderResponse("provider_client_order_id_mismatch")
+    if receipt.filled_amount > 0 and (
+        receipt.average_price is None
+        or not receipt.average_price.is_finite()
+        or receipt.average_price <= 0
+    ):
+        raise InvalidProviderResponse("provider_fill_price_missing")
     if not receipt.order_id:
         raise InvalidProviderResponse("provider_order_id_missing")
 
@@ -166,7 +200,9 @@ def execute_live_spot_order(order_id):
         )
         if order.state != LiveSpotOrder.State.PENDING:
             return {"status": order.state}
-        if not settings.LIVE_TRADING_ENABLED:
+        if not settings.LIVE_TRADING_ENABLED or (
+            hasattr(order, "managed_exit") and not settings.LIVE_EXIT_MANAGEMENT_ENABLED
+        ):
             order.state, order.error_code = LiveSpotOrder.State.FAILED, "live_disabled"
             order.save(update_fields=("state", "error_code", "updated_at"))
             return {"status": "failed"}
@@ -177,6 +213,7 @@ def execute_live_spot_order(order_id):
                 side=order.side,
                 amount=order.amount,
                 price=order.price,
+                exclude_order_id=order.pk,
             )
         except ValidationError:
             order.state, order.error_code = LiveSpotOrder.State.FAILED, "safety_gate_closed"
@@ -185,6 +222,7 @@ def execute_live_spot_order(order_id):
         order.state = LiveSpotOrder.State.SUBMITTING
         order.save(update_fields=("state", "updated_at"))
 
+    placement_started = False
     try:
         adapter = get_adapter(
             order.account.exchange.adapter_code,
@@ -198,6 +236,15 @@ def execute_live_spot_order(order_id):
             or permission.can_withdraw is not False
         ):
             raise ValidationError("مجوز Read+Spot بدون برداشت دیگر تأیید نمی‌شود.")
+        if hasattr(order, "managed_exit"):
+            matches = [
+                b
+                for b in adapter.fetch_balance()
+                if b.asset.upper() == order.market.base_asset.symbol
+            ]
+            if len(matches) != 1 or matches[0].free < order.amount:
+                raise ValidationError("موجودی تازه برای خروج کافی نیست.")
+        placement_started = True
         receipt = adapter.place_order(
             client_order_id=order.client_order_id,
             symbol=order.market.symbol,
@@ -218,11 +265,11 @@ def execute_live_spot_order(order_id):
         with transaction.atomic():
             locked = LiveSpotOrder.objects.select_for_update().get(pk=order_id)
             locked.state, locked.error_code = (
-                LiveSpotOrder.State.FAILED,
+                LiveSpotOrder.State.UNCERTAIN if placement_started else LiveSpotOrder.State.FAILED,
                 getattr(error, "code", "permanent_validation"),
             )
             locked.save(update_fields=("state", "error_code", "updated_at"))
-        return {"status": "failed"}
+        return {"status": locked.state}
     except (AdapterError, TimeoutError, OSError):
         # Provider may have accepted the request. Never submit a second copy automatically.
         with transaction.atomic():
@@ -231,18 +278,7 @@ def execute_live_spot_order(order_id):
             locked.save(update_fields=("state", "error_code", "updated_at"))
         return {"status": "uncertain"}
 
-    mapped = {
-        OrderStatus.OPEN: LiveSpotOrder.State.OPEN,
-        OrderStatus.PARTIAL: LiveSpotOrder.State.PARTIAL,
-        OrderStatus.FILLED: LiveSpotOrder.State.FILLED,
-        OrderStatus.CANCELLED: LiveSpotOrder.State.CANCELLED,
-    }
-    with transaction.atomic():
-        locked = LiveSpotOrder.objects.select_for_update().get(pk=order_id)
-        locked.external_order_id = receipt.order_id
-        locked.filled_amount = receipt.filled_amount
-        locked.average_price = receipt.average_price
-        locked.state = mapped[receipt.status]
-        locked.error_code = ""
-        locked.save()
+    from .reconciliation import apply_receipt
+
+    locked = apply_receipt(order_id, receipt)
     return {"status": locked.state, "external_order_id": locked.external_order_id}

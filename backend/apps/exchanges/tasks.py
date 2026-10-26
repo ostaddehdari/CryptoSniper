@@ -41,3 +41,27 @@ def dispatch_pending_live_spot_orders():
         execute_live_spot_order(order_id)
         processed += 1
     return {"processed": processed}
+
+
+@shared_task(name="exchanges.reconcile_live_spot_orders", acks_late=True, time_limit=90)
+def reconcile_live_spot_orders():
+    from apps.operations.leases import lease
+
+    from .reconciliation import reconcile_order
+
+    with lease("live-receipts", seconds=95) as acquired:
+        if not acquired:
+            return {"status": "busy"}
+        ids = list(
+            LiveSpotOrder.objects.exclude(state__in=("filled", "cancelled", "failed"))
+            .order_by("updated_at")
+            .values_list("pk", flat=True)[:20]
+        )
+        results = {}
+        for pk in ids:
+            try:
+                results[str(pk)] = reconcile_order(pk)
+            except Exception:
+                # Provider errors never include raw credential-bearing exception text.
+                results[str(pk)] = "unresolved"
+        return results

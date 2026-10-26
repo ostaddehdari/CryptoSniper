@@ -1463,7 +1463,7 @@
       "depends_on": [
         "S30"
       ],
-      "status": "not_started",
+      "status": "partial",
       "works": [
         {
           "id": "S31-W01",
@@ -1471,7 +1471,7 @@
           "title": "معاملات یکپارچه",
           "deliverables": "داخلی/خارجی، باز/بسته/بایگانی، جزئیات و فیلتر و sync واقعی.",
           "acceptance": "نوع منبع و وضعیت با شواهد صرافی همخوان باشد.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S31-W02",
@@ -1479,7 +1479,7 @@
           "title": "چرخه خروج واقعی",
           "deliverables": "برنامه TP/SL متصل به order/fill، مقدار باقی‌مانده و جلوگیری از فروش مضاعف.",
           "acceptance": "fill جزئی، لغو و restart با PostgreSQL/Worker آزموده شوند.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S31-W03",
@@ -1487,7 +1487,7 @@
           "title": "اجرای دو تریلینگ",
           "deliverables": "حرکت یکباره SL به Entry و Trailing درصدی با trigger انتخابی و حفظ stop در restart.",
           "acceptance": "stop ضعیف‌تر نشود و موتور از مرورگر مستقل باشد.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S31-W04",
@@ -1495,7 +1495,7 @@
           "title": "مدیریت معاملات خارجی",
           "deliverables": "پذیرش صریح مدیریت و ویرایش شرایط معتبر با حجم باقی‌مانده قابل‌تأیید.",
           "acceptance": "داده مبهم معامله واقعی فرض نشود؛ Adoption و pause ثبت audit داشته باشد.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S31-W05",
@@ -1503,7 +1503,7 @@
           "title": "نمودار و بازیابی",
           "deliverables": "Entry/TP/SL و markerها، منبع شفاف داده، تست قطع feed و recovery.",
           "acceptance": "تاریخچه مرجع به نام صرافی حساب نمایش داده نشود؛ stale آشکار باشد.",
-          "status": "not_started"
+          "status": "done"
         }
       ]
     },

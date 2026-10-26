@@ -238,3 +238,8 @@ class Stage24ManagedSourceUpgradeTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Stage31NginxUpgradeTests(Stage30NginxUpgradeTests):
+    installer = ROOT / "scripts/cryptosniper-stage31-react-run.sh"
+    stage = 31

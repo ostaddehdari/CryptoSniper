@@ -1,4 +1,3 @@
-# fmt: off
 """End-to-end smoke for the real React CryptoSniper workspace."""
 
 import os
@@ -19,11 +18,14 @@ BACKEND = ROOT / "backend"
 sys.path.insert(0, str(BACKEND))
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 os.environ["DJANGO_SETTINGS_MODULE"] = "config.settings.test"
+# Synthetic provider has no adapter/credentials; no exchange request can be sent.
+os.environ["LIVE_TRADING_ENABLED"] = "true"
 
 import django  # noqa: E402
 
 django.setup()
 
+from apps.accounts.models import TradingPreferences  # noqa: E402
 from apps.exchanges.models import (  # noqa: E402
     Asset,
     BalanceSnapshot,
@@ -32,7 +34,7 @@ from apps.exchanges.models import (  # noqa: E402
     LiveSpotOrder,
     UserExchangeAccount,
 )
-from apps.marketdata.models import HistoricalCandle  # noqa: E402
+from apps.marketdata.models import ExchangeFavorite, HistoricalCandle  # noqa: E402
 from apps.signals.models import RawSignal, Signal, SignalSource, SignalTarget  # noqa: E402
 from apps.tradeplans.models import TradePlan  # noqa: E402
 from django.contrib.auth import get_user_model  # noqa: E402
@@ -92,11 +94,12 @@ def seed_market(user):
         status=UserExchangeAccount.Status.CONNECTED,
         permissions={
             "can_read": True,
-            "can_trade_spot": False,
+            "can_trade_spot": True,
             "can_trade_margin": False,
             "can_withdraw": False,
             "ip_restricted": True,
         },
+        trading_enabled=True,
         last_verified_at=now,
         last_sync_at=now,
     )
@@ -190,6 +193,17 @@ def main():
     )
     account, market = seed_market(user)
     seed_signal(user, account, market)
+    TradingPreferences.objects.create(
+        owner=user, default_order_amount=75, trailing_trigger="tp2", trailing_distance_percent=2
+    )
+    eth, _ = Asset.objects.get_or_create(symbol="ETH")
+    ExchangeMarket.objects.create(
+        exchange=account.exchange,
+        symbol="ETH/USDT",
+        base_asset=eth,
+        quote_asset=market.quote_asset,
+        market_type="spot",
+    )
 
     LiveSpotOrder.objects.create(
         owner=user,
@@ -227,12 +241,10 @@ def main():
         )
         base = f"http://127.0.0.1:{port}"
         try:
+
             def ready():
                 try:
-                    return (
-                        httpx.get(base + "/health/ready/", timeout=2).status_code
-                        == 200
-                    )
+                    return httpx.get(base + "/health/ready/", timeout=2).status_code == 200
                 except httpx.TransportError:
                     return False
 
@@ -264,29 +276,90 @@ def main():
                 page.get_by_role("button", name="معامله جدید", exact=True).click()
                 page.get_by_role("heading", name="تعریف معامله واقعی").wait_for()
                 page.get_by_text("React Smoke Exchange", exact=True).wait_for()
-                market_select = page.get_by_label("بازار")
-                market_select.wait_for()
-                assert market_select.locator(f'option[value="{market.pk}"]').count() == 1
+                assert page.get_by_label("Entry", exact=True).input_value() == ""
+                page.get_by_label("بازار", exact=True).click()
+                page.get_by_role("option", name="BTC", exact=True).click()
                 page.locator(".realChart svg").wait_for()
-                page.get_by_text("Trailing SL", exact=False).wait_for()
-                page.get_by_text("شروع Trailing TP", exact=True).wait_for()
-
+                assert page.get_by_label("Entry", exact=True).input_value() == ""
+                assert page.get_by_label("اهرم", exact=True).is_disabled()
+                page.wait_for_function(
+                    """() => {
+                        const el = document.querySelector('[aria-label="شروع Trailing"]');
+                        return el?.value === "tp2";
+                    }"""
+                )
+                assert page.get_by_label("حجم ورود", exact=True).input_value() == "75"
                 page.get_by_label("Entry", exact=True).fill("65000")
                 page.get_by_label("TP1", exact=True).fill("70000")
-                page.get_by_label("Stop Loss", exact=True).fill("60000")
-                page.get_by_label("حجم ورود", exact=True).fill("100")
-                plans_before = TradePlan.objects.filter(owner=user).count()
-                page.get_by_role("button", name="ذخیره برنامه TP/SL").click()
-                wait_for(
-                    lambda: TradePlan.objects.filter(owner=user).count()
-                    == plans_before + 1
+                page.get_by_label("TP2", exact=True).fill("75000")
+                page.get_by_label("TP3", exact=True).fill("80000")
+                page.get_by_label("Stop Loss", exact=True).fill("61750")
+                page.wait_for_function(
+                    "document.querySelector('[data-fixloss-suggestion]')?.textContent.includes('۲۰۰')"
                 )
+                page.get_by_label("ریسک مجاز", exact=True).fill("2")
+                page.wait_for_function(
+                    "document.querySelector('[data-fixloss-suggestion]')?.textContent.includes('۴۰۰')"
+                )
+                assert page.get_by_label("حجم ورود", exact=True).input_value() == "75"
+                page.get_by_role("button", name="استفاده از پیشنهاد", exact=True).click()
+                assert page.get_by_label("حجم ورود", exact=True).input_value() == "400"
+                page.screenshot(path=str(artifacts / "stage30-manual-desktop.png"), full_page=True)
+                page.get_by_label("تأیید ارسال سفارش", exact=True).check()
+                dropped = {"done": False}
+
+                def lose_first_success(route):
+                    response = route.fetch()
+                    if response.status == 201 and not dropped["done"]:
+                        dropped["done"] = True
+                        route.abort()
+                    else:
+                        route.fulfill(response=response)
+
+                page.route("**/api/v1/manual/submit/", lose_first_success)
+                before = LiveSpotOrder.objects.filter(owner=user).count()
+                page.get_by_role("button", name="ارسال سفارش", exact=True).click()
+                page.locator(".modal input[type=password]").fill(password)
+                page.locator(".modal").get_by_role("button", name="تأیید", exact=True).click()
+                page.get_by_role("button", name="بررسی مجدد همان درخواست", exact=True).wait_for()
+                wait_for(lambda: LiveSpotOrder.objects.filter(owner=user).count() == before + 1)
+                page.get_by_role("button", name="بررسی مجدد همان درخواست", exact=True).click()
+                page.get_by_role("heading", name="معاملات یکپارچه").wait_for()
+                assert LiveSpotOrder.objects.filter(owner=user).count() == before + 1
                 plan = TradePlan.objects.filter(owner=user).latest("pk")
-                assert plan.exchange_account_id == account.pk
-                assert plan.market_id == market.pk
-                assert plan.trailing_sl is True
-                assert plan.trailing_trigger == "tp1"
-                print("PASS React account -> market -> chart -> real draft")
+                assert plan.status == "ready" and plan.trailing_sl and plan.percentage_trailing
+                assert plan.trailing_trigger == "tp2" and plan.trailing_distance == 2
+                assert LiveSpotOrder.objects.get(source_plan=plan).amount == Decimal(
+                    plan.approved_snapshot["quantity"]
+                )
+                page.unroute("**/api/v1/manual/submit/", lose_first_success)
+                print("PASS S30 live UI: empty Entry, automatic Fix Loss 200/400, server quantity")
+                print(
+                    "PASS S30 step-up resumes same request; lost success response creates one order"
+                )
+
+                page.get_by_role("navigation").get_by_role(
+                    "button", name="تنظیمات", exact=True
+                ).click()
+                page.get_by_role("button", name="ارزهای منتخب", exact=True).click()
+                page.get_by_role("button", name="＋ ETH", exact=True).click()
+                page.get_by_label("حذف ETH", exact=True).wait_for()
+                page.get_by_role("button", name="＋ BTC", exact=True).click()
+                page.get_by_label("حذف BTC", exact=True).wait_for()
+                page.locator(".favoriteRow").filter(has_text="BTC").drag_to(
+                    page.locator(".favoriteRow").filter(has_text="ETH")
+                )
+                wait_for(
+                    lambda: (
+                        list(
+                            ExchangeFavorite.objects.filter(owner=user)
+                            .order_by("position")
+                            .values_list("symbol", flat=True)
+                        )
+                        == ["BTC", "ETH"]
+                    )
+                )
+                print("PASS S30 per-exchange favorites drag/drop persists to PostgreSQL")
 
                 page.get_by_role("button", name="صندوق سیگنال").click()
                 page.get_by_text("React Smoke Signal", exact=False).first.wait_for()
@@ -357,4 +430,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-# fmt: on

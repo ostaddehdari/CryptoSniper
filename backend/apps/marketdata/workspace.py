@@ -115,7 +115,10 @@ def api_account_markets(request, pk):
     if q:
         rows = rows.filter(Q(base_asset__symbol__icontains=q) | Q(symbol__icontains=q))
     if request.GET.get("market_id"):
-        rows = rows.filter(pk=request.GET["market_id"])
+        try:
+            rows = rows.filter(pk=int(request.GET["market_id"]))
+        except ValueError:
+            return JsonResponse({"error": ["شناسه بازار معتبر نیست."]}, status=400)
     favorites = list(
         ExchangeFavorite.objects.filter(owner=request.user, exchange=account.exchange)
         .order_by("position", "pk")

@@ -66,7 +66,11 @@ def validate_live_spot_intent(account, market, *, side, amount, price):
         raise ValidationError("ارزش سفارش از Min Notional صرافی کمتر است.")
 
     asset_id = market.quote_asset_id if side == "buy" else market.base_asset_id
-    balance = account.balance_snapshots.filter(asset_id=asset_id, wallet_scope="spot").order_by("-captured_at").first()
+    balance = (
+        account.balance_snapshots.filter(asset_id=asset_id, wallet_scope="spot")
+        .order_by("-captured_at")
+        .first()
+    )
     if not balance or balance.captured_at < timezone.now() - timedelta(minutes=15):
         raise ValidationError("موجودی تازه نیست؛ ابتدا حساب صرافی را همگام‌سازی کنید.")
     if side == "buy":
@@ -89,9 +93,21 @@ def queue_live_spot_order(owner, account, cleaned):
     request_key = cleaned["request_key"]
     existing = LiveSpotOrder.objects.filter(owner=owner, request_key=request_key).first()
     if existing:
+        if (
+            existing.account_id != account.pk
+            or existing.market_id != cleaned["market"].pk
+            or existing.side != cleaned["side"]
+            or existing.amount != Decimal(str(cleaned["amount"]))
+            or existing.price != Decimal(str(cleaned["price"]))
+        ):
+            raise ValidationError("این شناسه قبلاً برای مشخصات سفارش دیگری استفاده شده است.")
         return existing, False
     if not settings.LIVE_TRADING_ENABLED:
         raise ValidationError("Live trading روی سرور خاموش است.")
+    from apps.operations.models import AccountControl
+
+    if AccountControl.objects.filter(account=account, paused=True).exists():
+        raise ValidationError("ورود جدید این حساب در وضعیت سیستم متوقف شده است.")
     market = cleaned["market"]
     amount, price = validate_live_spot_intent(
         account,
@@ -105,6 +121,7 @@ def queue_live_spot_order(owner, account, cleaned):
         account=account,
         market=market,
         request_key=request_key,
+        source_plan=cleaned.get("source_plan"),
         client_order_id=f"cs-live-{owner.pk}-{request_key.hex[:24]}",
         side=cleaned["side"],
         order_type="limit",

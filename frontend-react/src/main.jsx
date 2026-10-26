@@ -35,7 +35,7 @@ async function api(path, opts={}){
   const res=await fetch(BASE+path,{credentials:"same-origin",...opts,method,headers,body});
   let data={}; try{data=await res.json()}catch{}
   if(res.status===401){location.href=BASE+"/auth/login/";throw new Error("authentication_required")}
-  if(!res.ok){const e=new Error(data.error?.[0]||data.error||Object.values(data.errors||{})?.[0]?.[0]?.message||"خطای درخواست");e.status=res.status;e.data=data;throw e}
+  if(!res.ok){const e=new Error(Object.values(data.errors||data.fields||{})?.[0]?.[0]?.message||(Array.isArray(data.error)?data.error[0]:data.error)||"خطای درخواست");e.status=res.status;e.data=data;throw e}
   return data;
 }
 function useHashPage(){
@@ -133,11 +133,10 @@ function Trades({decimals,notify,setPage}){
     try{
       const d=await api(`/api/v1/trades/?view=${next}`);
       setData(d);
-      if(selected&&!d.trades?.some(x=>x.key===selected.key))setSelected(null);
-      if(!selected&&d.trades?.length)setSelected(d.trades[0]);
+      setSelected(previous=>d.trades?.find(x=>x.key===previous?.key)||d.trades?.[0]||null);
     }catch(e){notify(e.message)}
   };
-  useEffect(()=>{load(view)},[view]);
+  useEffect(()=>{load(view);const timer=setInterval(()=>load(view),5000);return()=>clearInterval(timer)},[view]);
   const refresh=async()=>{
     try{
       setBusy(true);
@@ -250,6 +249,7 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
     }finally{submitting.current=false;setBusy(false)}
   };
   const submit=()=>{
+    if(!navigator.onLine){setFormError("اتصال قطع است؛ درخواست ارسال نشد.");return}
     if(!confirmed){setFormError("تأیید ارسال سفارش را فعال کنید.");return}
     if(!market){setFormError("بازار را انتخاب کنید.");return}
     if(market.market_type!=="spot"){setFormError("ارسال سفارش این نسخه فقط برای Spot پشتیبانی می‌شود.");return}
@@ -258,6 +258,8 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
   return <div className="manualLayout"><div className="card tradeForm">
     <div className="cardHead"><div><h3>تعریف معامله واقعی</h3><p>بازار حساب انتخابی و مدیریت ریسک</p></div><span className="liveBadge"><span/> LIVE</span></div>
     {formError&&<ErrorBox text={formError}/>}
+    <p className="warningFoot">ثبت برنامهٔ TP/SL به‌تنهایی سفارش خروج حفاظتی در صرافی ایجاد نمی‌کند.</p>
+    {!boot?.live_trading_enabled&&<p className="riskDetails">ارسال واقعی روی سرور فعال نیست.</p>}
     <fieldset className="tradeFields" disabled={busy||uncertain}>
       <div className="formGrid">
         <div className="field"><label>حساب صرافی</label><select aria-label="حساب صرافی" value={accountId} onChange={e=>changeAccount(e.target.value)}>{accounts.map(a=><option key={a.id} value={a.id}>{a.exchange_name} · {a.label}</option>)}</select></div>
@@ -283,13 +285,14 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
 function FavoriteEditor({notify}){
   const [accounts,setAccounts]=useState([]),[exchange,setExchange]=useState("");
   const [symbols,setSymbols]=useState([]),[search,setSearch]=useState(""),[results,setResults]=useState([]),[error,setError]=useState("");
-  const dragged=useRef(null),scope=useRef(0);
+  const dragged=useRef(null),scope=useRef(0),saveLock=useRef(false);
+  const [saving,setSaving]=useState(false);
   useEffect(()=>{let active=true;api("/api/v1/ui/bootstrap/").then(d=>{if(!active)return;const rows=Array.from(new Map((d.accounts||[]).map(a=>[a.exchange,a])).values());setAccounts(rows);setExchange(rows[0]?.exchange||"")});return()=>{active=false}},[]);
   useEffect(()=>{const version=++scope.current;setSymbols([]);setResults([]);if(!exchange)return;api(`/api/v1/ui/favorites/?exchange=${exchange}`).then(d=>{if(version===scope.current)setSymbols(d.symbols)}).catch(e=>setError(e.message));},[exchange]);
   useEffect(()=>{if(!exchange)return;let active=true;const a=accounts.find(a=>a.exchange===exchange);if(!a)return;const t=setTimeout(()=>api(`/api/v1/exchange-accounts/${a.id}/markets/?q=${encodeURIComponent(search)}`).then(d=>{if(active)setResults(Array.from(new Map(d.markets.map(m=>[m.base,m])).values()))}).catch(e=>setError(e.message)),180);return()=>{active=false;clearTimeout(t)}},[exchange,search,accounts]);
-  const save=async next=>{const code=exchange;try{setError("");const d=await api("/api/v1/ui/favorites/",{method:"POST",body:{exchange:code,symbols:next}});if(code===exchange)setSymbols(d.symbols);notify("ارزهای منتخب ذخیره شدند")}catch(e){setError(e.message)}};
+  const save=async next=>{if(saveLock.current)return;saveLock.current=true;setSaving(true);const code=exchange,version=scope.current;try{setError("");const d=await api("/api/v1/ui/favorites/",{method:"POST",body:{exchange:code,symbols:next}});if(version===scope.current)setSymbols(d.symbols);notify("ارزهای منتخب ذخیره شدند")}catch(e){setError(e.message)}finally{saveLock.current=false;setSaving(false)}};
   const move=(from,to)=>{if(from===to||from===null)return;const next=[...symbols];next.splice(to,0,next.splice(from,1)[0]);save(next)};
-  return <><div className="cardHead"><div><h3>ارزهای منتخب هر صرافی</h3><p>برای ترتیب، ردیف‌ها را بکشید؛ دکمه‌های جابه‌جایی نیز در دسترس‌اند.</p></div></div>{error&&<ErrorBox text={error}/>}<div className="formGrid"><div className="field"><label>صرافی</label><select aria-label="صرافی ارزهای منتخب" value={exchange} onChange={e=>{setExchange(e.target.value);setSearch("")}}>{accounts.map(a=><option key={a.exchange} value={a.exchange}>{a.exchange_name}</option>)}</select></div><div className="field"><label>جستجوی ارز</label><input aria-label="جستجوی ارز منتخب" value={search} onChange={e=>setSearch(e.target.value)}/></div></div><div className="favoriteRows">{symbols.map((symbol,i)=><div className="favoriteRow" key={symbol} draggable onDragStart={()=>{dragged.current=i}} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();move(dragged.current,i);dragged.current=null}}><GripVertical size={17}/><b>{symbol}</b><button type="button" className="iconBtn" aria-label={`بالا ${symbol}`} disabled={i===0} onClick={()=>move(i,i-1)}><ChevronRight size={16}/></button><button type="button" className="iconBtn" aria-label={`پایین ${symbol}`} disabled={i===symbols.length-1} onClick={()=>move(i,i+1)}><ChevronLeft size={16}/></button><button type="button" className="iconBtn" aria-label={`حذف ${symbol}`} onClick={()=>save(symbols.filter(s=>s!==symbol))}><Trash2 size={16}/></button></div>)}</div><div className="favoriteResults">{results.filter(m=>!symbols.includes(m.base)).map(m=><button type="button" key={m.id} className="softBtn" onClick={()=>save([...symbols,m.base])}>＋ {m.base}</button>)}</div></>;
+  return <><div className="cardHead"><div><h3>ارزهای منتخب هر صرافی</h3><p>برای ترتیب، ردیف‌ها را بکشید؛ دکمه‌های جابه‌جایی نیز در دسترس‌اند.</p></div></div>{error&&<ErrorBox text={error}/>}<div className="formGrid"><div className="field"><label>صرافی</label><select aria-label="صرافی ارزهای منتخب" value={exchange} onChange={e=>{setExchange(e.target.value);setSearch("")}}>{accounts.map(a=><option key={a.exchange} value={a.exchange}>{a.exchange_name}</option>)}</select></div><div className="field"><label>جستجوی ارز</label><input aria-label="جستجوی ارز منتخب" value={search} onChange={e=>setSearch(e.target.value)}/></div></div><div className="favoriteRows">{symbols.map((symbol,i)=><div className="favoriteRow" key={symbol} draggable={!saving} onDragStart={()=>{dragged.current=i}} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();move(dragged.current,i);dragged.current=null}}><GripVertical size={17}/><b>{symbol}</b><button type="button" className="iconBtn" aria-label={`بالا ${symbol}`} disabled={saving||i===0} onClick={()=>move(i,i-1)}><ChevronRight size={16}/></button><button type="button" className="iconBtn" aria-label={`پایین ${symbol}`} disabled={saving||i===symbols.length-1} onClick={()=>move(i,i+1)}><ChevronLeft size={16}/></button><button type="button" className="iconBtn" aria-label={`حذف ${symbol}`} disabled={saving} onClick={()=>save(symbols.filter(s=>s!==symbol))}><Trash2 size={16}/></button></div>)}</div><div className="favoriteResults">{results.filter(m=>!symbols.includes(m.base)).map(m=><button type="button" key={m.id} className="softBtn" disabled={saving} onClick={()=>save([...symbols,m.base])}>＋ {m.base}</button>)}</div></>;
 }
 
 function ManualPlans({notify,setPage,setManualSeed}){const [plans,setPlans]=useState([]);const load=()=>api("/api/v1/ui/manual-plans/").then(d=>setPlans(d.plans||[])).catch(e=>notify(e.message));useEffect(()=>{load()},[]);const edit=x=>{setManualSeed({...x,plan_id:x.id});setPage("manual")};const confirmPlan=async x=>{try{await api(`/api/v1/manual/plans/${x.id}/confirm/`,{method:"POST",body:{revision:x.revision}});notify(`برنامه #${x.id} تأیید شد؛ هنوز سفارشی ارسال نشده است.`);load()}catch(e){notify(e.message)}};return <div className="card"><div className="cardHead"><div><h3>برنامه‌های معامله</h3><p>برنامه‌ها تنظیمات معامله‌اند؛ تأیید برنامه به‌تنهایی سفارش واقعی ارسال نمی‌کند.</p></div><div className="row gap"><button className="iconBtn" onClick={load}><RefreshCw size={17}/></button><button className="primary" onClick={()=>{setManualSeed(null);setPage("manual")}}><PlusCircle size={17}/> برنامه جدید</button></div></div><div className="tableScroll"><table><thead><tr><th>بازار</th><th>حساب</th><th>جهت</th><th>Entry</th><th>TP / SL</th><th>حجم</th><th>اهرم</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>{plans.map(x=><tr key={x.id}><td><b>{(x.symbol||"").replace("/USDT","")}</b><small className="blockMuted">{x.market_type}</small></td><td>{x.exchange} · {x.account}</td><td>{x.side==="long"?"لانگ":"شورت"}</td><td>{x.entry}</td><td><span className="up">TP1 {x.tp1}</span><small className="blockMuted down">SL {x.stop_loss}</small></td><td>{fmt(x.capital,2)} USDT</td><td>x{Number(x.leverage||1).toFixed(0)}</td><td><span className="pill">{x.status==="ready"?"تأییدشده":"پیش‌نویس"}</span></td><td><div className="row gap">{x.status==="draft"&&<button className="softBtn" onClick={()=>edit(x)}>ویرایش</button>}{x.status==="draft"&&<button className="primary" onClick={()=>confirmPlan(x)}><CheckCircle2 size={15}/> تأیید</button>}</div></td></tr>)}</tbody></table>{!plans.length&&<Empty/>}</div></div>}
@@ -369,7 +372,7 @@ function SignalInbox({notify,boot}){
   const [reason,setReason]=useState(""),[edit,setEdit]=useState(null),[markets,setMarkets]=useState([]);
   const [view,setView]=useState("active"),[layout,setLayout]=useState("cards");
   const load=async(next=view)=>{try{const d=await api(`/api/v1/inbox/?view=${next}`);setItems(d.items||[]);if(selected&&!d.items?.some(x=>x.id===selected)){setSelected(null);setDetail(null)}}catch(e){notify(e.message)}};
-  useEffect(()=>{load(view)},[view]);
+  useEffect(()=>{load(view);const timer=setInterval(()=>load(view),5000);return()=>clearInterval(timer)},[view]);
   const open=async id=>{setSelected(id);try{const d=await api(`/api/v1/inbox/${id}/`);setDetail(d.signal);const z=d.signal.structured||{};setEdit({account_id:z.account_id||"",market_id:z.market_id||"",side:z.side||"long",entry_price:z.entry||"",stop_loss:z.stop_loss||"",tp1:z.targets?.[0]?.price||"",tp2:z.targets?.[1]?.price||"",tp3:z.targets?.[2]?.price||""});if(z.account_id){const m=await api(`/api/v1/exchange-accounts/${z.account_id}/markets/`);setMarkets(m.markets||[])}}catch(e){notify(e.message)}};
   const changeAccount=async v=>{setEdit({...edit,account_id:v,market_id:""});try{const m=await api(`/api/v1/exchange-accounts/${v}/markets/`);setMarkets(m.markets||[])}catch(e){notify(e.message)}};
   const action=async act=>{if(!detail)return;try{const d=await api(`/api/v1/inbox/${detail.id}/action/`,{method:"POST",body:{revision:detail.revision,action:act,reason}});setDetail(d.signal);setReason("");load();notify(act==="approve"?"سیگنال تأیید شد":"سیگنال رد شد")}catch(e){notify(e.message)}};

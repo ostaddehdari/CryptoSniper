@@ -17,7 +17,7 @@ from apps.exchanges.models import BalanceSnapshot, ExchangeMarket, UserExchangeA
 def positive(value, label):
     try:
         number = Decimal(str(value))
-        if not number.is_finite() or number <= 0 or number.adjusted() > 15:
+        if not number.is_finite() or number <= 0 or not -16 <= number.adjusted() <= 15:
             raise ValueError
         return number
     except (InvalidOperation, ValueError, TypeError) as error:

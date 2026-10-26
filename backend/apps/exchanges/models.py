@@ -239,6 +239,13 @@ class LiveSpotOrder(models.Model):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     account = models.ForeignKey(UserExchangeAccount, on_delete=models.PROTECT)
     market = models.ForeignKey(ExchangeMarket, on_delete=models.PROTECT)
+    source_plan = models.ForeignKey(
+        "tradeplans.TradePlan",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="live_entry_orders",
+    )
     request_key = models.UUIDField(default=uuid.uuid4)
     client_order_id = models.CharField(max_length=80)
     external_order_id = models.CharField(max_length=120, blank=True)

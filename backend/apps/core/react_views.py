@@ -6,6 +6,7 @@ import re
 import uuid
 from decimal import Decimal, InvalidOperation
 
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -402,6 +403,8 @@ def api_bootstrap(request):
     watchlists = list(Watchlist.objects.filter(owner=request.user).values("id", "name"))
     return JsonResponse(
         {
+            "live_trading_enabled": settings.LIVE_TRADING_ENABLED,
+            "automatic_exits_active": False,
             "user": {
                 "id": request.user.pk,
                 "name": request.user.preferred_name,
@@ -761,6 +764,7 @@ def _live_order_payload(item):
     return {
         "id": item.pk,
         "source": "cryptosniper",
+        "plan_id": item.source_plan_id,
         "exchange": item.account.exchange.code,
         "account": item.account.label,
         "symbol": item.market.symbol,

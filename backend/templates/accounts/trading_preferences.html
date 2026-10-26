@@ -1,6 +1,16 @@
-{% extends 'shell.html' %}{% block title %}پیش‌فرض‌های معامله | CryptoSniper{% endblock %}{% block breadcrumb %}تنظیمات / معامله{% endblock %}{% block content %}
-<div class="page-heading"><div><span class="eyebrow">TRADING DEFAULTS</span><h1>پیش‌فرض‌های معامله</h1><p class="muted">این مقادیر نقطه شروع فرم‌های آینده هستند و هیچ سفارش واقعی ایجاد نمی‌کنند.</p></div></div>
-{% if messages %}{% for message in messages %}<div class="notice notice-success" role="status">{{ message }}</div>{% endfor %}{% endif %}
-<div class="settings-layout">{% include 'accounts/_settings_tabs.html' %}<section class="panel settings-panel"><div class="settings-summary"><strong>توزیع سود پایه</strong><span>TP1: ۱۰٪</span><span>TP2: ۱۰٪</span><span>TP3: ۸۰٪</span></div><form method="post" class="settings-form trading-form">{% csrf_token %}
-{% for field in form %}<div class="field {% if field.field.widget.input_type == 'checkbox' %}checkbox-field{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>{% endfor %}{% for error in form.non_field_errors %}<div class="form-error" role="alert">{{ error }}</div>{% endfor %}
-<button class="button button-primary" type="submit">ذخیره پیش‌فرض‌ها</button></form></section></div>{% endblock %}
+{% extends 'shell.html' %}{% block title %}پیش‌فرض‌های معامله | CryptoSniper{% endblock %}{% block content %}
+<section class="s24-page">
+  <div class="s24-section-head"><div><h1>پیش‌فرض‌های معامله</h1><p>مقادیر پایه فرم معامله؛ بدون ایجاد سفارش واقعی.</p></div><span class="s24-status">TRADING DEFAULTS</span></div>
+  {% if messages %}{% for message in messages %}<div class="s24-panel s24-notice">{{ message }}</div>{% endfor %}{% endif %}
+  <div class="s24-grid s24-trades-focus">
+    <aside class="s24-panel">
+      <div class="s24-panel-head"><strong>توزیع سود پایه</strong><span class="s24-status">10 / 10 / 80</span></div>
+      <div class="s24-detail-facts"><div class="s24-fact"><span>TP1</span><strong>10%</strong></div><div class="s24-fact"><span>TP2</span><strong>10%</strong></div><div class="s24-fact"><span>TP3</span><strong>80%</strong></div><div class="s24-fact"><span>Trailing SL</span><strong>TP1 → Entry</strong></div></div>
+    </aside>
+    <article class="s24-panel">
+      <div class="s24-panel-head"><strong>تنظیمات معامله</strong><span class="s24-muted">DEFAULTS</span></div>
+      <form method="post" class="s24-trade-form">{% csrf_token %}{% for field in form %}<label class="{% if field.field.widget.input_type == 'checkbox' %}s24-check{% endif %}">{{ field.label }}{{ field }}{% for error in field.errors %}<small style="color:#d54848">{{ error }}</small>{% endfor %}</label>{% endfor %}{% for error in form.non_field_errors %}<div style="color:#d54848">{{ error }}</div>{% endfor %}<button class="s24-button primary">ذخیره پیش‌فرض‌ها</button></form>
+    </article>
+  </div>
+</section>
+{% endblock %}

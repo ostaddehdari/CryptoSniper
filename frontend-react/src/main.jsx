@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import "./styles.css";
 import "./stage25.css";
+import "./stage29.css";
+import { resolvePage } from "./routes.js";
 
 const BASE = (typeof window.__CS_BASE__ === "string" ? window.__CS_BASE__ : "/cryptosniper").replace(/\/$/, "");
 const fmt=(v,d=2)=>Number(v||0).toLocaleString("fa-IR",{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -35,10 +37,10 @@ async function api(path, opts={}){
   return data;
 }
 function useHashPage(){
-  const get=()=>location.hash.replace(/^#\/?/,"").split("?")[0]||window.__CS_INITIAL_PAGE__||"dashboard";
+  const get=()=>resolvePage(location.hash,window.__CS_INITIAL_PAGE__);
   const [page,setState]=useState(get);
   useEffect(()=>{const fn=()=>setState(get());addEventListener("hashchange",fn);return()=>removeEventListener("hashchange",fn)},[]);
-  const setPage=p=>{location.hash="#/"+p;setState(p)};
+  const setPage=p=>{const next=resolvePage(p);location.hash="#/"+next;setState(next)};
   return [page,setPage];
 }
 
@@ -56,26 +58,27 @@ function App(){
   const toggle=()=>{const v=!collapsed;setCollapsed(v);localStorage.setItem("cs_sidebar_collapsed",v?"1":"0")};
   const updateDecimals=v=>{setDecimals(v);localStorage.setItem("cs_decimals",String(v))};
   const menu=[
-    ["dashboard","نمای کلی",LayoutDashboard],["trades","معاملات",ArrowLeftRight],["manual","معامله دستی",PlusCircle],["plans","برنامه‌های معامله",Save],
-    ["smart","تحلیل سیگنال",Sparkles],["inbox","صندوق سیگنال",Inbox],["exchanges","صرافی‌ها",PlugZap],
-    ["wallets","کیف پول‌ها و راهنما",WalletCards],["watchlist","دیده‌بان و بازارها",Radar],["telegram","تلگرام و سیگنال‌ها",MessageCircle],
-    ["alerts","هشدارها",Bell],["reports","گزارش‌ها",BarChart3],["operations","وضعیت سیستم",ServerCog],["settings","تنظیمات",Settings],
+    ["dashboard","نمای کلی",LayoutDashboard],["trades","معاملات",ArrowLeftRight],
+    ["inbox","صندوق سیگنال",Inbox],["exchanges","صرافی‌ها",PlugZap],
+    ["telegram","تلگرام و سیگنال‌ها",MessageCircle],["alerts","هشدارها",Bell],
+    ["reports","گزارش‌ها",BarChart3],["operations","وضعیت سیستم",ServerCog],["settings","تنظیمات",Settings],
   ];
-  const title=menu.find(x=>x[0]===page)?.[1]||"CryptoSniper";
+  const title=["manual","smart"].includes(page)?"معامله جدید":menu.find(x=>x[0]===page)?.[1]||"CryptoSniper";
   if(loading) return <FullLoading/>;
   return <div className="app">
     <aside className={"sidebar "+(collapsed?"collapsed":"")}>
       <div className="brand"><div className="logoMark"><ChartCandlestick size={21}/></div>{!collapsed&&<div><strong>CryptoSniper</strong><span>مرکز کنترل معاملات واقعی</span></div>}</div>
-      <button className="collapseBtn" onClick={toggle}>{collapsed?<ChevronLeft size={18}/>:<ChevronRight size={18}/>}</button>
-      <nav>{menu.map(([id,label,Icon])=><button key={id} className={"navItem "+(page===id?"active":"")} onClick={()=>setPage(id)} title={label}><Icon size={19}/>{!collapsed&&<span>{label}</span>}</button>)}</nav>
-      <div className="sidebarFoot"><button className="navItem" onClick={()=>setPage("settings")}><UserCircle2 size={19}/>{!collapsed&&<span>{boot?.user?.name||"حساب کاربری"}</span>}</button><a className="navItem dangerLite" href={BASE+"/auth/logout/"}><LogOut size={19}/>{!collapsed&&<span>خروج</span>}</a></div>
+      <button className="collapseBtn" aria-label="تغییر عرض فهرست" onClick={toggle}>{collapsed?<ChevronLeft size={18}/>:<ChevronRight size={18}/>}</button>
+      <nav aria-label="ناوبری اصلی">{menu.map(([id,label,Icon])=><button key={id} aria-current={page===id?"page":undefined} className={"navItem "+(page===id?"active":"")} onClick={()=>setPage(id)} title={label}><Icon size={19}/>{!collapsed&&<span>{label}</span>}</button>)}</nav>
+      <div className="sidebarFoot"><button className="navItem" onClick={()=>setPage("settings")}><UserCircle2 size={19}/>{!collapsed&&<span>{boot?.user?.name||"حساب کاربری"}</span>}</button><form method="post" action={BASE+"/auth/logout/"}><input type="hidden" name="csrfmiddlewaretoken" value={decodeURIComponent(cookie("csrftoken")||cookie("cryptosniper_csrftoken"))}/><button type="submit" className="navItem dangerLite" aria-label="خروج"><LogOut size={19}/>{!collapsed&&<span>خروج</span>}</button></form></div>
     </aside>
     <main className={"main "+(collapsed?"wide":"")}>
-      <header className="topbar"><div><h1>{title}</h1><p>{page==="dashboard"?"همه حساب‌ها، معاملات، سیگنال‌ها و هشدارها در یک نما":"CryptoSniper · حساب واقعی"}</p></div><div className="topActions"><div className="ticker"><span>USDT / USD</span><b>{ticker.usdt_usd?fmt(ticker.usdt_usd,4):"—"}</b></div><div className="ticker"><span>USDT / تومان</span><b>{ticker.usdt_toman?Number(ticker.usdt_toman).toLocaleString("fa-IR"):"—"}</b></div><button className="iconBtn notification" onClick={()=>setPage("alerts")}><Bell size={19}/>{boot?.unread_notifications>0&&<span className="badge">{boot.unread_notifications}</span>}</button><button className="primary" onClick={()=>setPage("manual")}><PlusCircle size={18}/> معامله جدید</button></div></header>
+      <header className="topbar"><div><h1>{title}</h1><p>{page==="dashboard"?"همه حساب‌ها، معاملات، سیگنال‌ها و هشدارها در یک نما":"CryptoSniper · حساب واقعی"}</p></div><div className="topActions"><div className="ticker"><span>USDT / USD</span><b>{ticker.usdt_usd?fmt(ticker.usdt_usd,4):"—"}</b></div><div className="ticker"><span>USDT / تومان</span><b>{ticker.usdt_toman?Number(ticker.usdt_toman).toLocaleString("fa-IR"):"—"}</b></div><button aria-label="اعلان‌ها" className="iconBtn notification" onClick={()=>setPage("alerts")}><Bell size={19}/>{boot?.unread_notifications>0&&<span className="badge">{boot.unread_notifications>99?"99+":boot.unread_notifications}</span>}</button></div></header>
       <section className="content">
         {error&&<ErrorBox text={error}/>}
         {page==="dashboard"&&<Dashboard boot={boot} decimals={decimals} refreshBoot={refresh} setPage={setPage}/>}
-        {page==="trades"&&<Trades decimals={decimals} notify={notify}/>}
+        {page==="trades"&&<Trades decimals={decimals} notify={notify} setPage={setPage}/>}
+        {["manual","smart"].includes(page)&&<div className="card newTradeTabs"><div className="tabs" aria-label="نوع معامله جدید"><button className={page==="manual"?"active":""} onClick={()=>setPage("manual")}>معامله دستی</button><button className={page==="smart"?"active":""} onClick={()=>setPage("smart")}>تحلیل سیگنال</button></div></div>}
         {page==="manual"&&<Manual boot={boot} decimals={decimals} notify={notify} requestStepUp={()=>setStepUp(true)} seed={manualSeed}/>}
         {page==="plans"&&<ManualPlans notify={notify} setPage={setPage} setManualSeed={setManualSeed}/>}
         {page==="smart"&&<SmartPaste notify={notify} setPage={setPage} setManualSeed={setManualSeed}/>}
@@ -118,7 +121,7 @@ function Dashboard({boot,decimals,refreshBoot,setPage}){
 }
 function DashboardTabs({extra,decimals,setPage}){const [tab,setTab]=useState("trades");return <div className="card"><div className="tabs">{[["trades","آخرین معاملات"],["signals","آخرین سیگنال‌ها"],["alerts","آخرین هشدارها"],["notifications","اعلان‌ها"]].map(([id,l])=><button className={tab===id?"active":""} onClick={()=>setTab(id)} key={id}>{l}</button>)}</div>{tab==="trades"&&<TradesTable rows={extra.orders.slice(0,8)} decimals={decimals}/>} {tab==="signals"&&<SignalCards items={extra.signals.slice(0,6)} onMore={()=>setPage("inbox")}/>} {tab==="alerts"&&<div className="simpleList">{extra.alerts.slice(0,8).map(x=><div key={x.id}><b>{x.title}</b><span>{x.kind} · {x.threshold}</span></div>)}</div>} {tab==="notifications"&&<div className="simpleList">{extra.notifications.slice(0,8).map(x=><div key={x.id}><b>{x.title}</b><span>{x.body}</span></div>)}</div>}</div>}
 
-function Trades({decimals,notify}){
+function Trades({decimals,notify,setPage}){
   const [data,setData]=useState({trades:[],counts:{}});
   const [view,setView]=useState("active");
   const [selected,setSelected]=useState(null);
@@ -153,7 +156,7 @@ function Trades({decimals,notify}){
     <div className="card">
       <div className="cardHead">
         <div><h3>معاملات یکپارچه</h3><p>Internal · Live · External در یک فهرست</p></div>
-        <div className="row gap"><div className="range">{[["active","فعال"],["archive","بایگانی"],["all","همه"]].map(([v,l])=><button key={v} className={view===v?"active":""} onClick={()=>setView(v)}>{l}</button>)}</div><button className="softBtn" disabled={busy} onClick={refresh}><RefreshCw size={17}/> تازه‌سازی واقعی</button></div>
+        <div className="row gap"><button className="primary" onClick={()=>setPage("manual")}><PlusCircle size={18}/> معامله جدید</button><div className="range">{[["active","فعال"],["archive","بایگانی"],["all","همه"]].map(([v,l])=><button key={v} className={view===v?"active":""} onClick={()=>setView(v)}>{l}</button>)}</div><button className="softBtn" disabled={busy} onClick={refresh}><RefreshCw size={17}/> تازه‌سازی واقعی</button></div>
       </div>
       <div className="tableScroll"><table><thead><tr><th>بازار</th><th>مبدأ</th><th>جهت</th><th>Entry</th><th>وضعیت</th><th>زمان</th><th></th></tr></thead><tbody>
         {rows.map(x=><tr key={x.key} onClick={()=>setSelected(x)} className={"clickRow "+(selected?.key===x.key?"selectedRow":"")}><td><b>{x.symbol||"—"}</b><small className="blockMuted">{x.exchange}</small></td><td><span className={"pill "+(x.kind==="external"?"external":"")}>{x.origin_label}</span></td><td>{x.side||"—"}</td><td>{x.entry||"—"}</td><td><Status value={x.state}/></td><td>{dt(x.updated_at)}</td><td><button className="linkBtn dangerLite" onClick={e=>{e.stopPropagation();archive(x)}}>{x.archived_at?"بازیابی":"بایگانی"}</button></td></tr>)}

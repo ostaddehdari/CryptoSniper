@@ -7,7 +7,7 @@
   ],
   "current_stage": "S29",
   "next_stage": "S30",
-  "last_completed_work": "S23-W05",
+  "last_completed_work": "S29-W05",
   "implementation_started": true,
   "stage_results": {
     "S01": {
@@ -1186,15 +1186,50 @@
       "implementation": "Five stabilization works are code-complete: manual market/default/trailing semantics, explicit External Trade adoption, Inbox soft-trash and approve-to-trade analytics, exchange/Broker error handling and a hardened durable Spot order boundary. Exact-source CI/release and VPS acceptance are recorded separately."
     },
     "S29": {
-      "status": "in_progress",
-      "completed_works": [],
-      "checks": [],
-      "blockers": [],
+      "status": "partial",
+      "completed_works": [
+        "S29-W01",
+        "S29-W02",
+        "S29-W03",
+        "S29-W04",
+        "S29-W05"
+      ],
+      "checks": [
+        {
+          "name": "GitHub CI PostgreSQL + Redis + React browser",
+          "status": "passed",
+          "tested_commit": "69fb18cc5591ecbd8f80f648c8ad0ed0c45545ae",
+          "run_url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/40342500209",
+          "pytest_testcases": 336,
+          "responsive_widths": [
+            320,
+            390,
+            768,
+            1440
+          ],
+          "artifact_id": 12659028621
+        },
+        {
+          "name": "Stage29 cumulative release + SHA256 + installer --check",
+          "status": "passed",
+          "release_tag": "stage29-react-v0.29.0rc1-deploy-r1",
+          "archive_sha256": "5271407b985ea0b47dfa400fbc7cacab89167156191759c8eed0f08fc2dab1e1",
+          "installer_sha256": "45aa55e3c494fa0ddb878cca261e6cc8825220cba7e5dcc4d68eb039c77b8ad7"
+        }
+      ],
+      "blockers": [
+        "Default-branch mutation was rejected by automatic approval review; PR #3 awaits explicit merge authorization.",
+        "Production VPS installation and operator visual acceptance remain unverified."
+      ],
       "baseline": {
         "main": "8c0352ddb5b5cd8639208dbd95b2e790a0746104",
         "react": "da00bf4a6574728861d08babc898d42f01600396",
         "approved_styles_blob": "565980a9a4a5ba390f09fcc61c5a6ea9a6a82cdd"
-      }
+      },
+      "implementation": "All five S29 works implemented and source tested/published on stage29-final-react; partial reflects pending main integration and production acceptance, not incomplete React code.",
+      "release_commit": "69fb18cc5591ecbd8f80f648c8ad0ed0c45545ae",
+      "release_tag": "stage29-react-v0.29.0rc1-deploy-r1",
+      "pull_request": "https://github.com/ostaddehdari/CryptoSniper/pull/3"
     },
     "S30": {
       "status": "not_started",

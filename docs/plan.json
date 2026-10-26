@@ -1361,7 +1361,7 @@
       "number": 29,
       "title": "بازگردانی رابط اصلی React و تحویل نصب معتبر",
       "depends_on": [],
-      "status": "in_progress",
+      "status": "partial",
       "works": [
         {
           "id": "S29-W01",
@@ -1369,7 +1369,7 @@
           "title": "ادغام مبنای React و ثبت برنامه پایانی",
           "deliverables": "حفظ Backend و migrationهای main، ادغام React Stage25 و قفل styles.css تأییدشده.",
           "acceptance": "صفحات اصلی از root React استفاده کنند؛ migrationهای قدیمی حذف یا بازنویسی نشوند.",
-          "status": "in_progress"
+          "status": "done"
         },
         {
           "id": "S29-W02",
@@ -1377,7 +1377,7 @@
           "title": "تثبیت پوسته و ناوبری نهایی",
           "deliverables": "سایدبار خلوت، هدر تتر، مسیرهای قدیمی سازگار، دکمه معامله جدید و خروج درست.",
           "acceptance": "ناوبری و خروج در مرورگر واقعی کار کند؛ مسیر ناشناخته صفحه سفید نسازد.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S29-W03",
@@ -1385,7 +1385,7 @@
           "title": "دارایی‌های نسخه‌دار و PWA امن",
           "deliverables": "Build قابل نصب بدون Node سرور، آدرس‌های مستقل از پیشوند، cache نسخه‌دار و محافظت Offline.",
           "acceptance": "نسخه جدید bundle با cache قدیمی جایگزین نشود؛ درخواست مالی در Offline ارسال نشود.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S29-W04",
@@ -1393,7 +1393,7 @@
           "title": "آزمون یکپارچه و پذیرش رابط",
           "deliverables": "Build، schema، PostgreSQL، API و مرورگر در عرض‌های 320،390،768،1440.",
           "acceptance": "خروجی واقعی تست و تصاویر ثبت شود؛ ظاهر پایه حفظ و overflow افقی نداشته باشد.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S29-W05",
@@ -1401,7 +1401,7 @@
           "title": "Release و نصب‌کننده React",
           "deliverables": "Release از همان SHA موفق CI، ZIP تجمیعی، SHA256، installer --check و deploy.sh پین‌شده.",
           "acceptance": "بسته منتشرشده شامل React ساخته‌شده باشد؛ نصب داده و secrets قبلی را حفظ کند.",
-          "status": "not_started"
+          "status": "done"
         }
       ]
     },

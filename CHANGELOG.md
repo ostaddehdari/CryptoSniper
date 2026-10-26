@@ -1,3 +1,11 @@
+# 0.29.0rc1 — React finalization (2026-10-26)
+
+- Restored primary React workspace from the approved visual base while preserving the current backend/migrations.
+- Simplified sidebar, New Trade tabs, POST logout, bookmark recovery and content-versioned static-only PWA.
+- Registered five finalization stages S29–S33 and the request-to-work acceptance checklist.
+- Added exact-CI dependent cumulative React release and pinned deployment script.
+- Verified PostgreSQL/Redis/browser CI and published prerelease; main merge and production acceptance remain pending.
+
 ## 0.23.0rc1 — استیج ۲۳ (2026-10-23)
 
 - رفع انتخاب واقعی بازار در معامله جدید، Entry خالی برای معامله تازه و اعمال پیش‌فرض‌های integer.

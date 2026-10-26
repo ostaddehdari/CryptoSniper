@@ -1,3 +1,4 @@
+# fmt: off
 """End-to-end smoke for the real React CryptoSniper workspace."""
 
 import os
@@ -310,3 +311,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+# fmt: on

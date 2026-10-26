@@ -1,6 +1,16 @@
-{% extends 'shell.html' %}{% block title %}پروفایل | CryptoSniper{% endblock %}{% block breadcrumb %}تنظیمات / پروفایل{% endblock %}{% block content %}
-<div class="page-heading"><div><span class="eyebrow">ACCOUNT PROFILE</span><h1>پروفایل و تنظیمات عمومی</h1><p class="muted">اطلاعات شخصی، منطقه زمانی و ارز پایه حساب خود را مدیریت کنید.</p></div></div>
-{% if messages %}{% for message in messages %}<div class="notice notice-success" role="status">{{ message }}</div>{% endfor %}{% endif %}
-<div class="settings-layout">{% include 'accounts/_settings_tabs.html' %}<section class="panel settings-panel"><form method="post" class="settings-form">{% csrf_token %}
-{% for field in form %}<div class="field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>{% endfor %}
-<button class="button button-primary" type="submit">ذخیره تغییرات</button></form></section></div>{% endblock %}
+{% extends 'shell.html' %}{% block title %}پروفایل | CryptoSniper{% endblock %}{% block content %}
+<section class="s24-page">
+  <div class="s24-section-head"><div><h1>پروفایل و تنظیمات عمومی</h1><p>اطلاعات شخصی، منطقه زمانی و ارز پایه حساب.</p></div><span class="s24-status">ACCOUNT</span></div>
+  {% if messages %}{% for message in messages %}<div class="s24-panel s24-notice">{{ message }}</div>{% endfor %}{% endif %}
+  <div class="s24-grid s24-trades-focus">
+    <aside class="s24-panel">
+      <div class="s24-panel-head"><strong>تنظیمات</strong><span class="s24-muted">ACCOUNT</span></div>
+      <div class="s24-overview-links"><a href="{% url 'profile' %}">پروفایل</a><a href="{% url 'trading-preferences' %}">پیش‌فرض‌های معامله</a><a href="{% url 'source-settings' %}">منابع سیگنال</a><a href="{% url 'telegram-settings' %}">Telegram</a><a href="{% url 'sessions' %}">نشست‌ها</a><a href="{% url 'audit-events' %}">گزارش امنیتی</a></div>
+    </aside>
+    <article class="s24-panel">
+      <div class="s24-panel-head"><strong>پروفایل</strong><span class="s24-status">EDIT</span></div>
+      <form method="post" class="s24-trade-form">{% csrf_token %}{% for field in form %}<label>{{ field.label }}{{ field }}{% for error in field.errors %}<small style="color:#d54848">{{ error }}</small>{% endfor %}</label>{% endfor %}<button class="s24-button primary">ذخیره تغییرات</button></form>
+    </article>
+  </div>
+</section>
+{% endblock %}

@@ -492,7 +492,7 @@ def main():
                 page.screenshot(path=str(artifacts / "exchanges-mobile.png"), full_page=True)
                 page.set_viewport_size({"width": 390, "height": 844})
                 page.get_by_role("button", name="باز کردن منو").click()
-                page.locator(".sidebar").get_by_role("link", name="وضعیت سرویس‌ها").click()
+                page.locator(".s24-sidebar").get_by_role("link", name="وضعیت سیستم").click()
                 page.wait_for_url("**/system/")
                 page.get_by_text("ذخیره نتایج", exact=True).wait_for()
                 page.screenshot(path=str(artifacts / "system-mobile.png"), full_page=True)

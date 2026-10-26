@@ -1,5 +1,5 @@
 name: Build Stage25 React Cornix deployment
-# stage25-marker-fix-release-trigger
+# stage25-final-release-trigger
 
 on:
   push:

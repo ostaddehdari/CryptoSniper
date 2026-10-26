@@ -256,7 +256,7 @@ def main():
 
                 page.get_by_role("button", name="معامله دستی").click()
                 page.get_by_role("heading", name="تعریف معامله واقعی").wait_for()
-                page.get_by_text("React Smoke Exchange", exact=False).wait_for()
+                page.get_by_text("React Smoke Exchange", exact=True).wait_for()
                 page.get_by_text("BTC", exact=True).first.wait_for()
                 page.locator(".candleChart").wait_for()
                 page.get_by_text("Trailing SL", exact=False).wait_for()

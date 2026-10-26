@@ -45,7 +45,11 @@ urlpatterns = [
     path("api/v1/ui/favorites/", react_views.api_favorites, name="api-ui-favorites"),
     path("api/v1/ui/watchlists/", react_views.api_watchlists_ui, name="api-ui-watchlists"),
     path("api/v1/ui/manual-plans/", react_views.api_manual_plans_ui, name="api-ui-manual-plans"),
-    path("api/v1/ui/signal-sources/", react_views.api_signal_sources_ui, name="api-ui-signal-sources"),
+    path(
+        "api/v1/ui/signal-sources/",
+        react_views.api_signal_sources_ui,
+        name="api-ui-signal-sources",
+    ),
     path(
         "api/v1/ui/notification-preferences/",
         react_views.api_notification_preferences_ui,

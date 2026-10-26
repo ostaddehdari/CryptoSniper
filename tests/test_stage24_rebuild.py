@@ -100,6 +100,19 @@ def test_all_primary_pages_use_global_cornix_shell(client, django_user_model, ro
     assert "cornix-shell.js" in body
 
 
+def test_global_shell_is_not_hybrid_legacy_markup():
+    root = Path(__file__).resolve().parents[1]
+    body = (root / "backend/templates/shell.html").read_text()
+    assert 'class="s24-shell"' in body
+    assert 'class="s24-sidebar"' in body
+    assert 'class="s24-topbar"' in body
+    assert 'class="app-layout"' not in body
+    assert 'class="sidebar"' not in body
+    assert 'class="topbar"' not in body
+    assert "page-heading" not in body
+
+
+
 def test_primary_templates_do_not_use_legacy_ui_markup():
     root = Path(__file__).resolve().parents[1]
     primary = [
@@ -133,6 +146,11 @@ def test_primary_templates_do_not_use_legacy_ui_markup():
         "backend/templates/trading/risk.html",
         "backend/templates/portfolio/external_list.html",
         "backend/templates/portfolio/external.html",
+        "backend/templates/accounts/_settings_tabs.html",
+        "backend/templates/core/partials/probe.html",
+        "backend/templates/core/partials/status.html",
+        "backend/templates/portfolio/error.html",
+        "backend/templates/portfolio/panels.html",
     ]
     forbidden = (
         'class="page-heading',

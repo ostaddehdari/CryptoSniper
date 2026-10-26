@@ -30,7 +30,7 @@ def _number(value, label):
     return number
 
 
-def validate_live_spot_intent(account, market, *, side, amount, price):
+def validate_live_spot_intent(account, market, *, side, amount, price, exclude_order_id=None):
     """Re-check every invariant at the durable boundary, not only in HTML forms."""
     amount = _number(amount, "مقدار")
     price = _number(price, "قیمت")
@@ -78,7 +78,24 @@ def validate_live_spot_intent(account, market, *, side, amount, price):
         required = notional * (Decimal("1") + fee_rate)
     else:
         required = amount
-    if balance.free_balance < required:
+    pending = LiveSpotOrder.objects.filter(
+        account=account, state__in=("pending", "submitting", "uncertain"), side=side
+    ).exclude(pk=exclude_order_id)
+    pending = (
+        pending.filter(market__quote_asset_id=asset_id)
+        if side == "buy"
+        else pending.filter(market__base_asset_id=asset_id)
+    )
+    reserved = sum(
+        (
+            o.amount * (o.price or Decimal(0)) * (1 + (o.market.taker_fee or Decimal(0)))
+            if side == "buy"
+            else o.amount - o.filled_amount
+            for o in pending.select_related("market")
+        ),
+        Decimal(0),
+    )
+    if balance.free_balance - reserved < required:
         raise ValidationError("موجودی آزاد برای این سفارش کافی نیست.")
     return amount, price
 
@@ -106,7 +123,10 @@ def queue_live_spot_order(owner, account, cleaned):
         raise ValidationError("Live trading روی سرور خاموش است.")
     from apps.operations.models import AccountControl
 
-    if AccountControl.objects.filter(account=account, paused=True).exists():
+    if (
+        not cleaned.get("protective_exit")
+        and AccountControl.objects.filter(account=account, paused=True).exists()
+    ):
         raise ValidationError("ورود جدید این حساب در وضعیت سیستم متوقف شده است.")
     market = cleaned["market"]
     amount, price = validate_live_spot_intent(
@@ -176,7 +196,9 @@ def execute_live_spot_order(order_id):
         )
         if order.state != LiveSpotOrder.State.PENDING:
             return {"status": order.state}
-        if not settings.LIVE_TRADING_ENABLED:
+        if not settings.LIVE_TRADING_ENABLED or (
+            hasattr(order, "managed_exit") and not settings.LIVE_EXIT_MANAGEMENT_ENABLED
+        ):
             order.state, order.error_code = LiveSpotOrder.State.FAILED, "live_disabled"
             order.save(update_fields=("state", "error_code", "updated_at"))
             return {"status": "failed"}
@@ -187,6 +209,7 @@ def execute_live_spot_order(order_id):
                 side=order.side,
                 amount=order.amount,
                 price=order.price,
+                exclude_order_id=order.pk,
             )
         except ValidationError:
             order.state, order.error_code = LiveSpotOrder.State.FAILED, "safety_gate_closed"
@@ -209,6 +232,14 @@ def execute_live_spot_order(order_id):
             or permission.can_withdraw is not False
         ):
             raise ValidationError("مجوز Read+Spot بدون برداشت دیگر تأیید نمی‌شود.")
+        if hasattr(order, "managed_exit"):
+            matches = [
+                b
+                for b in adapter.fetch_balance()
+                if b.asset.upper() == order.market.base_asset.symbol
+            ]
+            if len(matches) != 1 or matches[0].free < order.amount:
+                raise ValidationError("موجودی تازه برای خروج کافی نیست.")
         placement_started = True
         receipt = adapter.place_order(
             client_order_id=order.client_order_id,

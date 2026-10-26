@@ -63,6 +63,10 @@ def submit(owner, data, key):
             "source_plan": plan,
         },
     )
+    if data.get("manage_exits"):
+        from apps.portfolio.live_management import create_entry_position
+
+        create_entry_position(order, plan.approved_snapshot)
     if created:
         transaction.on_commit(lambda: _dispatch(order.pk))
     return order, created
@@ -87,13 +91,15 @@ def api_submit(request):
         form = ManualTradeForm(request.user, body)
         if not form.is_valid():
             return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
+        if body.get("manage_exits") is True:
+            form.cleaned_data["manage_exits"] = True
         order, created = submit(request.user, form.cleaned_data, key)
         return JsonResponse(
             {
                 "order": _live_order_payload(order),
                 "created": created,
                 "plan_id": order.source_plan_id,
-                "automatic_exits_active": False,
+                "automatic_exits_active": hasattr(order, "entry_position"),
             },
             status=201 if created else 200,
         )

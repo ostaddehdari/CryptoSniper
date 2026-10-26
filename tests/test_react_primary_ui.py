@@ -132,6 +132,34 @@ def test_visible_legacy_routes_render_same_react_workspace(
     assert "stage24-rebuild.css" not in body
     assert f'window.__CS_INITIAL_PAGE__="{page}"' in body
 
+
+@pytest.mark.django_db
+def test_react_exchange_catalog_uses_real_ids_and_does_not_hide_binance(
+    client, django_user_model
+):
+    user = django_user_model.objects.create_user(username="react-exchange-catalog")
+    exchange = Exchange.objects.create(
+        code="binance",
+        name="Binance",
+        adapter_code="react_binance_test",
+        enabled=True,
+        spot_supported=True,
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("api-exchanges"))
+
+    assert response.status_code == 200
+    rows = response.json()["exchanges"]
+    row = next(item for item in rows if item["code"] == "binance")
+    assert row["id"] == exchange.pk
+
+    root = Path(__file__).resolve().parents[1]
+    source = (root / "frontend-react/src/main.jsx").read_text()
+    assert 'filter(x=>x.code!=="binance")' not in source
+    assert "catalog[0]?.id" in source
+
+
 def test_react_source_contains_full_workspace_and_no_legacy_shell_contract():
     root = Path(__file__).resolve().parents[1]
     source = (root / "frontend-react/src/main.jsx").read_text()

@@ -43,11 +43,17 @@ from playwright.sync_api import sync_playwright  # noqa: E402
 
 def wait_for(check, seconds=30):
     deadline = time.monotonic() + seconds
+    last_error = None
     while time.monotonic() < deadline:
-        if check():
-            return
+        try:
+            if check():
+                return
+        except (httpx.HTTPError, OSError) as error:
+            last_error = error
         time.sleep(0.2)
-    raise AssertionError("Timed out waiting for React smoke condition.")
+    raise AssertionError(
+        f"Timed out waiting for React smoke condition: {last_error or 'condition false'}"
+    )
 
 
 def seed_market(user):

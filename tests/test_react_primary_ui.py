@@ -91,6 +91,47 @@ def test_react_account_market_picker_returns_markets_immediately(
     assert any(row["id"] == market.pk for row in payload["markets"])
 
 
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("route_name", "page"),
+    [
+        ("exchange-center", "exchanges"),
+        ("watchlists", "watchlist"),
+        ("alerts", "alerts"),
+        ("reports", "reports"),
+        ("operations", "operations"),
+        ("system", "operations"),
+        ("profile", "settings"),
+        ("trading-preferences", "settings"),
+        ("sessions", "settings"),
+        ("audit-events", "settings"),
+        ("source-settings", "settings"),
+        ("telegram-settings", "telegram"),
+        ("manual-list", "plans"),
+        ("manual-new", "manual"),
+        ("inbox", "inbox"),
+        ("smart-paste", "smart"),
+        ("notifications", "alerts"),
+        ("external-list", "trades"),
+        ("paper-trades", "trades"),
+    ],
+)
+def test_visible_legacy_routes_render_same_react_workspace(
+    client, django_user_model, route_name, page
+):
+    user = django_user_model.objects.create_user(username=f"react-route-{route_name}")
+    client.force_login(user)
+
+    response = client.get(reverse(route_name))
+
+    assert response.status_code == 200
+    body = response.content.decode()
+    assert 'id="root"' in body
+    assert "static/react/app.js" in body
+    assert "stage24-rebuild.css" not in body
+    assert f'window.__CS_INITIAL_PAGE__="{page}"' in body
+
 def test_react_source_contains_full_workspace_and_no_legacy_shell_contract():
     root = Path(__file__).resolve().parents[1]
     source = (root / "frontend-react/src/main.jsx").read_text()
@@ -119,4 +160,6 @@ def test_react_source_contains_full_workspace_and_no_legacy_shell_contract():
     assert ".sidebar{" in styles
     assert ".topbar{" in styles
     assert "s24-shell" not in source
+    assert ".s24-" not in styles
+    assert "stage24-rebuild" not in source
 # fmt: on

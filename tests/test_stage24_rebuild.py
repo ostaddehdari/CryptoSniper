@@ -112,7 +112,6 @@ def test_global_shell_is_not_hybrid_legacy_markup():
     assert "page-heading" not in body
 
 
-
 def test_primary_templates_do_not_use_legacy_ui_markup():
     root = Path(__file__).resolve().parents[1]
     primary = [

@@ -30,28 +30,3 @@ a.navItem{text-decoration:none}.fullLoading{min-height:100vh;display:flex;align-
 .operationsGrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.blockMuted{display:block;color:#8b96a8;font-size:9px;margin-top:3px}.wrap{flex-wrap:wrap}.mutedRow{opacity:.68}.auditList{padding:8px 18px;max-height:520px;overflow:auto}.auditList>div{display:grid;grid-template-columns:minmax(160px,1fr) auto;gap:4px 12px;padding:10px 0;border-bottom:1px solid #edf1f5}.auditList b{font-size:10px}.auditList span{font-size:9px;color:#8a96a8}.auditList code{grid-column:1/-1;direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-word;background:#f7f9fc;padding:6px 8px;border-radius:7px;font-size:9px;color:#59677a}.segmented button:disabled{opacity:.45;cursor:not-allowed}.settingsNav button{cursor:pointer}.simpleList .softBtn{flex:0 0 auto}
 @media(max-width:900px){.operationsGrid{grid-template-columns:1fr}}
 .pad12{padding:12px}.analyticsBox{margin:12px 15px;padding:14px;border:1px solid #dce7f7;border-radius:12px;background:#f8fbff}.analyticsBox .analysisGrid{padding:12px 0 0}.fullBtn{width:calc(100% - 24px);margin:12px}.blockMuted{display:block;color:#8b96a8;font-size:10px;margin-top:3px}.warningFoot{margin:0 20px 18px;padding:11px 12px;border-radius:10px;background:#fff8e8;border:1px solid #f2ddaa;color:#735a1d;font-size:10px;line-height:1.8}
-
-/* Stage25 functionality extensions — approved Stage23 visual system remains the base. */
-.selectedRow{background:#f3f7ff!important}
-.signalCard.clickRow{cursor:pointer}
-.signalCard.active{border-color:#8fb0ef;box-shadow:0 7px 20px rgba(31,86,184,.08)}
-.between{justify-content:space-between}
-.chartToolbar{align-items:center;justify-content:space-between}
-@media(max-width:560px){
-  .app,.main,.content,.grid2,.card,.chartPanel,.candleWrap,.tableScroll{min-width:0;max-width:100%}
-  .card{overflow-x:visible}
-  .tableScroll{overflow-x:auto}
-  .topbar{width:100%;min-width:0;gap:8px}
-  .topbar>div:first-child{min-width:0}
-  .topbar h1{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .topActions{flex:0 0 auto;min-width:0}
-  .cardHead{flex-wrap:wrap;gap:10px;align-items:flex-start}
-  .cardHead>div{min-width:0;max-width:100%}
-  .cardHead>.row{max-width:100%;overflow-x:auto;padding-bottom:2px}
-  .chartToolbar{flex-wrap:wrap;align-items:flex-start}
-  .submitRow{flex-wrap:wrap}
-  .submitRow>*{flex:1 1 150px;min-width:0}
-  .primary.large{min-width:0}
-}
-
-.offlineBanner{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:200;background:#fff8e8;border:1px solid #f2ddaa;color:#735a1d;border-radius:10px;padding:9px 14px;font-size:10px;box-shadow:0 8px 24px #0d1c3315}.offlineBanner[hidden]{display:none}

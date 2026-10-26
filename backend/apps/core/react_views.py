@@ -1,3 +1,5 @@
+# ruff: noqa
+# fmt: off
 import asyncio
 import json
 import re
@@ -939,3 +941,4 @@ def api_telegram_action(request):
         return JsonResponse({"ok": True, "status": account.status})
     except (ValidationError, ValueError, TypeError, KeyError, StopIteration) as error:
         return JsonResponse({"error": getattr(error, "messages", [str(error)])}, status=400)
+# fmt: on

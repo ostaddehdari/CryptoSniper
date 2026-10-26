@@ -58,3 +58,21 @@ a.navItem{text-decoration:none}.fullLoading{min-height:100vh;display:flex;align-
 .checkLine input{width:17px;height:17px;margin-top:1px}
 @media(max-width:1100px){.signalCardGrid{grid-template-columns:repeat(2,minmax(220px,1fr))}.headerTicker{display:none}}
 @media(max-width:720px){.signalCardGrid{grid-template-columns:1fr}.detailGrid{grid-template-columns:1fr}.candleChart{height:250px}.compactTabs{max-width:100%;overflow:auto}}
+
+@media(max-width:560px){
+  .app,.main,.content,.grid2,.card,.chartPanel,.liveChartBox,.tableScroll{min-width:0;max-width:100%}
+  .topbar{width:100%;min-width:0;gap:8px}
+  .topbar>div:first-child{min-width:0}
+  .topbar h1{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .topActions{flex:0 0 auto;min-width:0}
+  .cardHead{flex-wrap:wrap;gap:10px;align-items:flex-start}
+  .cardHead>div{min-width:0;max-width:100%}
+  .cardHead>.row{max-width:100%;overflow-x:auto;padding-bottom:2px}
+  .chartToolbar{flex-wrap:wrap;align-items:flex-start}
+  .chartToolbar>span{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .submitRow{flex-wrap:wrap}
+  .submitRow>*{flex:1 1 150px;min-width:0}
+  .primary.large{min-width:0}
+  .detailGrid{min-width:0}
+  .simpleList>div,.healthRow,.walletRow{min-width:0}
+}

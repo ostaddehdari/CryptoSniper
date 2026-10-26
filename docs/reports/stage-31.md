@@ -28,3 +28,21 @@
 - migrationهای پیش از Stage31 تغییر نکردند؛ صرفاً جدول‌های جدید و فیلد/قیدهای افزایشی اضافه شدند.
 - Style blob تأییدشده بدون تغییر:565980a9a4a5ba390f09fcc61c5a6ea9a6a82cdd.
 - Branch:stage31-final-management، مبنا Stage30 نصب‌شده؛ S32 و S33 شروع نشده‌اند.
+
+
+## تحویل کاندید آزموده‌شده
+
+- Source نهایی: d8cc1fb7ccfa8e614d61a97a0b03f0b9ed19f587
+- CI نهایی: https://github.com/ostaddehdari/CryptoSniper/actions/runs/40373406457؛ 391 آزمون موفق، از جمله74 آزمون نصب‌کننده، restart Worker، همزمانی و مرورگر با TP جدید71000 و SL. Artifact12674475459.
+- Release: https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage31-react-v0.31.0rc1-deploy-r1
+- ZIP: CryptoSniper-Stage31-React-v0.31.0rc1-r1.zip
+- ZIP SHA256: 90f26887daff618b75b919b60db0a8280203105c98ba6adf903abcdcb4ac6a5a
+- Installer SHA256: a66eb3a7594e7ca9a9e71486cc353610c8d95d1b9ebeb3615aa6691269e1ba92
+- Branch:stage31-final-management؛ PR https://github.com/ostaddehdari/CryptoSniper/pull/5 روی Stage30؛ ادغام main انجام نشده است.
+- راهنمای واگذاری، وضعیت نامعلوم، توقف/بایگانی، Limit و محدودیت داده در docs/stage31-operator.fa.md ثبت شده است.
+- استیج بعد S32 است؛ این درخواست همان پنج ورک S31 را اجرا کرد و S32 آغاز نشده است.
+
+
+## اصلاح تصویری r2 پیش از تحویل اپراتور
+
+بازبینی تصویر نهایی، برچسب‌های SVG را در صفحه RTL در لبه راست نمودار بریده نشان داد. جهت متن labelهای Entry/TP/SL و marker به‌طور موضعی LTR شد؛ سبک پایه تغییر نکرد. آزمون مرورگر علاوه بر TP جدید71000، getBBox همه labelها را داخل viewBox بررسی می‌کند. r1 سابقه immutable باقی می‌ماند؛ نسخه تحویلی r2 پس از موفقیت آزمون همان source منتشر می‌شود. راهنمای اپراتور نیز داخل بسته قرار می‌گیرد.

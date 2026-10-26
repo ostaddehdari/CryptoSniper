@@ -49,7 +49,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          TAG=stage31-react-v0.31.0rc1-deploy-r1
+          TAG=stage31-react-v0.31.0rc1-deploy-r2
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo 'Existing immutable Stage31 release retained; no assets replaced.'
             exit 0

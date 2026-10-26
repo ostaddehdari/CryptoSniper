@@ -1324,6 +1324,29 @@
             768,
             1440
           ]
+        },
+        {
+          "name": "Exact final candidate, full PostgreSQL/Redis/Celery restart and React browser including refreshed TP/SL",
+          "status": "passed",
+          "tested_commit": "d8cc1fb7ccfa8e614d61a97a0b03f0b9ed19f587",
+          "run_url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/40373406457",
+          "pytest_passed": 391,
+          "installer_tests_included": 74,
+          "artifact_id": 12674475459,
+          "responsive_widths": [
+            320,
+            390,
+            768,
+            1440
+          ]
+        },
+        {
+          "name": "Cumulative GitHub Release from the exact successful candidate",
+          "status": "passed",
+          "tested_commit": "d8cc1fb7ccfa8e614d61a97a0b03f0b9ed19f587",
+          "release_tag": "stage31-react-v0.31.0rc1-deploy-r1",
+          "archive_sha256": "90f26887daff618b75b919b60db0a8280203105c98ba6adf903abcdcb4ac6a5a",
+          "installer_sha256": "a66eb3a7594e7ca9a9e71486cc353610c8d95d1b9ebeb3615aa6691269e1ba92"
         }
       ],
       "blockers": [
@@ -1331,7 +1354,10 @@
         "Target VPS installation of Stage31 has not been performed. Both live flags remain off by default; per-trade consent is required.",
         "Stacked branches await main integration; no merge is claimed."
       ],
-      "implementation": "Five Stage31 works are code-complete: cumulative receipt-based inventory, reservations, verified cancellation/reprice of conditional limit exits, monotonic trailing, explicit scoped adoption and versioned pause/edit, chart provenance and recovery. Final candidate UI refresh assertion and release checks run separately."
+      "implementation": "Five S31 works code-complete, exact candidate passed391 tests, real isolated Celery worker restart, PostgreSQL/Redis and React browser at four widths. Cumulative immutable release published; deployment script pins both assets. Real-provider/VPS acceptance and main merge remain open; default live gates remain off.",
+      "release_commit": "d8cc1fb7ccfa8e614d61a97a0b03f0b9ed19f587",
+      "release_tag": "stage31-react-v0.31.0rc1-deploy-r1",
+      "pull_request": "https://github.com/ostaddehdari/CryptoSniper/pull/5"
     },
     "S32": {
       "status": "not_started",

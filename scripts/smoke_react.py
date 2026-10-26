@@ -427,6 +427,12 @@ def main():
                 page.wait_for_function("""() => [...document.querySelectorAll('.realChart text')]
                     .some(e => e.textContent.includes('TP1') && e.textContent.includes('۷۱'))""")
                 page.locator(".realChart text").filter(has_text="SL").first.wait_for()
+                assert (
+                    page.locator(
+                        ".realChart svg"
+                    ).evaluate("""svg => [...svg.querySelectorAll('text')]
+                    .every(e => {const b=e.getBBox();return b.x >= 0 && b.x+b.width <= 1000;})""")
+                ), "Chart labels must remain inside the SVG"
                 page.screenshot(
                     path=str(artifacts / "stage31-management-desktop.png"), full_page=True
                 )

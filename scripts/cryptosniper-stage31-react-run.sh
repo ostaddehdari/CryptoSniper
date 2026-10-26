@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # CryptoSniper Stage 31 React Cornix v0.31.0rc1 — Ubuntu 24.04 fresh install / safe upgrade.
-# Usage: sudo bash /tmp/run.sh [/tmp/CryptoSniper-Stage31-React-v0.31.0rc1-r1.zip]
+# Usage: sudo bash /tmp/run.sh [/tmp/CryptoSniper-Stage31-React-v0.31.0rc1-r2.zip]
 # Validate only (no installation): bash run.sh --check /path/to/package.zip
 # Installation and verification output is appended to runlog.txt beside this script.
 # Installs cumulative Stages 01-31; React is the primary UI; real Spot writes remain fail-closed by default.
@@ -20,6 +20,7 @@ CONFIG_DIR=/etc/cryptosniper
 STATE_DIR=/var/lib/cryptosniper
 LOGIN_FILE=/root/cryptosniper-login.txt
 SOURCE_COMMIT=__SOURCE_COMMIT__
+STAGE31_R1_SOURCE_COMMIT=d8cc1fb7ccfa8e614d61a97a0b03f0b9ed19f587
 STAGE30_SOURCE_COMMIT=5f17849f720d476790c2fa6c2196ec8f4be8fff6
 STAGE29_R1_SOURCE_COMMIT=69fb18cc5591ecbd8f80f648c8ad0ed0c45545ae
 STAGE29_R2_SOURCE_COMMIT=83ed22c4669a446fd168783cdb91cf23e80ddae8
@@ -116,8 +117,8 @@ step() { printf '\n===== %s | %s =====\n' "$*" "$(date -Is)"; }
 CHECK_ONLY=false
 if [[ ${1:-} == --check ]]; then CHECK_ONLY=true; shift; fi
 [[ $# -le 1 ]] || fail 'Usage: bash run.sh [--check] [package.zip]'
-ARCHIVE=${1:-/tmp/CryptoSniper-Stage31-React-v0.31.0rc1-r1.zip}
-export SERVER_HOST URL_PREFIX WEB_PORT PG_PORT REDIS_PORT SOURCE_COMMIT STAGE30_SOURCE_COMMIT STAGE29_R1_SOURCE_COMMIT STAGE29_R2_SOURCE_COMMIT
+ARCHIVE=${1:-/tmp/CryptoSniper-Stage31-React-v0.31.0rc1-r2.zip}
+export SERVER_HOST URL_PREFIX WEB_PORT PG_PORT REDIS_PORT SOURCE_COMMIT STAGE31_R1_SOURCE_COMMIT STAGE30_SOURCE_COMMIT STAGE29_R1_SOURCE_COMMIT STAGE29_R2_SOURCE_COMMIT
 export PREVIOUS_STAGE24_SOURCE_COMMIT STAGE24_R5_SOURCE_COMMIT STAGE24_R6_SOURCE_COMMIT STAGE24_R7_SOURCE_COMMIT STAGE24_R8_SOURCE_COMMIT STAGE23_SOURCE_COMMIT STAGE22_SOURCE_COMMIT STAGE22_ARCHIVE_SHA256 STAGE21_SOURCE_COMMIT STAGE21_ARCHIVE_SHA256 STAGE20_SOURCE_COMMIT STAGE20_ARCHIVE_SHA256 STAGE18_SOURCE_COMMIT STAGE18_ARCHIVE_SHA256 STAGE16_SOURCE_COMMIT STAGE16_ARCHIVE_SHA256 STAGE14_SOURCE_COMMIT STAGE14_ARCHIVE_SHA256 STAGE10_SOURCE_COMMIT STAGE10_ARCHIVE_SHA256 STAGE08_SOURCE_COMMIT STAGE08_ARCHIVE_SHA256 PREVIOUS_SOURCE_COMMIT STAGE06_SOURCE_COMMIT STAGE05_SOURCE_COMMIT STAGE04_SOURCE_COMMIT STAGE03_SOURCE_COMMIT STAGE01_SOURCE_COMMIT STAGE02_SOURCE_COMMIT PREVIOUS_ARCHIVE_SHA256 STAGE06_ARCHIVE_SHA256 STAGE05_ARCHIVE_SHA256 STAGE04_ARCHIVE_SHA256 STAGE03_ARCHIVE_SHA256 STAGE02_ARCHIVE_SHA256 STAGE01_ARCHIVE_SHA256 OLDER_STAGE03_ARCHIVE_SHA256 OFFICIAL_STAGE31_ARCHIVE_SHA256
 export APP_DIR APP_ROOT CONFIG_DIR STATE_DIR LOGIN_FILE
 
@@ -133,8 +134,8 @@ actual_sha256 = hashlib.file_digest(path.open('rb'), 'sha256').hexdigest()
 if actual_sha256 != os.environ['OFFICIAL_STAGE31_ARCHIVE_SHA256']:
     raise SystemExit(
         'Incorrect Stage31 React ZIP (SHA-256 mismatch). Download the EXACT release asset '
-        'CryptoSniper-Stage31-React-v0.31.0rc1-r1.zip from '
-        'https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage31-react-v0.31.0rc1-deploy-r1'
+        'CryptoSniper-Stage31-React-v0.31.0rc1-r2.zip from '
+        'https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage31-react-v0.31.0rc1-deploy-r2'
         f'(received SHA256: {actual_sha256}). Nothing was changed.'
     )
 # Pin the release by checking the Git blob SHA-1 of independent immutable files.
@@ -452,7 +453,7 @@ state = json.loads((Path(os.environ['CONFIG_DIR']) / 'install.json').read_text()
 expected = {key: os.environ[key] for key in ('SERVER_HOST', 'URL_PREFIX', 'WEB_PORT', 'PG_PORT', 'REDIS_PORT')}
 if any(state.get(key) != value for key, value in expected.items()):
     raise SystemExit('Existing installer configuration differs. No automatic upgrade/configuration replacement.')
-if state.get('SOURCE_COMMIT') not in {os.environ['STAGE30_SOURCE_COMMIT'], os.environ['STAGE29_R1_SOURCE_COMMIT'], os.environ['STAGE29_R2_SOURCE_COMMIT'], os.environ['STAGE01_SOURCE_COMMIT'], os.environ['STAGE02_SOURCE_COMMIT'], os.environ['STAGE03_SOURCE_COMMIT'], os.environ['STAGE04_SOURCE_COMMIT'], os.environ['STAGE05_SOURCE_COMMIT'], os.environ['STAGE06_SOURCE_COMMIT'], os.environ['STAGE08_SOURCE_COMMIT'], os.environ['PREVIOUS_SOURCE_COMMIT'], os.environ['STAGE10_SOURCE_COMMIT'], os.environ['STAGE14_SOURCE_COMMIT'], os.environ['STAGE16_SOURCE_COMMIT'], os.environ['STAGE18_SOURCE_COMMIT'], os.environ['STAGE20_SOURCE_COMMIT'], os.environ['STAGE21_SOURCE_COMMIT'], os.environ['STAGE22_SOURCE_COMMIT'], os.environ['PREVIOUS_STAGE24_SOURCE_COMMIT'], os.environ['STAGE24_R5_SOURCE_COMMIT'], os.environ['STAGE24_R6_SOURCE_COMMIT'], os.environ['STAGE24_R7_SOURCE_COMMIT'], os.environ['STAGE24_R8_SOURCE_COMMIT'], os.environ['STAGE23_SOURCE_COMMIT'], os.environ['SOURCE_COMMIT']}:
+if state.get('SOURCE_COMMIT') not in {os.environ['STAGE31_R1_SOURCE_COMMIT'], os.environ['STAGE30_SOURCE_COMMIT'], os.environ['STAGE29_R1_SOURCE_COMMIT'], os.environ['STAGE29_R2_SOURCE_COMMIT'], os.environ['STAGE01_SOURCE_COMMIT'], os.environ['STAGE02_SOURCE_COMMIT'], os.environ['STAGE03_SOURCE_COMMIT'], os.environ['STAGE04_SOURCE_COMMIT'], os.environ['STAGE05_SOURCE_COMMIT'], os.environ['STAGE06_SOURCE_COMMIT'], os.environ['STAGE08_SOURCE_COMMIT'], os.environ['PREVIOUS_SOURCE_COMMIT'], os.environ['STAGE10_SOURCE_COMMIT'], os.environ['STAGE14_SOURCE_COMMIT'], os.environ['STAGE16_SOURCE_COMMIT'], os.environ['STAGE18_SOURCE_COMMIT'], os.environ['STAGE20_SOURCE_COMMIT'], os.environ['STAGE21_SOURCE_COMMIT'], os.environ['STAGE22_SOURCE_COMMIT'], os.environ['PREVIOUS_STAGE24_SOURCE_COMMIT'], os.environ['STAGE24_R5_SOURCE_COMMIT'], os.environ['STAGE24_R6_SOURCE_COMMIT'], os.environ['STAGE24_R7_SOURCE_COMMIT'], os.environ['STAGE24_R8_SOURCE_COMMIT'], os.environ['STAGE23_SOURCE_COMMIT'], os.environ['SOURCE_COMMIT']}:
     raise SystemExit('Existing installation source is not a supported managed Stage01-31 release.')
 print('Existing managed installation detected; private configuration, database and login will be preserved.')
 PY

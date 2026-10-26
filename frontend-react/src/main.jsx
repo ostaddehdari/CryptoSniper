@@ -383,14 +383,14 @@ function MarketChart({marketId,signalId=null,trade=null,levels:manualLevels=null
         })}
         {levels.map((level,i)=>{
           const yy=y(level.price),color=colors[level.kind]||"#17a673";
-          return <g key={i}><line x1={pad} x2={W-pad} y1={yy} y2={yy} stroke={color} strokeWidth="1.5" strokeDasharray="7 5"/><text x={W-pad-5} y={Math.max(14,yy-6)} textAnchor="end" fill={color} fontSize="11" fontWeight="700">{level.label} {fmt(level.price,4)}</text></g>
+          return <g key={i}><line x1={pad} x2={W-pad} y1={yy} y2={yy} stroke={color} strokeWidth="1.5" strokeDasharray="7 5"/><text x={W-pad-5} y={Math.max(14,yy-6)} textAnchor="end" direction="ltr" fill={color} fontSize="11" fontWeight="700">{level.label} {fmt(level.price,4)}</text></g>
         })}
         {(payload?.overlay?.markers||[]).map((m,i)=>{
           const times=candles.map(c=>Number(c.time));
           let ix=0,dist=Infinity;
           times.forEach((t,j)=>{const d=Math.abs(t-Number(m.time));if(d<dist){ix=j;dist=d}});
           const x=pad+step*ix+step/2;
-          return <g key={"m"+i}><line x1={x} x2={x} y1={pad} y2={H-pad} stroke="#7d8aa0" strokeDasharray="3 5"/><text x={Math.min(W-70,x+6)} y={pad+15} fill="#52637b" fontSize="10">{m.label}</text></g>
+          return <g key={"m"+i}><line x1={x} x2={x} y1={pad} y2={H-pad} stroke="#7d8aa0" strokeDasharray="3 5"/><text x={Math.min(W-70,x+6)} y={pad+15} direction="ltr" fill="#52637b" fontSize="10">{m.label}</text></g>
         })}
       </svg>
     </div>

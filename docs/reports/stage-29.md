@@ -46,3 +46,8 @@ r2 قبل از migration پشتیبان خصوصی pg_dump می‌گیرد؛ ج�
 - Installer r2 SHA256: aefec5a80898ab9a281be839d13659643562afea12a2b35dd2648f09609e63f2
 
 پرونده پشتیبان قبل از migration در مسیر خصوصی /etc/cryptosniper/backups/database ذخیره می‌شود. r1 در سوابق بالا صرفاً نسخه تاریخی است و نصب مجدد آن توصیه نمی‌شود.
+
+
+## پذیرش اپراتور پس از r2
+
+لاگ نصب ۲۶ اکتبر با INSTALL_OK و DEPLOY_OK دریافت شد: reconciliation جدول‌های wallet/diagnostics، migration، هفت صف، health/login200 و backup فعال گزارش شدند. کاربر در پیام «ظاهر درسته برو استیج بعدی» ظاهر را پذیرفت و اجرای S30 را خواست. این پذیرش مربوط به r2 است؛ ادغام PR #3 در main هنوز انجام نشده است.

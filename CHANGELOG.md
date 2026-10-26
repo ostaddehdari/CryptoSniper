@@ -1,8 +1,16 @@
+# 0.30.0rc1 — Final trading form (2026-10-26)
+
+- Account-scoped paginated USDT markets and per-exchange favorites with persisted drag/drop ordering.
+- Empty Entry, integer capital, Spot constraints, automatic advisory Fix Loss, saved trailing defaults and immutable TP splits.
+- Atomic idempotent server-sized entry and plan snapshot; step-up continuation and lost-response retry never create duplicate orders.
+- Saved TP/SL shown in trades/chart; automatic real-order exits remain inactive until S31.
+- Approved React base and historical migrations preserved; 369 tests and browser at four widths passed. Real-provider/VPS acceptance and main merge remain open.
+
 ## Stage29 installer r2
 
 - Fix DuplicateTable on upgrades from earlier React previews by verifying and reconciling only matching schema before migrate.
 - Preserve wallet rows and old indexes, validate column types/null/PK/FK/unique, complete partial diagnostics atomically, and take a private pre-migration PostgreSQL snapshot.
-- Six PostgreSQL upgrade regression scenarios and full suite/browser passed (342 tests). Production retry remains pending.
+- Six PostgreSQL upgrade regression scenarios and full suite/browser passed (342 tests). Operator r2 log and user visual acceptance received; main merge remains pending.
 
 # 0.29.0rc1 — React finalization (2026-10-26)
 

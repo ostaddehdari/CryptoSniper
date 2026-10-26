@@ -1,9 +1,26 @@
-{% extends 'shell.html' %}{% block title %}وضعیت سرویس‌ها | CryptoSniper{% endblock %}{% block breadcrumb %}وضعیت سرویس‌ها{% endblock %}{% block content %}
-<div class="page-heading"><div><span class="eyebrow">SYSTEM STATUS</span><h1>وضعیت سرویس‌ها</h1><p class="muted">وضعیت اتصال و پردازش مستقل سرور را بررسی کنید.</p></div></div>
-<div class="lower-grid"><section class="panel"><div class="panel-heading"><h2>پایش اتصال‌ها</h2><span class="small-label">به‌روزرسانی هر ۱۵ ثانیه</span></div><div hx-get="{% url 'system-status' %}" hx-trigger="load, every 15s" hx-swap="innerHTML"><p class="muted" role="status">در حال بررسی…</p></div></section>
-<section class="panel"><span class="eyebrow">بررسی پردازش پس‌زمینه</span><h2>اجرای یک کار آزمایشی</h2><p class="muted">این بررسی فقط سلامت پردازش را می‌سنجد و هیچ سفارش معاملاتی ارسال نمی‌کند.</p><form method="post" action="{% url 'create-probe' %}" hx-post="{% url 'create-probe' %}" hx-target="#probe-result" hx-swap="innerHTML">{% csrf_token %}<label class="select-label" for="queue">مسیر پردازش</label><select class="input" id="queue" name="queue"><option value="orders">صف سفارش‌ها</option><option value="reports">صف گزارش‌ها</option></select><button class="button button-primary probe-button" type="submit">بررسی Worker <span aria-hidden="true">←</span></button></form><div id="probe-result" aria-live="polite"></div></section></div>
-<section class="panel"><div class="panel-heading"><div><span class="eyebrow">ENGINE READINESS</span><h2>ماتریس آمادگی واقعی</h2></div><span class="status-badge">{{ engine.release_mode|upper }}</span></div><div class="permission-list"><div><span>Manual تا alerts/reports</span><b class="yes">{{ engine.inputs.manual }}</b></div><div><span>Smart Paste تا alerts/reports</span><b class="yes">{{ engine.inputs.smart_paste }}</b></div><div><span>Simulator Spot</span><b class="yes">{{ engine.adapters.simulator_spot_long }}</b></div><div><span>Simulator Margin</span><b class="yes">{{ engine.adapters.simulator_margin_long_short }}</b></div><div><span>Binance Live write</span><b class="no">{{ engine.adapters.binance_live_write }}</b></div></div><ul>{% for limitation in engine.limitations %}<li>{{ limitation }}</li>{% endfor %}</ul></section>
-<section class="panel"><div class="panel-heading"><div><span class="eyebrow">ACTIVE EXCHANGE CONNECTIONS</span><h2>اتصال‌های فعال صرافی</h2></div><span class="small-label">{{ connections|length }} اتصال</span></div><div class="permission-list">{% for account in connections %}<div><span>{{ account.label }} · {{ account.exchange.name }}</span><b class="{% if account.status == 'connected' %}yes{% else %}no{% endif %}">{{ account.get_status_display }}</b></div>{% empty %}<p class="muted">اتصال فعال یا قابل بازیابی‌ای وجود ندارد.</p>{% endfor %}</div><p class="muted">اتصال‌های Disable/Revoked و credential حذف‌شده عمداً در این فهرست نشان داده نمی‌شوند.</p></section>
-<section class="panel"><span class="eyebrow">DEPLOYMENT IDENTITY</span><h2>هویت نسخه و محیط</h2><p>نسخه <strong dir="ltr">{{ deployment.release }}</strong> · محیط <strong dir="ltr">{{ deployment.environment }}</strong></p><p class="muted" dir="ltr">source: {{ deployment.source_revision }}</p><p>اجرای واقعی Binance خاموش است؛ staging و production هرگز از یک نام محیط مشترک استفاده نمی‌کنند.</p></section>
-<section class="panel"><span class="eyebrow">STAGE 23 DELIVERY</span><h2>مرز تحویل نسخه</h2><p>Manual، Smart Paste و Telegram در Simulator/Paper تا خروج، هشدار، گزارش و بازیابی پوشش داده شده‌اند.</p><p>AI و اتصال واقعی پنج صرافی فقط پس از ورود credential خصوصی و آزمون اپراتور تأیید می‌شوند؛ Live به‌صورت پیش‌فرض خاموش است.</p><p><a class="inline-link" href="{% url 'api-acceptance' %}">قرارداد پذیرش ماشین‌خوان ←</a></p></section>
+{% extends 'shell.html' %}{% block title %}وضعیت سیستم | CryptoSniper{% endblock %}{% block content %}
+<section class="s24-page">
+  <div class="s24-section-head"><div><h1>وضعیت سرویس‌ها</h1><p>سلامت سرویس‌های مستقل، Workerها و آمادگی موتور.</p></div><span class="s24-status">{{ engine.release_mode|upper }}</span></div>
+
+  <div class="s24-grid s24-trades-focus">
+    <article class="s24-panel"><div class="s24-panel-head"><strong>پایش اتصال‌ها</strong><span class="s24-muted">هر ۱۵ ثانیه</span></div><div hx-get="{% url 'system-status' %}" hx-trigger="load, every 15s" hx-swap="innerHTML"><div class="s24-empty-inline">در حال بررسی…</div></div></article>
+    <article class="s24-panel"><div class="s24-panel-head"><strong>بررسی Worker</strong><span class="s24-status">PROBE</span></div><form method="post" action="{% url 'create-probe' %}" hx-post="{% url 'create-probe' %}" hx-target="#probe-result" hx-swap="innerHTML" class="s24-trade-form">{% csrf_token %}<label>مسیر پردازش<select id="queue" name="queue"><option value="orders">صف سفارش‌ها</option><option value="reports">صف گزارش‌ها</option></select></label><button class="s24-button primary" type="submit">بررسی Worker</button></form><div id="probe-result"></div></article>
+  </div>
+
+  <div class="s24-panel s24-list-panel">
+    <div class="s24-panel-head"><strong>ماتریس آمادگی موتور</strong><span class="s24-muted">ENGINE READINESS</span></div>
+    <div class="s24-detail-facts">
+      <div class="s24-fact"><span>Manual → Alerts/Reports</span><strong>{{ engine.inputs.manual }}</strong></div>
+      <div class="s24-fact"><span>Smart Paste → Alerts/Reports</span><strong>{{ engine.inputs.smart_paste }}</strong></div>
+      <div class="s24-fact"><span>Simulator Spot</span><strong>{{ engine.adapters.simulator_spot_long }}</strong></div>
+      <div class="s24-fact"><span>Simulator Margin</span><strong>{{ engine.adapters.simulator_margin_long_short }}</strong></div>
+      <div class="s24-fact"><span>Binance Live write</span><strong>{{ engine.adapters.binance_live_write }}</strong></div>
+    </div>
+  </div>
+
+  <div class="s24-grid s24-trades-focus">
+    <article class="s24-panel"><div class="s24-panel-head"><strong>اتصال‌های فعال صرافی</strong><span class="s24-status">{{ connections|length }}</span></div><div class="s24-trade-detail">{% for account in connections %}<div class="s24-fact"><span>{{ account.exchange.name }}</span><strong>{{ account.label }} · {{ account.get_status_display }}</strong></div>{% empty %}<div class="s24-empty-inline">اتصال فعالی وجود ندارد.</div>{% endfor %}</div></article>
+    <article class="s24-panel"><div class="s24-panel-head"><strong>هویت Deployment</strong><span class="s24-status">{{ deployment.environment|upper }}</span></div><div class="s24-trade-detail"><div class="s24-fact"><span>Release</span><strong dir="ltr">{{ deployment.release }}</strong></div><div class="s24-fact"><span>Source</span><strong dir="ltr">{{ deployment.source_revision }}</strong></div></div></article>
+  </div>
+</section>
 {% endblock %}

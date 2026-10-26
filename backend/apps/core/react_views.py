@@ -119,7 +119,12 @@ def api_step_up(request):
 @never_cache
 @require_GET
 def api_bootstrap(request):
-    accounts = list(\n        UserExchangeAccount.objects.for_user(request.user)\n        .select_related("exchange")\n        .exclude(status=UserExchangeAccount.Status.DISABLED)\n        .exclude(exchange__adapter_code="simulator")\n    )
+    accounts = list(
+        UserExchangeAccount.objects.for_user(request.user)
+        .select_related("exchange")
+        .exclude(status=UserExchangeAccount.Status.DISABLED)
+        .exclude(exchange__adapter_code="simulator")
+    )
     unread = Notification.objects.filter(owner=request.user, in_app=True, read_at__isnull=True).count()
     favorites = list(
         FavoriteAsset.objects.filter(owner=request.user).order_by("position", "pk").values_list("symbol", flat=True)
@@ -154,7 +159,6 @@ def api_bootstrap(request):
                     "balances": _balance_payload(a),
                 }
                 for a in accounts
-                if a.environment == "live" and a.exchange.adapter_code != "simulator"
             ],
             "unread_notifications": unread,
             "favorites": favorites,
@@ -338,7 +342,7 @@ def api_exchange_create(request):
             },
         )
         form.fields["exchange"].queryset = form.fields["exchange"].queryset.exclude(
-            Q(adapter_code="simulator") | Q(code="binance")
+            adapter_code="simulator"
         )
         if not form.is_valid():
             return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
@@ -356,7 +360,11 @@ def api_account_markets(request, pk):
     account = get_object_or_404(
         UserExchangeAccount.objects.for_user(request.user).select_related("exchange"),
         pk=pk,
-        environment="live",
+        status__in=(
+            UserExchangeAccount.Status.CONNECTED,
+            UserExchangeAccount.Status.RESTRICTED,
+        ),
+        permissions__can_read=True,
     )
     markets = (
         ExchangeMarket.objects.filter(exchange=account.exchange, active=True, quote_asset__symbol="USDT")

@@ -1,6 +1,7 @@
-{% extends 'shell.html' %}{% block title %}نشست‌های فعال | CryptoSniper{% endblock %}{% block breadcrumb %}تنظیمات / امنیت{% endblock %}{% block content %}
-<div class="page-heading"><div><span class="eyebrow">ACCOUNT SECURITY</span><h1>نشست‌های حساب</h1><p class="muted">دستگاه‌های متصل را ببینید و هر نشست ناشناس را ببندید.</p></div></div>
-{% if messages %}{% for message in messages %}<div class="notice notice-success" role="status">{{ message }}</div>{% endfor %}{% endif %}
-<div class="settings-layout">{% include 'accounts/_settings_tabs.html' %}<section class="panel settings-panel"><div class="session-list">
-{% for session in sessions %}<article class="session-row"><div><strong>{% if session.session_key == current_key %}این دستگاه{% else %}نشست دیگر{% endif %}</strong><small>{{ session.user_agent_label|default:'دستگاه ناشناس'|truncatechars:75 }}</small><span>آخرین فعالیت: {{ session.last_seen_at|date:'Y/m/d H:i' }}</span></div>{% if session.revoked_at %}<span class="status-badge status-off">بسته‌شده</span>{% else %}<form method="post" action="{% url 'revoke-session' session.pk %}">{% csrf_token %}<button class="button button-soft" type="submit">بستن نشست</button></form>{% endif %}</article>{% empty %}<p class="muted">نشست فعالی ثبت نشده است.</p>{% endfor %}
-</div></section></div>{% endblock %}
+{% extends 'shell.html' %}{% block title %}نشست‌های فعال | CryptoSniper{% endblock %}{% block content %}
+<section class="s24-page">
+  <div class="s24-section-head"><div><h1>نشست‌های حساب</h1><p>دستگاه‌های متصل و امکان بستن نشست‌های ناشناس.</p></div><span class="s24-status">SECURITY</span></div>
+  {% if messages %}{% for message in messages %}<div class="s24-panel s24-notice">{{ message }}</div>{% endfor %}{% endif %}
+  <div class="s24-card-grid">{% for session in sessions %}<article class="s24-card"><div class="s24-card-head"><div><div class="s24-card-title">{% if session.session_key == current_key %}این دستگاه{% else %}نشست دیگر{% endif %}</div><div class="s24-card-sub">{{ session.user_agent_label|default:'دستگاه ناشناس'|truncatechars:75 }}</div></div><span class="s24-card-badge">{% if session.revoked_at %}بسته‌شده{% else %}فعال{% endif %}</span></div><div class="s24-fact" style="margin-top:12px"><span>آخرین فعالیت</span><strong>{{ session.last_seen_at|date:'Y/m/d H:i' }}</strong></div>{% if not session.revoked_at %}<form method="post" action="{% url 'revoke-session' session.pk %}" style="margin-top:10px">{% csrf_token %}<button class="s24-button ghost">بستن نشست</button></form>{% endif %}</article>{% empty %}<div class="s24-panel"><div class="s24-empty-inline">نشست فعالی ثبت نشده است.</div></div>{% endfor %}</div>
+</section>
+{% endblock %}

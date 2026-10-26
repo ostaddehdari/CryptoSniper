@@ -301,13 +301,26 @@ def main():
                 print("PASS React unified trades + live chart")
 
                 page.set_viewport_size({"width": 390, "height": 844})
-                assert page.evaluate(
-                    "document.documentElement.scrollWidth <= window.innerWidth"
-                )
                 page.screenshot(
                     path=str(artifacts / "react-workspace-mobile.png"),
                     full_page=True,
                 )
+                overflow = page.evaluate(
+                    """() => Array.from(document.querySelectorAll('body *'))
+                    .map(el => {
+                      const r = el.getBoundingClientRect();
+                      return {
+                        tag: el.tagName,
+                        cls: el.className && String(el.className).slice(0, 120),
+                        left: Math.round(r.left),
+                        right: Math.round(r.right),
+                        width: Math.round(r.width)
+                      };
+                    })
+                    .filter(x => x.right > window.innerWidth + 1 || x.left < -1)
+                    .slice(0, 20)"""
+                )
+                assert not overflow, overflow
                 assert not errors, errors
                 browser.close()
         except Exception:

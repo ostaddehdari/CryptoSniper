@@ -212,7 +212,6 @@ class Stage25ReactInstallerTests(unittest.TestCase):
         self.assertIn("0.25.0rc1", installer)
 
 
-
 class Stage24ManagedSourceUpgradeTests(unittest.TestCase):
     def test_recent_stage24_installed_sources_are_explicitly_accepted(self):
         installer = (ROOT / "scripts/cryptosniper-stage24-rebuild-run.sh").read_text()

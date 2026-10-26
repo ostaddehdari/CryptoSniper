@@ -12,6 +12,7 @@ import "./styles.css";
 import "./stage25.css";
 import "./stage29.css";
 import "./stage30.css";
+import "./stage31.css";
 import { resolvePage } from "./routes.js";
 
 const BASE = (typeof window.__CS_BASE__ === "string" ? window.__CS_BASE__ : "/cryptosniper").replace(/\/$/, "");
@@ -129,19 +130,21 @@ function Trades({decimals,notify,setPage}){
   const [view,setView]=useState("active");
   const [selected,setSelected]=useState(null);
   const [busy,setBusy]=useState(false);
+  const [life,setLife]=useState("all"),[origin,setOrigin]=useState("all"),[query,setQuery]=useState(""),[offset,setOffset]=useState(0);
   const load=async(next=view)=>{
     try{
-      const d=await api(`/api/v1/trades/?view=${next}`);
+      const params=new URLSearchParams({view:next,state:life,origin,q:query,offset:String(offset)});
+      const d=await api(`/api/v1/trades/?${params}`);
       setData(d);
       setSelected(previous=>d.trades?.find(x=>x.key===previous?.key)||d.trades?.[0]||null);
     }catch(e){notify(e.message)}
   };
-  useEffect(()=>{load(view);const timer=setInterval(()=>load(view),5000);return()=>clearInterval(timer)},[view]);
+  useEffect(()=>{load(view);const timer=setInterval(()=>load(view),5000);return()=>clearInterval(timer)},[view,life,origin,query,offset]);
   const refresh=async()=>{
     try{
       setBusy(true);
       const d=await api("/api/v1/trades/refresh/",{method:"POST",body:{}});
-      setData({trades:d.trades||[],counts:{open:d.open}});
+      await load();
       notify("اطلاعات واقعی صرافی‌ها تازه‌سازی شد");
     }catch(e){notify(e.message)}finally{setBusy(false)}
   };
@@ -158,8 +161,9 @@ function Trades({decimals,notify,setPage}){
     <div className="card">
       <div className="cardHead">
         <div><h3>معاملات یکپارچه</h3><p>Internal · Live · External در یک فهرست</p></div>
-        <div className="row gap"><button className="primary" onClick={()=>setPage("manual")}><PlusCircle size={18}/> معامله جدید</button><div className="range">{[["active","فعال"],["archive","بایگانی"],["all","همه"]].map(([v,l])=><button key={v} className={view===v?"active":""} onClick={()=>setView(v)}>{l}</button>)}</div><button className="softBtn" disabled={busy} onClick={refresh}><RefreshCw size={17}/> تازه‌سازی واقعی</button></div>
+        <div className="row gap"><button className="primary" onClick={()=>setPage("manual")}><PlusCircle size={18}/> معامله جدید</button><div className="range">{[["active","فعال"],["archive","بایگانی"],["all","همه"]].map(([v,l])=><button key={v} className={view===v?"active":""} onClick={()=>{setView(v);setOffset(0)}}>{l}</button>)}</div><button className="softBtn" disabled={busy} onClick={refresh}><RefreshCw size={17}/> تازه‌سازی واقعی</button></div>
       </div>
+      <div className="tradeFilters"><input aria-label="جستجوی معاملات" placeholder="جستجوی نماد" value={query} onChange={e=>{setQuery(e.target.value);setOffset(0)}}/><select aria-label="وضعیت معاملات" value={life} onChange={e=>{setLife(e.target.value);setOffset(0)}}>{[["all","همه وضعیت‌ها"],["open","باز"],["closed","بسته"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select><select aria-label="مبدأ معاملات" value={origin} onChange={e=>{setOrigin(e.target.value);setOffset(0)}}>{[["all","همه مبدأها"],["live","داخلی واقعی"],["external","خارجی"],["paper","آزمایشی"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select><small>{data.total??0} مورد</small><button className="softBtn" disabled={!offset} onClick={()=>setOffset(Math.max(0,offset-100))}>قبلی</button><button className="softBtn" disabled={data.next_offset==null} onClick={()=>setOffset(data.next_offset)}>بعدی</button></div>
       <div className="tableScroll"><table><thead><tr><th>بازار</th><th>مبدأ</th><th>جهت</th><th>Entry</th><th>وضعیت</th><th>زمان</th><th></th></tr></thead><tbody>
         {rows.map(x=><tr key={x.key} onClick={()=>setSelected(x)} className={"clickRow "+(selected?.key===x.key?"selectedRow":"")}><td><b>{x.symbol||"—"}</b><small className="blockMuted">{x.exchange}</small></td><td><span className={"pill "+(x.kind==="external"?"external":"")}>{x.origin_label}</span></td><td>{x.side||"—"}</td><td>{x.entry||"—"}</td><td><Status value={x.state}/></td><td>{dt(x.updated_at)}</td><td><button className="linkBtn dangerLite" onClick={e=>{e.stopPropagation();archive(x)}}>{x.archived_at?"بازیابی":"بایگانی"}</button></td></tr>)}
       </tbody></table>{!rows.length&&<Empty/>}</div>

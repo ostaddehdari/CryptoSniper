@@ -7,6 +7,7 @@ and never submits orders.
 import json
 
 from django.core.exceptions import ValidationError
+from django.db.models import CharField, F, Q, Value
 from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
@@ -153,31 +154,81 @@ def _external_row(item):
     }
 
 
-def _rows(user, view):
-    paper = _archived_filter(
-        Trade.objects.filter(owner=user)
-        .select_related("account__exchange", "market")
-        .prefetch_related("targets"),
-        view,
-    ).order_by("-updated_at")[:200]
-    live = _archived_filter(
-        LiveSpotOrder.objects.filter(owner=user).select_related(
-            "account__exchange", "market", "source_plan"
-        ),
-        view,
-    ).order_by("-updated_at")[:200]
-    external = _archived_filter(
-        ExternalObservation.objects.filter(
-            account__owner=user,
-            kind__in=("order", "fill", "history"),
-        ).select_related("account__exchange"),
-        view,
-    ).order_by("-observed_at")[:200]
-    rows = [_paper_row(row) for row in paper]
-    rows += [_live_row(row) for row in live]
-    rows += [_external_row(row) for row in external]
-    rows.sort(key=lambda row: row["updated_at"], reverse=True)
-    return rows[:300]
+def _rows(
+    user,
+    view,
+    *,
+    origin="all",
+    state="all",
+    exchange="",
+    query="",
+    offset=0,
+    limit=100,
+    with_total=False,
+):
+    paper = Trade.objects.filter(owner=user)
+    live = LiveSpotOrder.objects.filter(owner=user)
+    external = ExternalObservation.objects.filter(
+        account__owner=user, kind__in=("order", "fill", "history")
+    )
+    sources = {"paper": paper, "live": live, "external": external}
+    pieces = []
+    for kind, qs in sources.items():
+        if origin != "all" and kind != origin:
+            qs = qs.none()
+        qs = _archived_filter(qs, view)
+        if exchange:
+            qs = qs.filter(account__exchange__code=exchange)
+        if query:
+            qs = (
+                qs.filter(payload__symbol__icontains=query)
+                if kind == "external"
+                else qs.filter(market__symbol__icontains=query)
+            )
+        if state != "all":
+            if kind == "external":
+                condition = Q(
+                    payload__status__in=[
+                        "new",
+                        "open",
+                        "active",
+                        "partial",
+                        "partially_filled",
+                        "uncertain",
+                    ]
+                )
+            elif kind == "live":
+                condition = Q(state__in=["pending", "submitting", "open", "partial", "uncertain"])
+            else:
+                condition = Q(
+                    state__in=["queued", "submitting", "partially_filled", "open", "uncertain"]
+                )
+            qs = qs.filter(condition) if state == "open" else qs.exclude(condition)
+        sources[kind] = qs
+        pieces.append(
+            qs.order_by()
+            .annotate(
+                _source=Value(kind, output_field=CharField()),
+                _id=F("pk"),
+                _time=F("observed_at" if kind == "external" else "updated_at"),
+            )
+            .values("_source", "_id", "_time")
+        )
+    combined = pieces[0].union(*pieces[1:]).order_by("-_time", "_source", "_id")
+    total = combined.count()
+    page = list(combined[offset : offset + limit])
+    objects = {}
+    for kind in sources:
+        ids = [r["_id"] for r in page if r["_source"] == kind]
+        qs = sources[kind].filter(pk__in=ids).select_related("account__exchange")
+        if kind == "paper":
+            qs = qs.select_related("market", "position", "protection").prefetch_related("targets")
+        elif kind == "live":
+            qs = qs.select_related("market", "source_plan")
+        objects[kind] = qs.in_bulk()
+    serializers = {"paper": _paper_row, "live": _live_row, "external": _external_row}
+    rows = [serializers[r["_source"]](objects[r["_source"]][r["_id"]]) for r in page]
+    return (rows, total) if with_total else rows
 
 
 @session_api_required
@@ -187,10 +238,35 @@ def api_trades(request):
     view = request.GET.get("view", "active")
     if view not in {"active", "archive", "all"}:
         return JsonResponse({"error": "invalid_view"}, status=400)
-    rows = _rows(request.user, view)
+    try:
+        offset, limit = int(request.GET.get("offset", 0)), int(request.GET.get("limit", 100))
+        origin, state = request.GET.get("origin", "all"), request.GET.get("state", "all")
+        if (
+            offset < 0
+            or not 1 <= limit <= 200
+            or origin not in {"all", "paper", "live", "external"}
+            or state not in {"all", "open", "closed"}
+        ):
+            raise ValueError
+    except ValueError:
+        return JsonResponse({"error": "invalid_filters"}, status=400)
+    rows, total = _rows(
+        request.user,
+        view,
+        origin=origin,
+        state=state,
+        exchange=request.GET.get("exchange", "")[:30],
+        query=request.GET.get("q", "")[:40],
+        offset=offset,
+        limit=limit,
+        with_total=True,
+    )
     return JsonResponse(
         {
             "trades": rows,
+            "total": total,
+            "offset": offset,
+            "next_offset": offset + len(rows) if offset + len(rows) < total else None,
             "view": view,
             "counts": {
                 "visible": len(rows),
@@ -284,6 +360,9 @@ def api_refresh_trades(request):
             state["sync_error"] = type(error).__name__
         try:
             state["observation"] = observe_external_account(account)
+            from apps.exchanges.reconciliation import reconcile_account_orders
+
+            state["internal_orders"] = reconcile_account_orders(account)
         except Exception as error:
             state["observation"] = "error"
             state["observation_error"] = type(error).__name__

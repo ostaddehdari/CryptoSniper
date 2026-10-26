@@ -5,8 +5,8 @@
     "S01",
     "S02"
   ],
-  "current_stage": "S30",
-  "next_stage": "S31",
+  "current_stage": "S31",
+  "next_stage": "S32",
   "last_completed_work": "S30-W05",
   "implementation_started": true,
   "stage_results": {
@@ -1286,16 +1286,24 @@
         }
       ],
       "blockers": [
-        "Real-provider credential acceptance and target VPS installation of Stage30 have not been performed.",
+        "Real-provider credential acceptance remains open; Stage30 VPS upgrade passed operator log.",
         "Main integration pending through PR #3 and stacked PR #4; no merge claimed."
       ],
       "implementation": "Five S30 works are code-complete and validated. Real order exits remain explicitly inactive and belong to S31. Synthetic-provider tests enqueue durable orders but never use real money.",
       "release_commit": "5f17849f720d476790c2fa6c2196ec8f4be8fff6",
       "pull_request": "https://github.com/ostaddehdari/CryptoSniper/pull/4",
-      "release_tag": "stage30-react-v0.30.0rc1-deploy-r1"
+      "release_tag": "stage30-react-v0.30.0rc1-deploy-r1",
+      "operator_installation": {
+        "status": "passed_operator_log_INSTALL_OK_DEPLOY_OK",
+        "release_tag": "stage30-react-v0.30.0rc1-deploy-r1",
+        "migrations": "both_stage30_migrations_OK",
+        "readiness": "PostgreSQL/Redis and Nginx200",
+        "queues": "seven_fresh_receipts",
+        "backups": "encrypted_daily_weekly_active"
+      }
     },
     "S31": {
-      "status": "not_started",
+      "status": "in_progress",
       "completed_works": [],
       "checks": [],
       "blockers": []

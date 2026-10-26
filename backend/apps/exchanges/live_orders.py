@@ -145,10 +145,20 @@ def _validate_receipt(order, receipt):
         raise InvalidProviderResponse("provider_order_side_mismatch")
     if receipt.amount != order.amount:
         raise InvalidProviderResponse("provider_order_amount_mismatch")
-    if receipt.filled_amount < 0 or receipt.filled_amount > order.amount:
+    if (
+        not receipt.filled_amount.is_finite()
+        or receipt.filled_amount < 0
+        or receipt.filled_amount > order.amount
+    ):
         raise InvalidProviderResponse("provider_order_fill_invalid")
     if receipt.client_order_id and receipt.client_order_id != order.client_order_id:
         raise InvalidProviderResponse("provider_client_order_id_mismatch")
+    if receipt.filled_amount > 0 and (
+        receipt.average_price is None
+        or not receipt.average_price.is_finite()
+        or receipt.average_price <= 0
+    ):
+        raise InvalidProviderResponse("provider_fill_price_missing")
     if not receipt.order_id:
         raise InvalidProviderResponse("provider_order_id_missing")
 
@@ -185,6 +195,7 @@ def execute_live_spot_order(order_id):
         order.state = LiveSpotOrder.State.SUBMITTING
         order.save(update_fields=("state", "updated_at"))
 
+    placement_started = False
     try:
         adapter = get_adapter(
             order.account.exchange.adapter_code,
@@ -198,6 +209,7 @@ def execute_live_spot_order(order_id):
             or permission.can_withdraw is not False
         ):
             raise ValidationError("مجوز Read+Spot بدون برداشت دیگر تأیید نمی‌شود.")
+        placement_started = True
         receipt = adapter.place_order(
             client_order_id=order.client_order_id,
             symbol=order.market.symbol,
@@ -218,11 +230,11 @@ def execute_live_spot_order(order_id):
         with transaction.atomic():
             locked = LiveSpotOrder.objects.select_for_update().get(pk=order_id)
             locked.state, locked.error_code = (
-                LiveSpotOrder.State.FAILED,
+                LiveSpotOrder.State.UNCERTAIN if placement_started else LiveSpotOrder.State.FAILED,
                 getattr(error, "code", "permanent_validation"),
             )
             locked.save(update_fields=("state", "error_code", "updated_at"))
-        return {"status": "failed"}
+        return {"status": locked.state}
     except (AdapterError, TimeoutError, OSError):
         # Provider may have accepted the request. Never submit a second copy automatically.
         with transaction.atomic():
@@ -231,18 +243,7 @@ def execute_live_spot_order(order_id):
             locked.save(update_fields=("state", "error_code", "updated_at"))
         return {"status": "uncertain"}
 
-    mapped = {
-        OrderStatus.OPEN: LiveSpotOrder.State.OPEN,
-        OrderStatus.PARTIAL: LiveSpotOrder.State.PARTIAL,
-        OrderStatus.FILLED: LiveSpotOrder.State.FILLED,
-        OrderStatus.CANCELLED: LiveSpotOrder.State.CANCELLED,
-    }
-    with transaction.atomic():
-        locked = LiveSpotOrder.objects.select_for_update().get(pk=order_id)
-        locked.external_order_id = receipt.order_id
-        locked.filled_amount = receipt.filled_amount
-        locked.average_price = receipt.average_price
-        locked.state = mapped[receipt.status]
-        locked.error_code = ""
-        locked.save()
+    from .reconciliation import apply_receipt
+
+    locked = apply_receipt(order_id, receipt)
     return {"status": locked.state, "external_order_id": locked.external_order_id}

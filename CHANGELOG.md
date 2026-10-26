@@ -1,3 +1,9 @@
+## Stage29 installer r2
+
+- Fix DuplicateTable on upgrades from earlier React previews by verifying and reconciling only matching schema before migrate.
+- Preserve wallet rows and old indexes, validate column types/null/PK/FK/unique, complete partial diagnostics atomically, and take a private pre-migration PostgreSQL snapshot.
+- Six PostgreSQL upgrade regression scenarios and full suite/browser passed (342 tests). Production retry remains pending.
+
 # 0.29.0rc1 — React finalization (2026-10-26)
 
 - Restored primary React workspace from the approved visual base while preserving the current backend/migrations.

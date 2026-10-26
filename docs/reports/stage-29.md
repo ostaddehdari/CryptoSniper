@@ -36,3 +36,13 @@
 r2 قبل از migration پشتیبان خصوصی pg_dump می‌گیرد؛ جدول/ستون‌های موجود React را از نظر نوع، null، PK، FK و unique بررسی و فقط schema سازگار را adopt می‌کند. indexهای قدیمی حفظ و نام canonical لازم اضافه می‌شود؛ داده‌ای حذف یا بازنویسی نمی‌شود. اختلاف ساختار موجب توقف تراکنشی می‌شود؛ --fake عمومی استفاده نمی‌شود. migrationهای تاریخی دست‌نخورده‌اند.
 
 آزمون‌های PostgreSQL این اصلاح: حفظ ردیف کیف پول با index قدیمی، عدم پذیرش schema ناسازگار، dry-run بدون تغییر، diagnostics نیمه‌موجود، نصب تازه و تکرارپذیری. پذیرش اجرای r2 روی سرور اپراتور پس از ارسال لاگ جدید مشخص می‌شود.
+
+نتیجه بررسی r2: 342 تست PostgreSQL و smoke مرورگر موفق؛ نصب‌کننده و ZIP منتشر شدند.
+
+- Source r2: 83ed22c4669a446fd168783cdb91cf23e80ddae8
+- CI r2: https://github.com/ostaddehdari/CryptoSniper/actions/runs/40348262380
+- Release r2: https://github.com/ostaddehdari/CryptoSniper/releases/tag/stage29-react-v0.29.0rc1-deploy-r2
+- ZIP r2 SHA256: 54fea505753c9125d7dbf6d265ac75eca84cc9e441dd0132ab2060a8865b1700
+- Installer r2 SHA256: aefec5a80898ab9a281be839d13659643562afea12a2b35dd2648f09609e63f2
+
+پرونده پشتیبان قبل از migration در مسیر خصوصی /etc/cryptosniper/backups/database ذخیره می‌شود. r1 در سوابق بالا صرفاً نسخه تاریخی است و نصب مجدد آن توصیه نمی‌شود.

@@ -1215,6 +1215,16 @@
           "release_tag": "stage29-react-v0.29.0rc1-deploy-r1",
           "archive_sha256": "5271407b985ea0b47dfa400fbc7cacab89167156191759c8eed0f08fc2dab1e1",
           "installer_sha256": "45aa55e3c494fa0ddb878cca261e6cc8825220cba7e5dcc4d68eb039c77b8ad7"
+        },
+        {
+          "name": "r2 PostgreSQL upgrade regression + full suite + browser + release",
+          "status": "passed",
+          "tested_commit": "83ed22c4669a446fd168783cdb91cf23e80ddae8",
+          "run_url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/40348262380",
+          "pytest_passed": 342,
+          "release_tag": "stage29-react-v0.29.0rc1-deploy-r2",
+          "archive_sha256": "54fea505753c9125d7dbf6d265ac75eca84cc9e441dd0132ab2060a8865b1700",
+          "installer_sha256": "aefec5a80898ab9a281be839d13659643562afea12a2b35dd2648f09609e63f2"
         }
       ],
       "blockers": [
@@ -1227,14 +1237,14 @@
         "approved_styles_blob": "565980a9a4a5ba390f09fcc61c5a6ea9a6a82cdd"
       },
       "implementation": "All five S29 works implemented and source tested/published on stage29-final-react; partial reflects pending main integration and production acceptance, not incomplete React code.",
-      "release_commit": "69fb18cc5591ecbd8f80f648c8ad0ed0c45545ae",
-      "release_tag": "stage29-react-v0.29.0rc1-deploy-r1",
+      "release_commit": "83ed22c4669a446fd168783cdb91cf23e80ddae8",
+      "release_tag": "stage29-react-v0.29.0rc1-deploy-r2",
       "pull_request": "https://github.com/ostaddehdari/CryptoSniper/pull/3",
       "operator_installation": {
         "r1": "failed",
         "error": "DuplicateTable accounts_walletconnection",
         "application_files_rollback": "confirmed_by_operator_log",
-        "r2": "in_progress"
+        "r2": "published_waiting_operator_retry"
       }
     },
     "S30": {

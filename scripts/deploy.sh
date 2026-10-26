@@ -5,12 +5,12 @@
 set -Eeuo pipefail
 umask 077
 
-RELEASE_TAG='stage29-react-v0.29.0rc1-deploy-r1'
-ZIP_NAME='CryptoSniper-Stage29-React-v0.29.0rc1-r1.zip'
+RELEASE_TAG='stage29-react-v0.29.0rc1-deploy-r2'
+ZIP_NAME='CryptoSniper-Stage29-React-v0.29.0rc1-r2.zip'
 INSTALLER_NAME='cryptosniper-stage29-react-run.sh'
-ZIP_SHA256='5271407b985ea0b47dfa400fbc7cacab89167156191759c8eed0f08fc2dab1e1'
-INSTALLER_SHA256='45aa55e3c494fa0ddb878cca261e6cc8825220cba7e5dcc4d68eb039c77b8ad7'
-SOURCE_COMMIT='69fb18cc5591ecbd8f80f648c8ad0ed0c45545ae'
+ZIP_SHA256='54fea505753c9125d7dbf6d265ac75eca84cc9e441dd0132ab2060a8865b1700'
+INSTALLER_SHA256='aefec5a80898ab9a281be839d13659643562afea12a2b35dd2648f09609e63f2'
+SOURCE_COMMIT='83ed22c4669a446fd168783cdb91cf23e80ddae8'
 RELEASE_BASE="https://github.com/ostaddehdari/CryptoSniper/releases/download/$RELEASE_TAG"
 MODE="${1:-install}"
 if [[ "$MODE" != 'install' && "$MODE" != '--check' ]]; then

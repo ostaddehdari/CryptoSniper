@@ -54,4 +54,5 @@ def test_finalization_plan_defines_five_stages_without_claiming_future_work_done
     final = [s for s in plan["stages"] if s["id"] in plan["finalization_stages"]]
     assert [s["id"] for s in final] == ["S29", "S30", "S31", "S32", "S33"]
     assert all(len(s["works"]) == 5 for s in final)
-    assert all(s["status"] == "not_started" for s in final[1:])
+    current = int(json.loads((root / "docs/progress.json").read_text())["current_stage"][1:])
+    assert all(s["status"] == "not_started" for s in final if s["number"] > current)

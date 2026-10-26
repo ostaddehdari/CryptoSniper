@@ -201,6 +201,11 @@ class Stage29NginxUpgradeTests(NginxUpgradeTests):
     stage = 29
 
 
+class Stage30NginxUpgradeTests(NginxUpgradeTests):
+    installer = ROOT / "scripts/cryptosniper-stage30-react-run.sh"
+    stage = 30
+
+
 class Stage25ReactInstallerTests(unittest.TestCase):
     def test_stage25_accepts_verified_r8_and_pins_react_assets(self):
         installer = (ROOT / "scripts/cryptosniper-stage25-react-run.sh").read_text()

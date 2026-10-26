@@ -13,11 +13,11 @@ def test_trading_defaults_match_approved_strategy(client, django_user_model):
     response = client.get(reverse("api-trading-preferences"))
     assert response.status_code == 200
     data = response.json()["trading_preferences"]
-    assert data["tp_distribution"] == ["10.00", "10.00", "80.00"]
+    assert data["tp_distribution"] == ["10", "10", "80"]
     assert data["trailing_sl_enabled"] is True
     assert data["trailing_tp_enabled"] is True
     assert data["trailing_trigger"] == "tp1"
-    assert data["trailing_distance_percent"] == "1.000"
+    assert data["trailing_distance_percent"] == "1"
     assert data["default_market"] == "spot"
 
 

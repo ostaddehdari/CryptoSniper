@@ -15,6 +15,7 @@ from apps.reports import views as report_views
 from apps.signals import views as inbox_views
 from apps.tradeplans import context as trade_context
 from apps.tradeplans import views as plan_views
+from apps.tradeplans.submission import api_submit
 from apps.trading import views as paper_views
 from django.http import JsonResponse
 from django.urls import path
@@ -36,6 +37,7 @@ def ready(request):
 
 
 urlpatterns = [
+    path("api/v1/manual/submit/", api_submit, name="api-manual-submit"),
     path("manifest.webmanifest", views.web_manifest, name="web-manifest"),
     path("app/", react_views.react_app, name="app-shell"),
     path("service-worker.js", views.service_worker, name="service-worker"),

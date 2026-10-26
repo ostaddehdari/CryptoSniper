@@ -1412,7 +1412,7 @@
       "depends_on": [
         "S29"
       ],
-      "status": "not_started",
+      "status": "partial",
       "works": [
         {
           "id": "S30-W01",
@@ -1420,7 +1420,7 @@
           "title": "بازارهای حساب و ارزهای منتخب",
           "deliverables": "فهرست کامل/صفحه‌بندی بازار همان حساب، جست‌وجو و ارزهای منتخب هر صرافی با Drag & Drop.",
           "acceptance": "انتخاب حساب یا نماد که تغییر کرد داده صرافی قبلی باقی نماند.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S30-W02",
@@ -1428,7 +1428,7 @@
           "title": "فرم نهایی دستی و تحلیل",
           "deliverables": "دو تب، Entry خالی، حجم صحیح زیر Entry، درصد و رنگ TP/SL، Spot بدون اهرم.",
           "acceptance": "قیمت بازار Entry دستی را پر یا بازنویسی نکند.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S30-W03",
@@ -1436,7 +1436,7 @@
           "title": "Fix Loss خودکار",
           "deliverables": "موجودی تتر آزاد همان حساب، ریسک 1٪ قابل تغییر، محاسبه خودکار Decimal و پیشنهاد حجم.",
           "acceptance": "1000 تتر و SL پنج درصد: ریسک1=200، ریسک2=400؛ کارمزد و محدودیت حجم آشکار باشند.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S30-W04",
@@ -1444,7 +1444,7 @@
           "title": "پیش‌فرض‌ها و تریلینگ",
           "deliverables": "فقط Trailing و Trailing SL، TP1/2/3 و فاصله صحیح؛ SL در TP1 فقط یک بار Entry.",
           "acceptance": "تنظیمات ذخیره‌شده در معامله جدید اعمال شوند؛ سهم TP جمعاً100 باشد.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S30-W05",
@@ -1452,7 +1452,7 @@
           "title": "گردش ارسال سفارش",
           "deliverables": "حجم نهایی Backend، تأیید و idempotency، انتقال وضعیت سفارش به معاملات و آزمون sandbox.",
           "acceptance": "دوبار کلیک یا retry امنیتی سفارش تکراری نسازد؛ بدون مجوز عملی سفارش واقعی ارسال نشود.",
-          "status": "not_started"
+          "status": "done"
         }
       ]
     },

@@ -6,6 +6,7 @@ import re
 import uuid
 from decimal import Decimal, InvalidOperation
 
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -39,8 +40,11 @@ from apps.signals.models import Signal, SignalSource, TelegramAccount, TelegramB
 from apps.signals.telegram_client import available_channels, complete_login, configure_channel, request_login_code
 from apps.signals.telegram_security import revoke_telegram_credentials
 from apps.tradeplans.models import TradePlan
+from apps.tradeplans.fix_loss import api_fix_loss
 from apps.trading.models import Trade
 
+
+from apps.marketdata.workspace import api_account_markets, api_favorites
 
 SAFE_SYMBOL = re.compile(r"^[A-Z0-9]{2,20}$")
 
@@ -399,6 +403,8 @@ def api_bootstrap(request):
     watchlists = list(Watchlist.objects.filter(owner=request.user).values("id", "name"))
     return JsonResponse(
         {
+            "live_trading_enabled": settings.LIVE_TRADING_ENABLED,
+            "automatic_exits_active": False,
             "user": {
                 "id": request.user.pk,
                 "name": request.user.preferred_name,
@@ -496,7 +502,7 @@ def api_watchlists_ui(request):
 @session_api_required
 @never_cache
 @require_http_methods(["GET", "POST"])
-def api_favorites(request):
+def api_legacy_favorites(request):
     if request.method == "GET":
         return JsonResponse(
             {
@@ -618,46 +624,6 @@ def api_exchange_create(request):
         return JsonResponse({"id": account.pk, "status": account.status}, status=201)
     except ValidationError as error:
         return JsonResponse({"error": error.messages}, status=400)
-
-
-@session_api_required
-@never_cache
-@require_GET
-def api_account_markets(request, pk):
-    account = get_object_or_404(
-        UserExchangeAccount.objects.for_user(request.user).select_related("exchange"),
-        pk=pk,
-        status__in=(
-            UserExchangeAccount.Status.CONNECTED,
-            UserExchangeAccount.Status.RESTRICTED,
-        ),
-        permissions__can_read=True,
-    )
-    markets = (
-        ExchangeMarket.objects.filter(exchange=account.exchange, active=True, quote_asset__symbol="USDT")
-        .select_related("base_asset", "quote_asset")
-        .order_by("base_asset__symbol", "market_type")[:1000]
-    )
-    return JsonResponse(
-        {
-            "account": {"id": account.pk, "exchange": account.exchange.code, "label": account.label},
-            "markets": [
-                {
-                    "id": m.pk,
-                    "base": m.base_asset.symbol,
-                    "symbol": m.symbol,
-                    "market_type": m.market_type,
-                    "max_leverage": str(m.max_leverage),
-                    "price_step": str(m.price_step) if m.price_step else None,
-                    "amount_step": str(m.amount_step) if m.amount_step else None,
-                    "min_notional": str(m.min_notional) if m.min_notional else None,
-                }
-                for m in markets
-            ],
-        }
-    )
-
-
 
 
 @session_api_required
@@ -794,57 +760,11 @@ def api_exchange_revoke(request, pk):
         return JsonResponse({"error": error.messages}, status=400)
 
 
-@session_api_required
-@never_cache
-@require_POST
-def api_fix_loss(request):
-    try:
-        data = _body(request)
-        account = get_object_or_404(UserExchangeAccount.objects.for_user(request.user), pk=int(data.get("account_id")))
-        market = get_object_or_404(ExchangeMarket, pk=int(data.get("market_id")), exchange=account.exchange, active=True)
-        entry = Decimal(str(data.get("entry")))
-        stop = Decimal(str(data.get("stop")))
-        risk_percent = Decimal(str(data.get("risk_percent", "1")))
-        leverage = Decimal(str(data.get("leverage", "1")))
-        if entry <= 0 or stop <= 0 or entry == stop or not Decimal("0") < risk_percent <= Decimal("20"):
-            raise ValidationError("ورودی Fix Loss معتبر نیست.")
-        leverage = max(Decimal("1"), min(leverage, market.max_leverage or Decimal("1")))
-        balance = (
-            BalanceSnapshot.objects.filter(exchange_account=account, asset=market.quote_asset)
-            .order_by("-captured_at")
-            .first()
-        )
-        if not balance:
-            raise ValidationError("موجودی آزاد Quote برای این حساب در دسترس نیست.")
-        available = balance.free_balance
-        risk_budget = available * risk_percent / Decimal("100")
-        stop_fraction = abs(entry - stop) / entry
-        raw_notional = risk_budget / stop_fraction
-        max_notional = available * leverage
-        suggested = min(raw_notional, max_notional)
-        quantity = suggested / entry
-        return JsonResponse(
-            {
-                "available": str(available),
-                "risk_budget": str(risk_budget),
-                "stop_distance_percent": str(stop_fraction * Decimal("100")),
-                "max_leverage": str(market.max_leverage),
-                "used_leverage": str(leverage),
-                "raw_notional": str(raw_notional),
-                "suggested_notional": str(suggested),
-                "suggested_quantity": str(quantity),
-                "capped_by_available_balance": raw_notional > max_notional,
-                "advisory_only": True,
-            }
-        )
-    except (ValidationError, ValueError, TypeError, InvalidOperation) as error:
-        return JsonResponse({"error": getattr(error, "messages", [str(error)])}, status=400)
-
-
 def _live_order_payload(item):
     return {
         "id": item.pk,
         "source": "cryptosniper",
+        "plan_id": item.source_plan_id,
         "exchange": item.account.exchange.code,
         "account": item.account.label,
         "symbol": item.market.symbol,

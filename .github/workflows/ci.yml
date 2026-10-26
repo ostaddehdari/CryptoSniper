@@ -103,7 +103,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: stage-29-react-evidence
+          name: stage-30-react-evidence
           path: |
             .runtime/pytest.xml
             .runtime/screenshots/*.png
@@ -118,3 +118,11 @@ jobs:
       contents: write
       actions: read
     uses: ./.github/workflows/release-stage29-react.yml
+
+  release-stage30:
+    needs: foundation
+    if: github.event_name == 'push' && github.ref == 'refs/heads/stage30-final-trading'
+    permissions:
+      contents: write
+      actions: read
+    uses: ./.github/workflows/release-stage30-react.yml

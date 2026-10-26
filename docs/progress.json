@@ -5,9 +5,9 @@
     "S01",
     "S02"
   ],
-  "current_stage": "S29",
-  "next_stage": "S30",
-  "last_completed_work": "S29-W05",
+  "current_stage": "S30",
+  "next_stage": "S31",
+  "last_completed_work": "S30-W05",
   "implementation_started": true,
   "stage_results": {
     "S01": {
@@ -1228,15 +1228,14 @@
         }
       ],
       "blockers": [
-        "Default-branch mutation was rejected by automatic approval review; PR #3 awaits explicit merge authorization.",
-        "Production VPS installation and operator visual acceptance remain unverified."
+        "Main integration remains pending; installed release and visual UI accepted by operator."
       ],
       "baseline": {
         "main": "8c0352ddb5b5cd8639208dbd95b2e790a0746104",
         "react": "da00bf4a6574728861d08babc898d42f01600396",
         "approved_styles_blob": "565980a9a4a5ba390f09fcc61c5a6ea9a6a82cdd"
       },
-      "implementation": "All five S29 works implemented and source tested/published on stage29-final-react; partial reflects pending main integration and production acceptance, not incomplete React code.",
+      "implementation": "All five S29 works implemented, tested and published; r2 installation accepted by operator log and appearance approved by user. Partial reflects pending main integration.",
       "release_commit": "83ed22c4669a446fd168783cdb91cf23e80ddae8",
       "release_tag": "stage29-react-v0.29.0rc1-deploy-r2",
       "pull_request": "https://github.com/ostaddehdari/CryptoSniper/pull/3",
@@ -1244,14 +1243,56 @@
         "r1": "failed",
         "error": "DuplicateTable accounts_walletconnection",
         "application_files_rollback": "confirmed_by_operator_log",
-        "r2": "published_waiting_operator_retry"
-      }
+        "r2": "passed_operator_log_INSTALL_OK_DEPLOY_OK"
+      },
+      "visual_acceptance": "confirmed_by_user"
     },
     "S30": {
-      "status": "not_started",
-      "completed_works": [],
-      "checks": [],
-      "blockers": []
+      "status": "partial",
+      "completed_works": [
+        "S30-W01",
+        "S30-W02",
+        "S30-W03",
+        "S30-W04",
+        "S30-W05"
+      ],
+      "checks": [
+        {
+          "name": "PostgreSQL/Redis full suite, React browser and responsive acceptance",
+          "status": "passed",
+          "tested_commit": "5f17849f720d476790c2fa6c2196ec8f4be8fff6",
+          "run_url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/40357466172",
+          "pytest_passed": 369,
+          "responsive_widths": [
+            320,
+            390,
+            768,
+            1440
+          ],
+          "artifact_id": 12666901314
+        },
+        {
+          "name": "Exact-tested-source cumulative GitHub Release and SHA256 assets",
+          "status": "passed",
+          "release_tag": "stage30-react-v0.30.0rc1-deploy-r1",
+          "tested_commit": "5f17849f720d476790c2fa6c2196ec8f4be8fff6",
+          "archive_sha256": "311f990c14099c2ccda9a74c4b7a3b7ef0c38a8fd9e3d1bf705c1ab67a6ee5ad",
+          "installer_sha256": "d887a65c2a1f1643f7b585fe253b60385d88842c03744c417b47ce89a7130a57"
+        },
+        {
+          "name": "Download published ZIP and installer, exact SHA256 and deploy.sh --check",
+          "status": "passed",
+          "installation_performed": false
+        }
+      ],
+      "blockers": [
+        "Real-provider credential acceptance and target VPS installation of Stage30 have not been performed.",
+        "Main integration pending through PR #3 and stacked PR #4; no merge claimed."
+      ],
+      "implementation": "Five S30 works are code-complete and validated. Real order exits remain explicitly inactive and belong to S31. Synthetic-provider tests enqueue durable orders but never use real money.",
+      "release_commit": "5f17849f720d476790c2fa6c2196ec8f4be8fff6",
+      "pull_request": "https://github.com/ostaddehdari/CryptoSniper/pull/4",
+      "release_tag": "stage30-react-v0.30.0rc1-deploy-r1"
     },
     "S31": {
       "status": "not_started",

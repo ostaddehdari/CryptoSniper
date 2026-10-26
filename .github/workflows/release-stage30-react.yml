@@ -1,0 +1,59 @@
+name: Build Stage30 validated React deployment
+on:
+  workflow_call:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: stage30-validated-release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Require exact tested source and package workflow
+        env:
+          TESTED_SHA: ${{ github.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$TESTED_SHA"
+          test -f scripts/build_stage30_release.py
+          test -f docs/reports/stage-30.md
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend-react/package-lock.json
+      - name: Build the exact tested React source
+        working-directory: frontend-react
+        run: |
+          npm ci
+          npm test
+          npm run build
+      - name: Verify installer upgrade and build cumulative package
+        run: |
+          python3 -m unittest discover -s tests -p test_installer_nginx.py -q
+          python3 scripts/build_stage30_release.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stage30-verified-react-release
+          path: .runtime/stage30-release/*
+          include-hidden-files: true
+          if-no-files-found: error
+      - name: Publish immutable package from the successful source
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG=stage30-react-v0.30.0rc1-deploy-r1
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo 'Existing immutable Stage30 release retained; no assets replaced.'
+            exit 0
+          fi
+          gh release create "$TAG" .runtime/stage30-release/* --target "$(git rev-parse HEAD)" --prerelease \
+            --title 'CryptoSniper Stage30 — restored primary React workspace' \
+            --notes 'Stage30: account-scoped paginated markets, per-exchange drag/drop favorites, empty Entry, integer capital, automatic advisory Fix Loss using fresh free USDT, saved trailing and TP split defaults, and atomic idempotent entry tied to an immutable plan snapshot. Historical migrations and the approved React base stylesheet are preserved. Live execution stays gated; automatic real-order exits are completed in Stage31. Real-provider/VPS acceptance is separate.'

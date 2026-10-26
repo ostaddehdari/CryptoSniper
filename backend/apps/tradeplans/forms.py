@@ -1,7 +1,9 @@
 import uuid
+from decimal import Decimal, InvalidOperation
 
 from django import forms
 
+from apps.accounts.models import TradingPreferences
 from apps.exchanges.models import ExchangeMarket, UserExchangeAccount
 from apps.signals.models import Signal
 
@@ -30,6 +32,7 @@ class ManualTradeForm(forms.Form):
     stop_loss = forms.DecimalField(
         label="حد ضرر (SL)", max_digits=32, decimal_places=16, min_value=0.0000000000000001
     )
+    tp_distribution = forms.JSONField(required=False, widget=forms.HiddenInput)
     capital = forms.IntegerField(
         label="مبلغ سرمایه (به ارز Quote)",
         min_value=1,
@@ -62,6 +65,7 @@ class ManualTradeForm(forms.Form):
 
     def __init__(self, owner, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.owner = owner
         self.fields["origin_signal"].queryset = Signal.objects.filter(
             owner=owner, status=Signal.Status.APPROVED
         )
@@ -83,6 +87,25 @@ class ManualTradeForm(forms.Form):
         self.fields["entry_price"].widget.attrs["data-no-draft"] = "1"
         if not self.is_bound:
             self.initial.setdefault("client_token", uuid.uuid4())
+
+    def clean_tp_distribution(self):
+        value = self.cleaned_data.get("tp_distribution")
+        if value is None:
+            prefs = TradingPreferences.objects.filter(owner=self.owner).first()
+            value = (
+                [prefs.tp1_percent, prefs.tp2_percent, prefs.tp3_percent] if prefs else [10, 10, 80]
+            )
+        try:
+            if not isinstance(value, list) or len(value) != 3:
+                raise ValueError
+            numbers = [Decimal(str(v)) for v in value]
+            if any(not v.is_finite() or v < 0 or v != v.to_integral_value() for v in numbers):
+                raise ValueError
+            if sum(numbers) != 100:
+                raise ValueError
+            return [int(v) for v in numbers]
+        except (ValueError, InvalidOperation, TypeError) as error:
+            raise forms.ValidationError("سهم سه TP باید اعداد صحیح با مجموع ۱۰۰ باشد.") from error
 
     def clean(self):
         data = super().clean()

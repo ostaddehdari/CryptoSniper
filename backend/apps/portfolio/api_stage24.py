@@ -67,6 +67,7 @@ def _paper_row(trade):
 
 
 def _live_row(order):
+    snapshot = order.source_plan.approved_snapshot if order.source_plan else {}
     return {
         "key": f"live:{order.pk}",
         "kind": "live",
@@ -89,8 +90,10 @@ def _live_row(order):
             LiveSpotOrder.State.PARTIAL,
             LiveSpotOrder.State.UNCERTAIN,
         },
-        "tp": [],
-        "stop_loss": None,
+        "tp": [target["price"] for target in snapshot.get("targets", [])],
+        "stop_loss": snapshot.get("stop_loss"),
+        "plan_id": order.source_plan_id,
+        "automatic_exits_active": False,
         "created_at": order.created_at.isoformat(),
         "updated_at": order.updated_at.isoformat(),
         "archived_at": order.archived_at.isoformat() if order.archived_at else None,
@@ -158,7 +161,9 @@ def _rows(user, view):
         view,
     ).order_by("-updated_at")[:200]
     live = _archived_filter(
-        LiveSpotOrder.objects.filter(owner=user).select_related("account__exchange", "market"),
+        LiveSpotOrder.objects.filter(owner=user).select_related(
+            "account__exchange", "market", "source_plan"
+        ),
         view,
     ).order_by("-updated_at")[:200]
     external = _archived_filter(

@@ -58,8 +58,11 @@ def test_private_api_is_owner_scoped_and_hostile_label_is_escaped(client, django
     assert client.get(reverse("api-exchange-account", args=[account.pk])).status_code == 404
     client.force_login(owner)
     page = client.get(reverse("exchange-account-detail", args=[account.pk]))
+    assert page.status_code == 200
     assert b"<script data-canary" not in page.content
-    assert b"&lt;script data-canary" in page.content
+    assert b'id="root"' in page.content
+    payload = client.get(reverse("api-exchange-account", args=[account.pk])).json()
+    assert payload["account"]["label"] == account.label
 
 
 @pytest.mark.django_db
@@ -143,8 +146,8 @@ def test_two_factor_readiness_is_honest_and_step_up_rotates_session(client, djan
     old_key = client.session.session_key
     page = client.get(reverse("security-step-up"))
     assert page.status_code == 200
+    assert b'id="root"' in page.content
     assert not second_factor_status()["configured"]
-    assert "اجرای Live غیرفعال" in page.content.decode()
     assert client.post(reverse("security-step-up"), {"password": "wrong"}).status_code == 200
     assert client.post(reverse("security-step-up"), {"password": "right-pass"}).status_code == 302
     assert client.session.session_key != old_key

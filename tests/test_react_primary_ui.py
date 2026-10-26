@@ -1,7 +1,9 @@
-import pytest
+from pathlib import Path
 
-from apps.exchanges.models import Exchange, ExchangeMarket, UserExchangeAccount
+import pytest
 from django.urls import reverse
+
+from apps.exchanges.models import Asset, Exchange, ExchangeMarket, UserExchangeAccount
 
 
 @pytest.mark.django_db
@@ -62,8 +64,6 @@ def test_react_account_market_picker_returns_markets_immediately(
         enabled=True,
         spot_supported=True,
     )
-    from apps.exchanges.models import Asset
-
     btc = Asset.objects.create(symbol="BTC")
     usdt = Asset.objects.create(symbol="USDT")
     market = ExchangeMarket.objects.create(
@@ -92,8 +92,6 @@ def test_react_account_market_picker_returns_markets_immediately(
 
 
 def test_react_source_contains_full_workspace_and_no_legacy_shell_contract():
-    from pathlib import Path
-
     root = Path(__file__).resolve().parents[1]
     source = (root / "frontend-react/src/main.jsx").read_text()
     styles = (root / "frontend-react/src/styles.css").read_text()

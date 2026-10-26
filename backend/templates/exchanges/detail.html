@@ -1,9 +1,52 @@
-{% extends 'shell.html' %}{% block title %}{{ account.label }} | CryptoSniper{% endblock %}{% block breadcrumb %}صرافی‌ها / {{ account.label }}{% endblock %}{% block content %}
-<div class="page-heading"><div><span class="eyebrow">EXCHANGE ACCOUNT</span><h1>{{ account.label }}</h1><p class="muted">{{ account.exchange.name }} · {{ account.get_environment_display }} · {{ account.credential_hint }}</p></div><div class="account-actions"><a class="button button-soft" href="{% url 'security-step-up' %}">تأیید عملیات حساس</a><a class="button button-soft" href="{% url 'exchange-center' %}">همه اتصال‌ها</a></div></div>
-{% if messages %}{% for message in messages %}<div class="notice {% if message.tags == 'error' %}form-error{% else %}notice-success{% endif %}" role="status">{{ message }}</div>{% endfor %}{% endif %}
-<section class="account-status-banner status-{{ account.status }}"><div><span class="status-badge status-{{ account.status }}">{{ account.get_status_display }}</span><h2>{{ account.exchange.name }}</h2><p>{% if account.status == 'connected' %}مجوزها ایمن بررسی شده‌اند و داده‌های حساب قابل همگام‌سازی است.{% elif account.status == 'pending' %}اتصال در انتظار نخستین بررسی Worker است.{% elif account.status == 'disabled' %}این اتصال غیرفعال شده و هیچ پردازشی روی آن انجام نمی‌شود.{% else %}اتصال نیازمند بررسی مجدد یا اصلاح کلید است.{% endif %}</p></div><div class="account-actions">{% if account.status != 'disabled' %}<form method="post" action="{% url 'exchange-account-sync' account.pk %}">{% csrf_token %}<button class="button button-primary" type="submit">بررسی و همگام‌سازی</button></form><form method="post" action="{% url 'exchange-account-rotate' account.pk %}">{% csrf_token %}<button class="button button-soft" type="submit">گردش رمزنگاری</button></form><form method="post" action="{% url 'exchange-account-disable' account.pk %}">{% csrf_token %}<button class="button button-danger-soft" type="submit">غیرفعال‌کردن فوری</button></form><form method="post" action="{% url 'exchange-account-revoke' account.pk %}">{% csrf_token %}<button class="button button-danger-soft" type="submit">حذف قطعی کلید</button></form>{% endif %}</div></section>
-<div class="exchange-detail-grid"><section class="panel"><div class="panel-heading"><h2>وضعیت مجوزها</h2><span class="small-label">بدون نمایش Secret</span></div><div class="permission-list"><div><span>خواندن حساب</span><b class="{% if account.permissions.can_read %}yes{% else %}no{% endif %}">{% if account.permissions.can_read %}مجاز{% else %}نامشخص{% endif %}</b></div><div><span>معامله Spot</span><b class="{% if account.permissions.can_trade_spot %}yes{% else %}no{% endif %}">{% if account.permissions.can_trade_spot %}مجاز{% else %}غیرفعال{% endif %}</b></div><div><span>معامله Margin</span><b class="{% if account.permissions.can_trade_margin %}yes{% else %}no{% endif %}">{% if account.permissions.can_trade_margin %}مجاز{% else %}غیرفعال{% endif %}</b></div><div><span>برداشت</span><b class="{% if account.permissions.can_withdraw == False %}yes{% else %}no{% endif %}">{% if account.permissions.can_withdraw == False %}خاموش · امن{% else %}نامشخص/ناامن{% endif %}</b></div><div><span>محدودیت IP</span><b class="{% if account.permissions.ip_restricted %}yes{% else %}neutral{% endif %}">{% if account.permissions.ip_restricted %}فعال{% else %}پیشنهاد می‌شود{% endif %}</b></div></div></section>
-<section class="panel"><div class="panel-heading"><h2>آخرین موجودی</h2><span class="small-label">{% if account.last_sync_at %}{{ account.last_sync_at|date:'Y/m/d H:i' }} UTC{% else %}همگام نشده{% endif %}</span></div>{% if balances %}<div class="balance-list">{% for balance in balances %}<div><span class="asset-badge">{{ balance.asset.symbol }}</span><span><strong>{{ balance.total_balance|floatformat:8 }}</strong><small>آزاد {{ balance.free_balance|floatformat:8 }} · قفل {{ balance.locked_balance|floatformat:8 }}</small></span></div>{% endfor %}</div>{% else %}<p class="empty-inline">پس از نخستین همگام‌سازی، موجودی‌ها اینجا دیده می‌شوند.</p>{% endif %}</section></div>
-<section class="panel market-panel"><div class="panel-heading"><div><h2>بازارها و محدودیت‌ها</h2><p class="muted small-label">مقادیر مستقیماً از Adapter دریافت می‌شوند و Hard-code نیستند.</p></div><span class="status-badge">{{ markets|length }} بازار نمایشی</span></div>{% if markets %}<div class="market-table-wrap"><table class="market-table"><thead><tr><th>بازار</th><th>نوع</th><th>حداقل سفارش</th><th>گام مقدار</th><th>حداقل ارزش</th><th>اهرم گزارش‌شده</th></tr></thead><tbody>{% for market in markets %}<tr><td><strong>{{ market.symbol }}</strong></td><td><span class="market-kind">{{ market.get_market_type_display }}</span></td><td>{{ market.min_amount|default:'—' }}</td><td>{{ market.amount_step|default:'—' }}</td><td>{{ market.min_notional|default:'—' }}</td><td>{% if market.metadata.leverage_status == 'not_reported' %}گزارش نشده{% else %}{{ market.max_leverage }}×{% endif %}</td></tr>{% endfor %}</tbody></table></div>{% else %}<p class="empty-inline">بازارها هنوز همگام نشده‌اند.</p>{% endif %}</section>
-{% if account.environment == 'live' %}<section class="panel"><div class="panel-heading"><div><span class="eyebrow">REAL SPOT · LIMIT ONLY</span><h2>ثبت سفارش واقعی Spot</h2></div><span class="status-badge">{% if live_enabled %}فعال روی سرور{% else %}خاموش روی سرور{% endif %}</span></div><p class="muted">تنها Limit Order؛ بدون Futures و بدون برداشت. نتیجه نامعلوم خودکار دوباره ارسال نمی‌شود.</p>{% if live_enabled and account.trading_enabled and account.permissions.can_withdraw == False %}<form method="post" action="{% url 'exchange-live-order' account.pk %}" class="settings-form">{% csrf_token %}{{ live_order_form.as_p }}<button class="button button-danger-soft" type="submit">ثبت سفارش واقعی با تأیید من</button></form>{% else %}<div class="notice">برای فعال‌شدن، LIVE_TRADING_ENABLED و کلید Read+Spot بدون مجوز برداشت لازم است.</div>{% endif %}{% if live_orders %}<div class="market-table-wrap"><table class="market-table"><thead><tr><th>زمان</th><th>بازار</th><th>جهت</th><th>مقدار</th><th>قیمت</th><th>وضعیت</th></tr></thead><tbody>{% for order in live_orders %}<tr><td>{{ order.created_at|date:'Y/m/d H:i' }}</td><td>{{ order.market.symbol }}</td><td>{{ order.get_side_display }}</td><td>{{ order.amount }}</td><td>{{ order.price }}</td><td>{{ order.get_state_display }}</td></tr>{% endfor %}</tbody></table></div>{% endif %}</section>{% endif %}
+{% extends 'shell.html' %}{% block title %}{{ account.label }} | CryptoSniper{% endblock %}{% block content %}
+<section class="s24-page">
+  <div class="s24-section-head">
+    <div><h1>{{ account.label }}</h1><p>{{ account.exchange.name }} · {{ account.get_environment_display }} · {{ account.credential_hint }}</p></div>
+    <div class="s24-actions"><a class="s24-button" href="{% url 'security-step-up' %}">تأیید عملیات حساس</a><a class="s24-button" href="{% url 'exchange-center' %}">همه اتصال‌ها</a></div>
+  </div>
+  {% if messages %}{% for message in messages %}<div class="s24-panel s24-notice">{{ message }}</div>{% endfor %}{% endif %}
+
+  <div class="s24-panel">
+    <div class="s24-panel-head"><div><strong>{{ account.exchange.name }}</strong><small>{{ account.get_status_display }}</small></div><span class="s24-status">{{ account.status|upper }}</span></div>
+    <div class="s24-actions">
+      {% if account.status != 'disabled' %}
+      <form method="post" action="{% url 'exchange-account-sync' account.pk %}">{% csrf_token %}<button class="s24-button primary" type="submit">↻ همگام‌سازی واقعی</button></form>
+      <form method="post" action="{% url 'exchange-account-rotate' account.pk %}">{% csrf_token %}<button class="s24-button" type="submit">گردش رمزنگاری</button></form>
+      <form method="post" action="{% url 'exchange-account-disable' account.pk %}">{% csrf_token %}<button class="s24-button" type="submit">غیرفعال‌کردن</button></form>
+      <form method="post" action="{% url 'exchange-account-revoke' account.pk %}">{% csrf_token %}<button class="s24-button" style="color:#d54848" type="submit">حذف قطعی کلید</button></form>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="s24-grid s24-trades-focus">
+    <article class="s24-panel">
+      <div class="s24-panel-head"><strong>مجوزهای حساب</strong><span class="s24-muted">Secret نمایش داده نمی‌شود</span></div>
+      <div class="s24-detail-facts">
+        <div class="s24-fact"><span>خواندن حساب</span><strong>{% if account.permissions.can_read %}مجاز{% else %}نامشخص{% endif %}</strong></div>
+        <div class="s24-fact"><span>Spot</span><strong>{% if account.permissions.can_trade_spot %}مجاز{% else %}غیرفعال{% endif %}</strong></div>
+        <div class="s24-fact"><span>Margin</span><strong>{% if account.permissions.can_trade_margin %}مجاز{% else %}غیرفعال{% endif %}</strong></div>
+        <div class="s24-fact"><span>Withdrawal</span><strong>{% if account.permissions.can_withdraw == False %}خاموش · امن{% else %}نامشخص/ناامن{% endif %}</strong></div>
+      </div>
+    </article>
+    <article class="s24-panel">
+      <div class="s24-panel-head"><strong>آخرین موجودی</strong><span class="s24-muted">{% if account.last_sync_at %}{{ account.last_sync_at|date:'Y/m/d H:i' }}{% else %}همگام نشده{% endif %}</span></div>
+      {% if balances %}<div class="s24-trade-detail">{% for balance in balances %}<div class="s24-fact"><span>{{ balance.asset.symbol }}</span><strong>{{ balance.total_balance|floatformat:8 }}</strong><small>آزاد {{ balance.free_balance|floatformat:8 }} · قفل {{ balance.locked_balance|floatformat:8 }}</small></div>{% endfor %}</div>{% else %}<div class="s24-empty-inline">پس از Sync، موجودی‌ها اینجا دیده می‌شوند.</div>{% endif %}
+    </article>
+  </div>
+
+  <div class="s24-panel s24-list-panel">
+    <div class="s24-panel-head"><strong>بازارهای این صرافی</strong><span class="s24-status">{{ markets|length }} MARKET</span></div>
+    {% if markets %}<div class="s24-table-scroll"><table class="s24-table"><thead><tr><th>بازار</th><th>نوع</th><th>حداقل سفارش</th><th>گام مقدار</th><th>حداقل ارزش</th><th>اهرم</th></tr></thead><tbody>{% for market in markets %}<tr><td><strong dir="ltr">{{ market.symbol }}</strong></td><td>{{ market.get_market_type_display }}</td><td>{{ market.min_amount|default:'—' }}</td><td>{{ market.amount_step|default:'—' }}</td><td>{{ market.min_notional|default:'—' }}</td><td>{% if market.metadata.leverage_status == 'not_reported' %}—{% else %}{{ market.max_leverage }}×{% endif %}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="s24-empty-inline">بازارها هنوز همگام نشده‌اند.</div>{% endif %}
+  </div>
+
+  {% if account.environment == 'live' %}
+  <div class="s24-panel s24-list-panel">
+    <div class="s24-panel-head"><strong>ثبت سفارش واقعی Spot</strong><span class="s24-status">{% if live_enabled %}SERVER ENABLED{% else %}SERVER LOCKED{% endif %}</span></div>
+    <p class="s24-muted">فقط Limit Order؛ Live به‌صورت پیش‌فرض قفل است.</p>
+    {% if live_enabled and account.trading_enabled and account.permissions.can_withdraw == False %}
+    <form method="post" action="{% url 'exchange-live-order' account.pk %}" class="s24-trade-form">{% csrf_token %}{{ live_order_form.as_p }}<button class="s24-button primary">ثبت سفارش واقعی با تأیید من</button></form>
+    {% else %}<div class="s24-empty-inline">برای Live، مجوز Read+Spot بدون Withdrawal و فعال‌سازی سرور لازم است.</div>{% endif %}
+  </div>
+  {% endif %}
+</section>
 {% endblock %}

@@ -78,6 +78,7 @@ class HistoricalCandle(models.Model):
     def __str__(self):
         return f"{self.provider}:{self.symbol}:{self.interval}:{self.open_time.isoformat()}"
 
+
 class FavoriteAsset(models.Model):
     """User-ordered asset symbols shown first across connected exchanges."""
 
@@ -99,6 +100,9 @@ class FavoriteAsset(models.Model):
             )
         ]
         indexes = [models.Index(fields=("owner", "position"))]
+
+    def __str__(self):
+        return f"{self.owner_id}:{self.symbol}"
 
     def save(self, *args, **kwargs):
         self.symbol = self.symbol.strip().upper()

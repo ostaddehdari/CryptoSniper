@@ -139,13 +139,18 @@ def test_react_exchange_catalog_uses_real_ids_and_does_not_hide_binance(
     client, django_user_model
 ):
     user = django_user_model.objects.create_user(username="react-exchange-catalog")
-    exchange = Exchange.objects.create(
+    exchange, _ = Exchange.objects.get_or_create(
         code="binance",
-        name="Binance",
-        adapter_code="react_binance_test",
-        enabled=True,
-        spot_supported=True,
+        defaults={
+            "name": "Binance",
+            "adapter_code": "react_binance_test",
+            "enabled": True,
+            "spot_supported": True,
+        },
     )
+    if not exchange.enabled:
+        exchange.enabled = True
+        exchange.save(update_fields=("enabled",))
     client.force_login(user)
 
     response = client.get(reverse("api-exchanges"))

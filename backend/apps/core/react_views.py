@@ -63,9 +63,16 @@ def _body(request):
 
 
 
+@login_required
+@never_cache
+@require_GET
 def legacy_react_page(request, page="dashboard", **kwargs):
-    """Keep old bookmarks working while the React workspace becomes the primary UI."""
-    return redirect(f"{reverse('app-shell')}#/{page}")
+    """Render the approved React workspace directly for old visible bookmarks."""
+    return render(
+        request,
+        "react_app.html",
+        {"release": "stage25-react-cornix", "initial_page": page},
+    )
 
 
 def paper_mode_removed(request, **kwargs):
@@ -79,7 +86,11 @@ def paper_mode_removed(request, **kwargs):
 @never_cache
 @require_GET
 def react_app(request):
-    return render(request, "react_app.html", {"release": "stage25-react-cornix"})
+    return render(
+        request,
+        "react_app.html",
+        {"release": "stage25-react-cornix", "initial_page": "dashboard"},
+    )
 
 
 def _balance_payload(account):

@@ -17,8 +17,8 @@ def test_login_and_primary_mobile_navigation(client, django_user_model):
     assert b'autocomplete="current-password"' in login.content
     client.force_login(user)
     dashboard = client.get(reverse("dashboard"))
-    assert dashboard.status_code == 302
-    assert dashboard["Location"].endswith("/app/#/dashboard")
+    assert dashboard.status_code == 200
+    assert b'id="root"' in dashboard.content
 
     workspace = client.get(reverse("app-shell"))
     assert workspace.status_code == 200

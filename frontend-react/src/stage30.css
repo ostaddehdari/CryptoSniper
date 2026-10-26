@@ -3,3 +3,9 @@
 .marketPicker{position:relative}.marketSelected{height:42px;width:100%;border:1px solid #dbe2ed;border-radius:9px;background:white;display:flex;align-items:center;justify-content:space-between;padding:0 11px;color:#243248}
 .marketDropdown{position:absolute;z-index:40;top:100%;inset-inline:0;background:white;border:1px solid #dbe2ed;border-radius:10px;padding:8px;box-shadow:0 12px 28px #14285020}.marketOptions{max-height:240px;overflow:auto;margin:6px 0}.marketOptions>button{width:100%;display:flex;align-items:center;justify-content:space-between;border:0;background:white;border-radius:6px;padding:9px}.marketOptions>button:hover,.marketOptions>button[aria-selected=true]{background:#edf4ff}.marketOptions>button span{display:flex;gap:6px;color:#2f66d8}
 .targetPercent{font-size:13px!important;font-weight:700}.riskDetails{display:flex;gap:8px;flex-wrap:wrap;padding:0 14px 14px;font-size:11px}.riskDetails small{width:100%;color:#7e899b;line-height:1.8}.favoriteRows,.favoriteResults{padding:16px}.favoriteRow{display:flex;align-items:center;gap:8px;padding:9px;border:1px solid #e2e8f2;border-radius:9px;margin-bottom:8px;cursor:grab}.favoriteRow b{flex:1}.favoriteResults{display:flex;gap:7px;flex-wrap:wrap}.tradeForm>.errorBox{margin:12px}.tradeFields .confirmLine small{color:#7e899b}
+
+/* Numeric TP lists must wrap inside the existing desktop detail grid. */
+.grid2.sectionGap{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr)}
+.grid2.sectionGap>.card,.grid2.sectionGap .cardHead>div,.grid2.sectionGap .infoBox{min-width:0}
+.grid2.sectionGap .analysisGrid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.grid2.sectionGap .infoBox{overflow-wrap:anywhere}

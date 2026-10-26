@@ -103,6 +103,13 @@ def seed_market(user):
         last_verified_at=now,
         last_sync_at=now,
     )
+    UserExchangeAccount.objects.create(
+        owner=user,
+        exchange=exchange,
+        label="Unreadable second account",
+        status=UserExchangeAccount.Status.DISABLED,
+        permissions={},
+    )
     BalanceSnapshot.objects.create(
         exchange_account=account,
         asset=usdt,
@@ -388,6 +395,17 @@ def main():
                             viewport: innerWidth,
                             width: document.documentElement.scrollWidth
                         })""")
+                        if layout["width"] > width:
+                            page.screenshot(
+                                path=str(artifacts / f"overflow-{route}-{width}.png"),
+                                full_page=True,
+                            )
+                            print(
+                                page.evaluate("""() => [...document.querySelectorAll('*')]
+                                .filter(e => e.getBoundingClientRect().right > innerWidth + 1)
+                                .map(e => ({tag:e.tagName,cls:e.className,
+                                    right:e.getBoundingClientRect().right})).slice(-20)""")
+                            )
                         assert layout["width"] <= width, (route, layout)
                         if route == "dashboard":
                             page.screenshot(

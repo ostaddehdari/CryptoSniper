@@ -245,7 +245,7 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
       setUncertain(false);request.current=null;notify(`سفارش #${d.order.id} ثبت شد؛ وضعیت در معاملات نمایش داده می‌شود`);location.hash="#/trades";
     }catch(e){
       if(e.status===403&&e.data?.error==="step_up_required")requestStepUp(()=>perform(operation));
-      else{setFormError(e.message);if(!e.status||e.status>=500)setUncertain(true);else request.current=null;}
+      else{setFormError(e.message);if(!e.status||e.status>=500){operation.uncertain=true;setUncertain(true)}else if(!operation.uncertain)request.current=null;}
     }finally{submitting.current=false;setBusy(false)}
   };
   const submit=()=>{
@@ -253,7 +253,8 @@ function Manual({boot,decimals,notify,requestStepUp,seed}){
     if(!confirmed){setFormError("تأیید ارسال سفارش را فعال کنید.");return}
     if(!market){setFormError("بازار را انتخاب کنید.");return}
     if(market.market_type!=="spot"){setFormError("ارسال سفارش این نسخه فقط برای Spot پشتیبانی می‌شود.");return}
-    if(!request.current)request.current={key:crypto.randomUUID(),payload:payload()};perform(request.current);
+    const currentPayload=payload();
+    if(!request.current||JSON.stringify(request.current.payload)!==JSON.stringify(currentPayload))request.current={key:crypto.randomUUID(),payload:currentPayload};perform(request.current);
   };
   return <div className="manualLayout"><div className="card tradeForm">
     <div className="cardHead"><div><h3>تعریف معامله واقعی</h3><p>بازار حساب انتخابی و مدیریت ریسک</p></div><span className="liveBadge"><span/> LIVE</span></div>

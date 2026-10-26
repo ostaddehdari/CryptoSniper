@@ -260,7 +260,8 @@ def main():
                     full_page=True,
                 )
 
-                page.get_by_role("button", name="معامله دستی").click()
+                page.get_by_role("button", name="معاملات", exact=True).click()
+                page.get_by_role("button", name="معامله جدید", exact=True).click()
                 page.get_by_role("heading", name="تعریف معامله واقعی").wait_for()
                 page.get_by_text("React Smoke Exchange", exact=True).wait_for()
                 market_select = page.get_by_label("بازار")
@@ -300,38 +301,40 @@ def main():
                 page.locator(".realChart svg").wait_for()
                 print("PASS React unified trades + live chart")
 
-                page.set_viewport_size({"width": 390, "height": 844})
-                page.screenshot(
-                    path=str(artifacts / "react-workspace-mobile.png"),
-                    full_page=True,
-                )
-                mobile_layout = page.evaluate(
-                    """() => ({
-                      viewport: window.innerWidth,
-                      htmlScrollWidth: document.documentElement.scrollWidth,
-                      bodyScrollWidth: document.body.scrollWidth,
-                      offenders: Array.from(document.querySelectorAll('body *'))
-                        .filter(el => !el.closest(
-                          '.sidebar,.tableScroll,.tabs,.compactTabs,.cardHead > .row'
-                        ))
-                        .map(el => {
-                          const r = el.getBoundingClientRect();
-                          return {
-                            tag: el.tagName,
-                            cls: el.className && String(el.className).slice(0, 120),
-                            left: Math.round(r.left),
-                            right: Math.round(r.right),
-                            width: Math.round(r.width)
-                          };
-                        })
-                        .filter(x => x.right > window.innerWidth + 1 || x.left < -1)
-                        .slice(0, 20)
-                    })"""
-                )
-                assert (
-                    mobile_layout["htmlScrollWidth"] <= mobile_layout["viewport"]
-                ), mobile_layout
-                assert not mobile_layout["offenders"], mobile_layout
+                for width in (320, 390, 768, 1440):
+                    page.set_viewport_size({"width": width, "height": 900})
+                    for route in ("dashboard", "manual", "inbox", "trades"):
+                        page.goto(base + "/app/#/" + route)
+                        page.locator(".sidebar").wait_for()
+                        page.wait_for_timeout(250)
+                        layout = page.evaluate("""() => ({
+                            viewport: innerWidth,
+                            width: document.documentElement.scrollWidth
+                        })""")
+                        assert layout["width"] <= width, (route, layout)
+                        if route == "dashboard":
+                            page.screenshot(
+                                path=str(artifacts / f"react-dashboard-{width}.png"),
+                                full_page=True,
+                            )
+                    print(f"PASS React responsive routes at {width}px")
+
+                page.set_viewport_size({"width": 1440, "height": 1000})
+                for label, heading in [
+                    ("صرافی‌ها", "صرافی‌ها"),
+                    ("تنظیمات", "تنظیمات"),
+                    ("وضعیت سیستم", "وضعیت سیستم"),
+                ]:
+                    page.get_by_role("navigation").get_by_role(
+                        "button", name=label, exact=True
+                    ).click()
+                    page.locator(".topbar h1").filter(has_text=heading).wait_for()
+                page.goto(base + "/app/#/missing-page")
+                page.locator(".topbar h1").filter(has_text="نمای کلی").wait_for()
+                print("PASS React navigation and unknown bookmark recovery")
+                page.get_by_role("button", name="خروج", exact=True).click()
+                page.wait_for_url("**/auth/login/")
+                print("PASS React CSRF-protected POST logout")
                 assert not errors, errors
                 browser.close()
         except Exception:

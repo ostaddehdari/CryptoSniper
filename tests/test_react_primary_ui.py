@@ -201,8 +201,6 @@ def test_react_shell_keeps_approved_sidebar_topbar_and_navigation_contract():
         "تحلیل سیگنال",
         "صندوق سیگنال",
         "صرافی‌ها",
-        "کیف پول‌ها و راهنما",
-        "دیده‌بان و بازارها",
         "تلگرام و سیگنال‌ها",
         "هشدارها",
         "گزارش‌ها",

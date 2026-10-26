@@ -75,9 +75,10 @@ def service_worker(request):
         static("img/mark.svg"),
         static("img/pwa-icon.svg"),
     ]
+    cache_version = "-".join(asset.split("=")[-1] for asset in assets[:2])
     source = (
         "'use strict';\n"
-        f"const CACHE='cryptosniper-static-{assets[0].split('=')[-1]}-{assets[1].split('=')[-1]}';\n"
+        f"const CACHE='cryptosniper-static-{cache_version}';\n"
         f"const ASSETS={assets!r};\n"
         "self.addEventListener('install',event=>event.waitUntil("
         "caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));\n"

@@ -49,7 +49,10 @@ def test_exchange_pages_are_owner_scoped_and_api_never_returns_ciphertext(
     assert client.get(reverse("exchange-center")).status_code == 200
     detail = client.get(reverse("exchange-account-detail", args=[account.pk]))
     assert detail.status_code == 200
-    assert "BTC/USDT" in detail.content.decode()
+    assert b'id="root"' in detail.content
+    markets = client.get(reverse("api-account-markets", args=[account.pk]))
+    assert markets.status_code == 200
+    assert any(row["symbol"] == "BTC/USDT" for row in markets.json()["markets"])
     api = client.get(reverse("api-exchanges"))
     assert api.status_code == 200
     serialized = json.dumps(api.json())

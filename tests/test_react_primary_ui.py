@@ -1,4 +1,5 @@
 # fmt: off
+import hashlib
 from pathlib import Path
 
 import pytest
@@ -164,6 +165,51 @@ def test_react_exchange_catalog_uses_real_ids_and_does_not_hide_binance(
     source = (root / "frontend-react/src/main.jsx").read_text()
     assert 'filter(x=>x.code!=="binance")' not in source
     assert "catalog[0]?.id" in source
+
+
+
+def test_approved_react_visual_base_is_byte_locked():
+    root = Path(__file__).resolve().parents[1]
+    data = (root / "frontend-react/src/styles.css").read_bytes()
+    git_blob = hashlib.sha1(
+        f"blob {len(data)}\0".encode() + data,
+        usedforsecurity=False,
+    ).hexdigest()
+    assert git_blob == "565980a9a4a5ba390f09fcc61c5a6ea9a6a82cdd"
+
+
+def test_react_shell_keeps_approved_sidebar_topbar_and_navigation_contract():
+    root = Path(__file__).resolve().parents[1]
+    source = (root / "frontend-react/src/main.jsx").read_text()
+    for fragment in (
+        'className={"sidebar "+(collapsed?"collapsed":"")}',
+        'className="brand"',
+        'className="logoMark"',
+        'className="collapseBtn"',
+        'className={"navItem "+(page===id?"active":"")}',
+        'className="sidebarFoot"',
+        'className="topbar"',
+        'className="content"',
+    ):
+        assert fragment in source
+
+    for label in (
+        "نمای کلی",
+        "معاملات",
+        "معامله دستی",
+        "برنامه‌های معامله",
+        "تحلیل سیگنال",
+        "صندوق سیگنال",
+        "صرافی‌ها",
+        "کیف پول‌ها و راهنما",
+        "دیده‌بان و بازارها",
+        "تلگرام و سیگنال‌ها",
+        "هشدارها",
+        "گزارش‌ها",
+        "وضعیت سیستم",
+        "تنظیمات",
+    ):
+        assert label in source
 
 
 def test_react_source_contains_full_workspace_and_no_legacy_shell_contract():

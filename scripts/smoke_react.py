@@ -424,6 +424,9 @@ def main():
                         external_policy__observation=external, snapshot__targets__0__price="71000"
                     ).exists()
                 )
+                page.wait_for_function("""() => [...document.querySelectorAll('.realChart text')]
+                    .some(e => e.textContent.includes('TP1') && e.textContent.includes('۷۱'))""")
+                page.locator(".realChart text").filter(has_text="SL").first.wait_for()
                 page.screenshot(
                     path=str(artifacts / "stage31-management-desktop.png"), full_page=True
                 )

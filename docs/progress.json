@@ -7,7 +7,7 @@
   ],
   "current_stage": "S31",
   "next_stage": "S32",
-  "last_completed_work": "S30-W05",
+  "last_completed_work": "S31-W05",
   "implementation_started": true,
   "stage_results": {
     "S01": {
@@ -1303,10 +1303,35 @@
       }
     },
     "S31": {
-      "status": "in_progress",
-      "completed_works": [],
-      "checks": [],
-      "blockers": []
+      "status": "partial",
+      "completed_works": [
+        "S31-W01",
+        "S31-W02",
+        "S31-W03",
+        "S31-W04",
+        "S31-W05"
+      ],
+      "checks": [
+        {
+          "name": "PostgreSQL/Redis, real Celery process restart, concurrency, full suite and React browser",
+          "status": "passed",
+          "tested_commit": "00bd4db54aa83d073154ce513a0f7ce8447e8b26",
+          "run_url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/40372668544",
+          "pytest_passed": 391,
+          "responsive_widths": [
+            320,
+            390,
+            768,
+            1440
+          ]
+        }
+      ],
+      "blockers": [
+        "Real-provider credential and actual exchange order acceptance are unavailable; contract provider and synthetic data were used.",
+        "Target VPS installation of Stage31 has not been performed. Both live flags remain off by default; per-trade consent is required.",
+        "Stacked branches await main integration; no merge is claimed."
+      ],
+      "implementation": "Five Stage31 works are code-complete: cumulative receipt-based inventory, reservations, verified cancellation/reprice of conditional limit exits, monotonic trailing, explicit scoped adoption and versioned pause/edit, chart provenance and recovery. Final candidate UI refresh assertion and release checks run separately."
     },
     "S32": {
       "status": "not_started",

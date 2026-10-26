@@ -1,3 +1,12 @@
+# 0.31.0rc1 — Durable Spot management (2026-10-26)
+
+- Unified paginated trades, lifecycle/source filters, private provider receipt reconciliation and explicit cancellation.
+- Spot inventory from cumulative confirmed entry/exit quantities; reservations, verified cancel before replacement and unknown outcomes without resubmission.
+- One-time TP1→Entry and monotonic percentage trailing persist across process restart.
+- Explicit external/legacy-entry adoption, unique provider claims and versioned edit/pause/resume in React.
+- Receipt markers, honest timestamp/history provenance and stale-feed recovery. Approved base stylesheet and historical migrations preserved.
+- Both live gates default off; per-position consent required. Conditional limit exits are not guaranteed fills; dust, unknown base fees and inventory shortfalls require review. Real-provider/VPS acceptance remains open.
+
 # 0.30.0rc1 — Final trading form (2026-10-26)
 
 - Account-scoped paginated USDT markets and per-exchange favorites with persisted drag/drop ordering.

@@ -1,7 +1,7 @@
 {% extends 'shell.html' %}{% load static %}{% block title %}بازارها | CryptoSniper{% endblock %}{% block content %}
 <section class="s24-page">
   <div class="s24-section-head">
-    <div><h1>بازارها و واچ‌لیست</h1><p>قیمت زنده، Feed و دسترسی مستقیم به هشدار و معامله.</p></div>
+    <div><h1>دیده‌بان بازار</h1><p>قیمت زنده، Feed و دسترسی مستقیم به هشدار و معامله.</p></div>
     <span class="s24-status">DISPLAY ONLY</span>
   </div>
   {% if messages %}{% for message in messages %}<div class="s24-panel s24-notice">{{ message }}</div>{% endfor %}{% endif %}
@@ -14,7 +14,7 @@
       </form>
       {% if entries %}
       <div class="s24-table-scroll"><table class="s24-table" data-watchlist-id="{{ active.pk }}" data-quotes-url="{% url 'api-market-quotes' %}" id="market-watchlist"><thead><tr><th>بازار</th><th>صرافی</th><th>قیمت</th><th>Feed</th><th>عملیات</th></tr></thead><tbody>
-        {% for entry in entries %}<tr data-market-id="{{ entry.market.pk }}"><td><strong dir="ltr">{{ entry.market.symbol }}</strong></td><td>{{ entry.market.exchange.name }}</td><td class="quote-price" dir="ltr">{% if entry.quote %}{{ entry.quote.price }}{% else %}—{% endif %}</td><td class="quote-status">{% if not entry.quote %}در انتظار{% elif entry.quote.stale %}قدیمی{% else %}تازه{% endif %}</td><td><div class="s24-actions"><form method="post" action="{% url 'watchlist-refresh' active.pk entry.market.pk %}">{% csrf_token %}<button class="s24-button ghost">↻</button></form><a class="s24-button ghost" href="{% url 'alert-new' %}?market={{ entry.market.pk }}">هشدار</a><a class="s24-button ghost" href="{% url 'app-shell' %}#/newtrade">معامله</a><form method="post" action="{% url 'watchlist-remove' active.pk entry.pk %}">{% csrf_token %}<button class="s24-button ghost" style="color:#d54848">حذف</button></form></div></td></tr>{% endfor %}
+        {% for entry in entries %}<tr data-market-id="{{ entry.market.pk }}"><td><strong dir="ltr">{{ entry.market.symbol }}</strong></td><td>{{ entry.market.exchange.name }}</td><td class="quote-price" dir="ltr">{% if entry.quote %}{{ entry.quote.price }}{% else %}—{% endif %}</td><td class="quote-status">{% if not entry.quote %}در انتظار{% elif entry.quote.stale %}قدیمی{% else %}تازه{% endif %}</td><td><div class="s24-actions"><form method="post" action="{% url 'watchlist-refresh' active.pk entry.market.pk %}">{% csrf_token %}<button class="s24-button ghost">بروزرسانی</button></form><a class="s24-button ghost" href="{% url 'alert-new' %}?market={{ entry.market.pk }}">هشدار</a><a class="s24-button ghost" href="{% url 'app-shell' %}#/newtrade">معامله</a><form method="post" action="{% url 'watchlist-remove' active.pk entry.pk %}">{% csrf_token %}<button class="s24-button ghost" style="color:#d54848">حذف</button></form></div></td></tr>{% endfor %}
       </tbody></table></div>
       {% else %}<div class="s24-empty-inline">هنوز بازاری در این واچ‌لیست نیست.</div>{% endif %}
     </article>

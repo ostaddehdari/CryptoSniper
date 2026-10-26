@@ -34,7 +34,7 @@ async function api(path, opts={}){
   return data;
 }
 function useHashPage(){
-  const get=()=>location.hash.replace(/^#\/?/,"").split("?")[0]||"dashboard";
+  const get=()=>location.hash.replace(/^#\/?/,"").split("?")[0]||window.__CS_INITIAL_PAGE__||"dashboard";
   const [page,setState]=useState(get);
   useEffect(()=>{const fn=()=>setState(get());addEventListener("hashchange",fn);return()=>removeEventListener("hashchange",fn)},[]);
   const setPage=p=>{location.hash="#/"+p;setState(p)};

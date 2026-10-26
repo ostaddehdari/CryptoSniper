@@ -286,7 +286,7 @@ def main():
                 if current_plan.status != "ready":
                     raise AssertionError(
                         f"SmartPaste plan={current_plan.status}, "
-                        f"messages={page.locator('.notice').all_text_contents()}"
+                        f"messages={page.locator('.s24-notice, .notice').all_text_contents()}"
                     )
                 page.get_by_role("button", name="ثبت درخواست اجرای Paper با تأیید من").click()
                 if "/paper/" not in page.url or "/paper/launch/" in page.url:
@@ -491,7 +491,6 @@ def main():
                 assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
                 page.screenshot(path=str(artifacts / "exchanges-mobile.png"), full_page=True)
                 page.set_viewport_size({"width": 390, "height": 844})
-                page.get_by_role("button", name="باز کردن منو").click()
                 page.locator(".s24-sidebar").get_by_role("link", name="وضعیت سیستم").click()
                 page.wait_for_url("**/system/")
                 page.get_by_text("ذخیره نتایج", exact=True).wait_for()

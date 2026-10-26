@@ -27,7 +27,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="favoriteasset",
-            index=models.Index(fields=["owner", "position"], name="marketdata__owner_i_ec8b24_idx"),
+            index=models.Index(fields=["owner", "position"], name="marketdata__owner_i_0f525b_idx"),
         ),
     ]
 # fmt: on

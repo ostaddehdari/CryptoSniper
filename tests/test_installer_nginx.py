@@ -191,6 +191,28 @@ class Stage23NginxUpgradeTests(NginxUpgradeTests):
     stage = 23
 
 
+class Stage25NginxUpgradeTests(NginxUpgradeTests):
+    installer = ROOT / "scripts/cryptosniper-stage25-react-run.sh"
+    stage = 25
+
+
+class Stage25ReactInstallerTests(unittest.TestCase):
+    def test_stage25_accepts_verified_r8_and_pins_react_assets(self):
+        installer = (ROOT / "scripts/cryptosniper-stage25-react-run.sh").read_text()
+        self.assertIn(
+            "STAGE24_R8_SOURCE_COMMIT=3596a7f6c391b5203b5af02aa54a32f40bec078b",
+            installer,
+        )
+        self.assertIn("os.environ['STAGE24_R8_SOURCE_COMMIT']", installer)
+        self.assertIn("frontend-react/src/main.jsx", installer)
+        self.assertIn("frontend-react/src/styles.css", installer)
+        self.assertIn("565980a9a4a5ba390f09fcc61c5a6ea9a6a82cdd", installer)
+        self.assertIn("__REACT_APP_JS_SHA256__", installer)
+        self.assertIn("__REACT_APP_CSS_SHA256__", installer)
+        self.assertIn("0.25.0rc1", installer)
+
+
+
 class Stage24ManagedSourceUpgradeTests(unittest.TestCase):
     def test_recent_stage24_installed_sources_are_explicitly_accepted(self):
         installer = (ROOT / "scripts/cryptosniper-stage24-rebuild-run.sh").read_text()

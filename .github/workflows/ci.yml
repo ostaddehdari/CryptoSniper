@@ -110,3 +110,11 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 7
+
+  release-stage29:
+    needs: foundation
+    if: github.event_name == 'push' && github.ref == 'refs/heads/stage29-final-react'
+    permissions:
+      contents: write
+      actions: read
+    uses: ./.github/workflows/release-stage29-react.yml

@@ -18,7 +18,7 @@
 
   {% if protection %}
   <div class="s24-panel s24-list-panel">
-    <div class="s24-panel-head"><strong>پوشش خروج و وضعیت Trailing</strong><span class="s24-status">WORKER MANAGED</span></div>
+    <div class="s24-panel-head"><h2>پوشش خروج و وضعیت Trailing</h2><span class="s24-status">WORKER MANAGED</span></div>
     <div class="s24-detail-facts"><div class="s24-fact"><span>Stop اولیه</span><strong>{{ protection.initial_stop }}</strong></div><div class="s24-fact"><span>Stop مؤثر</span><strong>{{ protection.effective_stop }}</strong></div><div class="s24-fact"><span>Percentage</span><strong>{% if protection.percentage_active %}فعال{% else %}منتظر {{ protection.trigger_price }}{% endif %}</strong></div><div class="s24-fact"><span>High Water</span><strong>{{ protection.high_water|default:'—' }}</strong></div></div>
     <div class="s24-table-scroll" style="margin-top:12px"><table class="s24-table"><thead><tr><th>هدف</th><th>قیمت</th><th>سهم</th><th>تخصیص</th><th>اجراشده</th><th>وضعیت</th></tr></thead><tbody>{% for target in targets %}<tr><td>TP{{ target.position }}</td><td>{{ target.price }}</td><td>{{ target.share_percent }}٪</td><td>{{ target.allocated_quantity }}</td><td>{{ target.filled_quantity }}</td><td>{{ target.get_state_display }}</td></tr>{% endfor %}</tbody></table></div>
     {% if trade.state == 'open' or trade.state == 'partially_filled' %}

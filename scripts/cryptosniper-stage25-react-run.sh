@@ -127,7 +127,7 @@ path = Path(sys.argv[1])
 if not path.is_file():
     raise SystemExit(f'ZIP not found: {path}')
 actual_sha256 = hashlib.file_digest(path.open('rb'), 'sha256').hexdigest()
-if actual_sha256 != os.environ['OFFICIAL_STAGE24_ARCHIVE_SHA256']:
+if actual_sha256 != os.environ['OFFICIAL_STAGE25_ARCHIVE_SHA256']:
     raise SystemExit(
         'Incorrect Stage25 React ZIP (SHA-256 mismatch). Download the EXACT release asset '
         'CryptoSniper-Stage25-React-v0.25.0rc1-r1.zip from '

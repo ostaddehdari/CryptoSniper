@@ -13,6 +13,8 @@ from django.views.decorators.http import require_POST
 from apps.accounts.security import session_api_required
 from apps.exchanges.models import BalanceSnapshot, ExchangeMarket, UserExchangeAccount
 
+from .calculations import budget_wallet_scope
+
 
 def positive(value, label):
     try:
@@ -47,7 +49,9 @@ def calculate(account, market, data):
         now = timezone.now()
         balance = (
             BalanceSnapshot.objects.filter(
-                exchange_account=account, asset=market.quote_asset, wallet_scope=market.market_type
+                exchange_account=account,
+                asset=market.quote_asset,
+                wallet_scope=budget_wallet_scope(account, market),
             )
             .order_by("-captured_at", "-pk")
             .first()
@@ -85,7 +89,7 @@ def calculate(account, market, data):
         return {
             "available": str(available),
             "balance_captured_at": balance.captured_at,
-            "wallet_scope": market.market_type,
+            "wallet_scope": balance.wallet_scope,
             "risk_budget": str(budget),
             "stop_distance_percent": str(fraction * 100),
             "raw_notional": str(raw_notional),

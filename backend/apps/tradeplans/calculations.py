@@ -33,6 +33,14 @@ def _targets(data):
     return values
 
 
+def budget_wallet_scope(account, market):
+    # The private simulator uses one paper cash pool for both Spot and Margin.
+    # Live accounts must always use the selected market's actual wallet.
+    if account.environment == "paper" and account.exchange.code == "simulator":
+        return "spot"
+    return market.market_type
+
+
 def build_preview(data, now=None):
     """Data are Django-form-cleaned Decimals + owner-scoped account and market objects."""
     now = now or timezone.now()
@@ -96,7 +104,9 @@ def build_preview(data, now=None):
     if required_cash > capital:
         raise ValidationError("سرمایه اختصاص‌یافته برای کارمزد و حجم کافی نیست.")
     balances = BalanceSnapshot.objects.filter(
-        exchange_account=account, asset=market.quote_asset, wallet_scope=market.market_type
+        exchange_account=account,
+        asset=market.quote_asset,
+        wallet_scope=budget_wallet_scope(account, market),
     ).order_by("-captured_at")
     latest = balances.first()
     if not latest or latest.captured_at < now - timedelta(minutes=15):

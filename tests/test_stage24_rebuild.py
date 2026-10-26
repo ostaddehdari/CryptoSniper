@@ -1,6 +1,6 @@
 import json
-from pathlib import Path
 from datetime import timedelta
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -50,10 +50,10 @@ def test_rebuilt_workspace_keeps_cornix_shell_and_clean_header(client, django_us
     assert 'data-page="inbox"' in body
     assert 'data-page="newtrade"' in body
     assert 'data-page="trades"' in body
-    assert 'class="s24-shell app-layout"' in body
-    assert 'class="s24-sidebar sidebar"' in body
-    assert 'class="s24-topbar topbar"' in body
-    header = body.split('<header class="s24-topbar topbar">', 1)[1].split("</header>", 1)[0]
+    assert 'class="s24-shell"' in body
+    assert 'class="s24-sidebar"' in body
+    assert 'class="s24-topbar"' in body
+    header = body.split('<header class="s24-topbar">', 1)[1].split("</header>", 1)[0]
     assert "s24-ticker" in header
     assert "data-account-select" in body
     assert "data-market-results" in body
@@ -94,8 +94,8 @@ def test_all_primary_pages_use_global_cornix_shell(client, django_user_model, ro
     assert response.status_code == 200
     body = response.content.decode()
     assert "data-cornix-shell" in body
-    assert 'class="s24-sidebar sidebar"' in body
-    assert 'class="s24-topbar topbar"' in body
+    assert 'class="s24-sidebar"' in body
+    assert 'class="s24-topbar"' in body
     assert "stage24-rebuild.css" in body
     assert "cornix-shell.js" in body
 

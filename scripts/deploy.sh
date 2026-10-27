@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # CryptoSniper: single-command, pinned verified deployment artifact.
-# Usage: curl -fsSL https://raw.githubusercontent.com/ostaddehdari/CryptoSniper/stage32-final-signals/scripts/deploy.sh -o /tmp/cryptosniper-deploy.sh && sudo bash /tmp/cryptosniper-deploy.sh
-# Only the SHA256-verified Stage32 React ZIP and installer from the official release are executed.
+# Usage: curl -fsSL https://raw.githubusercontent.com/ostaddehdari/CryptoSniper/stage33-final-acceptance/scripts/deploy.sh -o /tmp/cryptosniper-deploy.sh && sudo bash /tmp/cryptosniper-deploy.sh
+# Only the SHA256-verified Stage33 React ZIP and installer from the official release are executed.
 set -Eeuo pipefail
 umask 077
 
-RELEASE_TAG='stage32-react-v0.32.0rc1-deploy-r1'
-ZIP_NAME='CryptoSniper-Stage32-React-v0.32.0rc1-r1.zip'
-INSTALLER_NAME='cryptosniper-stage32-react-run.sh'
-ZIP_SHA256='0bdfb164914c6b8d3aa0bbb5997941d34f48762faeeea1d24d8ba9188cfa70a6'
-INSTALLER_SHA256='de88fb197ccc1ec8a3bfaf428dd8ce982c5fc661497f9315b1bc737ac0ae3566'
-SOURCE_COMMIT='b7306b323ea99baea1e6ebd8899de873fb62d4c7'
+RELEASE_TAG='stage33-react-v0.33.0rc1-deploy-r1'
+ZIP_NAME='CryptoSniper-Stage33-React-v0.33.0rc1-r1.zip'
+INSTALLER_NAME='cryptosniper-stage33-react-run.sh'
+ZIP_SHA256='fd1e62953e9a1c59606f06e00ba09ec2c4efc5dd03875298f9db2f421774a36e'
+INSTALLER_SHA256='958c2184cd85684b70df7083316d9709e62445aae22245c2efd27a39767e19d7'
+SOURCE_COMMIT='36d8a2801291b125ffb0fd579058267a922b1063'
 RELEASE_BASE="https://github.com/ostaddehdari/CryptoSniper/releases/download/$RELEASE_TAG"
 MODE="${1:-install}"
 if [[ "$MODE" != 'install' && "$MODE" != '--check' ]]; then
@@ -46,7 +46,7 @@ if [[ "$MODE" == '--check' ]]; then
     exit 0
 fi
 
-echo 'Running the verified Stage32 React installer; preserving existing managed installation data.'
-LOG_FILE=/root/cryptosniper-stage32-react-runlog.txt \
+echo 'Running the verified Stage33 React installer; preserving existing managed installation data.'
+LOG_FILE=/root/cryptosniper-stage33-react-runlog.txt \
     bash "$WORKDIR/$INSTALLER_NAME" "$WORKDIR/$ZIP_NAME"
 echo 'DEPLOY_OK: https://srun.ir/cryptosniper/auth/login/'

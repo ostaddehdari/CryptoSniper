@@ -19,7 +19,9 @@
 
 ## پذیرش و موارد باز
 
-- آزمون‌های PostgreSQL/Redis/Celery/browser و release immutable باید توسط CI شاخهٔ Stage33 ثبت شوند.
+- کاندید `36d8a2801291b125ffb0fd579058267a922b1063` در CI با ۴۲۰ آزمون PostgreSQL/Redis، lint، security، migration و smoke واقعی React در عرض‌های 320/390/768/1440 بدون شکست پاس شد.
+- Release تغییرناپذیر `stage33-react-v0.33.0rc1-deploy-r1` منتشر شد؛ SHA256 بسته `fd1e62953e9a1c59606f06e00ba09ec2c4efc5dd03875298f9db2f421774a36e` و installer برابر `958c2184cd85684b70df7083316d9709e62445aae22245c2efd27a39767e19d7` است.
+- CI نهایی: https://github.com/ostaddehdari/CryptoSniper/actions/runs/40477341832 و PR: https://github.com/ostaddehdari/CryptoSniper/pull/7
 - نصب Stage33 روی سرور هدف و آزمون mobile/desktop دامنه، backup/restore و مقایسه موجودی واقعی هنوز اقدام اپراتور است.
 - credential واقعی Telegram/AI/صرافی ارائه نشده و موفقیت آن ادعا نمی‌شود.
 - معامله با پول واقعی و merge به `main` نیازمند دستور جداگانهٔ مالک است.

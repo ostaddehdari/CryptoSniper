@@ -2,6 +2,8 @@
 
 import hashlib
 import json
+import re
+from decimal import Decimal, InvalidOperation
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -12,6 +14,7 @@ from .channel_parser import complete_extraction
 from .models import SignalAIAnalysis
 
 PROMPT_VERSION = "telegram-signal-v1"
+PAIR = re.compile(r"^[A-Z0-9]{2,12}/(?:USDT|USD)$")
 
 
 def configured():
@@ -36,12 +39,43 @@ def _validated(value):
         "futures_mentioned",
         "confidence",
     }
-    value = {key: item for key, item in value.items() if key in allowed}
+    unknown = set(value) - allowed
+    if unknown:
+        raise ValidationError("AI output دارای کلید ناشناخته است.")
+    value = dict(value)
     if value.get("side") not in {None, "long", "short"}:
         raise ValidationError("AI side نامعتبر است.")
     targets = value.get("execution_targets", [])
     if not isinstance(targets, list) or len(targets) > 3:
         raise ValidationError("AI targets نامعتبر است.")
+    pair = value.get("pair")
+    if pair is not None:
+        pair = str(pair).upper()
+        if not PAIR.fullmatch(pair):
+            raise ValidationError("AI pair نامعتبر است.")
+        value["pair"] = pair
+    for field in ("entry", "stop_loss"):
+        if value.get(field) is None:
+            continue
+        try:
+            number = Decimal(str(value[field]))
+        except (InvalidOperation, ValueError) as error:
+            raise ValidationError(f"AI {field} نامعتبر است.") from error
+        if not number.is_finite() or number <= 0:
+            raise ValidationError(f"AI {field} نامعتبر است.")
+        value[field] = format(number, "f")
+    clean_targets = []
+    for target in targets:
+        try:
+            number = Decimal(str(target))
+        except (InvalidOperation, ValueError) as error:
+            raise ValidationError("AI targets نامعتبر است.") from error
+        if not number.is_finite() or number <= 0:
+            raise ValidationError("AI targets نامعتبر است.")
+        clean_targets.append(format(number, "f"))
+    value["execution_targets"] = clean_targets
+    if not isinstance(value.get("futures_mentioned", False), bool):
+        raise ValidationError("AI futures flag نامعتبر است.")
     try:
         confidence = int(value.get("confidence", 0))
     except (ValueError, TypeError) as error:
@@ -106,6 +140,12 @@ def analyze_signal(signal):
         output = _validated(json.loads(content))
         status = SignalAIAnalysis.Status.COMPLETE
         error_code = "" if complete_extraction(output) else "incomplete_output"
+    except ValidationError:
+        output, status, error_code = (
+            {},
+            SignalAIAnalysis.Status.INVALID,
+            "schema_validation_failed",
+        )
     except (
         HTTPError,
         URLError,
@@ -113,7 +153,6 @@ def analyze_signal(signal):
         KeyError,
         TypeError,
         json.JSONDecodeError,
-        ValidationError,
     ):
         output, status, error_code = {}, SignalAIAnalysis.Status.ERROR, "provider_or_schema_error"
     SignalAIAnalysis.objects.create(

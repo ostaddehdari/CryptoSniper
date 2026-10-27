@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 import pytest
+from apps.signals.ai import _validated
 from apps.signals.backfill import start_backfill
 from apps.signals.models import (
     RawSignal,
@@ -146,3 +147,45 @@ def test_stage32_backfill_restart_reuses_cursor_and_respects_floodwait(django_us
     resumed.save()
     with pytest.raises(ValidationError, match="FloodWait"):
         start_backfill(channel)
+
+
+def test_stage32_ai_schema_rejects_unknown_and_nonpositive_values():
+    with pytest.raises(ValidationError, match="ناشناخته"):
+        _validated({"pair": "BTC/USDT", "place_order": True})
+    with pytest.raises(ValidationError, match="entry"):
+        _validated({"pair": "BTC/USDT", "entry": "-1", "execution_targets": []})
+    with pytest.raises(ValidationError, match="targets"):
+        _validated({"pair": "BTC/USDT", "entry": "1", "execution_targets": ["Infinity"]})
+
+
+@pytest.mark.django_db
+def test_stage32_channel_policy_is_owner_scoped_and_full_auto_is_paper_only(
+    client, django_user_model
+):
+    owner = django_user_model.objects.create_user(username="s32-policy")
+    stranger = django_user_model.objects.create_user(username="s32-policy-other")
+    account = TelegramAccount.objects.create(owner=owner)
+    source = SignalSource.objects.create(owner=owner, method="telegram", name="S32 policy")
+    channel = TelegramChannel.objects.create(
+        owner=owner, account=account, source=source, peer_id=-1003201, title="Policy"
+    )
+    body = {
+        "action": "channel_policy",
+        "channel_id": channel.pk,
+        "parse_mode": "hybrid",
+        "automation": "full_auto",
+        "min_confidence": 85,
+        "paper_capital": "125",
+        "template": {"version": "1", "aliases": {}},
+    }
+    client.force_login(stranger)
+    stranger_response = client.post(
+        reverse("api-telegram-action"), body, content_type="application/json"
+    )
+    assert stranger_response.status_code == 404
+    client.force_login(owner)
+    response = client.post(reverse("api-telegram-action"), body, content_type="application/json")
+    assert response.status_code == 200
+    channel.refresh_from_db()
+    assert channel.automation == TelegramChannel.Automation.FULL_AUTO
+    assert channel.get_automation_display() == "تمام‌خودکار Paper"

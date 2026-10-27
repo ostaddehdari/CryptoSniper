@@ -36,7 +36,9 @@ from apps.marketdata.models import FavoriteAsset, HistoricalCandle, Watchlist, W
 from apps.operations.models import ExternalObservation, WorkerHeartbeat
 from apps.operations.tasks import reconcile_one
 from apps.signals.backfill import pause_backfill, process_backfill_batch, start_backfill
-from apps.signals.models import Signal, SignalSource, TelegramAccount, TelegramBackfillJob, TelegramChannel, TelegramMessage
+from apps.signals.ai import configured as telegram_ai_configured
+from apps.signals.channel_parser import apply_channel_template, template_matches
+from apps.signals.models import Signal, SignalSource, TelegramAccount, TelegramBackfillJob, TelegramChannel, TelegramChannelTemplate, TelegramMessage
 from apps.signals.telegram_client import (
     available_channels,
     complete_login,
@@ -1009,7 +1011,11 @@ def api_security_state_ui(request):
 @require_GET
 def api_telegram_state(request):
     account, _ = TelegramAccount.objects.get_or_create(owner=request.user)
-    channels = list(TelegramChannel.objects.filter(owner=request.user).select_related("source"))
+    channels = list(
+        TelegramChannel.objects.filter(owner=request.user)
+        .select_related("source")
+        .prefetch_related("templates")
+    )
     return JsonResponse(
         {
             "account": {
@@ -1033,6 +1039,20 @@ def api_telegram_state(request):
                     "enabled": c.enabled,
                     "last_message_id": c.last_message_id,
                     "min_confidence": c.min_confidence,
+                    "paper_capital": str(c.paper_capital),
+                    "template": c.template,
+                    "templates": [
+                        {
+                            "id": template.pk,
+                            "name": template.name,
+                            "version": template.version,
+                            "priority": template.priority,
+                            "message_kind": template.message_kind,
+                            "definition": template.definition,
+                            "enabled": template.enabled,
+                        }
+                        for template in c.templates.order_by("priority", "pk")
+                    ],
                     "backfill": (
                         {
                             "id": job.pk,
@@ -1048,6 +1068,11 @@ def api_telegram_state(request):
                 }
                 for c in channels
             ],
+            "ai": {
+                "configured": telegram_ai_configured(),
+                "model": settings.TELEGRAM_AI_MODEL or None,
+                "key_location": "server_environment_only",
+            },
             "discovered": request.session.get("telegram_discovered_channels", []),
         }
     )
@@ -1132,6 +1157,58 @@ def api_telegram_action(request):
             channel.source.enabled = channel.enabled
             channel.source.save(update_fields=("enabled",))
             channel.save(update_fields=("enabled", "updated_at"))
+        elif action == "channel_policy":
+            channel = get_object_or_404(TelegramChannel, owner=request.user, pk=int(data["channel_id"]))
+            parse_mode = str(data.get("parse_mode", ""))
+            automation = str(data.get("automation", "manual"))
+            confidence = int(data.get("min_confidence", 80))
+            capital = Decimal(str(data.get("paper_capital", "100")))
+            fallback = data.get("template", {})
+            if parse_mode not in TelegramChannel.ParseMode.values:
+                raise ValidationError("روش تحلیل کانال معتبر نیست.")
+            if automation not in TelegramChannel.Automation.values:
+                raise ValidationError("روش اتوماسیون کانال معتبر نیست.")
+            if not 0 <= confidence <= 100 or not capital.is_finite() or capital <= 0:
+                raise ValidationError("Confidence یا سرمایه Paper معتبر نیست.")
+            if not isinstance(fallback, dict):
+                raise ValidationError("قالب fallback باید JSON object باشد.")
+            template_matches("preview", fallback)
+            apply_channel_template("BTC/USDT LONG ENTRY 10 TARGET 11 STOP LOSS 9", fallback)
+            channel.parse_mode = parse_mode
+            channel.automation = automation
+            channel.min_confidence = confidence
+            channel.paper_capital = capital
+            channel.template = fallback
+            channel.full_clean()
+            channel.save()
+            record_audit(
+                "telegram.channel_policy",
+                request=request,
+                user=request.user,
+                metadata={"channel_id": channel.pk, "parse_mode": parse_mode, "automation": automation},
+            )
+        elif action == "template_save":
+            channel = get_object_or_404(TelegramChannel, owner=request.user, pk=int(data["channel_id"]))
+            definition = data.get("definition", {})
+            template_matches("preview", definition)
+            apply_channel_template("BTC/USDT LONG ENTRY 10 TARGET 11 STOP LOSS 9", definition)
+            name = str(data.get("name", "قالب اصلی")).strip()[:80]
+            if not name:
+                raise ValidationError("نام قالب لازم است.")
+            previous = channel.templates.filter(name=name).order_by("-version").first()
+            version = previous.version + 1 if previous else 1
+            channel.templates.filter(name=name, enabled=True).update(enabled=False)
+            template = TelegramChannelTemplate.objects.create(
+                owner=request.user,
+                channel=channel,
+                name=name,
+                version=version,
+                priority=int(data.get("priority", 100)),
+                message_kind=str(data.get("message_kind", "signal")),
+                definition=definition,
+            )
+            template.full_clean()
+            return JsonResponse({"ok": True, "template_id": template.pk, "version": version})
         elif action == "archive_start":
             channel = get_object_or_404(TelegramChannel, owner=request.user, pk=int(data["channel_id"]))
             job, _ = start_backfill(channel)

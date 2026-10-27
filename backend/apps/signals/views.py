@@ -698,6 +698,67 @@ def api_archive(request, pk):
 
 @session_api_required
 @never_cache
+@require_POST
+def api_bulk(request):
+    try:
+        body = _json_body(request)
+        ids = body.get("ids", [])
+        if not isinstance(ids, list) or len(ids) > 100:
+            raise ValidationError("حداکثر ۱۰۰ سیگنال در هر عملیات مجاز است.")
+        action = str(body.get("action", ""))
+        if action == "trash":
+            count = trash_signals(request.user, ids)
+        elif action == "restore":
+            count = restore_signals(request.user, ids)
+        elif action in {"archive", "unarchive"}:
+            clean_ids = {int(pk) for pk in ids if str(pk).isdigit()}
+            count = Signal.objects.filter(owner=request.user, pk__in=clean_ids).update(
+                archived_at=timezone.now() if action == "archive" else None
+            )
+            record_audit(
+                "signal.bulk_archive_changed",
+                request=request,
+                user=request.user,
+                metadata={"count": count, "archived": action == "archive"},
+            )
+        else:
+            raise ValidationError("عملیات گروهی معتبر نیست.")
+        return JsonResponse({"ok": True, "count": count, "action": action})
+    except (ValidationError, ValueError, TypeError) as error:
+        return JsonResponse({"error": getattr(error, "messages", [str(error)])}, status=400)
+
+
+@session_api_required
+@never_cache
+@require_POST
+def api_approve_transfer(request, pk):
+    """Approve once, then return the immutable snapshot used to seed Manual Trade."""
+
+    item = owned(request.user, pk)
+    try:
+        body = _json_body(request)
+        if item.status == Signal.Status.PARSED:
+            item = transition(
+                request.user,
+                item.pk,
+                expected_revision=int(body.get("revision", 0)),
+                action="approve",
+                reason=str(body.get("reason", "")),
+            )
+        elif item.status != Signal.Status.APPROVED:
+            raise ValidationError("سیگنال کامل و تأییدشده برای انتقال لازم است.")
+        approved = dict(item.approved_snapshot)
+        if not approved or approved.get("status") != Signal.Status.APPROVED:
+            raise ValidationError("Snapshot تأییدشده در دسترس نیست.")
+        approved["origin_signal_id"] = item.pk
+        approved["source"] = item.source.name
+        return JsonResponse({"signal_id": item.pk, "manual_seed": approved})
+    except (ValidationError, ValueError, TypeError) as error:
+        return JsonResponse({"error": getattr(error, "messages", [str(error)])}, status=400)
+
+
+@session_api_required
+@never_cache
 @require_GET
 def api_detail(request, pk):
     return JsonResponse({"signal": _serialize(owned(request.user, pk))})

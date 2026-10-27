@@ -15,11 +15,20 @@ from .telegram_ingestion import ingest_telegram_message
 from .telegram_security import get_telegram_credentials
 
 
+@transaction.atomic
 def start_backfill(channel, *, batch_size=100):
     if not 20 <= batch_size <= 500:
         raise ValidationError("اندازه بسته آرشیو باید بین ۲۰ تا ۵۰۰ باشد.")
-    active = channel.backfill_jobs.filter(status__in=("pending", "running", "paused")).first()
+    channel = type(channel).objects.select_for_update().get(pk=channel.pk)
+    active = (
+        channel.backfill_jobs.select_for_update()
+        .filter(status__in=("pending", "running", "paused"))
+        .first()
+    )
     if active:
+        if active.retry_at and active.retry_at > timezone.now():
+            seconds = int((active.retry_at - timezone.now()).total_seconds()) + 1
+            raise ValidationError(f"Telegram FloodWait؛ {seconds} ثانیه بعد ادامه دهید.")
         active.status = TelegramBackfillJob.Status.PENDING
         active.last_error = ""
         active.retry_at = None
@@ -78,6 +87,10 @@ def process_backfill_batch(job_id):
     job = TelegramBackfillJob.objects.select_related("channel__account").get(pk=job_id)
     if job.status not in {TelegramBackfillJob.Status.PENDING, TelegramBackfillJob.Status.RUNNING}:
         return {"status": job.status}
+    if job.retry_at and job.retry_at > timezone.now():
+        seconds = int((job.retry_at - timezone.now()).total_seconds()) + 1
+        process_backfill_batch.apply_async(args=[job.pk], countdown=seconds, queue="signals")
+        return {"status": job.status, "retry_after": seconds}
     job.status = TelegramBackfillJob.Status.RUNNING
     job.started_at = job.started_at or timezone.now()
     job.save(update_fields=("status", "started_at", "updated_at"))

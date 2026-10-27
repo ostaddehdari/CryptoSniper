@@ -1,8 +1,21 @@
+from datetime import timedelta
+
 import pytest
-from apps.signals.models import RawSignal, Signal, SignalSource, SignalTarget
+from apps.signals.backfill import start_backfill
+from apps.signals.models import (
+    RawSignal,
+    Signal,
+    SignalSource,
+    SignalTarget,
+    TelegramAccount,
+    TelegramBackfillJob,
+    TelegramChannel,
+)
 from apps.signals.parsing import assess
 from apps.signals.quality import parser_quality_report
+from django.core.exceptions import ValidationError
 from django.urls import reverse
+from django.utils import timezone
 from test_tradeplans_stage05 import setup_paper
 
 
@@ -108,3 +121,28 @@ def test_stage32_bulk_soft_delete_is_owner_scoped(client, django_user_model):
     other.refresh_from_db()
     assert own.trashed_at is not None
     assert other.trashed_at is None
+
+
+@pytest.mark.django_db
+def test_stage32_backfill_restart_reuses_cursor_and_respects_floodwait(django_user_model):
+    user = django_user_model.objects.create_user(username="s32-backfill")
+    account = TelegramAccount.objects.create(owner=user)
+    source = SignalSource.objects.create(owner=user, method="telegram", name="S32 channel")
+    channel = TelegramChannel.objects.create(
+        owner=user, account=account, source=source, peer_id=-1003200, title="Stage32"
+    )
+    job = TelegramBackfillJob.objects.create(
+        owner=user,
+        channel=channel,
+        status=TelegramBackfillJob.Status.PAUSED,
+        cursor_message_id=412,
+        upper_message_id=900,
+    )
+    resumed, created = start_backfill(channel)
+    assert created is False and resumed.pk == job.pk
+    assert resumed.cursor_message_id == 412
+    resumed.status = TelegramBackfillJob.Status.PENDING
+    resumed.retry_at = timezone.now() + timedelta(minutes=2)
+    resumed.save()
+    with pytest.raises(ValidationError, match="FloodWait"):
+        start_backfill(channel)

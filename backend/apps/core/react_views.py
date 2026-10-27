@@ -37,7 +37,13 @@ from apps.operations.models import ExternalObservation, WorkerHeartbeat
 from apps.operations.tasks import reconcile_one
 from apps.signals.backfill import pause_backfill, process_backfill_batch, start_backfill
 from apps.signals.models import Signal, SignalSource, TelegramAccount, TelegramBackfillJob, TelegramChannel, TelegramMessage
-from apps.signals.telegram_client import available_channels, complete_login, configure_channel, request_login_code
+from apps.signals.telegram_client import (
+    available_channels,
+    complete_login,
+    configure_channel,
+    request_login_code,
+    resend_login_code,
+)
 from apps.signals.telegram_security import revoke_telegram_credentials
 from apps.tradeplans.models import TradePlan
 from apps.tradeplans.fix_loss import api_fix_loss
@@ -1012,6 +1018,9 @@ def api_telegram_state(request):
                 "phone_hint": account.phone_hint,
                 "last_error": account.last_error,
                 "connected_at": account.connected_at,
+                "verification_expires_at": account.verification_expires_at,
+                "verification_resend_at": account.verification_resend_at,
+                "verification_attempts": account.verification_attempts,
             },
             "channels": [
                 {
@@ -1091,6 +1100,8 @@ def api_telegram_action(request):
             return JsonResponse({"error": "step_up_required", "verify_url": "/cryptosniper/settings/security/step-up/"}, status=403)
         if action == "connect":
             asyncio.run(request_login_code(account, int(data["api_id"]), str(data["api_hash"]), str(data["phone"])))
+        elif action == "resend":
+            asyncio.run(resend_login_code(account))
         elif action == "code":
             connected = asyncio.run(complete_login(account, str(data.get("code", "")), str(data.get("password", ""))))
             return JsonResponse({"ok": True, "connected": connected, "status": account.status})

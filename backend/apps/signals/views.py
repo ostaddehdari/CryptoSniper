@@ -36,6 +36,7 @@ from .models import (
 )
 from .outcomes import evaluate_channel_batch, start_channel_evaluation
 from .parsing import parse_for_review
+from .quality import parser_quality_report
 from .services import (
     receive_signal,
     restore_signals,
@@ -736,6 +737,13 @@ def api_smart_paste(request):
         )
     except ValidationError as error:
         return JsonResponse({"error": error.messages}, status=400)
+
+
+@session_api_required
+@never_cache
+@require_GET
+def api_smart_paste_quality(request):
+    return JsonResponse({"quality": parser_quality_report()})
 
 
 @session_api_required

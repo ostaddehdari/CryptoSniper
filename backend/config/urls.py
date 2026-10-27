@@ -282,6 +282,11 @@ urlpatterns = [
     path("inbox/receive/", react_views.legacy_inbox_receive_compat, name="inbox-receive"),
     path("smart-paste/", react_views.legacy_smart_paste_compat, name="smart-paste"),
     path("api/v1/smart-paste/", inbox_views.api_smart_paste, name="api-smart-paste"),
+    path(
+        "api/v1/smart-paste/quality/",
+        inbox_views.api_smart_paste_quality,
+        name="api-smart-paste-quality",
+    ),
     path("inbox/<int:pk>/", react_views.legacy_signal_page, name="inbox-detail"),
     path("inbox/<int:pk>/trash/", inbox_views.trash_one, name="inbox-trash-one"),
     path(

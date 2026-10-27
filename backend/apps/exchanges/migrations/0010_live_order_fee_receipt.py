@@ -5,35 +5,44 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('exchanges', '0009_stage30_source_plan'),
-        ('tradeplans', '0003_stage23_trailing_trigger'),
+        ("exchanges", "0009_stage30_source_plan"),
+        ("tradeplans", "0003_stage23_trailing_trigger"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='livespotorder',
-            name='fee_amount',
+            model_name="livespotorder",
+            name="fee_amount",
             field=models.DecimalField(blank=True, decimal_places=16, max_digits=32, null=True),
         ),
         migrations.AddField(
-            model_name='livespotorder',
-            name='fee_asset',
+            model_name="livespotorder",
+            name="fee_asset",
             field=models.CharField(blank=True, max_length=20),
         ),
         migrations.AddField(
-            model_name='livespotorder',
-            name='fee_quote_value',
+            model_name="livespotorder",
+            name="fee_quote_value",
             field=models.DecimalField(blank=True, decimal_places=16, max_digits=32, null=True),
         ),
         migrations.AddConstraint(
-            model_name='livespotorder',
-            constraint=models.CheckConstraint(condition=models.Q(('fee_amount__isnull', True), ('fee_amount__gte', 0), _connector='OR'), name='live_spot_order_fee_nonnegative'),
+            model_name="livespotorder",
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    ("fee_amount__isnull", True), ("fee_amount__gte", 0), _connector="OR"
+                ),
+                name="live_spot_order_fee_nonnegative",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='livespotorder',
-            constraint=models.CheckConstraint(condition=models.Q(('fee_quote_value__isnull', True), ('fee_quote_value__gte', 0), _connector='OR'), name='live_spot_order_fee_quote_nonnegative'),
+            model_name="livespotorder",
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    ("fee_quote_value__isnull", True), ("fee_quote_value__gte", 0), _connector="OR"
+                ),
+                name="live_spot_order_fee_quote_nonnegative",
+            ),
         ),
     ]

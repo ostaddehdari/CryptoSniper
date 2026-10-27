@@ -40,7 +40,10 @@ def live_financial_report(user, period="month"):
         )
         .exclude(account__exchange__adapter_code="simulator")
         .select_related(
-            "account__exchange", "market__quote_asset", "market__base_asset", "entry_order",
+            "account__exchange",
+            "market__quote_asset",
+            "market__base_asset",
+            "entry_order",
             "external_policy",
         )
         .prefetch_related(Prefetch("exits", queryset=exits, to_attr="report_exits"))

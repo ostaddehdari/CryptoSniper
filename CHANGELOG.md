@@ -1,3 +1,12 @@
+# 0.32.0rc1 — Final signals and Telegram workflow (2026-10-27)
+
+- Versioned FA/EN Smart Paste quality corpus and explicit separation of parser confidence from validation blockers.
+- Owner-scoped Inbox bulk lifecycle, audited optional edit reason and immutable approve-to-manual transfer.
+- Telegram resend/2FA metadata, FloodWait-aware resumable archive and restart-safe deduplication.
+- Editable Template/AI/Hybrid channel policy with environment-only AI keys and strict model-output schema.
+- Conservative OHLC outcomes, automatic archive of stale no-entry signals and channel analytics with explicit ambiguity limits.
+- Approved React visual baseline preserved; Full-Auto Telegram remains Paper-only and live Spot gates stay off.
+
 # 0.31.0rc1 — Durable Spot management (2026-10-26)
 
 - Unified paginated trades, lifecycle/source filters, private provider receipt reconciliation and explicit cancellation.

@@ -57,6 +57,16 @@ async def request_login_code(account, api_id, api_hash, phone):
         await client.disconnect()
 
 
+async def resend_login_code(account):
+    values = get_telegram_credentials(account)
+    api_id = values.get("api_id")
+    api_hash = values.get("api_hash")
+    phone = values.get("phone")
+    if not api_id or not api_hash or not phone:
+        raise ValidationError("اطلاعات درخواست قبلی Telegram در دسترس نیست.")
+    await request_login_code(account, int(api_id), str(api_hash), str(phone))
+
+
 async def complete_login(account, code, password=""):
     now = timezone.now()
     if account.verification_expires_at and account.verification_expires_at <= now:

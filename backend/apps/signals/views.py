@@ -36,6 +36,7 @@ from .models import (
 )
 from .outcomes import evaluate_channel_batch, start_channel_evaluation
 from .parsing import parse_for_review
+from .quality import parser_quality_report
 from .services import (
     receive_signal,
     restore_signals,
@@ -469,10 +470,18 @@ def telegram_channel_analytics(request, pk):
 
 
 @session_api_required
-@require_GET
+@require_http_methods(["GET", "POST"])
 def api_telegram_channel_analytics(request, pk):
     channel = get_object_or_404(TelegramChannel, owner=request.user, pk=pk)
+    if request.method == "POST":
+        job, created = start_channel_evaluation(channel)
+        if created:
+            evaluate_channel_batch.apply_async(args=[job.pk], queue="signals")
+        return JsonResponse({"ok": True, "job_id": job.pk, "created": created}, status=202)
     job = channel.evaluation_jobs.first()
+    outcomes = SignalOutcome.objects.filter(signal__source=channel.source).order_by(
+        "-evaluated_from"
+    )[:100]
     return JsonResponse(
         {
             "channel_id": channel.pk,
@@ -484,6 +493,30 @@ def api_telegram_channel_analytics(request, pk):
                 "total": job.total_signals,
                 "evaluated": job.evaluated_signals,
                 "skipped": job.skipped_signals,
+            },
+            "outcomes": [
+                {
+                    "signal_id": outcome.signal_id,
+                    "status": outcome.status,
+                    "symbol": outcome.symbol,
+                    "targets_hit": outcome.targets_hit,
+                    "evaluated_from": outcome.evaluated_from,
+                    "evaluated_until": outcome.evaluated_until,
+                    "provider": outcome.provider,
+                    "policy_version": outcome.policy_version,
+                    "ambiguous": bool(outcome.evidence.get("ambiguous_same_candle")),
+                }
+                for outcome in outcomes
+            ],
+            "methodology": {
+                "provider": "Binance public historical OHLC",
+                "interval": "1h",
+                "policy": "ohlc-conservative-v1",
+                "win_rate_denominator": "target_plus_stopped_only",
+                "ambiguous_excluded": True,
+                "limitation": (
+                    "ترتیب برخورد TP و SL داخل یک کندل معلوم نیست؛ نتیجه مبهم سود قطعی نیست."
+                ),
             },
         }
     )
@@ -697,6 +730,67 @@ def api_archive(request, pk):
 
 @session_api_required
 @never_cache
+@require_POST
+def api_bulk(request):
+    try:
+        body = _json_body(request)
+        ids = body.get("ids", [])
+        if not isinstance(ids, list) or len(ids) > 100:
+            raise ValidationError("حداکثر ۱۰۰ سیگنال در هر عملیات مجاز است.")
+        action = str(body.get("action", ""))
+        if action == "trash":
+            count = trash_signals(request.user, ids)
+        elif action == "restore":
+            count = restore_signals(request.user, ids)
+        elif action in {"archive", "unarchive"}:
+            clean_ids = {int(pk) for pk in ids if str(pk).isdigit()}
+            count = Signal.objects.filter(owner=request.user, pk__in=clean_ids).update(
+                archived_at=timezone.now() if action == "archive" else None
+            )
+            record_audit(
+                "signal.bulk_archive_changed",
+                request=request,
+                user=request.user,
+                metadata={"count": count, "archived": action == "archive"},
+            )
+        else:
+            raise ValidationError("عملیات گروهی معتبر نیست.")
+        return JsonResponse({"ok": True, "count": count, "action": action})
+    except (ValidationError, ValueError, TypeError) as error:
+        return JsonResponse({"error": getattr(error, "messages", [str(error)])}, status=400)
+
+
+@session_api_required
+@never_cache
+@require_POST
+def api_approve_transfer(request, pk):
+    """Approve once, then return the immutable snapshot used to seed Manual Trade."""
+
+    item = owned(request.user, pk)
+    try:
+        body = _json_body(request)
+        if item.status == Signal.Status.PARSED:
+            item = transition(
+                request.user,
+                item.pk,
+                expected_revision=int(body.get("revision", 0)),
+                action="approve",
+                reason=str(body.get("reason", "")),
+            )
+        elif item.status != Signal.Status.APPROVED:
+            raise ValidationError("سیگنال کامل و تأییدشده برای انتقال لازم است.")
+        approved = dict(item.approved_snapshot)
+        if not approved or approved.get("status") != Signal.Status.APPROVED:
+            raise ValidationError("Snapshot تأییدشده در دسترس نیست.")
+        approved["origin_signal_id"] = item.pk
+        approved["source"] = item.source.name
+        return JsonResponse({"signal_id": item.pk, "manual_seed": approved})
+    except (ValidationError, ValueError, TypeError) as error:
+        return JsonResponse({"error": getattr(error, "messages", [str(error)])}, status=400)
+
+
+@session_api_required
+@never_cache
 @require_GET
 def api_detail(request, pk):
     return JsonResponse({"signal": _serialize(owned(request.user, pk))})
@@ -736,6 +830,13 @@ def api_smart_paste(request):
         )
     except ValidationError as error:
         return JsonResponse({"error": error.messages}, status=400)
+
+
+@session_api_required
+@never_cache
+@require_GET
+def api_smart_paste_quality(request):
+    return JsonResponse({"quality": parser_quality_report()})
 
 
 @session_api_required

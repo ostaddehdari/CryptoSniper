@@ -54,7 +54,7 @@ class ReviewForm(forms.Form):
         min_value=Decimal("0.0000000000000001"),
     )
     revision = forms.IntegerField(widget=forms.HiddenInput, min_value=1)
-    reason = forms.CharField(label="دلیل ویرایش", max_length=500, min_length=3)
+    reason = forms.CharField(label="دلیل ویرایش", max_length=500, required=False)
 
     def __init__(self, owner, *args, **kwargs):
         super().__init__(*args, **kwargs)

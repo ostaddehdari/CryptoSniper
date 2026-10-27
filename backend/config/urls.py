@@ -282,6 +282,11 @@ urlpatterns = [
     path("inbox/receive/", react_views.legacy_inbox_receive_compat, name="inbox-receive"),
     path("smart-paste/", react_views.legacy_smart_paste_compat, name="smart-paste"),
     path("api/v1/smart-paste/", inbox_views.api_smart_paste, name="api-smart-paste"),
+    path(
+        "api/v1/smart-paste/quality/",
+        inbox_views.api_smart_paste_quality,
+        name="api-smart-paste-quality",
+    ),
     path("inbox/<int:pk>/", react_views.legacy_signal_page, name="inbox-detail"),
     path("inbox/<int:pk>/trash/", inbox_views.trash_one, name="inbox-trash-one"),
     path(
@@ -292,10 +297,16 @@ urlpatterns = [
     path("inbox/<int:pk>/edit/", inbox_views.edit, name="inbox-edit"),
     path("inbox/<int:pk>/action/", inbox_views.action, name="inbox-action"),
     path("api/v1/inbox/", inbox_views.api_list, name="api-inbox"),
+    path("api/v1/inbox/bulk/", inbox_views.api_bulk, name="api-inbox-bulk"),
     path("api/v1/inbox/receive/", inbox_views.api_receive, name="api-inbox-receive"),
     path("api/v1/inbox/<int:pk>/", inbox_views.api_detail, name="api-inbox-detail"),
     path("api/v1/inbox/<int:pk>/edit/", inbox_views.api_edit, name="api-inbox-edit"),
     path("api/v1/inbox/<int:pk>/action/", inbox_views.api_action, name="api-inbox-action"),
+    path(
+        "api/v1/inbox/<int:pk>/approve-transfer/",
+        inbox_views.api_approve_transfer,
+        name="api-inbox-approve-transfer",
+    ),
     path("api/v1/inbox/<int:pk>/archive/", inbox_views.api_archive, name="api-inbox-archive"),
     path("api/v1/manual/context/", trade_context.manual_context, name="manual-context"),
     path("api/v1/manual/plans/", plan_views.api_create, name="api-manual-create"),

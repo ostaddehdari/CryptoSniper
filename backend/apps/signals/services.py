@@ -134,8 +134,7 @@ def update_parsed(owner, pk, *, expected_revision, data, reason):
         raise ValidationError("نسخه فرم قدیمی است؛ صفحه را تازه کنید.")
     if signal.status not in {"new", "parsed", "needs_review"}:
         raise ValidationError("سیگنال در این وضعیت قابل اصلاح نیست.")
-    if not reason or len(reason.strip()) < 3:
-        raise ValidationError("دلیل اصلاح حداقل سه حرف لازم دارد.")
+    reason = (reason or "").strip() or "اصلاح فیلدهای سیگنال توسط کاربر"
     account, market, targets = _validate_structure(owner, data)
     signal.exchange_account = account
     signal.market = market
@@ -167,7 +166,7 @@ def update_parsed(owner, pk, *, expected_revision, data, reason):
             for i, (price, share) in enumerate(targets)
         ]
     )
-    _revision(signal, owner=owner, reason=reason.strip())
+    _revision(signal, owner=owner, reason=reason)
     record_audit(
         "signal.revised", user=owner, metadata={"signal_id": signal.pk, "revision": signal.revision}
     )

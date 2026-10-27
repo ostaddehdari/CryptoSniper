@@ -5,9 +5,9 @@
     "S01",
     "S02"
   ],
-  "current_stage": "S31",
-  "next_stage": "S32",
-  "last_completed_work": "S31-W05",
+  "current_stage": "S32",
+  "next_stage": "S33",
+  "last_completed_work": "S32-W05",
   "implementation_started": true,
   "stage_results": {
     "S01": {
@@ -1380,19 +1380,66 @@
       ],
       "blockers": [
         "Real-provider credential and actual exchange order acceptance are unavailable; contract provider and synthetic data were used.",
-        "Target VPS installation of Stage31 has not been performed. Both live flags remain off by default; per-trade consent is required.",
+        "Stage31 r2 was installed successfully on the target VPS on 2026-10-27; real-provider credential and live-order acceptance remain separate.",
         "Stacked branches await main integration; no merge is claimed."
       ],
-      "implementation": "Five S31 works code-complete. Final r2 source passed391 tests,74 installer tests, real isolated Celery restart, PostgreSQL/Redis, concurrent monitors and browser at four widths. TP/SL refresh and all label/partial-exit marker bounds verified. Immutable cumulative release published; real-provider/VPS acceptance and main merge remain open. Default live gates remain off.",
+      "implementation": "Five S31 works code-complete. Final r2 source passed 391 tests, 74 installer tests, real isolated Celery restart, PostgreSQL/Redis, concurrent monitors and browser at four widths. TP/SL refresh and all label/partial-exit marker bounds verified. Immutable cumulative release was installed successfully on the target VPS; real-provider acceptance and main merge remain open. Default live gates remain off.",
       "release_commit": "dc1e88ce99bfcf48c6500e559788be63f65136a0",
       "release_tag": "stage31-react-v0.31.0rc1-deploy-r2",
       "pull_request": "https://github.com/ostaddehdari/CryptoSniper/pull/5"
     },
     "S32": {
-      "status": "not_started",
-      "completed_works": [],
-      "checks": [],
-      "blockers": []
+      "status": "partial",
+      "completed_works": [
+        "S32-W01",
+        "S32-W02",
+        "S32-W03",
+        "S32-W04",
+        "S32-W05"
+      ],
+      "checks": [
+        {
+          "name": "Local parser, AI schema and conservative outcome tests",
+          "status": "passed",
+          "pytest_passed": 4,
+          "database_tests_skipped": 5
+        },
+        {
+          "name": "React unit tests and production build",
+          "status": "passed",
+          "react_tests_passed": 2
+        },
+        {
+          "name": "Exact PostgreSQL/Redis/Celery/browser CI and immutable release",
+          "status": "passed",
+          "tested_commit": "b7306b323ea99baea1e6ebd8899de873fb62d4c7",
+          "run_url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/40469881498",
+          "pytest_passed": 752,
+          "installer_tests_included": 81,
+          "artifact_id": 12718007967,
+          "responsive_widths": [
+            320,
+            390,
+            768,
+            1440
+          ]
+        },
+        {
+          "name": "Downloaded official assets, exact SHA256 and deploy.sh installer --check",
+          "status": "passed",
+          "installation_performed": false,
+          "release_tag": "stage32-react-v0.32.0rc1-deploy-r1"
+        }
+      ],
+      "blockers": [
+        "Real Telegram and AI credentials were not provided; account/provider acceptance remains open.",
+        "Target VPS installation of Stage32 and main integration remain open.",
+        "Live Spot gates remain off and Full-Auto Telegram remains Simulator/Paper only."
+      ],
+      "implementation": "All five S32 works are code-complete: measurable Smart Paste, final Inbox transfer, resumable Telegram verification/archive, safe Template/AI/Hybrid policy and conservative outcome analytics. Exact PostgreSQL/Redis/Celery/browser CI passed 752 tests and the immutable r1 release was verified independently. Real Telegram/AI credentials, Stage32 VPS installation and main integration remain open.",
+      "release_commit": "b7306b323ea99baea1e6ebd8899de873fb62d4c7",
+      "release_tag": "stage32-react-v0.32.0rc1-deploy-r1",
+      "pull_request": "https://github.com/ostaddehdari/CryptoSniper/pull/6"
     },
     "S33": {
       "status": "not_started",

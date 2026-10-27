@@ -41,9 +41,22 @@ def assess(parsed):
     coverage = sum(bool(parsed[key]) for key in ("pair", "side", "entry", "stop_loss"))
     coverage += int(bool(parsed["all_targets"]))
     confidence = max(0, (coverage * 20) - (10 * int(parsed["futures_mentioned"])))
+    validation = {
+        "complete": not any(
+            message
+            for message in warnings
+            if message
+            not in {"اهداف مازاد فقط در اصل استخراج محفوظ‌اند؛ سه هدف نخست قابل اجرا هستند."}
+        ),
+        "blocked": bool(parsed["futures_mentioned"]),
+        "issues": warnings,
+    }
+    band = "high" if confidence >= 80 else "medium" if confidence >= 50 else "low"
     return {
         **parsed,
         "technical_confidence": confidence,
+        "confidence_band": band,
+        "validation": validation,
         "warnings": warnings,
         "review_required": True,
         "entry_policy": "explicit_user_review_only",

@@ -1,0 +1,59 @@
+name: Build Stage32 validated React deployment
+on:
+  workflow_call:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: stage32-validated-release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Require exact tested source and package workflow
+        env:
+          TESTED_SHA: ${{ github.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$TESTED_SHA"
+          test -f scripts/build_stage32_release.py
+          test -f docs/reports/stage-32.md
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend-react/package-lock.json
+      - name: Build the exact tested React source
+        working-directory: frontend-react
+        run: |
+          npm ci
+          npm test
+          npm run build
+      - name: Verify installer upgrade and build cumulative package
+        run: |
+          python3 -m unittest discover -s tests -p test_installer_nginx.py -q
+          python3 scripts/build_stage32_release.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stage32-verified-react-release
+          path: .runtime/stage32-release/*
+          include-hidden-files: true
+          if-no-files-found: error
+      - name: Publish immutable package from the successful source
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG=stage32-react-v0.32.0rc1-deploy-r1
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo 'Existing immutable Stage32 release retained; no assets replaced.'
+            exit 0
+          fi
+          gh release create "$TAG" .runtime/stage32-release/* --target "$(git rev-parse HEAD)" --prerelease \
+            --title 'CryptoSniper Stage32 — final signals and Telegram workflow' \
+            --notes 'Stage32: labeled Smart Paste quality evidence; final Inbox review, bulk lifecycle and immutable transfer; Telegram code/2FA/resend, resumable archive and FloodWait; editable Template/AI/Hybrid policy with strict schema validation; conservative OHLC outcomes and channel analytics. Historical messages never place orders and Full-Auto remains Simulator/Paper only. Real Telegram/AI credentials and target VPS acceptance remain separate.'

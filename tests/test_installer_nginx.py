@@ -236,10 +236,23 @@ class Stage24ManagedSourceUpgradeTests(unittest.TestCase):
             self.assertIn(f"os.environ['STAGE24_{label}_SOURCE_COMMIT']", installer)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class Stage31NginxUpgradeTests(Stage30NginxUpgradeTests):
     installer = ROOT / "scripts/cryptosniper-stage31-react-run.sh"
     stage = 31
+
+
+class Stage32NginxUpgradeTests(Stage31NginxUpgradeTests):
+    installer = ROOT / "scripts/cryptosniper-stage32-react-run.sh"
+    stage = 32
+
+    def test_stage31_r2_installed_source_is_accepted(self):
+        installer = self.installer.read_text()
+        self.assertIn(
+            "STAGE31_R2_SOURCE_COMMIT=dc1e88ce99bfcf48c6500e559788be63f65136a0",
+            installer,
+        )
+        self.assertIn("os.environ['STAGE31_R2_SOURCE_COMMIT']", installer)
+
+
+if __name__ == "__main__":
+    unittest.main()

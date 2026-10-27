@@ -1217,6 +1217,14 @@ def api_telegram_action(request):
         elif action == "archive_pause":
             job = get_object_or_404(TelegramBackfillJob, owner=request.user, pk=int(data["job_id"]))
             pause_backfill(job)
+        elif action == "evaluate_start":
+            channel = get_object_or_404(TelegramChannel, owner=request.user, pk=int(data["channel_id"]))
+            from apps.signals.outcomes import evaluate_channel_batch, start_channel_evaluation
+
+            job, created = start_channel_evaluation(channel)
+            if created:
+                evaluate_channel_batch.apply_async(args=[job.pk], queue="signals")
+            return JsonResponse({"ok": True, "job_id": job.pk, "created": created}, status=202)
         elif action == "revoke":
             revoke_telegram_credentials(account)
             TelegramChannel.objects.filter(owner=request.user).update(enabled=False)

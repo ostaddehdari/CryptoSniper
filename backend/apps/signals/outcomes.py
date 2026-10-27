@@ -76,7 +76,13 @@ def evaluate_path(*, side, entry, stop, targets, candles):
         "targets_hit": hit_count,
         "last_target_price": targets[hit_count - 1] if hit_count else None,
         "evaluated_until": last_time,
-        "evidence": {"candles": len(candles), "ambiguous_same_candle": ambiguous},
+        "evidence": {
+            "candles": len(candles),
+            "ambiguous_same_candle": ambiguous,
+            "price_source": "normalized_ohlc",
+            "intrabar_order_known": False,
+            "profit_claimed": status == SignalOutcome.Status.TARGET,
+        },
     }
 
 
@@ -117,6 +123,9 @@ def evaluate_historical_signal(signal_id, *, fetch=True):
         ).order_by("open_time")
     )
     result = evaluate_path(side=side, entry=entry, stop=stop, targets=targets, candles=candles)
+    if end < timezone.now() and result["status"] == SignalOutcome.Status.NOT_TRIGGERED:
+        result["status"] = SignalOutcome.Status.EXPIRED
+        result["evidence"]["expired_without_entry"] = True
     outcome, _ = SignalOutcome.objects.update_or_create(
         signal=signal,
         defaults={
@@ -128,6 +137,10 @@ def evaluate_historical_signal(signal_id, *, fetch=True):
             **result,
         },
     )
+    if outcome.status == SignalOutcome.Status.EXPIRED and signal.archived_at is None:
+        Signal.objects.filter(pk=signal.pk, archived_at__isnull=True).update(
+            archived_at=timezone.now()
+        )
     return {"outcome_id": outcome.pk, "status": outcome.status}
 
 

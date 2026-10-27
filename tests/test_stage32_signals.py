@@ -6,6 +6,7 @@ from apps.signals.backfill import start_backfill
 from apps.signals.models import (
     RawSignal,
     Signal,
+    SignalOutcome,
     SignalSource,
     SignalTarget,
     TelegramAccount,
@@ -45,6 +46,21 @@ def test_stage32_confidence_and_validation_are_separate():
     assert result["confidence_band"] == "high"
     assert result["validation"]["blocked"] is True
     assert result["validation"]["complete"] is False
+
+
+def test_stage32_ambiguous_ohlc_never_claims_profit():
+    from apps.signals.outcomes import evaluate_path
+
+    class Candle:
+        low_price = "89"
+        high_price = "111"
+        open_time = timezone.now()
+        close_time = timezone.now()
+
+    result = evaluate_path(side="long", entry="100", stop="90", targets=["110"], candles=[Candle()])
+    assert result["status"] == SignalOutcome.Status.AMBIGUOUS
+    assert result["evidence"]["intrabar_order_known"] is False
+    assert result["evidence"]["profit_claimed"] is False
 
 
 @pytest.mark.django_db

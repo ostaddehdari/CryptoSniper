@@ -470,10 +470,18 @@ def telegram_channel_analytics(request, pk):
 
 
 @session_api_required
-@require_GET
+@require_http_methods(["GET", "POST"])
 def api_telegram_channel_analytics(request, pk):
     channel = get_object_or_404(TelegramChannel, owner=request.user, pk=pk)
+    if request.method == "POST":
+        job, created = start_channel_evaluation(channel)
+        if created:
+            evaluate_channel_batch.apply_async(args=[job.pk], queue="signals")
+        return JsonResponse({"ok": True, "job_id": job.pk, "created": created}, status=202)
     job = channel.evaluation_jobs.first()
+    outcomes = SignalOutcome.objects.filter(signal__source=channel.source).order_by(
+        "-evaluated_from"
+    )[:100]
     return JsonResponse(
         {
             "channel_id": channel.pk,
@@ -485,6 +493,30 @@ def api_telegram_channel_analytics(request, pk):
                 "total": job.total_signals,
                 "evaluated": job.evaluated_signals,
                 "skipped": job.skipped_signals,
+            },
+            "outcomes": [
+                {
+                    "signal_id": outcome.signal_id,
+                    "status": outcome.status,
+                    "symbol": outcome.symbol,
+                    "targets_hit": outcome.targets_hit,
+                    "evaluated_from": outcome.evaluated_from,
+                    "evaluated_until": outcome.evaluated_until,
+                    "provider": outcome.provider,
+                    "policy_version": outcome.policy_version,
+                    "ambiguous": bool(outcome.evidence.get("ambiguous_same_candle")),
+                }
+                for outcome in outcomes
+            ],
+            "methodology": {
+                "provider": "Binance public historical OHLC",
+                "interval": "1h",
+                "policy": "ohlc-conservative-v1",
+                "win_rate_denominator": "target_plus_stopped_only",
+                "ambiguous_excluded": True,
+                "limitation": (
+                    "ترتیب برخورد TP و SL داخل یک کندل معلوم نیست؛ نتیجه مبهم سود قطعی نیست."
+                ),
             },
         }
     )

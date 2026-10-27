@@ -186,12 +186,16 @@ def _rows(
     limit=100,
     with_total=False,
 ):
-    paper = Trade.objects.filter(owner=user)
     live = LiveSpotOrder.objects.filter(owner=user, managed_exit__isnull=True)
     external = ExternalObservation.objects.filter(
         account__owner=user, kind__in=("order", "fill", "history")
     )
-    sources = {"paper": paper, "live": live, "external": external}
+    # Paper history is retained only behind its explicit legacy filter.
+    sources = (
+        {"paper": Trade.objects.filter(owner=user)}
+        if origin == "paper"
+        else {"live": live, "external": external}
+    )
     pieces = []
     for kind, qs in sources.items():
         if origin != "all" and kind != origin:

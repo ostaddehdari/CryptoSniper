@@ -1,0 +1,24 @@
+/* Stage 33 adds optional density and keyboard affordances; approved base theme is unchanged. */
+.metric[role="button"]:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.compactMode .content {
+  gap: 12px;
+}
+
+.compactMode .card {
+  padding: 14px;
+}
+
+.compactMode td,
+.compactMode th {
+  padding-block: 9px;
+}
+
+@media (max-width: 700px) {
+  .compactMode .card {
+    padding: 12px;
+  }
+}

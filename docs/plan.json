@@ -1514,7 +1514,7 @@
       "depends_on": [
         "S31"
       ],
-      "status": "not_started",
+      "status": "partial",
       "works": [
         {
           "id": "S32-W01",
@@ -1522,7 +1522,7 @@
           "title": "Smart Paste قابل ارزیابی",
           "deliverables": "مجموعه سیگنال‌های نمونه، فارسی/انگلیسی، قالب‌ها و ویرایش نتیجه تحلیل.",
           "acceptance": "کیفیت روی نمونه برچسب‌خورده گزارش شود؛ متن مبهم به معامله نرود.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S32-W02",
@@ -1530,7 +1530,7 @@
           "title": "صندوق نهایی",
           "deliverables": "تأیید و انتقال، ویرایش، دلیل اختیاری، حذف تکی/گروهی و دکمه‌های بدون تکرار.",
           "acceptance": "داده تأییدشده دقیقاً داخل فرم دستی قرار بگیرد.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S32-W03",
@@ -1538,7 +1538,7 @@
           "title": "اتصال و آرشیو تلگرام",
           "deliverables": "کد، 2FA، FloodWait، ادامه آرشیو و جلوگیری از تکرار پیام.",
           "acceptance": "Session خصوصی و restart آرشیو آزموده شوند؛ تأیید حساب واقعی جدا ثبت شود.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S32-W04",
@@ -1546,7 +1546,7 @@
           "title": "قالب کانال و AI",
           "deliverables": "Template/AI/Hybrid، خطاهای قابل فهم و کلید امن؛ سیاست استفاده و schema validation.",
           "acceptance": "خروجی نامعتبر مدل اجرای سفارش را فعال نکند.",
-          "status": "not_started"
+          "status": "done"
         },
         {
           "id": "S32-W05",
@@ -1554,7 +1554,7 @@
           "title": "سنجش نتیجه و رابط",
           "deliverables": "Card/Table، نمودار، بایگانی خودکار و آمار کانال با بیان منبع/محدودیت.",
           "acceptance": "برخوردهای مبهم OHLC سود قطعی گزارش نشوند؛ گزارش پذیرش ثبت شود.",
-          "status": "not_started"
+          "status": "done"
         }
       ]
     },

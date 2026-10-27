@@ -142,3 +142,11 @@ jobs:
       contents: write
       actions: read
     uses: ./.github/workflows/release-stage32-react.yml
+
+  release-stage33:
+    needs: foundation
+    if: github.event_name == 'push' && github.ref == 'refs/heads/stage33-final-acceptance' && contains(github.event.head_commit.message, 'S33-RELEASE')
+    permissions:
+      contents: write
+      actions: read
+    uses: ./.github/workflows/release-stage33-react.yml

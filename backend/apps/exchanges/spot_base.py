@@ -189,6 +189,13 @@ class SpotAdapterBase(ExchangeAdapter):
         )
         price = payload.get("price", fallback.get("price"))
         average = payload.get("avgPrice", payload.get("averagePrice"))
+        fee_amount = optional_decimal(
+            payload.get("commission", payload.get("fee", payload.get("filledFee")))
+        )
+        fee_asset = str(
+            payload.get("commissionAsset", payload.get("feeAsset", payload.get("feeCurrency", "")))
+        ).upper()
+        quote = symbol.split("/", 1)[1]
         return Order(
             order_id=str(payload.get("orderId", payload.get("id", ""))),
             client_order_id=str(payload.get("clientOrderId", fallback.get("client_order_id", ""))),
@@ -201,6 +208,9 @@ class SpotAdapterBase(ExchangeAdapter):
             average_price=optional_decimal(average),
             status=order_status(payload.get("status", fallback.get("status", "open"))),
             created_at=observed_at(payload.get("time", payload.get("transactTime"))),
+            fee_amount=fee_amount,
+            fee_asset=fee_asset,
+            fee_quote_value=fee_amount if fee_amount is not None and fee_asset == quote else None,
         )
 
     def fetch_max_leverage(self, symbol):

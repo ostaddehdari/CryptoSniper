@@ -185,13 +185,19 @@ def _rows(
     offset=0,
     limit=100,
     with_total=False,
+    include_legacy_paper=False,
 ):
-    paper = Trade.objects.filter(owner=user)
     live = LiveSpotOrder.objects.filter(owner=user, managed_exit__isnull=True)
     external = ExternalObservation.objects.filter(
         account__owner=user, kind__in=("order", "fill", "history")
     )
-    sources = {"paper": paper, "live": live, "external": external}
+    # Paper history is retained only behind its explicit legacy filter.
+    if origin == "paper":
+        sources = {"paper": Trade.objects.filter(owner=user)}
+    else:
+        sources = {"live": live, "external": external}
+        if include_legacy_paper:
+            sources = {"paper": Trade.objects.filter(owner=user), **sources}
     pieces = []
     for kind, qs in sources.items():
         if origin != "all" and kind != origin:
@@ -292,6 +298,10 @@ def api_trades(request):
         offset=offset,
         limit=limit,
         with_total=True,
+        # Older API consumers omitted `origin` and expected Paper history.
+        # The React Stage33 client always sends origin=all and therefore keeps
+        # its real-trade workspace free of simulator rows.
+        include_legacy_paper="origin" not in request.GET,
     )
     return JsonResponse(
         {

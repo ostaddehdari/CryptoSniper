@@ -1,0 +1,59 @@
+name: Build Stage33 validated React deployment
+on:
+  workflow_call:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: stage33-validated-release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Require exact tested source and package workflow
+        env:
+          TESTED_SHA: ${{ github.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$TESTED_SHA"
+          test -f scripts/build_stage33_release.py
+          test -f docs/reports/stage-33.md
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend-react/package-lock.json
+      - name: Build the exact tested React source
+        working-directory: frontend-react
+        run: |
+          npm ci
+          npm test
+          npm run build
+      - name: Verify installer upgrade and build cumulative package
+        run: |
+          python3 -m unittest discover -s tests -p test_installer_nginx.py -q
+          python3 scripts/build_stage33_release.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stage33-verified-react-release
+          path: .runtime/stage33-release/*
+          include-hidden-files: true
+          if-no-files-found: error
+      - name: Publish immutable package from the successful source
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG=stage33-react-v0.33.0rc1-deploy-r1
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo 'Existing immutable Stage33 release retained; no assets replaced.'
+            exit 0
+          fi
+          gh release create "$TAG" .runtime/stage33-release/* --target "$(git rev-parse HEAD)" --prerelease \
+            --title 'CryptoSniper Stage33 — final owner acceptance' \
+            --notes 'Stage33: provider-timestamped balances, exact-fee live reports with unknown-not-zero semantics, cleaned React owner workflow, server/recovery acceptance contract and final operator hand-off. Approved React/Cornix baseline is preserved. Live money remains separately authorized; real exchange, Telegram/AI and target Stage33 install acceptance remain explicit.'

@@ -254,5 +254,22 @@ class Stage32NginxUpgradeTests(Stage31NginxUpgradeTests):
         self.assertIn("os.environ['STAGE31_R2_SOURCE_COMMIT']", installer)
 
 
+class Stage33NginxUpgradeTests(Stage32NginxUpgradeTests):
+    installer = ROOT / "scripts/cryptosniper-stage33-react-run.sh"
+    stage = 33
+
+    def test_stage32_installed_source_and_final_assets_are_pinned(self):
+        installer = self.installer.read_text()
+        self.assertIn(
+            "STAGE32_SOURCE_COMMIT=b7306b323ea99baea1e6ebd8899de873fb62d4c7",
+            installer,
+        )
+        self.assertIn("os.environ['STAGE32_SOURCE_COMMIT']", installer)
+        self.assertIn("backend/apps/exchanges/migrations/0010_live_order_fee_receipt.py", installer)
+        self.assertIn("backend/apps/reports/live.py", installer)
+        self.assertIn("docs/reports/stage-33.md", installer)
+        self.assertIn("0.33.0rc1", installer)
+
+
 if __name__ == "__main__":
     unittest.main()

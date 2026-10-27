@@ -8,6 +8,7 @@ from apps.accounts.security import session_api_required
 
 from .exports import csv_bytes, svg_bytes
 from .forms import ReportFilter
+from .live import live_financial_report
 from .service import report_dataset
 
 
@@ -62,6 +63,13 @@ def api_report(request):
             ],
         }
     )
+
+
+@session_api_required
+@never_cache
+@require_GET
+def api_live_report(request):
+    return JsonResponse(live_financial_report(request.user, request.GET.get("period", "month")))
 
 
 @login_required

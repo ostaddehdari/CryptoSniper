@@ -105,6 +105,9 @@ class Order:
     average_price: Decimal | None
     status: OrderStatus
     created_at: datetime
+    fee_amount: Decimal | None = None
+    fee_asset: str = ""
+    fee_quote_value: Decimal | None = None
 
 
 @dataclass(frozen=True)

@@ -45,8 +45,11 @@ def api_host_capabilities(request):
 
 
 def health_context(user):
-    accounts = UserExchangeAccount.objects.filter(owner=user).select_related(
-        "exchange", "accountcontrol"
+    accounts = (
+        UserExchangeAccount.objects.filter(owner=user)
+        .exclude(status=UserExchangeAccount.Status.DISABLED)
+        .exclude(exchange__adapter_code="simulator")
+        .select_related("exchange", "accountcontrol")
     )
     cutoff = timezone.now() - timedelta(seconds=95)
     workers = [
@@ -171,8 +174,23 @@ def control(request, pk):
 @require_GET
 def api_health(request):
     data = health_context(request.user)
+    accounts = []
+    for account in data["accounts"]:
+        control = account.accountcontrol if hasattr(account, "accountcontrol") else None
+        accounts.append(
+            {
+                "id": account.pk,
+                "exchange": account.exchange.name,
+                "label": account.label,
+                "paused": bool(control and control.paused),
+                "version": control.version if control else 1,
+                "last_sync_at": account.last_sync_at,
+                "last_reconciled_at": control.last_reconciled_at if control else None,
+            }
+        )
     return JsonResponse(
         {
+            "accounts": accounts,
             "workers": data["workers"],
             "oldest_pending_seconds": data["oldest_pending_seconds"],
             "feed_lag_seconds": data["feed_lag_seconds"],

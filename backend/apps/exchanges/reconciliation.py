@@ -38,11 +38,28 @@ def apply_receipt(order_id, receipt):
         raise InvalidProviderResponse("provider_order_id_mismatch")
     if receipt.filled_amount < order.filled_amount:
         raise InvalidProviderResponse("provider_fill_regression")
+    if (
+        order.fee_amount is not None
+        and receipt.fee_amount is not None
+        and (receipt.fee_asset != order.fee_asset or receipt.fee_amount < order.fee_amount)
+    ):
+        raise InvalidProviderResponse("provider_fee_regression")
+    if (
+        order.fee_quote_value is not None
+        and receipt.fee_quote_value is not None
+        and receipt.fee_quote_value < order.fee_quote_value
+    ):
+        raise InvalidProviderResponse("provider_fee_quote_regression")
     if order.state in {"filled", "cancelled"} and MAPPED[receipt.status] != order.state:
         raise InvalidProviderResponse("provider_terminal_regression")
     order.external_order_id = str(receipt.order_id)
     order.filled_amount = receipt.filled_amount
     order.average_price = receipt.average_price
+    if receipt.fee_amount is not None:
+        order.fee_amount = receipt.fee_amount
+        order.fee_asset = receipt.fee_asset
+    if receipt.fee_quote_value is not None:
+        order.fee_quote_value = receipt.fee_quote_value
     order.state = MAPPED[receipt.status]
     order.error_code = ""
     order.save()

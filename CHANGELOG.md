@@ -1,3 +1,12 @@
+# 0.33.0rc1 — Final owner acceptance (2026-10-27)
+
+- Provider-timestamped real balances, nullable unknown values and complete account revocation from system health.
+- Clickable overview and live financial reporting from confirmed fills plus exact fees; Paper is excluded and missing fees stay unknown.
+- Product UI cleanup, compact display preference and repaired Alerts route while preserving the approved React/Cornix base stylesheet.
+- Machine-readable server/recovery acceptance with honest Stage32 baseline and explicit Stage33 target-install gate.
+- Immutable cumulative installer, one-line operator hand-off and documented real-provider, Telegram/AI, live-money and main-merge boundaries.
+- Final candidate passed 420 PostgreSQL/Redis tests plus security/schema and responsive React smoke; immutable r1 assets are SHA256-pinned.
+
 # 0.32.0rc1 — Final signals and Telegram workflow (2026-10-27)
 
 - Versioned FA/EN Smart Paste quality corpus and explicit separation of parser confidence from validation blockers.

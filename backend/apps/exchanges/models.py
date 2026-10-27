@@ -255,6 +255,9 @@ class LiveSpotOrder(models.Model):
     price = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
     filled_amount = models.DecimalField(max_digits=32, decimal_places=16, default=0)
     average_price = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
+    fee_amount = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
+    fee_asset = models.CharField(max_length=20, blank=True)
+    fee_quote_value = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
     state = models.CharField(max_length=16, choices=State.choices, default=State.PENDING)
     error_code = models.CharField(max_length=50, blank=True)
     archived_at = models.DateTimeField(null=True, blank=True)
@@ -280,6 +283,14 @@ class LiveSpotOrder(models.Model):
             ),
             models.CheckConstraint(
                 condition=Q(filled_amount__gte=0), name="live_spot_order_filled_nonnegative"
+            ),
+            models.CheckConstraint(
+                condition=Q(fee_amount__isnull=True) | Q(fee_amount__gte=0),
+                name="live_spot_order_fee_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=Q(fee_quote_value__isnull=True) | Q(fee_quote_value__gte=0),
+                name="live_spot_order_fee_quote_nonnegative",
             ),
         ]
 

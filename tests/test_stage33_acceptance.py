@@ -12,8 +12,10 @@ from apps.exchanges.models import (
     LiveSpotOrder,
     UserExchangeAccount,
 )
+from apps.operations.acceptance import base_product_acceptance
 from apps.operations.models import LiveExitAttempt, ManagedSpotPosition
 from apps.reports.models import PerformanceAggregate
+from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -191,3 +193,20 @@ def test_stage33_missing_real_fee_is_unknown_not_zero(client, stage33_account):
     assert total["net_realized"] is None
     assert total["unknown_count"] == 1
     assert total["known_net_realized"] == "0"
+
+
+@override_settings(
+    RELEASE_VERSION="0.33.0rc1",
+    SOURCE_REVISION="immutable-stage33-test",
+    DEPLOYMENT_ENVIRONMENT="production",
+    LIVE_TRADING_ENABLED=False,
+    LIVE_EXIT_MANAGEMENT_ENABLED=False,
+)
+def test_stage33_acceptance_is_honest_about_server_and_money_boundaries():
+    report = base_product_acceptance()
+    assert report["stage"] == "S33"
+    assert report["external_validation"]["stage33_target_install"] == "pending_operator_run"
+    assert report["live_writes_runtime_enabled"] is False
+    assert report["financial_truth"]["missing_exact_fee"] == "unknown_not_zero"
+    assert report["product"]["telegram_full_auto"] == "simulator_only"
+    assert "secret" not in str(report).lower()

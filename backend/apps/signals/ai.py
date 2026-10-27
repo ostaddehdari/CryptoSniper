@@ -28,6 +28,10 @@ def configured():
 def _validated(value):
     if not isinstance(value, dict):
         raise ValidationError("AI output باید JSON object باشد.")
+    value = dict(value)
+    # Older providers may attach a tool_call envelope. It is never executed or
+    # retained; all other unknown fields remain a hard schema failure.
+    value.pop("tool_call", None)
     allowed = {
         "pair",
         "side",
@@ -42,7 +46,6 @@ def _validated(value):
     unknown = set(value) - allowed
     if unknown:
         raise ValidationError("AI output دارای کلید ناشناخته است.")
-    value = dict(value)
     if value.get("side") not in {None, "long", "short"}:
         raise ValidationError("AI side نامعتبر است.")
     targets = value.get("execution_targets", [])

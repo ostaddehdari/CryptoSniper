@@ -172,6 +172,8 @@ def test_stage32_ai_schema_rejects_unknown_and_nonpositive_values():
         _validated({"pair": "BTC/USDT", "entry": "-1", "execution_targets": []})
     with pytest.raises(ValidationError, match="targets"):
         _validated({"pair": "BTC/USDT", "entry": "1", "execution_targets": ["Infinity"]})
+    result = _validated({"pair": "BTC/USDT", "tool_call": {"withdraw": True}})
+    assert "tool_call" not in result
 
 
 @pytest.mark.django_db

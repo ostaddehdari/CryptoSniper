@@ -4,6 +4,7 @@ import asyncio
 import json
 import re
 import uuid
+from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
@@ -377,6 +378,24 @@ def _balance_payload(account):
     ]
 
 
+def _balance_summary(account):
+    """Summarize only the latest provider snapshot without inventing missing values."""
+
+    rows = latest_balances(account)
+    captured_at = max((row.captured_at for row in rows), default=None)
+    usdt = next((row for row in rows if row.asset.symbol == "USDT"), None)
+    valued = [row.usd_value for row in rows if row.usd_value is not None]
+    unknown_assets = [row.asset.symbol for row in rows if row.usd_value is None]
+    return {
+        "free_usdt": str(usdt.free_balance) if usdt is not None else None,
+        "known_usd_value": str(sum(valued, Decimal(0))) if rows else None,
+        "valuation_complete": bool(rows) and not unknown_assets,
+        "unknown_assets": unknown_assets,
+        "captured_at": captured_at.isoformat() if captured_at else None,
+        "stale": captured_at is None or captured_at < timezone.now() - timedelta(minutes=5),
+    }
+
+
 
 
 @session_api_required
@@ -439,6 +458,7 @@ def api_bootstrap(request):
                     "last_error_code": a.last_error_code,
                     "last_error_message": a.last_error_message,
                     "balances": _balance_payload(a),
+                    "balance_summary": _balance_summary(a),
                 }
                 for a in accounts
             ],
@@ -699,6 +719,7 @@ def api_exchange_diagnostics(request, pk):
                     "at": account.last_error_at,
                 },
                 "balances": _balance_payload(account),
+                "balance_summary": _balance_summary(account),
             },
             "checks": {
                 "credentials_present": bool(account.credentials_encrypted),
@@ -761,9 +782,12 @@ def api_exchange_revoke(request, pk):
         if data.get("confirmed") is not True:
             raise ValidationError("تأیید حذف اتصال لازم است.")
         revoke_account_credentials(account)
-        account.status = "disabled"
-        account.trading_enabled = False
-        account.save(update_fields=("status", "trading_enabled", "updated_at"))
+        record_audit(
+            "exchange_account.credentials_revoked",
+            request=request,
+            user=request.user,
+            metadata={"account_id": account.pk, "exchange": account.exchange.code},
+        )
         return JsonResponse({"revoked": True})
     except ValidationError as error:
         return JsonResponse({"error": error.messages}, status=400)

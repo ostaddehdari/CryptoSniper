@@ -183,6 +183,13 @@ def _validate_receipt(order, receipt):
         or receipt.average_price <= 0
     ):
         raise InvalidProviderResponse("provider_fill_price_missing")
+    for value in (receipt.fee_amount, receipt.fee_quote_value):
+        if value is not None and (not value.is_finite() or value < 0):
+            raise InvalidProviderResponse("provider_fee_invalid")
+    if receipt.fee_quote_value is not None and receipt.fee_amount is None:
+        raise InvalidProviderResponse("provider_fee_incomplete")
+    if receipt.fee_amount is not None and not receipt.fee_asset:
+        raise InvalidProviderResponse("provider_fee_asset_missing")
     if not receipt.order_id:
         raise InvalidProviderResponse("provider_order_id_missing")
 

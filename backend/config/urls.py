@@ -131,6 +131,7 @@ urlpatterns = [
     path("reports/export.csv", report_views.export_csv, name="report-csv"),
     path("reports/chart.svg", report_views.export_chart, name="report-chart"),
     path("api/v1/reports/", report_views.api_report, name="api-reports"),
+    path("api/v1/reports/live/", report_views.api_live_report, name="api-live-reports"),
     path("external/", react_views.legacy_react_page, {"page": "trades"}, name="external-list"),
     path("external/<int:pk>/", react_views.legacy_external_page, name="external-detail"),
     path("external/<int:pk>/manage/", external_views.manage, name="external-manage"),

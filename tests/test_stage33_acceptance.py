@@ -4,7 +4,16 @@ from decimal import Decimal
 import pytest
 from apps.accounts.models import AuditLog
 from apps.accounts.security import STEP_UP_SESSION_KEY
-from apps.exchanges.models import Asset, BalanceSnapshot, Exchange, UserExchangeAccount
+from apps.exchanges.models import (
+    Asset,
+    BalanceSnapshot,
+    Exchange,
+    ExchangeMarket,
+    LiveSpotOrder,
+    UserExchangeAccount,
+)
+from apps.operations.models import LiveExitAttempt, ManagedSpotPosition
+from apps.reports.models import PerformanceAggregate
 from django.urls import reverse
 from django.utils import timezone
 
@@ -83,3 +92,102 @@ def test_stage33_revoked_account_disappears_from_bootstrap_and_operations(client
     assert AuditLog.objects.filter(
         owner=owner, event_type="exchange_account.credentials_revoked"
     ).exists()
+
+
+def _live_position(owner, account):
+    btc = Asset.objects.get(symbol="BTC")
+    usdt = Asset.objects.get(symbol="USDT")
+    market = ExchangeMarket.objects.create(
+        exchange=account.exchange,
+        symbol="BTC/USDT",
+        base_asset=btc,
+        quote_asset=usdt,
+        market_type="spot",
+        max_leverage=1,
+    )
+    entry = LiveSpotOrder.objects.create(
+        owner=owner,
+        account=account,
+        market=market,
+        client_order_id="s33-entry",
+        side="buy",
+        order_type="limit",
+        amount=2,
+        price=100,
+        filled_amount=2,
+        average_price=100,
+        fee_amount=Decimal("0.2"),
+        fee_asset="USDT",
+        fee_quote_value=Decimal("0.2"),
+        state="filled",
+    )
+    position = ManagedSpotPosition.objects.create(
+        account=account,
+        market=market,
+        entry_order=entry,
+        snapshot={},
+        acquired=2,
+        effective_stop=90,
+        state="active",
+    )
+    exit_order = LiveSpotOrder.objects.create(
+        owner=owner,
+        account=account,
+        market=market,
+        client_order_id="s33-exit",
+        side="sell",
+        order_type="limit",
+        amount=1,
+        price=120,
+        filled_amount=1,
+        average_price=120,
+        fee_amount=Decimal("0.12"),
+        fee_asset="USDT",
+        fee_quote_value=Decimal("0.12"),
+        state="filled",
+    )
+    LiveExitAttempt.objects.create(
+        position=position, order=exit_order, sequence=1, reason="tp1", trigger_price=120
+    )
+    return exit_order
+
+
+@pytest.mark.django_db
+def test_stage33_live_finance_uses_exact_fills_and_excludes_paper(client, stage33_account):
+    owner, account = stage33_account
+    _live_position(owner, account)
+    PerformanceAggregate.objects.create(
+        owner=owner,
+        timezone=owner.timezone,
+        period_kind="month",
+        period_start=timezone.localdate(),
+        dimension_kind="total",
+        dimension_value="all",
+        mode="paper",
+        currency="USDT",
+        trade_count=1,
+        net_realized=999,
+        source_fingerprint="paper-must-not-leak",
+    )
+    client.force_login(owner)
+    payload = client.get(reverse("api-live-reports"), {"period": "month"}).json()
+    assert payload["mode"] == "live" and payload["source"] == "confirmed_exchange_receipts"
+    assert Decimal(payload["total"]["gross_realized"]) == Decimal("20")
+    assert Decimal(payload["total"]["fees"]) == Decimal("0.22")
+    assert Decimal(payload["total"]["net_realized"]) == Decimal("19.78")
+    assert payload["total"]["unknown_count"] == 0
+
+
+@pytest.mark.django_db
+def test_stage33_missing_real_fee_is_unknown_not_zero(client, stage33_account):
+    owner, account = stage33_account
+    exit_order = _live_position(owner, account)
+    exit_order.fee_amount = None
+    exit_order.fee_asset = ""
+    exit_order.fee_quote_value = None
+    exit_order.save(update_fields=("fee_amount", "fee_asset", "fee_quote_value"))
+    client.force_login(owner)
+    total = client.get(reverse("api-live-reports")).json()["total"]
+    assert total["net_realized"] is None
+    assert total["unknown_count"] == 1
+    assert total["known_net_realized"] == "0"

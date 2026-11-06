@@ -17,7 +17,7 @@
 - دو آزمون مستقل stale/provider timestamp: موفق.
 - چهار آزمون React: موفق.
 - build production React: موفق.
-- آزمون endpoint وابسته به PostgreSQL و کل مجموعه در GitHub CI شاخه اجرا می‌شوند؛ تا نتیجه CI ادعای پذیرش نهایی Stage34 وجود ندارد.
+- CI تجمیعی W03 روی commit `3dfd2cf0287fbf21128979bda7fe2152bd063660` با ۴۲۹ آزمون PostgreSQL/Redis، build، security/schema و smoke مرورگر موفق شد: https://github.com/ostaddehdari/CryptoSniper/actions/runs/42298174957
 
 ## S34-W02 — معامله دستی و Fix Loss
 
@@ -28,7 +28,7 @@
 - Fix Loss فاصله SL، کارمزد تخمینی ورود و خروج، Lot Step، Min Notional، سقف موجودی و اهرم مجاز را در بودجه ریسک محاسبه می‌کند.
 - حجم ورود پیشنهادی بدون اعشار و خودکار در فرم قرار می‌گیرد؛ timestamp موجودی و ریسک محاسبه‌شده در UI دیده می‌شوند.
 - سفارش این ورک همچنان Limit است؛ پشتیبانی واقعی Market بخشی از W05 و وابسته به قابلیت Provider است.
-- پنج تست React، build تولید، Ruff، Django check، نبود migration جدید و قرارداد مستندی W01 محلی پاس شدند؛ دو تست PostgreSQL تازه‌سازی quote/balance در CI شاخه اجرا می‌شوند.
+- پنج تست React، build تولید، Ruff، Django check، نبود migration جدید و دو تست PostgreSQL تازه‌سازی quote/balance پاس شدند.
 
 ## S34-W03 — اتصال پایدار صرافی‌ها
 
@@ -38,7 +38,7 @@
 - React تا پایان Sync حساب pending را هر ۲٫۵ ثانیه تازه می‌کند و خطای ثبت‌شده را کنار وضعیت API نشان می‌دهد.
 - یک Sync اکنون مجوزها، بازارها، کارمزد حساب و snapshot موجودی را با هم تازه می‌کند؛ صفر USDT نیز snapshot معتبر است.
 - قرارداد رسمی LBank برای مجوز، کارمزد، موجودی و دقت بازار و قرارداد Nobitex برای profile، fee، کیف پول و sandbox پوشش داده شدند.
-- Ruff، شش تست React، build تولید، Django check و نبود migration جدید محلی پاس شدند. آزمون‌های PostgreSQL این ورک در CI شاخه اجرا می‌شوند.
+- Ruff، شش تست React، build تولید، Django/schema، چهار تست PostgreSQL تازه این ورک و smoke مرورگر پاس شدند. artifact شواهد CI شماره `13542787908` است.
 
 ## مرز تحویل
 

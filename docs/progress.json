@@ -1517,12 +1517,18 @@
         },
         {
           "name": "W03 local provider contracts, React, Django, schema and build checks",
-          "status": "passed_pending_ci",
+          "status": "passed",
           "react_tests_passed": 6,
-          "database_tests_pending_ci": 4
+          "pytest_passed": 429,
+          "run_id": 42298174957,
+          "url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/42298174957",
+          "tested_commit": "3dfd2cf0287fbf21128979bda7fe2152bd063660",
+          "artifact_id": 13542787908
         }
       ],
-      "commit_shas": [],
+      "commit_shas": [
+        "3dfd2cf0287fbf21128979bda7fe2152bd063660"
+      ],
       "blockers": [
         "W04 and W05 are intentionally not started; one work is executed per user chat.",
         "No real-provider credential acceptance or live-money authorization was performed."

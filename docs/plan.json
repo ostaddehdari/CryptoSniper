@@ -1640,7 +1640,7 @@
           "title": "اتصال پایدار صرافی‌ها",
           "deliverables": "نام خودکار، ساخت مجدد اتصال حذف‌شده، رفع Pending و refresh مجوز/کارمزد/موجودی.",
           "acceptance": "قرارداد Nobitex و LBank آزموده شود و پذیرش واقعی فقط با credential مجاز ثبت شود.",
-          "status": "todo"
+          "status": "done"
         },
         {
           "id": "S34-W04",

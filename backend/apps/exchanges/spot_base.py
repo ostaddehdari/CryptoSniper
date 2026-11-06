@@ -67,6 +67,15 @@ def optional_decimal(value):
     return decimal(value, allow_zero=True)
 
 
+def percentage_rate(value):
+    """Normalize provider percentage values (for example 0.20%) to a fraction."""
+
+    rate = decimal(value, allow_zero=True) / Decimal("100")
+    if rate >= 1:
+        raise InvalidProviderResponse("provider_invalid_fee_rate")
+    return rate
+
+
 def provider_symbol(symbol):
     return str(symbol).replace("/", "").replace("_", "").upper()
 
@@ -169,7 +178,7 @@ class SpotAdapterBase(ExchangeAdapter):
                     allow_zero=True,
                 ),
             )
-            if balance.total:
+            if balance.asset and (balance.total or balance.asset == "USDT"):
                 result.append(balance)
         return result
 

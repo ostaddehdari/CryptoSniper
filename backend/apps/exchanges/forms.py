@@ -4,6 +4,7 @@ from decimal import Decimal
 from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.db import transaction
 
 from .models import Exchange, ExchangeMarket, UserExchangeAccount
 from .security import set_account_credentials
@@ -14,11 +15,6 @@ class ExchangeConnectionForm(forms.Form):
         label="صرافی",
         queryset=Exchange.objects.none(),
         widget=forms.Select(attrs={"class": "input"}),
-    )
-    label = forms.CharField(
-        label="نام این اتصال",
-        max_length=80,
-        widget=forms.TextInput(attrs={"class": "input", "placeholder": "مثلاً حساب اصلی یا تمرین"}),
     )
     environment = forms.ChoiceField(
         label="محیط",
@@ -89,23 +85,50 @@ class ExchangeConnectionForm(forms.Form):
             self.add_error("passphrase", "Passphrase برای WEEX لازم است.")
         elif not cleaned.get("no_withdrawal_confirmed"):
             self.add_error("no_withdrawal_confirmed", "کلید واقعی نباید مجوز برداشت داشته باشد.")
-        label = cleaned.get("label", "").strip()
-        if (
-            exchange
-            and UserExchangeAccount.objects.filter(
-                owner=self.owner, exchange=exchange, label=label
-            ).exists()
-        ):
-            self.add_error("label", "اتصالی با این نام قبلاً ساخته شده است.")
         return cleaned
 
-    def save(self):
-        account = UserExchangeAccount(
-            owner=self.owner,
-            exchange=self.cleaned_data["exchange"],
-            label=self.cleaned_data["label"].strip(),
-            environment=self.cleaned_data["environment"],
+    @staticmethod
+    def _next_label(owner, exchange):
+        used = set(
+            UserExchangeAccount.objects.filter(owner=owner, exchange=exchange).values_list(
+                "label", flat=True
+            )
         )
+        if exchange.name not in used:
+            return exchange.name
+        number = 2
+        while f"{exchange.name} {number}" in used:
+            number += 1
+        return f"{exchange.name} {number}"
+
+    @transaction.atomic
+    def save(self):
+        exchange = self.cleaned_data["exchange"]
+        account = (
+            UserExchangeAccount.objects.select_for_update()
+            .filter(
+                owner=self.owner,
+                exchange=exchange,
+                status=UserExchangeAccount.Status.DISABLED,
+            )
+            .order_by("-updated_at", "-pk")
+            .first()
+        )
+        if account is None:
+            account = UserExchangeAccount(
+                owner=self.owner,
+                exchange=exchange,
+                label=self._next_label(self.owner, exchange),
+            )
+        account.environment = self.cleaned_data["environment"]
+        account.status = UserExchangeAccount.Status.PENDING
+        account.trading_enabled = False
+        account.permissions = {}
+        account.last_verified_at = None
+        account.last_sync_at = None
+        account.last_error_code = ""
+        account.last_error_message = ""
+        account.last_error_at = None
         set_account_credentials(
             account,
             {

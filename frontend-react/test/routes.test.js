@@ -40,3 +40,11 @@ test('Stage34 manual trade applies live price and Fix Loss automatically',()=>{
   assert.match(source,/ریسک محاسبه‌شده با کارمزد/);
   assert.match(source,/تتر آزاد زنده/);
 });
+test('Stage34 exchange connections use automatic names and actionable sync state',()=>{
+  const source=readFileSync(new URL('../src/main.jsx',import.meta.url),'utf8');
+  assert.equal(source.includes('<label>نام اتصال</label>'), false);
+  assert.match(source,/نام اتصال به‌صورت خودکار از نام صرافی ساخته می‌شود/);
+  assert.match(source,/مجوز، کارمزد، بازار و موجودی در حال همگام‌سازی است/);
+  assert.match(source,/last_error_message/);
+  assert.match(source,/pendingIds/);
+});

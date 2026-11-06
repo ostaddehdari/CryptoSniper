@@ -6,6 +6,8 @@
 - Manual selected-market quotes now refresh directly every five seconds and a fresh best ask/bid can be copied into the Limit Entry with one click.
 - Fix Loss refreshes free USDT from the selected exchange when older than 30 seconds, includes estimated entry/stop-exit fees, and writes the integer capital automatically.
 - Trailing SL copy now correctly says `SL → Entry after TP1`; true Market-order execution remains deferred to the provider-capability work.
+- Exchange connection names are automatic, and recreating a revoked LBank/Nobitex connection safely reuses the disabled record instead of colliding with its old name.
+- Exchange sync now persists actionable failures instead of leaving accounts pending, polls pending state in React, and refreshes permissions, account fees, market limits and balances together.
 
 # 0.33.0rc1 — Final owner acceptance (2026-10-27)
 

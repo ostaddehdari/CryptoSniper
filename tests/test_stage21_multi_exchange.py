@@ -93,6 +93,13 @@ def test_ourbit_signs_query_and_rejects_no_fields_from_secret():
 def test_nobitex_reads_wallets_and_uses_token_without_secret():
     transport = FakeTransport(
         {
+            "/users/profile": {
+                "status": "ok",
+                "profile": {
+                    "username": "sandbox-user",
+                    "options": {"fee": "0.35", "feeUsdt": "0.20"},
+                },
+            },
             "/users/wallets/list": {
                 "status": "ok",
                 "wallets": [
@@ -103,15 +110,20 @@ def test_nobitex_reads_wallets_and_uses_token_without_secret():
                         "activeBalance": "19",
                     }
                 ],
-            }
+            },
         }
     )
     adapter = NobitexAdapter(
-        {"api_key": "token", "no_withdrawal_confirmed": "true"}, transport=transport
+        {"api_key": "token", "no_withdrawal_confirmed": "true"},
+        environment="sandbox",
+        transport=transport,
     )
     assert adapter.validate_credentials().safe_for_trading
+    fees = adapter.fetch_trading_fees()
+    assert fees[1].symbol == "*/USDT" and fees[1].taker == Decimal("0.002")
     assert adapter.fetch_balance()[0].total == Decimal("20")
     assert transport.calls[0][2]["Authorization"] == "Token token"
+    assert transport.calls[0][1].startswith("https://testnetapi.nobitex.ir/")
 
 
 def test_lbank_hmac_headers_and_account_permissions():
@@ -125,7 +137,17 @@ def test_lbank_hmac_headers_and_account_permissions():
                     "enableWithdrawals": False,
                     "ipRestrict": True,
                 },
-            }
+            },
+            "/v2/supplement/customer_trade_fee.do": {
+                "result": True,
+                "data": [
+                    {
+                        "symbol": "btc_usdt",
+                        "makerCommission": "0.10",
+                        "takerCommission": "0.20",
+                    }
+                ],
+            },
         }
     )
     adapter = LbankAdapter(
@@ -134,6 +156,10 @@ def test_lbank_hmac_headers_and_account_permissions():
         clock=lambda: 1700000000000,
     )
     assert adapter.validate_credentials().safe_for_trading
+    fees = adapter.fetch_trading_fees()
+    assert fees[0].symbol == "BTC/USDT"
+    assert fees[0].maker == Decimal("0.001")
+    assert fees[0].taker == Decimal("0.002")
     _, url, headers, body, _ = transport.calls[0]
     assert urlsplit(url).query == ""
     assert headers["signature_method"] == "HmacSHA256"

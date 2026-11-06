@@ -10,10 +10,11 @@ from .adapters import (
     Market,
     PermissionReport,
     Ticker,
+    TradingFee,
     UnsafePermissionError,
     register_adapter,
 )
-from .spot_base import SpotAdapterBase, canonical_symbol, decimal, observed_at
+from .spot_base import SpotAdapterBase, canonical_symbol, decimal, observed_at, percentage_rate
 
 
 @register_adapter
@@ -55,7 +56,7 @@ class LbankAdapter(SpotAdapterBase):
         payload = self.transport.request(method, url, headers=headers, body=body, timeout=10)
         if not isinstance(payload, (dict, list)):
             raise InvalidProviderResponse("lbank_invalid_response")
-        if isinstance(payload, dict) and payload.get("result") is False:
+        if isinstance(payload, dict) and payload.get("result") in {False, "false", "False"}:
             raise InvalidProviderResponse("lbank_rejected_request")
         return payload.get("data", payload) if isinstance(payload, dict) else payload
 
@@ -79,6 +80,28 @@ class LbankAdapter(SpotAdapterBase):
         payload = self._request("POST", "/v2/supplement/user_info_account.do", signed=True)
         return self._balance_rows(payload.get("balances", []))
 
+    def fetch_trading_fees(self):
+        payload = self._request("POST", "/v2/supplement/customer_trade_fee.do", signed=True)
+        rows = payload if isinstance(payload, list) else payload.get("data", [])
+        if not isinstance(rows, list):
+            raise InvalidProviderResponse("lbank_invalid_trade_fees")
+        result = []
+        for item in rows:
+            try:
+                symbol = canonical_symbol(str(item.get("symbol", "")).replace("_", ""))
+                result.append(
+                    TradingFee(
+                        symbol,
+                        percentage_rate(item.get("makerCommission")),
+                        percentage_rate(item.get("takerCommission")),
+                    )
+                )
+            except (AttributeError, InvalidProviderResponse):
+                continue
+        if not result:
+            raise InvalidProviderResponse("lbank_missing_trade_fees")
+        return result
+
     def fetch_markets(self):
         payload = self._request("GET", "/v2/accuracy.do")
         rows = payload if isinstance(payload, list) else payload.get("data", [])
@@ -96,7 +119,7 @@ class LbankAdapter(SpotAdapterBase):
                     base_asset=base,
                     quote_asset=quote,
                     market_type="spot",
-                    min_amount=self._optional(meta.get("minOrderAmount")),
+                    min_amount=self._optional(meta.get("minTranQua")),
                     amount_step=self._step(meta.get("quantityAccuracy")),
                     price_step=self._step(meta.get("priceAccuracy")),
                     min_notional=self._optional(meta.get("minOrderAmount")),

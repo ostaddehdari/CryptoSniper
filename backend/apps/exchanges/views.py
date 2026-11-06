@@ -16,7 +16,7 @@ from .forms import ExchangeConnectionForm, LiveSpotOrderForm
 from .live_orders import queue_live_spot_order
 from .models import Exchange, LiveSpotOrder, UserExchangeAccount
 from .security import revoke_account_credentials, rotate_account_credentials
-from .services import latest_balances
+from .services import latest_balances, mark_sync_error, mark_sync_pending
 from .tasks import live_spot_order, sync_exchange_account
 
 
@@ -69,7 +69,8 @@ def add_exchange_account(request):
             try:
                 sync_exchange_account.apply_async(args=[account.pk], queue="maintenance")
                 messages.success(request, "اتصال ساخته شد و بررسی امن آن در صف قرار گرفت.")
-            except OperationalError:
+            except OperationalError as error:
+                mark_sync_error(account.pk, "queue", error)
                 messages.warning(
                     request,
                     "اتصال ذخیره شد اما صف پردازش در دسترس نیست؛ بعداً «همگام‌سازی» را بزنید.",
@@ -149,9 +150,11 @@ def request_account_sync(request, pk):
     if account.status == UserExchangeAccount.Status.DISABLED:
         messages.error(request, "اتصال غیرفعال است و همگام‌سازی نمی‌شود.")
     else:
+        mark_sync_pending(account)
         try:
             sync_exchange_account.apply_async(args=[account.pk], queue="maintenance")
-        except OperationalError:
+        except OperationalError as error:
+            mark_sync_error(account.pk, "queue", error)
             messages.warning(
                 request,
                 "درخواست همگام‌سازی ثبت نشد چون Broker در دسترس نیست؛ "

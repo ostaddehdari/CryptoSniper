@@ -23,3 +23,11 @@ test('Stage33 owner routes and controls remain wired without legacy Paper UI',()
   assert.match(source,/page==="reports"&&<Reports/);
   assert.match(source,/aria-label="نمایش فشرده"/);
 });
+test('Stage34 live header shows the requested market pairs with freshness state',()=>{
+  const source=readFileSync(new URL('../src/main.jsx',import.meta.url),'utf8');
+  assert.match(source,/name="btc_usdt" label="BTC \/ USDT"/);
+  assert.match(source,/name="usdt_toman" label="USDT \/ تومان"/);
+  assert.match(source,/refresh_after_seconds/);
+  assert.match(source,/visibilitychange/);
+  assert.equal(source.includes('label="USDT / USD"'), false);
+});

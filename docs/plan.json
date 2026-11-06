@@ -1608,6 +1608,57 @@
           "status": "done"
         }
       ]
+    },
+    {
+      "id": "S34",
+      "number": 34,
+      "title": "اتصال لحظه‌ای، معامله واقعی و مدیریت صرافی",
+      "depends_on": [
+        "S33"
+      ],
+      "status": "partial",
+      "works": [
+        {
+          "id": "S34-W01",
+          "number": 1,
+          "title": "نرخ‌های زنده و هدر",
+          "deliverables": "USDT/تومان نوبیتکس و BTC/USDT با منبع، timestamp، polling پنج‌ثانیه‌ای و وضعیت stale.",
+          "acceptance": "قطع یک Provider مستقل باشد؛ قیمت مفقود صفر نشود و آخرین قیمت با برچسب قدیمی نمایش داده شود.",
+          "status": "done"
+        },
+        {
+          "id": "S34-W02",
+          "number": 2,
+          "title": "معامله دستی و Fix Loss",
+          "deliverables": "قیمت لحظه‌ای انتخاب، انتقال به Entry، Market/Limit، SL→Entry، تتر آزاد و حجم Fix Loss صحیح.",
+          "acceptance": "Backend حجم را با fee/step/min اعتبارسنجی کند و داده قدیمی اجازه ارسال ندهد.",
+          "status": "todo"
+        },
+        {
+          "id": "S34-W03",
+          "number": 3,
+          "title": "اتصال پایدار صرافی‌ها",
+          "deliverables": "نام خودکار، ساخت مجدد اتصال حذف‌شده، رفع Pending و refresh مجوز/کارمزد/موجودی.",
+          "acceptance": "قرارداد Nobitex و LBank آزموده شود و پذیرش واقعی فقط با credential مجاز ثبت شود.",
+          "status": "todo"
+        },
+        {
+          "id": "S34-W04",
+          "number": 4,
+          "title": "تحلیل سیگنال قابل سنجش",
+          "deliverables": "corpus فارسی/انگلیسی، استخراج ساختاریافته، confidence/completeness و مرور نتیجه مبهم.",
+          "acceptance": "کیفیت نسخه‌دار گزارش و خروجی نامعتبر از سفارش واقعی جدا بماند.",
+          "status": "todo"
+        },
+        {
+          "id": "S34-W05",
+          "number": 5,
+          "title": "سفارش و مدیریت معامله صرافی",
+          "deliverables": "Spot Market/Limit، idempotency، sync و adoption، TP/SL/Trailing و recovery.",
+          "acceptance": "partial fill، unknown، concurrency و restart آزموده شوند؛ Live پیش‌فرض خاموش بماند.",
+          "status": "todo"
+        }
+      ]
     }
   ],
   "finalization_stages": [
@@ -1615,6 +1666,7 @@
     "S30",
     "S31",
     "S32",
-    "S33"
+    "S33",
+    "S34"
   ]
 }

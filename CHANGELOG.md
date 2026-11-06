@@ -1,3 +1,9 @@
+# Unreleased — Stage34 Work01 (2026-11-06)
+
+- Header now shows BTC/USDT and Nobitex USDT/Toman with provider timestamps and explicit live, stale or unavailable state.
+- Five-second bounded polling, tab-resume refresh, per-provider fallback and anti-stampede caching replace the old 15-second opaque widget.
+- A failed provider cannot turn a missing quote into zero or suppress the other provider; no live-order gate changed.
+
 # 0.33.0rc1 — Final owner acceptance (2026-10-27)
 
 - Provider-timestamped real balances, nullable unknown values and complete account revocation from system health.

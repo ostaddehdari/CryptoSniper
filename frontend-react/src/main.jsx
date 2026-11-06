@@ -15,6 +15,7 @@ import "./stage30.css";
 import "./stage31.css";
 import "./stage32.css";
 import "./stage33.css";
+import "./stage34.css";
 import { resolvePage } from "./routes.js";
 
 const BASE = (typeof window.__CS_BASE__ === "string" ? window.__CS_BASE__ : "/cryptosniper").replace(/\/$/, "");
@@ -50,6 +51,40 @@ function useHashPage(){
   return [page,setPage];
 }
 
+const EMPTY_HEADER_TICKER={quotes:{},stale:true,refresh_after_seconds:5};
+function useHeaderTicker(){
+  const [ticker,setTicker]=useState(EMPTY_HEADER_TICKER);
+  useEffect(()=>{
+    let stopped=false; let timer=null; let controller=null;
+    const schedule=seconds=>{timer=setTimeout(load,Math.max(3,Number(seconds)||5)*1000)};
+    const load=async()=>{
+      controller?.abort(); controller=new AbortController();
+      try{
+        const data=await api("/api/v1/markets/header-ticker/",{signal:controller.signal});
+        if(!stopped){setTicker(data);schedule(data.refresh_after_seconds)}
+      }catch(error){
+        if(error.name!=="AbortError"&&!stopped){
+          setTicker(current=>({...current,stale:true,quotes:Object.fromEntries(Object.entries(current.quotes||{}).map(([key,quote])=>[key,{...quote,status:quote.value==null?"unavailable":"stale"}]))}));
+          schedule(5);
+        }
+      }
+    };
+    const visible=()=>{if(document.visibilityState==="visible"){clearTimeout(timer);load()}};
+    load(); document.addEventListener("visibilitychange",visible);
+    return()=>{stopped=true;clearTimeout(timer);controller?.abort();document.removeEventListener("visibilitychange",visible)};
+  },[]);
+  return ticker;
+}
+
+function HeaderTicker({ticker,name,label,decimals=0}){
+  const quote=ticker?.quotes?.[name]||{};
+  const state=quote.status||"unavailable";
+  const value=quote.value==null?"—":Number(quote.value).toLocaleString("fa-IR",{minimumFractionDigits:decimals,maximumFractionDigits:decimals});
+  const stateText=state==="live"?(quote.source_label||"زنده"):state==="stale"?"قدیمی":"در دسترس نیست";
+  const title=quote.observed_at?`${quote.source_label||quote.source} · ${dt(quote.observed_at)}`:stateText;
+  return <div className={`ticker ${state}`} title={title} data-testid={`header-${name}`}><span>{label}</span><b>{value}</b><small><i aria-hidden="true"/> {stateText}</small></div>;
+}
+
 function App(){
   const [collapsed,setCollapsed]=useState(localStorage.getItem("cs_sidebar_collapsed")==="1");
   const [page,setPage]=useHashPage();
@@ -58,10 +93,9 @@ function App(){
   const [compact,setCompact]=useState(localStorage.getItem("cs_compact")==="1");
   const [toast,setToast]=useState(""); const [stepUp,setStepUp]=useState(false); const [manualSeed,setManualSeed]=useState(null);
   const [resumeAction,setResumeAction]=useState(null);
-  const [ticker,setTicker]=useState({usdt_usd:null,usdt_toman:null,stale:false});
+  const ticker=useHeaderTicker();
   const refresh=async()=>{try{setError("");const b=await api("/api/v1/ui/bootstrap/");setBoot(b)}catch(e){setError(e.message)}finally{setLoading(false)}};
   useEffect(()=>{refresh();const t=setInterval(refresh,60000);return()=>clearInterval(t)},[]);
-  useEffect(()=>{let stop=false;const load=()=>api("/api/v1/markets/header-ticker/").then(d=>{if(!stop)setTicker(d)}).catch(()=>{});load();const t=setInterval(load,15000);return()=>{stop=true;clearInterval(t)}},[]);
   const notify=m=>{setToast(m);setTimeout(()=>setToast(""),3500)};
   const toggle=()=>{const v=!collapsed;setCollapsed(v);localStorage.setItem("cs_sidebar_collapsed",v?"1":"0")};
   const updateDecimals=v=>{setDecimals(v);localStorage.setItem("cs_decimals",String(v))};
@@ -82,7 +116,7 @@ function App(){
       <div className="sidebarFoot"><button className="navItem" onClick={()=>setPage("settings")}><UserCircle2 size={19}/>{!collapsed&&<span>{boot?.user?.name||"حساب کاربری"}</span>}</button><form method="post" action={BASE+"/auth/logout/"}><input type="hidden" name="csrfmiddlewaretoken" value={decodeURIComponent(cookie("csrftoken")||cookie("cryptosniper_csrftoken"))}/><button type="submit" className="navItem dangerLite" aria-label="خروج"><LogOut size={19}/>{!collapsed&&<span>خروج</span>}</button></form></div>
     </aside>
     <main className={"main "+(collapsed?"wide":"")}>
-      <header className="topbar"><div><h1>{title}</h1><p>{page==="dashboard"?"همه حساب‌ها، معاملات، سیگنال‌ها و هشدارها در یک نما":"CryptoSniper · حساب واقعی"}</p></div><div className="topActions"><div className="ticker"><span>USDT / USD</span><b>{ticker.usdt_usd?fmt(ticker.usdt_usd,4):"—"}</b></div><div className="ticker"><span>USDT / تومان</span><b>{ticker.usdt_toman?Number(ticker.usdt_toman).toLocaleString("fa-IR"):"—"}</b></div><button aria-label="اعلان‌ها" className="iconBtn notification" onClick={()=>setPage("alerts")}><Bell size={19}/>{boot?.unread_notifications>0&&<span className="badge">{boot.unread_notifications>99?"99+":boot.unread_notifications}</span>}</button></div></header>
+      <header className="topbar"><div><h1>{title}</h1><p>{page==="dashboard"?"همه حساب‌ها، معاملات، سیگنال‌ها و هشدارها در یک نما":"CryptoSniper · حساب واقعی"}</p></div><div className="topActions" aria-live="polite"><HeaderTicker ticker={ticker} name="btc_usdt" label="BTC / USDT" decimals={2}/><HeaderTicker ticker={ticker} name="usdt_toman" label="USDT / تومان"/><button aria-label="اعلان‌ها" className="iconBtn notification" onClick={()=>setPage("alerts")}><Bell size={19}/>{boot?.unread_notifications>0&&<span className="badge">{boot.unread_notifications>99?"99+":boot.unread_notifications}</span>}</button></div></header>
       <section className="content">
         {error&&<ErrorBox text={error}/>}
         {page==="dashboard"&&<Dashboard boot={boot} decimals={decimals} refreshBoot={refresh} setPage={setPage}/>}

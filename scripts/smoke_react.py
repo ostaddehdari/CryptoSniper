@@ -278,7 +278,7 @@ def main():
                 page.locator("#root").wait_for()
                 page.locator(".sidebar").wait_for()
                 page.locator(".topbar").wait_for()
-                page.get_by_text("USDT / USD", exact=False).wait_for()
+                page.get_by_text("BTC / USDT", exact=False).wait_for()
                 page.get_by_text("USDT / تومان", exact=False).wait_for()
                 assert page.locator(".s24-shell").count() == 0
                 page.screenshot(

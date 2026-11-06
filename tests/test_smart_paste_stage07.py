@@ -28,7 +28,7 @@ def test_op_six_targets_are_not_discarded():
     assert result["all_targets"] == ["1.30", "1.35", "1.40", "1.45", "1.50", "1.60"]
     assert result["extra_targets"] == ["1.45", "1.50", "1.60"]
     assert result["stop_loss"] == "1.10"
-    assert result["parser_version"] == "rules-v1"
+    assert result["parser_version"] == "rules-v2"
     assert assess(result)["trailing_defaults"]["percentage_distance"] == "1"
 
 

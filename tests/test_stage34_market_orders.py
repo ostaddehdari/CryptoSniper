@@ -25,13 +25,7 @@ from django.utils import timezone
 @pytest.fixture
 def live_market_workspace(django_user_model):
     owner = django_user_model.objects.create_user(username="s34-market-owner")
-    exchange = Exchange.objects.create(
-        code="s34-lbank",
-        name="S34 LBank",
-        adapter_code="lbank",
-        enabled=True,
-        spot_supported=True,
-    )
+    exchange = Exchange.objects.get(code="lbank")
     btc, _ = Asset.objects.get_or_create(symbol="BTC")
     usdt, _ = Asset.objects.get_or_create(symbol="USDT")
     account = UserExchangeAccount.objects.create(
@@ -121,9 +115,29 @@ def test_stage34_market_queue_is_durable_and_idempotent(live_market_workspace):
 def test_stage34_nobitex_market_is_rejected_before_plan_creation(
     live_market_workspace,
 ):
-    owner, account, market = live_market_workspace
-    account.exchange.adapter_code = "nobitex"
-    account.exchange.save(update_fields=("adapter_code",))
+    owner, _, lbank_market = live_market_workspace
+    exchange = Exchange.objects.get(code="nobitex")
+    account = UserExchangeAccount.objects.create(
+        owner=owner,
+        exchange=exchange,
+        label="Nobitex",
+        environment="live",
+        status="connected",
+        trading_enabled=True,
+        permissions={"can_read": True, "can_trade_spot": True, "can_withdraw": False},
+    )
+    market = ExchangeMarket.objects.create(
+        exchange=exchange,
+        symbol="BTC/USDT",
+        base_asset=lbank_market.base_asset,
+        quote_asset=lbank_market.quote_asset,
+        market_type="spot",
+        min_amount=Decimal("0.001"),
+        amount_step=Decimal("0.001"),
+        price_step=Decimal("0.01"),
+        min_notional=Decimal("10"),
+        taker_fee=Decimal("0.001"),
+    )
     form = ManualTradeForm(
         owner,
         {

@@ -120,7 +120,7 @@ def test_fix_loss_refreshes_free_usdt_and_includes_fees(client, manual_workspace
 
     assert response.status_code == 200, response.content
     payload = response.json()
-    assert payload["available"] == "750"
+    assert Decimal(payload["available"]) == Decimal("750")
     assert payload["balance_age_seconds"] <= 1
     assert payload["fees_in_risk_budget"] is True
     assert Decimal(payload["estimated_total_risk"]) <= Decimal(payload["risk_budget"])

@@ -7,7 +7,7 @@
   ],
   "current_stage": "S34",
   "next_stage": null,
-  "last_completed_work": "S34-W03",
+  "last_completed_work": "S34-W05",
   "implementation_started": true,
   "stage_results": {
     "S01": {
@@ -1490,7 +1490,7 @@
       "pull_request": "https://github.com/ostaddehdari/CryptoSniper/pull/7"
     },
     "S34": {
-      "status": "code_complete_external_acceptance_partial",
+      "status": "ci_passed_release_pending",
       "completed_works": [
         "S34-W01",
         "S34-W02",
@@ -1529,7 +1529,7 @@
         },
         {
           "name": "W04 versioned FA/EN signal corpus and review-only React flow",
-          "status": "passed_local",
+          "status": "passed",
           "samples": 20,
           "assertions_passed": 140,
           "accuracy_percent": 100,
@@ -1537,9 +1537,15 @@
         },
         {
           "name": "W05 provider-gated Market/Limit and management integration",
-          "status": "pending_exact_ci",
+          "status": "passed",
           "react_tests_passed": 8,
           "local_non_database_tests_passed": 6,
+          "pytest_passed": 446,
+          "run_id": 42303852315,
+          "url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/42303852315",
+          "tested_commit": "670095463552aa5643555c4cd069edd8e8afbd5e",
+          "artifact_id": 13545004353,
+          "browser_smoke": "passed",
           "failed_ci_run_id": 42302060163,
           "failed_ci_reason": "format-only; corrected before final CI"
         }
@@ -1547,14 +1553,15 @@
       "commit_shas": [
         "3dfd2cf0287fbf21128979bda7fe2152bd063660",
         "f86ab73ec1340d8e1766a9592403bb74714c36ef",
-        "2ab60efe25b01dd3f07342ff34c19bf51bde55f0"
+        "2ab60efe25b01dd3f07342ff34c19bf51bde55f0",
+        "670095463552aa5643555c4cd069edd8e8afbd5e"
       ],
       "blockers": [
-        "Exact PostgreSQL/Redis/worker/browser CI and immutable Stage34 release are pending.",
+        "Immutable Stage34 release generation is pending on the exact release commit.",
         "Stage34 package is not yet installed on the target VPS.",
         "No real-provider credential acceptance or live-money authorization was performed."
       ],
-      "implementation": "All five S34 works are code-complete: live quotes, direct Entry and Fix Loss, resilient exchange sync, measurable review-only signal parsing, and provider-gated idempotent Spot Market/Limit integrated with explicit TP/SL/Trailing management. External CI, release, target install and live-provider authorization remain separately evidenced."
+      "implementation": "All five S34 works are code-complete. Exact CI 42303852315 passed 446 PostgreSQL/Redis tests, schema/security gates, eight React tests and the real browser smoke. Immutable release generation, target install and live-provider authorization remain separately evidenced."
     }
   }
 }

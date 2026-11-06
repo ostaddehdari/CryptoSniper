@@ -1,6 +1,6 @@
 # Stage34 — گزارش پیشرفت
 
-وضعیت استیج: `code-complete / external-acceptance-partial` — هر پنج ورک پیاده‌سازی شده‌اند؛ نصب Stage34 و پذیرش credential/پول واقعی خارج از ادعای این گزارش است.
+وضعیت استیج: `CI-passed / external-acceptance-partial` — هر پنج ورک پیاده‌سازی شده‌اند؛ نصب Stage34 و پذیرش credential/پول واقعی خارج از ادعای این گزارش است.
 
 ## S34-W01 — نرخ‌های زنده و هدر
 
@@ -54,7 +54,13 @@
 - سفارش Market با `price=null` ارسال می‌شود؛ قیمت مرجع برای sizing/reservation نگه‌داری و درست پیش از ارسال، بهترین Ask/Bid دفتر سفارش حداکثر ۳۰ ثانیه‌ای دوباره بررسی می‌شود.
 - migrationهای افزایشی نوع سفارش برنامه و قیمت مرجع سفارش را بدون حذف دادهٔ قبلی اضافه می‌کنند.
 - sync معاملات خارجی، adoption صریح، inventory مبتنی بر fill تأییدشده، partial/unknown، TP/SL، trailing یکنواخت و restart همان موتور Stage31 است و در تست‌های تجمیعی باقی می‌ماند.
-- هشت تست React، build production، Ruff، Django check و migration drift محلی پاس شدند؛ تست‌های وابسته به PostgreSQL در CI دقیق Release اجرا می‌شوند.
+- هشت تست React، build production، Ruff، Django/schema/security، ۴۴۶ تست PostgreSQL/Redis و smoke واقعی مرورگر روی commit `670095463552aa5643555c4cd069edd8e8afbd5e` پاس شدند: https://github.com/ostaddehdari/CryptoSniper/actions/runs/42303852315
+
+## شواهد نهایی کد
+
+- CI شماره `42303852315`: موفق؛ ۴۴۶ تست، artifact شماره `13545004353`، migration drift و smoke مرورگر موفق.
+- نصب‌کنندهٔ Stage34: ۹۸ تست upgrade/nginx محلی موفق؛ بررسی shell و pin فایل‌ها موفق.
+- ظاهر React/Cornix تأییدشده حفظ شده و هر دو دروازهٔ Live همچنان پیش‌فرض خاموش‌اند.
 
 ## مرز تحویل
 

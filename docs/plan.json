@@ -1616,7 +1616,7 @@
       "depends_on": [
         "S33"
       ],
-      "status": "partial",
+      "status": "done",
       "works": [
         {
           "id": "S34-W01",

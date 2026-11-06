@@ -1490,7 +1490,7 @@
       "pull_request": "https://github.com/ostaddehdari/CryptoSniper/pull/7"
     },
     "S34": {
-      "status": "ci_passed_release_pending",
+      "status": "release_ready_external_acceptance_partial",
       "completed_works": [
         "S34-W01",
         "S34-W02",
@@ -1557,11 +1557,15 @@
         "670095463552aa5643555c4cd069edd8e8afbd5e"
       ],
       "blockers": [
-        "Immutable Stage34 release generation is pending on the exact release commit.",
         "Stage34 package is not yet installed on the target VPS.",
         "No real-provider credential acceptance or live-money authorization was performed."
       ],
-      "implementation": "All five S34 works are code-complete. Exact CI 42303852315 passed 446 PostgreSQL/Redis tests, schema/security gates, eight React tests and the real browser smoke. Immutable release generation, target install and live-provider authorization remain separately evidenced."
+      "implementation": "All five S34 works are code-complete. Exact push CI 42304342413 passed 446 PostgreSQL/Redis tests, schema/security gates, eight React tests and the real browser smoke, then published the immutable r1 package. Target install and live-provider authorization remain separately evidenced.",
+      "release_commit": "7ce55a59b07519ba84a948058fd4ee84942ba414",
+      "release_tag": "stage34-react-v0.34.0rc1-deploy-r1",
+      "release_run_id": 42304342413,
+      "release_artifact_id": 13546555614,
+      "pull_request": "https://github.com/ostaddehdari/CryptoSniper/pull/8"
     }
   }
 }

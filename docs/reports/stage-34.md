@@ -59,6 +59,8 @@
 ## شواهد نهایی کد
 
 - CI شماره `42303852315`: موفق؛ ۴۴۶ تست، artifact شماره `13545004353`، migration drift و smoke مرورگر موفق.
+- CI دقیق Push/Release شماره `42304342413` روی commit `7ce55a59b07519ba84a948058fd4ee84942ba414`: موفق؛ artifact شواهد `13545526851` و بستهٔ انتشار `13546555614`.
+- Release رسمی `stage34-react-v0.34.0rc1-deploy-r1` با ZIP SHA-256 برابر `fdd11ed84e15c35e84b4803b482c2c2acccf5b88845ed2e53b8121b7a88aaf43` منتشر شد.
 - نصب‌کنندهٔ Stage34: ۹۸ تست upgrade/nginx محلی موفق؛ بررسی shell و pin فایل‌ها موفق.
 - ظاهر React/Cornix تأییدشده حفظ شده و هر دو دروازهٔ Live همچنان پیش‌فرض خاموش‌اند.
 

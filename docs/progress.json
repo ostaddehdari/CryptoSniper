@@ -7,7 +7,7 @@
   ],
   "current_stage": "S34",
   "next_stage": null,
-  "last_completed_work": "S34-W01",
+  "last_completed_work": "S34-W02",
   "implementation_started": true,
   "stage_results": {
     "S01": {
@@ -1492,7 +1492,8 @@
     "S34": {
       "status": "partial",
       "completed_works": [
-        "S34-W01"
+        "S34-W01",
+        "S34-W02"
       ],
       "checks": [
         {
@@ -1504,15 +1505,21 @@
           "name": "W01 React unit tests and production build",
           "status": "passed",
           "react_tests_passed": 4
+        },
+        {
+          "name": "W02 local React, Django, schema and static contract checks",
+          "status": "passed_pending_ci",
+          "react_tests_passed": 5,
+          "database_tests_pending_ci": 2
         }
       ],
       "commit_shas": [],
       "blockers": [
-        "GitHub CI with PostgreSQL/Redis and browser remains pending for the W01 branch.",
-        "W02 through W05 are intentionally not started; one work is executed per user chat.",
+        "W01 CI passed 422 tests but failed one fixed-stage-list contract; the W02 commit corrects that classification and must rerun CI.",
+        "W03 through W05 are intentionally not started; one work is executed per user chat.",
         "No real-provider credential acceptance or live-money authorization was performed."
       ],
-      "implementation": "W01 code-complete: Nobitex USDT/Toman and BTC/USDT header quotes refresh every five seconds with source timestamps and fail-closed stale/unavailable states. Stage34 remains partial."
+      "implementation": "W01 and W02 code-complete: live header quotes plus immediate selected-market refresh, click-to-Entry Limit pricing, live free-USDT refresh and fee-aware automatic integer Fix Loss sizing. Stage34 remains partial."
     }
   }
 }

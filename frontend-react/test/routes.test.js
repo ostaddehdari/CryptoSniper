@@ -31,3 +31,12 @@ test('Stage34 live header shows the requested market pairs with freshness state'
   assert.match(source,/visibilitychange/);
   assert.equal(source.includes('label="USDT / USD"'), false);
 });
+test('Stage34 manual trade applies live price and Fix Loss automatically',()=>{
+  const source=readFileSync(new URL('../src/main.jsx',import.meta.url),'utf8');
+  assert.match(source,/setEntry\(String\(liveEntry\)\)/);
+  assert.match(source,/Entry · سفارش Limit/);
+  assert.match(source,/SL → Entry پس از TP1/);
+  assert.match(source,/setCapital\(suggested\)/);
+  assert.match(source,/ریسک محاسبه‌شده با کارمزد/);
+  assert.match(source,/تتر آزاد زنده/);
+});

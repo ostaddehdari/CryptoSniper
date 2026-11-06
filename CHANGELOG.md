@@ -3,6 +3,9 @@
 - Header now shows BTC/USDT and Nobitex USDT/Toman with provider timestamps and explicit live, stale or unavailable state.
 - Five-second bounded polling, tab-resume refresh, per-provider fallback and anti-stampede caching replace the old 15-second opaque widget.
 - A failed provider cannot turn a missing quote into zero or suppress the other provider; no live-order gate changed.
+- Manual selected-market quotes now refresh directly every five seconds and a fresh best ask/bid can be copied into the Limit Entry with one click.
+- Fix Loss refreshes free USDT from the selected exchange when older than 30 seconds, includes estimated entry/stop-exit fees, and writes the integer capital automatically.
+- Trailing SL copy now correctly says `SL → Entry after TP1`; true Market-order execution remains deferred to the provider-capability work.
 
 # 0.33.0rc1 — Final owner acceptance (2026-10-27)
 

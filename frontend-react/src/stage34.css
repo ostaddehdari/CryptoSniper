@@ -4,3 +4,6 @@
 .ticker.stale>small{color:#b27800}.ticker.stale>small i{background:#e5a21a}
 .ticker.unavailable>small{color:#c34c55}.ticker.unavailable>small i{background:#d85b64}
 @media(max-width:560px){.topActions .ticker{min-width:112px;grid-template-columns:auto auto}.topActions .ticker>small{display:block;font-size:8px}}
+.livePriceButton{width:100%;font:inherit;cursor:pointer;gap:4px;flex-wrap:wrap;text-align:right}
+.livePriceButton b{font-size:13px}.livePriceButton small{width:100%;font-size:8px;color:#657693;font-weight:500}
+.livePriceButton:disabled{cursor:not-allowed;opacity:.72}.livePriceButton:not(:disabled):hover{border-color:#7aa2ec;background:#eaf2ff}

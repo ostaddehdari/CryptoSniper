@@ -17,7 +17,7 @@ from apps.accounts.security import session_api_required
 from apps.exchanges.adapters import AdapterError, get_adapter
 from apps.exchanges.models import UserExchangeAccount
 
-from .feeds import get_quote
+from .feeds import get_quote, refresh_quote
 from .search import eligible_markets, search_markets
 
 HEADER_TICKER_CACHE_KEY = "marketdata:v2:header-live"
@@ -165,16 +165,22 @@ def _visible(request):
     return list(eligible_markets(request.user).filter(pk__in=ids)[:20])
 
 
-def _state(markets):
-    return [
-        {
-            "market_id": market.pk,
-            "symbol": market.symbol,
-            "exchange": market.exchange.code,
-            "quote": get_quote(market),
-        }
-        for market in markets
-    ]
+def _state(markets, *, refresh=False):
+    rows = []
+    for market in markets:
+        quote = get_quote(market)
+        if refresh and (quote is None or quote["age_seconds"] >= 4):
+            refresh_quote(market)
+            quote = get_quote(market)
+        rows.append(
+            {
+                "market_id": market.pk,
+                "symbol": market.symbol,
+                "exchange": market.exchange.code,
+                "quote": quote,
+            }
+        )
+    return rows
 
 
 @session_api_required
@@ -226,8 +232,15 @@ def api_quotes(request):
     markets = _visible(request)
     if markets is None:
         return JsonResponse({"error": "invalid_market_ids"}, status=400)
+    refresh = request.GET.get("refresh") == "1"
+    if refresh and len(markets) > 3:
+        return JsonResponse({"error": "refresh_limit"}, status=429)
     return JsonResponse(
-        {"markets": _state(markets), "display_only": True, "as_of": timezone.now().isoformat()}
+        {
+            "markets": _state(markets, refresh=refresh),
+            "display_only": True,
+            "as_of": timezone.now().isoformat(),
+        }
     )
 
 

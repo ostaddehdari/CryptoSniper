@@ -1630,9 +1630,9 @@
           "id": "S34-W02",
           "number": 2,
           "title": "معامله دستی و Fix Loss",
-          "deliverables": "قیمت لحظه‌ای انتخاب، انتقال به Entry، Market/Limit، SL→Entry، تتر آزاد و حجم Fix Loss صحیح.",
+          "deliverables": "قیمت لحظه‌ای انتخاب، انتقال Ask/Bid تازه به Entry سفارش Limit، SL→Entry، تتر آزاد و حجم Fix Loss صحیح.",
           "acceptance": "Backend حجم را با fee/step/min اعتبارسنجی کند و داده قدیمی اجازه ارسال ندهد.",
-          "status": "todo"
+          "status": "done"
         },
         {
           "id": "S34-W03",
@@ -1666,7 +1666,6 @@
     "S30",
     "S31",
     "S32",
-    "S33",
-    "S34"
+    "S33"
   ]
 }

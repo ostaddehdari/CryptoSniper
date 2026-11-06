@@ -833,6 +833,9 @@ def _live_order_payload(item):
         "order_type": item.order_type,
         "amount": str(item.amount),
         "price": str(item.price) if item.price is not None else None,
+        "reference_price": (
+            str(item.reference_price) if item.reference_price is not None else None
+        ),
         "filled_amount": str(item.filled_amount),
         "average_price": str(item.average_price) if item.average_price is not None else None,
         "fee_amount": str(item.fee_amount) if item.fee_amount is not None else None,
@@ -890,8 +893,10 @@ def api_live_orders(request):
             {
                 "market": data.get("market"),
                 "side": data.get("side"),
+                "order_type": data.get("order_type", "limit"),
                 "amount": data.get("amount"),
                 "price": data.get("price"),
+                "reference_price": data.get("reference_price"),
                 "request_key": data.get("request_key") or str(uuid.uuid4()),
                 "confirmed": "on" if data.get("confirmed") is True else "",
             },
@@ -930,6 +935,7 @@ def api_manual_plans_ui(request):
                 "symbol": item.market.symbol,
                 "market_type": item.market.market_type,
                 "side": item.side,
+                "order_type": item.order_type,
                 "entry": str(item.entry_price),
                 "stop_loss": str(item.stop_loss),
                 "tp1": str(item.tp1),

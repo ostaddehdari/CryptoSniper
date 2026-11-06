@@ -13,6 +13,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods
 
 from apps.accounts.security import session_api_required
+from apps.exchanges.live_orders import supports_order_type
 from apps.exchanges.models import ExchangeMarket, UserExchangeAccount
 
 from .models import ExchangeFavorite
@@ -151,6 +152,14 @@ def api_account_markets(request, pk):
                     "price_step": str(m.price_step) if m.price_step else None,
                     "amount_step": str(m.amount_step) if m.amount_step else None,
                     "min_notional": str(m.min_notional) if m.min_notional else None,
+                    "order_types": [
+                        order_type
+                        for order_type in ("limit", "market")
+                        if supports_order_type(account.exchange.adapter_code, order_type)
+                    ],
+                    "market_order_supported": supports_order_type(
+                        account.exchange.adapter_code, "market"
+                    ),
                     "favorite": m.base_asset.symbol in favorites,
                 }
                 for m in page

@@ -165,6 +165,7 @@ class LbankAdapter(SpotAdapterBase):
 
     def _lbank_order(self, item, fallback=None):
         fallback = fallback or {}
+        raw_side = str(item.get("type", fallback.get("side", "buy"))).lower()
         normalized = {
             "orderId": item.get("order_id", item.get("orderId", item.get("id", ""))),
             "clientOrderId": item.get(
@@ -173,8 +174,10 @@ class LbankAdapter(SpotAdapterBase):
             "symbol": str(
                 item.get("symbol", self._provider_symbol(fallback.get("symbol", "")))
             ).replace("_", ""),
-            "side": item.get("type", fallback.get("side", "buy")),
-            "type": fallback.get("order_type", "limit"),
+            "side": raw_side.split("_", 1)[0],
+            "type": "market" if raw_side.endswith("_market") else fallback.get(
+                "order_type", "limit"
+            ),
             "quantity": item.get("amount", item.get("origQty", fallback.get("amount"))),
             "price": item.get("price", fallback.get("price")),
             "executedQty": item.get("deal_amount", item.get("accAmt", 0)),

@@ -57,3 +57,11 @@ test('Stage34 signal analysis exposes measurable fields and mandatory review',()
   assert.match(source,/خروجی Parser یا AI مستقیماً سفارش واقعی نمی‌سازد/);
   assert.match(source,/بازبینی و تکمیل در صندوق سیگنال/);
 });
+test('Stage34 manual entry supports provider-gated Market and Limit orders',()=>{
+  const source=readFileSync(new URL('../src/main.jsx',import.meta.url),'utf8');
+  assert.match(source,/aria-label="نوع سفارش"/);
+  assert.match(source,/market_order_supported/);
+  assert.match(source,/Entry مرجع · سفارش Market/);
+  assert.match(source,/سفارش Market بدون قیمت Limit ارسال می‌شود/);
+  assert.match(source,/مدیریت TP\/SL و Trailing/);
+});

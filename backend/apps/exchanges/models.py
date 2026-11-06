@@ -253,6 +253,7 @@ class LiveSpotOrder(models.Model):
     order_type = models.CharField(max_length=8, choices=(("limit", "Limit"), ("market", "Market")))
     amount = models.DecimalField(max_digits=32, decimal_places=16)
     price = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
+    reference_price = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
     filled_amount = models.DecimalField(max_digits=32, decimal_places=16, default=0)
     average_price = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
     fee_amount = models.DecimalField(max_digits=32, decimal_places=16, null=True, blank=True)
@@ -280,6 +281,10 @@ class LiveSpotOrder(models.Model):
             models.CheckConstraint(
                 condition=Q(price__isnull=True) | Q(price__gt=0),
                 name="live_spot_order_price_positive",
+            ),
+            models.CheckConstraint(
+                condition=Q(reference_price__isnull=True) | Q(reference_price__gt=0),
+                name="live_spot_order_reference_price_positive",
             ),
             models.CheckConstraint(
                 condition=Q(filled_amount__gte=0), name="live_spot_order_filled_nonnegative"

@@ -176,8 +176,8 @@ def test_favorite_order_is_per_exchange_and_handles_multiple_accounts(client, wo
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("risk,capital", [("1", "200"), ("2", "400")])
-def test_fix_loss_uses_free_usdt_and_matches_approved_examples(client, workspace, risk, capital):
+@pytest.mark.parametrize("risk,capital", [("1", "192"), ("2", "385")])
+def test_fix_loss_uses_free_usdt_and_includes_fees(client, workspace, risk, capital):
     owner, account, market = workspace
     BalanceSnapshot.objects.create(
         exchange_account=account,
@@ -204,7 +204,8 @@ def test_fix_loss_uses_free_usdt_and_matches_approved_examples(client, workspace
     assert data["available"] == "1000.0000000000000000"
     assert data["suggested_capital"] == capital
     assert Decimal(data["estimated_stop_loss"]) <= Decimal(data["risk_budget"])
-    assert data["advisory_only"] and not data["fees_in_risk_budget"]
+    assert Decimal(data["estimated_total_risk"]) <= Decimal(data["risk_budget"])
+    assert data["advisory_only"] and data["fees_in_risk_budget"]
 
 
 @pytest.mark.django_db

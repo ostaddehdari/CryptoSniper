@@ -278,7 +278,7 @@ def main():
                 page.locator("#root").wait_for()
                 page.locator(".sidebar").wait_for()
                 page.locator(".topbar").wait_for()
-                page.get_by_text("USDT / USD", exact=False).wait_for()
+                page.get_by_text("BTC / USDT", exact=False).wait_for()
                 page.get_by_text("USDT / تومان", exact=False).wait_for()
                 assert page.locator(".s24-shell").count() == 0
                 page.screenshot(
@@ -309,15 +309,14 @@ def main():
                 page.get_by_label("TP3", exact=True).fill("80000")
                 page.get_by_label("Stop Loss", exact=True).fill("61750")
                 page.wait_for_function(
-                    "document.querySelector('[data-fixloss-suggestion]')?.textContent.includes('۲۰۰')"
+                    "document.querySelector('[data-fixloss-suggestion]')?.textContent.includes('۱۹۲')"
                 )
+                assert page.get_by_label("حجم ورود", exact=True).input_value() == "192"
                 page.get_by_label("ریسک مجاز", exact=True).fill("2")
                 page.wait_for_function(
-                    "document.querySelector('[data-fixloss-suggestion]')?.textContent.includes('۴۰۰')"
+                    "document.querySelector('[data-fixloss-suggestion]')?.textContent.includes('۳۸۵')"
                 )
-                assert page.get_by_label("حجم ورود", exact=True).input_value() == "75"
-                page.get_by_role("button", name="استفاده از پیشنهاد", exact=True).click()
-                assert page.get_by_label("حجم ورود", exact=True).input_value() == "400"
+                assert page.get_by_label("حجم ورود", exact=True).input_value() == "385"
                 page.screenshot(path=str(artifacts / "stage30-manual-desktop.png"), full_page=True)
                 page.get_by_label("تأیید ارسال سفارش", exact=True).check()
                 dropped = {"done": False}
@@ -351,7 +350,10 @@ def main():
                     plan.approved_snapshot["quantity"]
                 )
                 page.unroute("**/api/v1/manual/submit/", lose_first_success)
-                print("PASS S30 live UI: empty Entry, automatic Fix Loss 200/400, server quantity")
+                print(
+                    "PASS S34 live UI: empty Entry, fee-aware automatic Fix Loss 192/385, "
+                    "server quantity"
+                )
                 print(
                     "PASS S30 step-up resumes same request; lost success response creates one order"
                 )

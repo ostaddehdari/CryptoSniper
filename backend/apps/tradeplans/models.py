@@ -23,6 +23,10 @@ class TradePlan(models.Model):
         TP2 = "tp2", "TP2"
         TP3 = "tp3", "TP3"
 
+    class OrderType(models.TextChoices):
+        LIMIT = "limit", "Limit"
+        MARKET = "market", "Market"
+
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="trade_plans"
     )
@@ -35,6 +39,7 @@ class TradePlan(models.Model):
     )
     status = models.CharField(max_length=8, choices=Status.choices, default=Status.DRAFT)
     side = models.CharField(max_length=8, choices=Side.choices, default=Side.LONG)
+    order_type = models.CharField(max_length=8, choices=OrderType.choices, default=OrderType.LIMIT)
     entry_price = models.DecimalField(max_digits=32, decimal_places=16)
     stop_loss = models.DecimalField(max_digits=32, decimal_places=16)
     tp1 = models.DecimalField(max_digits=32, decimal_places=16)

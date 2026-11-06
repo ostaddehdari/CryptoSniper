@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import timedelta
 
 from asgiref.sync import sync_to_async
@@ -16,56 +17,131 @@ from apps.accounts.security import session_api_required
 from apps.exchanges.adapters import AdapterError, get_adapter
 from apps.exchanges.models import UserExchangeAccount
 
-from .feeds import get_quote
+from .feeds import get_quote, refresh_quote
 from .search import eligible_markets, search_markets
 
-HEADER_TICKER_CACHE_KEY = "marketdata:v1:header-usdt"
-HEADER_TICKER_FRESH_SECONDS = 20
+HEADER_TICKER_CACHE_KEY = "marketdata:v2:header-live"
+HEADER_TICKER_LOCK_KEY = HEADER_TICKER_CACHE_KEY + ":refreshing"
+HEADER_TICKER_FRESH_SECONDS = 5
 HEADER_TICKER_STALE_SECONDS = 300
+HEADER_QUOTE_STALE_SECONDS = 30
+
+HEADER_QUOTES = (
+    ("usdt_toman", "nobitex", "USDT/IRT", "نوبیتکس"),
+    ("btc_usdt", "binance", "BTC/USDT", "Binance"),
+)
+
+
+def _quote_payload(adapter_code, symbol, source_label):
+    ticker = get_adapter(adapter_code, credentials={}, environment="paper").fetch_ticker(symbol)
+    observed_at = ticker.observed_at
+    age_seconds = max(0, int((timezone.now() - observed_at).total_seconds()))
+    return {
+        "value": str(ticker.price),
+        "source": adapter_code + "_public",
+        "source_label": source_label,
+        "observed_at": observed_at.isoformat(),
+        "age_seconds": age_seconds,
+        "status": "stale" if age_seconds > HEADER_QUOTE_STALE_SECONDS else "live",
+    }
+
+
+def _legacy_header_fields(payload):
+    """Keep older clients working while React consumes the structured quotes."""
+    quotes = payload.get("quotes", {})
+    return {
+        **payload,
+        "usdt_toman": (quotes.get("usdt_toman") or {}).get("value"),
+        "btc_usdt": (quotes.get("btc_usdt") or {}).get("value"),
+        "sources": {
+            key: quote.get("source") for key, quote in quotes.items() if quote.get("source")
+        },
+    }
 
 
 def _header_ticker_value():
     cached = cache.get(HEADER_TICKER_CACHE_KEY)
     if cached:
-        return {**cached, "stale": False}
+        return _legacy_header_fields(cached)
 
-    stale = cache.get(HEADER_TICKER_CACHE_KEY + ":stale")
+    previous = cache.get(HEADER_TICKER_CACHE_KEY + ":stale") or {}
+    if not cache.add(HEADER_TICKER_LOCK_KEY, "1", timeout=15):
+        if previous:
+            waiting = {
+                **previous,
+                "stale": True,
+                "quotes": {
+                    key: {**quote, "status": "stale"}
+                    for key, quote in previous.get("quotes", {}).items()
+                },
+            }
+            return _legacy_header_fields(waiting)
+        return _legacy_header_fields(
+            {
+                "quotes": {
+                    key: {
+                        "value": None,
+                        "source": adapter_code + "_public",
+                        "source_label": source_label,
+                        "observed_at": None,
+                        "age_seconds": None,
+                        "status": "unavailable",
+                    }
+                    for key, adapter_code, _symbol, source_label in HEADER_QUOTES
+                },
+                "fetched_at": timezone.now().isoformat(),
+                "refresh_after_seconds": HEADER_TICKER_FRESH_SECONDS,
+                "stale": True,
+            }
+        )
     payload = {
-        "usdt_usd": None,
-        "usdt_toman": None,
-        "sources": {},
-        "observed_at": timezone.now().isoformat(),
-        "stale": False,
+        "quotes": {},
+        "fetched_at": timezone.now().isoformat(),
+        "refresh_after_seconds": HEADER_TICKER_FRESH_SECONDS,
     }
+    previous_quotes = previous.get("quotes", {})
     try:
-        adapter = get_adapter("binance", credentials={}, environment="paper")
-        ticker = adapter.fetch_ticker("USDT/USDC")
-        payload["usdt_usd"] = str(ticker.price)
-        payload["sources"]["usdt_usd"] = "binance_public"
-    except (AdapterError, ValueError, TypeError, KeyError):
-        pass
+        with ThreadPoolExecutor(max_workers=len(HEADER_QUOTES)) as executor:
+            futures = {
+                executor.submit(_quote_payload, adapter_code, symbol, source_label): (
+                    key,
+                    adapter_code,
+                    source_label,
+                )
+                for key, adapter_code, symbol, source_label in HEADER_QUOTES
+            }
+            for future in as_completed(futures):
+                key, adapter_code, source_label = futures[future]
+                try:
+                    payload["quotes"][key] = future.result()
+                except (AdapterError, ValueError, TypeError, KeyError):
+                    old_quote = previous_quotes.get(key)
+                    payload["quotes"][key] = (
+                        {**old_quote, "status": "stale"}
+                        if old_quote and old_quote.get("value") is not None
+                        else {
+                            "value": None,
+                            "source": adapter_code + "_public",
+                            "source_label": source_label,
+                            "observed_at": None,
+                            "age_seconds": None,
+                            "status": "unavailable",
+                        }
+                    )
+    finally:
+        cache.delete(HEADER_TICKER_LOCK_KEY)
 
-    try:
-        adapter = get_adapter("nobitex", credentials={}, environment="paper")
-        ticker = adapter.fetch_ticker("USDT/IRT")
-        payload["usdt_toman"] = str(ticker.price)
-        payload["sources"]["usdt_toman"] = "nobitex_public"
-    except (AdapterError, ValueError, TypeError, KeyError):
-        pass
-
-    if payload["usdt_usd"] is None and stale:
-        payload["usdt_usd"] = stale.get("usdt_usd")
-    if payload["usdt_toman"] is None and stale:
-        payload["usdt_toman"] = stale.get("usdt_toman")
-
-    if payload["usdt_usd"] is None and payload["usdt_toman"] is None:
-        if stale:
-            return {**stale, "stale": True}
-        return payload
+    statuses = {quote["status"] for quote in payload["quotes"].values()}
+    payload["stale"] = "stale" in statuses or "unavailable" in statuses
 
     cache.set(HEADER_TICKER_CACHE_KEY, payload, timeout=HEADER_TICKER_FRESH_SECONDS)
-    cache.set(HEADER_TICKER_CACHE_KEY + ":stale", payload, timeout=HEADER_TICKER_STALE_SECONDS)
-    return payload
+    if any(quote.get("value") is not None for quote in payload["quotes"].values()):
+        cache.set(
+            HEADER_TICKER_CACHE_KEY + ":stale",
+            payload,
+            timeout=HEADER_TICKER_STALE_SECONDS,
+        )
+    return _legacy_header_fields(payload)
 
 
 @session_api_required
@@ -89,16 +165,22 @@ def _visible(request):
     return list(eligible_markets(request.user).filter(pk__in=ids)[:20])
 
 
-def _state(markets):
-    return [
-        {
-            "market_id": market.pk,
-            "symbol": market.symbol,
-            "exchange": market.exchange.code,
-            "quote": get_quote(market),
-        }
-        for market in markets
-    ]
+def _state(markets, *, refresh=False):
+    rows = []
+    for market in markets:
+        quote = get_quote(market)
+        if refresh and (quote is None or quote["age_seconds"] >= 4):
+            refresh_quote(market)
+            quote = get_quote(market)
+        rows.append(
+            {
+                "market_id": market.pk,
+                "symbol": market.symbol,
+                "exchange": market.exchange.code,
+                "quote": quote,
+            }
+        )
+    return rows
 
 
 @session_api_required
@@ -150,8 +232,15 @@ def api_quotes(request):
     markets = _visible(request)
     if markets is None:
         return JsonResponse({"error": "invalid_market_ids"}, status=400)
+    refresh = request.GET.get("refresh") == "1"
+    if refresh and len(markets) > 3:
+        return JsonResponse({"error": "refresh_limit"}, status=429)
     return JsonResponse(
-        {"markets": _state(markets), "display_only": True, "as_of": timezone.now().isoformat()}
+        {
+            "markets": _state(markets, refresh=refresh),
+            "display_only": True,
+            "as_of": timezone.now().isoformat(),
+        }
     )
 
 

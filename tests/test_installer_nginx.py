@@ -257,6 +257,7 @@ class Stage32NginxUpgradeTests(Stage31NginxUpgradeTests):
 class Stage33NginxUpgradeTests(Stage32NginxUpgradeTests):
     installer = ROOT / "scripts/cryptosniper-stage33-react-run.sh"
     stage = 33
+    expected_version = "0.33.0rc1"
 
     def test_stage32_installed_source_and_final_assets_are_pinned(self):
         installer = self.installer.read_text()
@@ -268,7 +269,28 @@ class Stage33NginxUpgradeTests(Stage32NginxUpgradeTests):
         self.assertIn("backend/apps/exchanges/migrations/0010_live_order_fee_receipt.py", installer)
         self.assertIn("backend/apps/reports/live.py", installer)
         self.assertIn("docs/reports/stage-33.md", installer)
-        self.assertIn("0.33.0rc1", installer)
+        self.assertIn(self.expected_version, installer)
+
+
+class Stage34NginxUpgradeTests(Stage33NginxUpgradeTests):
+    installer = ROOT / "scripts/cryptosniper-stage34-react-run.sh"
+    stage = 34
+    expected_version = "0.34.0rc1"
+
+    def test_stage33_installed_source_and_stage34_assets_are_pinned(self):
+        installer = self.installer.read_text()
+        self.assertIn(
+            "STAGE33_SOURCE_COMMIT=36d8a2801291b125ffb0fd579058267a922b1063",
+            installer,
+        )
+        self.assertIn("os.environ['STAGE33_SOURCE_COMMIT']", installer)
+        self.assertIn("backend/apps/signals/corpus/stage34-v2.json", installer)
+        self.assertIn(
+            "backend/apps/exchanges/migrations/0011_stage34_reference_price.py", installer
+        )
+        self.assertIn("backend/apps/tradeplans/migrations/0004_stage34_order_type.py", installer)
+        self.assertIn("docs/reports/stage-34.md", installer)
+        self.assertIn("0.34.0rc1", installer)
 
 
 if __name__ == "__main__":

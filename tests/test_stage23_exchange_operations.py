@@ -54,7 +54,7 @@ def test_add_exchange_does_not_white_screen_when_broker_is_down(
         {"exchange": exchange.pk, "label": "Broker safe", "environment": "paper"},
     )
     assert response.status_code == 302
-    account = UserExchangeAccount.objects.get(owner=user, label="Broker safe")
+    account = UserExchangeAccount.objects.get(owner=user, label=exchange.name)
     assert response["Location"].endswith(f"/exchanges/{account.pk}/")
 
 

@@ -93,6 +93,13 @@ class Ticker:
 
 
 @dataclass(frozen=True)
+class TradingFee:
+    symbol: str
+    maker: Decimal
+    taker: Decimal
+
+
+@dataclass(frozen=True)
 class Order:
     order_id: str
     client_order_id: str
@@ -159,6 +166,11 @@ class ExchangeAdapter(ABC):
     @abstractmethod
     def fetch_markets(self) -> list[Market]:
         raise NotImplementedError
+
+    def fetch_trading_fees(self) -> list[TradingFee]:
+        """Return account-level rates when the provider exposes them."""
+
+        return []
 
     @abstractmethod
     def fetch_ticker(self, symbol: str) -> Ticker:

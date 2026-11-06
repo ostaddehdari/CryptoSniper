@@ -58,8 +58,10 @@ def submit(owner, data, key):
             "request_key": key,
             "market": data["market"],
             "side": "buy",
+            "order_type": plan.order_type,
             "amount": Decimal(plan.approved_snapshot["quantity"]),
-            "price": plan.entry_price,
+            "price": plan.entry_price if plan.order_type == "limit" else None,
+            "reference_price": plan.entry_price,
             "source_plan": plan,
         },
     )

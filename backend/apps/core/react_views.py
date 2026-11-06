@@ -18,6 +18,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
+from kombu.exceptions import OperationalError
 
 from apps.accounts.audit import record_audit
 from apps.accounts.models import UserSession, WalletConnection
@@ -29,7 +30,7 @@ from apps.exchanges.forms import ExchangeConnectionForm, LiveSpotOrderForm
 from apps.exchanges.live_orders import queue_live_spot_order
 from apps.exchanges.models import BalanceSnapshot, ExchangeMarket, LiveSpotOrder, UserExchangeAccount
 from apps.exchanges.security import revoke_account_credentials, rotate_account_credentials
-from apps.exchanges.services import latest_balances
+from apps.exchanges.services import latest_balances, mark_sync_error, mark_sync_pending
 from apps.exchanges.tasks import live_spot_order, sync_exchange_account
 from apps.marketdata.feeds import get_quote
 from apps.marketdata.search import market_is_readable
@@ -634,7 +635,6 @@ def api_exchange_create(request):
             request.user,
             {
                 "exchange": data.get("exchange"),
-                "label": data.get("label") or "حساب اصلی",
                 "environment": "live",
                 "api_key": data.get("api_key", ""),
                 "api_secret": data.get("api_secret", ""),
@@ -649,8 +649,29 @@ def api_exchange_create(request):
         if not form.is_valid():
             return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
         account = form.save()
-        sync_exchange_account.apply_async(args=[account.pk], queue="maintenance")
-        return JsonResponse({"id": account.pk, "status": account.status}, status=201)
+        try:
+            sync_exchange_account.apply_async(args=[account.pk], queue="maintenance")
+        except OperationalError as error:
+            failure = mark_sync_error(account.pk, "queue", error)
+            return JsonResponse(
+                {
+                    "id": account.pk,
+                    "label": account.label,
+                    "status": "error",
+                    "sync_queued": False,
+                    "action_required": failure["message"],
+                },
+                status=201,
+            )
+        return JsonResponse(
+            {
+                "id": account.pk,
+                "label": account.label,
+                "status": account.status,
+                "sync_queued": True,
+            },
+            status=201,
+        )
     except ValidationError as error:
         return JsonResponse({"error": error.messages}, status=400)
 
@@ -739,8 +760,15 @@ def api_exchange_sync(request, pk):
     account = get_object_or_404(UserExchangeAccount.objects.for_user(request.user), pk=pk)
     if account.status == "disabled":
         return JsonResponse({"error": "account_disabled"}, status=409)
-    sync_exchange_account.apply_async(args=[account.pk], queue="maintenance")
-    reconcile_one.apply_async(args=[account.pk], queue="maintenance", countdown=5)
+    mark_sync_pending(account)
+    try:
+        sync_exchange_account.apply_async(args=[account.pk], queue="maintenance")
+        reconcile_one.apply_async(args=[account.pk], queue="maintenance", countdown=5)
+    except OperationalError as error:
+        failure = mark_sync_error(account.pk, "queue", error)
+        return JsonResponse(
+            {"error": failure["message"], "code": failure["code"]}, status=503
+        )
     return JsonResponse({"queued": True, "account_id": account.pk}, status=202)
 
 
@@ -805,6 +833,9 @@ def _live_order_payload(item):
         "order_type": item.order_type,
         "amount": str(item.amount),
         "price": str(item.price) if item.price is not None else None,
+        "reference_price": (
+            str(item.reference_price) if item.reference_price is not None else None
+        ),
         "filled_amount": str(item.filled_amount),
         "average_price": str(item.average_price) if item.average_price is not None else None,
         "fee_amount": str(item.fee_amount) if item.fee_amount is not None else None,
@@ -862,8 +893,10 @@ def api_live_orders(request):
             {
                 "market": data.get("market"),
                 "side": data.get("side"),
+                "order_type": data.get("order_type", "limit"),
                 "amount": data.get("amount"),
                 "price": data.get("price"),
+                "reference_price": data.get("reference_price"),
                 "request_key": data.get("request_key") or str(uuid.uuid4()),
                 "confirmed": "on" if data.get("confirmed") is True else "",
             },
@@ -902,6 +935,7 @@ def api_manual_plans_ui(request):
                 "symbol": item.market.symbol,
                 "market_type": item.market.market_type,
                 "side": item.side,
+                "order_type": item.order_type,
                 "entry": str(item.entry_price),
                 "stop_loss": str(item.stop_loss),
                 "tp1": str(item.tp1),

@@ -19,6 +19,15 @@ from .adapters import (
 from .models import LiveSpotOrder, UserExchangeAccount
 from .security import get_account_credentials
 
+MARKET_ORDER_ADAPTERS = frozenset({"simulator", "lbank", "bitunix", "weex", "ourbit"})
+
+
+def supports_order_type(adapter_code, order_type):
+    """Fail closed for provider/order-type combinations not explicitly verified."""
+    if order_type == "limit":
+        return True
+    return order_type == "market" and adapter_code in MARKET_ORDER_ADAPTERS
+
 
 def _number(value, label):
     try:
@@ -30,10 +39,28 @@ def _number(value, label):
     return number
 
 
-def validate_live_spot_intent(account, market, *, side, amount, price, exclude_order_id=None):
+def validate_live_spot_intent(
+    account,
+    market,
+    *,
+    side,
+    amount,
+    price,
+    order_type="limit",
+    reference_price=None,
+    exclude_order_id=None,
+):
     """Re-check every invariant at the durable boundary, not only in HTML forms."""
     amount = _number(amount, "مقدار")
-    price = _number(price, "قیمت")
+    if not supports_order_type(account.exchange.adapter_code, order_type):
+        raise ValidationError("نوع سفارش برای این اتصال صرافی پشتیبانی نمی‌شود.")
+    if order_type == "limit":
+        price = _number(price, "قیمت Limit")
+        reference_price = price
+    else:
+        if price is not None:
+            raise ValidationError("سفارش Market نباید قیمت Limit داشته باشد.")
+        reference_price = _number(reference_price, "قیمت مرجع Market")
     if (
         account.environment != UserExchangeAccount.Environment.LIVE
         or account.status != UserExchangeAccount.Status.CONNECTED
@@ -55,13 +82,13 @@ def validate_live_spot_intent(account, market, *, side, amount, price, exclude_o
         raise ValidationError("Lot Step بازار همگام نشده است.")
     if amount % market.amount_step:
         raise ValidationError("مقدار سفارش با Lot Step صرافی سازگار نیست.")
-    if market.price_step and price % market.price_step:
+    if order_type == "limit" and market.price_step and price % market.price_step:
         raise ValidationError("قیمت سفارش با Tick Size صرافی سازگار نیست.")
     if market.min_amount and amount < market.min_amount:
         raise ValidationError("مقدار سفارش از حداقل بازار کمتر است.")
     if market.max_amount and amount > market.max_amount:
         raise ValidationError("مقدار سفارش از سقف بازار بیشتر است.")
-    notional = amount * price
+    notional = amount * reference_price
     if market.min_notional and notional < market.min_notional:
         raise ValidationError("ارزش سفارش از Min Notional صرافی کمتر است.")
 
@@ -88,7 +115,9 @@ def validate_live_spot_intent(account, market, *, side, amount, price, exclude_o
     )
     reserved = sum(
         (
-            o.amount * (o.price or Decimal(0)) * (1 + (o.market.taker_fee or Decimal(0)))
+            o.amount
+            * (o.reference_price or o.price or Decimal(0))
+            * (1 + (o.market.taker_fee or Decimal(0)))
             if side == "buy"
             else o.amount - o.filled_amount
             for o in pending.select_related("market")
@@ -97,7 +126,7 @@ def validate_live_spot_intent(account, market, *, side, amount, price, exclude_o
     )
     if balance.free_balance - reserved < required:
         raise ValidationError("موجودی آزاد برای این سفارش کافی نیست.")
-    return amount, price
+    return amount, price, reference_price
 
 
 @transaction.atomic
@@ -109,13 +138,19 @@ def queue_live_spot_order(owner, account, cleaned):
     )
     request_key = cleaned["request_key"]
     existing = LiveSpotOrder.objects.filter(owner=owner, request_key=request_key).first()
+    order_type = cleaned.get("order_type", "limit")
+    raw_price = cleaned.get("price")
+    raw_reference = cleaned.get("reference_price", raw_price)
     if existing:
         if (
             existing.account_id != account.pk
             or existing.market_id != cleaned["market"].pk
             or existing.side != cleaned["side"]
+            or existing.order_type != order_type
             or existing.amount != Decimal(str(cleaned["amount"]))
-            or existing.price != Decimal(str(cleaned["price"]))
+            or existing.price != (Decimal(str(raw_price)) if raw_price is not None else None)
+            or existing.reference_price
+            != (Decimal(str(raw_reference)) if raw_reference is not None else None)
         ):
             raise ValidationError("این شناسه قبلاً برای مشخصات سفارش دیگری استفاده شده است.")
         return existing, False
@@ -129,12 +164,14 @@ def queue_live_spot_order(owner, account, cleaned):
     ):
         raise ValidationError("ورود جدید این حساب در وضعیت سیستم متوقف شده است.")
     market = cleaned["market"]
-    amount, price = validate_live_spot_intent(
+    amount, price, reference_price = validate_live_spot_intent(
         account,
         market,
         side=cleaned["side"],
         amount=cleaned["amount"],
-        price=cleaned["price"],
+        price=raw_price,
+        order_type=order_type,
+        reference_price=raw_reference,
     )
     order = LiveSpotOrder.objects.create(
         owner=owner,
@@ -144,9 +181,10 @@ def queue_live_spot_order(owner, account, cleaned):
         source_plan=cleaned.get("source_plan"),
         client_order_id=f"cs-live-{owner.pk}-{request_key.hex[:24]}",
         side=cleaned["side"],
-        order_type="limit",
+        order_type=order_type,
         amount=amount,
         price=price,
+        reference_price=reference_price,
     )
     return order, True
 
@@ -220,6 +258,8 @@ def execute_live_spot_order(order_id):
                 side=order.side,
                 amount=order.amount,
                 price=order.price,
+                order_type=order.order_type,
+                reference_price=order.reference_price,
                 exclude_order_id=order.pk,
             )
         except ValidationError:
@@ -243,6 +283,25 @@ def execute_live_spot_order(order_id):
             or permission.can_withdraw is not False
         ):
             raise ValidationError("مجوز Read+Spot بدون برداشت دیگر تأیید نمی‌شود.")
+        if order.order_type == "market":
+            book = adapter.fetch_orderbook(order.market.symbol)
+            observed_at = book.get("observed_at")
+            if not observed_at or observed_at < timezone.now() - timedelta(seconds=30):
+                raise ValidationError("دفتر سفارش تازه برای Market در دسترس نیست.")
+            levels = book.get("asks" if order.side == "buy" else "bids") or []
+            if not levels:
+                raise ValidationError("قیمت قابل اجرا برای سفارش Market پیدا نشد.")
+            live_reference = levels[0][0]
+            validate_live_spot_intent(
+                order.account,
+                order.market,
+                side=order.side,
+                amount=order.amount,
+                price=None,
+                order_type="market",
+                reference_price=live_reference,
+                exclude_order_id=order.pk,
+            )
         if hasattr(order, "managed_exit"):
             matches = [
                 b
@@ -258,7 +317,7 @@ def execute_live_spot_order(order_id):
             side=order.side,
             order_type=order.order_type,
             amount=order.amount,
-            price=order.price,
+            price=order.price if order.order_type == "limit" else None,
         )
         _validate_receipt(order, receipt)
     except (

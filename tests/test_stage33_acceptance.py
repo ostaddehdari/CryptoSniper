@@ -196,17 +196,18 @@ def test_stage33_missing_real_fee_is_unknown_not_zero(client, stage33_account):
 
 
 @override_settings(
-    RELEASE_VERSION="0.33.0rc1",
-    SOURCE_REVISION="immutable-stage33-test",
+    RELEASE_VERSION="0.34.0rc1",
+    SOURCE_REVISION="immutable-stage34-test",
     DEPLOYMENT_ENVIRONMENT="production",
     LIVE_TRADING_ENABLED=False,
     LIVE_EXIT_MANAGEMENT_ENABLED=False,
 )
-def test_stage33_acceptance_is_honest_about_server_and_money_boundaries():
+def test_stage34_acceptance_is_honest_about_server_and_money_boundaries():
     report = base_product_acceptance()
-    assert report["stage"] == "S33"
-    assert report["external_validation"]["stage33_target_install"] == "pending_operator_run"
+    assert report["stage"] == "S34"
+    assert report["external_validation"]["stage34_target_install"] == "pending_operator_run"
     assert report["live_writes_runtime_enabled"] is False
     assert report["financial_truth"]["missing_exact_fee"] == "unknown_not_zero"
     assert report["product"]["telegram_full_auto"] == "simulator_only"
+    assert report["product"]["signal_parser_execution"] == "owner_review_required"
     assert "secret" not in str(report).lower()

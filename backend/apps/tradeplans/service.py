@@ -40,6 +40,7 @@ def create_draft(owner, data):
             raise ValidationError("شناسه فرم قبلاً با اطلاعات دیگری استفاده شده؛ فرم جدید بسازید.")
         return found, False
     preview = build_preview(data)
+    preview["order_type"] = data.get("order_type", "limit")
     preview["form_digest"] = digest
     preview["origin_signal_id"] = data["origin_signal"].pk if data.get("origin_signal") else None
     plan = TradePlan.objects.create(
@@ -52,6 +53,7 @@ def create_draft(owner, data):
         else "manual",
         origin_signal=data.get("origin_signal"),
         side=data["side"],
+        order_type=data.get("order_type", "limit"),
         entry_price=data["entry_price"],
         stop_loss=data["stop_loss"],
         tp1=data["tp1"],
@@ -76,6 +78,7 @@ def update_draft(plan, data, expected_revision):
     if locked.revision != expected_revision:
         raise ValidationError("نسخه فرم قدیمی است؛ صفحه را تازه‌سازی کنید.")
     payload = build_preview(data)
+    payload["order_type"] = data.get("order_type", "limit")
     payload["form_digest"] = _hash(data)
     payload["origin_signal_id"] = data["origin_signal"].pk if data.get("origin_signal") else None
     locked.origin_signal = data.get("origin_signal")
@@ -83,6 +86,7 @@ def update_draft(plan, data, expected_revision):
     locked.market = data["market"]
     for name in (
         "side",
+        "order_type",
         "entry_price",
         "stop_loss",
         "tp1",
@@ -115,6 +119,7 @@ def approve_plan(owner, plan_id, expected_revision):
         "account": plan.exchange_account,
         "market": plan.market,
         "side": plan.side,
+        "order_type": plan.order_type,
         "entry_price": plan.entry_price,
         "stop_loss": plan.stop_loss,
         "tp1": plan.tp1,
@@ -133,6 +138,7 @@ def approve_plan(owner, plan_id, expected_revision):
     verified = build_preview(data)
     verified["form_digest"] = plan.preview.get("form_digest")
     verified["origin_signal_id"] = plan.origin_signal_id
+    verified["order_type"] = plan.order_type
     plan.status = TradePlan.Status.READY
     plan.approved_snapshot = dict(verified)
     plan.approved_at = timezone.now()

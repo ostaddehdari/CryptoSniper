@@ -4,6 +4,7 @@ from decimal import Decimal, InvalidOperation
 from django import forms
 
 from apps.accounts.models import TradingPreferences
+from apps.exchanges.live_orders import supports_order_type
 from apps.exchanges.models import ExchangeMarket, UserExchangeAccount
 from apps.signals.models import Signal
 
@@ -16,6 +17,12 @@ class ManualTradeForm(forms.Form):
     source = forms.ChoiceField(label="منبع", choices=[("manual", "ورود دستی")])
     side = forms.ChoiceField(
         label="جهت معامله", choices=[("long", "Long / خرید"), ("short", "Short / فروش")]
+    )
+    order_type = forms.ChoiceField(
+        label="نوع سفارش",
+        choices=(("limit", "Limit"), ("market", "Market")),
+        initial="limit",
+        required=False,
     )
     entry_price = forms.DecimalField(
         label="قیمت ورود", max_digits=32, decimal_places=16, min_value=0.0000000000000001
@@ -109,6 +116,7 @@ class ManualTradeForm(forms.Form):
 
     def clean(self):
         data = super().clean()
+        data["order_type"] = data.get("order_type") or "limit"
         account, market = data.get("account"), data.get("market")
         if account and market:
             if account.exchange_id != market.exchange_id:
@@ -117,6 +125,10 @@ class ManualTradeForm(forms.Form):
                 self.add_error("market", "مجوز Margin این حساب تأیید نشده است.")
             if market.market_type == "spot" and data.get("side") != "long":
                 self.add_error("side", "Spot فقط خرید Long را پشتیبانی می‌کند.")
+            if not supports_order_type(account.exchange.adapter_code, data.get("order_type")):
+                self.add_error(
+                    "order_type", "این نوع سفارش در اتصال صرافی انتخاب‌شده پشتیبانی نمی‌شود."
+                )
         origin = data.get("origin_signal")
         if origin:
             if origin.status != Signal.Status.APPROVED:

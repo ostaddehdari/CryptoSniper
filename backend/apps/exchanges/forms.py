@@ -4,6 +4,7 @@ from decimal import Decimal
 from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.db import transaction
 
 from .models import Exchange, ExchangeMarket, UserExchangeAccount
 from .security import set_account_credentials
@@ -14,11 +15,6 @@ class ExchangeConnectionForm(forms.Form):
         label="صرافی",
         queryset=Exchange.objects.none(),
         widget=forms.Select(attrs={"class": "input"}),
-    )
-    label = forms.CharField(
-        label="نام این اتصال",
-        max_length=80,
-        widget=forms.TextInput(attrs={"class": "input", "placeholder": "مثلاً حساب اصلی یا تمرین"}),
     )
     environment = forms.ChoiceField(
         label="محیط",
@@ -89,23 +85,50 @@ class ExchangeConnectionForm(forms.Form):
             self.add_error("passphrase", "Passphrase برای WEEX لازم است.")
         elif not cleaned.get("no_withdrawal_confirmed"):
             self.add_error("no_withdrawal_confirmed", "کلید واقعی نباید مجوز برداشت داشته باشد.")
-        label = cleaned.get("label", "").strip()
-        if (
-            exchange
-            and UserExchangeAccount.objects.filter(
-                owner=self.owner, exchange=exchange, label=label
-            ).exists()
-        ):
-            self.add_error("label", "اتصالی با این نام قبلاً ساخته شده است.")
         return cleaned
 
-    def save(self):
-        account = UserExchangeAccount(
-            owner=self.owner,
-            exchange=self.cleaned_data["exchange"],
-            label=self.cleaned_data["label"].strip(),
-            environment=self.cleaned_data["environment"],
+    @staticmethod
+    def _next_label(owner, exchange):
+        used = set(
+            UserExchangeAccount.objects.filter(owner=owner, exchange=exchange).values_list(
+                "label", flat=True
+            )
         )
+        if exchange.name not in used:
+            return exchange.name
+        number = 2
+        while f"{exchange.name} {number}" in used:
+            number += 1
+        return f"{exchange.name} {number}"
+
+    @transaction.atomic
+    def save(self):
+        exchange = self.cleaned_data["exchange"]
+        account = (
+            UserExchangeAccount.objects.select_for_update()
+            .filter(
+                owner=self.owner,
+                exchange=exchange,
+                status=UserExchangeAccount.Status.DISABLED,
+            )
+            .order_by("-updated_at", "-pk")
+            .first()
+        )
+        if account is None:
+            account = UserExchangeAccount(
+                owner=self.owner,
+                exchange=exchange,
+                label=self._next_label(self.owner, exchange),
+            )
+        account.environment = self.cleaned_data["environment"]
+        account.status = UserExchangeAccount.Status.PENDING
+        account.trading_enabled = False
+        account.permissions = {}
+        account.last_verified_at = None
+        account.last_sync_at = None
+        account.last_error_code = ""
+        account.last_error_message = ""
+        account.last_error_at = None
         set_account_credentials(
             account,
             {
@@ -128,7 +151,18 @@ class LiveSpotOrderForm(forms.Form):
     market = forms.ModelChoiceField(label="بازار Spot", queryset=ExchangeMarket.objects.none())
     side = forms.ChoiceField(label="جهت", choices=(("buy", "خرید"), ("sell", "فروش")))
     amount = forms.DecimalField(label="مقدار ارز پایه", min_value=Decimal("0.0000000000000001"))
-    price = forms.DecimalField(label="قیمت Limit", min_value=Decimal("0.0000000000000001"))
+    order_type = forms.ChoiceField(
+        label="نوع سفارش",
+        choices=(("limit", "Limit"), ("market", "Market")),
+        initial="limit",
+        required=False,
+    )
+    price = forms.DecimalField(
+        label="قیمت Limit", min_value=Decimal("0.0000000000000001"), required=False
+    )
+    reference_price = forms.DecimalField(
+        label="قیمت مرجع Market", min_value=Decimal("0.0000000000000001"), required=False
+    )
     request_key = forms.UUIDField(widget=forms.HiddenInput)
     confirmed = forms.BooleanField(label="ریسک سفارش واقعی را تأیید می‌کنم")
 
@@ -139,7 +173,7 @@ class LiveSpotOrderForm(forms.Form):
             exchange=account.exchange, market_type="spot", active=True
         ).select_related("base_asset", "quote_asset")
         self.fields["market"].widget.attrs["class"] = "input"
-        for name in ("side", "amount", "price"):
+        for name in ("side", "order_type", "amount", "price", "reference_price"):
             self.fields[name].widget.attrs["class"] = "input"
         self.initial.setdefault("request_key", uuid.uuid4())
 
@@ -160,16 +194,24 @@ class LiveSpotOrderForm(forms.Form):
             raise ValidationError("مجوز برداشت باید صریحاً خاموش و توسط API گزارش شود.")
         market = cleaned.get("market")
         amount, price = cleaned.get("amount"), cleaned.get("price")
-        if not market or amount is None or price is None:
+        reference = cleaned.get("reference_price")
+        order_type = cleaned.get("order_type") or "limit"
+        cleaned["order_type"] = order_type
+        if order_type == "limit" and price is None:
+            self.add_error("price", "قیمت سفارش Limit الزامی است.")
+        if order_type == "market" and reference is None:
+            self.add_error("reference_price", "قیمت مرجع تازه برای Market الزامی است.")
+        if not market or amount is None or (price is None and reference is None):
             return cleaned
         if market.exchange_id != account.exchange_id:
             raise ValidationError("بازار با حساب صرافی هم‌خوان نیست.")
         if market.amount_step and amount % market.amount_step:
             self.add_error("amount", "مقدار با Lot Step صرافی سازگار نیست.")
-        if market.price_step and price % market.price_step:
+        if order_type == "limit" and market.price_step and price % market.price_step:
             self.add_error("price", "قیمت با Tick Size صرافی سازگار نیست.")
         if market.min_amount and amount < market.min_amount:
             self.add_error("amount", "مقدار از حداقل بازار کمتر است.")
-        if market.min_notional and amount * price < market.min_notional:
+        execution_reference = price if order_type == "limit" else reference
+        if market.min_notional and amount * execution_reference < market.min_notional:
             self.add_error("amount", "ارزش سفارش از Min Notional کمتر است.")
         return cleaned

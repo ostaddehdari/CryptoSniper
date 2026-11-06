@@ -12,10 +12,18 @@ from .adapters import (
     OrderStatus,
     PermissionReport,
     Ticker,
+    TradingFee,
     UnsupportedOperationError,
     register_adapter,
 )
-from .spot_base import SpotAdapterBase, canonical_symbol, decimal, observed_at, provider_symbol
+from .spot_base import (
+    SpotAdapterBase,
+    canonical_symbol,
+    decimal,
+    observed_at,
+    percentage_rate,
+    provider_symbol,
+)
 
 
 @register_adapter
@@ -53,10 +61,15 @@ class NobitexAdapter(SpotAdapterBase):
             raise InvalidProviderResponse("nobitex_rejected_request")
         return payload
 
+    def _profile(self):
+        payload = self._request("GET", "/users/profile", signed=True)
+        profile = payload.get("profile")
+        if not isinstance(profile, dict) or not isinstance(profile.get("options"), dict):
+            raise InvalidProviderResponse("nobitex_invalid_profile")
+        return profile
+
     def validate_credentials(self):
-        payload = self._request("GET", "/users/wallets/list", signed=True)
-        if not isinstance(payload.get("wallets"), list):
-            raise InvalidProviderResponse("nobitex_invalid_wallets")
+        profile = self._profile()
         sandbox = self.environment == "sandbox"
         no_withdrawal = sandbox or self.credentials.get("no_withdrawal_confirmed") == "true"
         return PermissionReport(
@@ -65,13 +78,22 @@ class NobitexAdapter(SpotAdapterBase):
             can_trade_margin=False,
             can_withdraw=False if no_withdrawal else None,
             ip_restricted=self.credentials.get("ip_restricted_confirmed") == "true",
-            account_reference=str(payload.get("profile", "nobitex")),
+            account_reference=str(profile.get("username", profile.get("id", "nobitex"))),
             notes=(
                 "Live write تا اثبات کلید بدون برداشت مسدود است."
                 if not no_withdrawal
                 else "محیط رسمی آزمایشی Nobitex؛ سرمایه واقعی استفاده نمی‌شود.",
             ),
         )
+
+    def fetch_trading_fees(self):
+        options = self._profile()["options"]
+        default = percentage_rate(options.get("fee"))
+        usdt = percentage_rate(options.get("feeUsdt", options.get("fee")))
+        return [
+            TradingFee("*", default, default),
+            TradingFee("*/USDT", usdt, usdt),
+        ]
 
     def fetch_balance(self):
         payload = self._request("GET", "/users/wallets/list", signed=True)
@@ -82,7 +104,7 @@ class NobitexAdapter(SpotAdapterBase):
             blocked = decimal(item.get("blockedBalance", 0), allow_zero=True)
             free = decimal(item.get("activeBalance", total - blocked), allow_zero=True)
             balance = Balance(str(item.get("currency", "")).upper(), free, blocked)
-            if balance.asset and balance.total:
+            if balance.asset and (balance.total or balance.asset == "USDT"):
                 result.append(balance)
         return result
 

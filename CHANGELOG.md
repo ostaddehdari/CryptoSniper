@@ -1,3 +1,17 @@
+# 0.34.0rc1 — Stage34 live exchange completion (2026-11-06)
+
+- Header now shows BTC/USDT and Nobitex USDT/Toman with provider timestamps and explicit live, stale or unavailable state.
+- Five-second bounded polling, tab-resume refresh, per-provider fallback and anti-stampede caching replace the old 15-second opaque widget.
+- A failed provider cannot turn a missing quote into zero or suppress the other provider; no live-order gate changed.
+- Manual selected-market quotes now refresh directly every five seconds and a fresh best ask/bid can be copied into the Limit Entry with one click.
+- Fix Loss refreshes free USDT from the selected exchange when older than 30 seconds, includes estimated entry/stop-exit fees, and writes the integer capital automatically.
+- Trailing SL copy now correctly says `SL → Entry after TP1`; true Market-order execution remains deferred to the provider-capability work.
+- Exchange connection names are automatic, and recreating a revoked LBank/Nobitex connection safely reuses the disabled record instead of colliding with its old name.
+- Exchange sync now persists actionable failures instead of leaving accounts pending, polls pending state in React, and refreshes permissions, account fees, market limits and balances together.
+- Versioned 20-sample FA/EN signal corpus passes 140 field assertions; completeness and extraction confidence are distinct from profitability and owner review is mandatory.
+- Manual Spot supports idempotent Limit and provider-gated Market orders; Market refreshes the orderbook before sending and never sends a fake Limit price.
+- Existing explicit external adoption, confirmed-fill inventory, partial/unknown handling, TP/SL/Trailing and restart recovery remain integrated; both live gates default off.
+
 # 0.33.0rc1 — Final owner acceptance (2026-10-27)
 
 - Provider-timestamped real balances, nullable unknown values and complete account revocation from system health.

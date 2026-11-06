@@ -1,4 +1,4 @@
-"""Machine-readable Stage33 hand-off contract without secret or money claims."""
+"""Machine-readable Stage34 hand-off contract without secret or money claims."""
 
 from django.conf import settings
 
@@ -9,14 +9,14 @@ def base_product_acceptance():
     engine = engine_readiness()
     live_switches = bool(settings.LIVE_TRADING_ENABLED and settings.LIVE_EXIT_MANAGEMENT_ENABLED)
     return {
-        "stage": "S33",
+        "stage": "S34",
         "release": settings.RELEASE_VERSION,
         "source_revision": settings.SOURCE_REVISION,
         "environment": settings.DEPLOYMENT_ENVIRONMENT,
         "status": "code_ready_operator_install_required",
         "live_writes_runtime_enabled": live_switches,
         # Backwards-compatible Stage24 fields. They describe the default safety
-        # posture, while the Stage33 fields below expose the newer live gates.
+        # posture, while the Stage34 fields below expose the newer live gates.
         "paper_only": not live_switches,
         "real_order_writes": live_switches,
         "accepted_inputs": ["manual", "smart_paste", "telegram_feature_gated"],
@@ -36,6 +36,8 @@ def base_product_acceptance():
             "telegram_full_auto": "simulator_only",
             "historical_telegram_trading": False,
             "futures": False,
+            "spot_order_types": ["limit", "market_provider_gated"],
+            "signal_parser_execution": "owner_review_required",
         },
         "financial_truth": {
             "real_report_source": "confirmed_exchange_receipts",
@@ -50,19 +52,20 @@ def base_product_acceptance():
         },
         "evidence": {
             "engine": engine,
-            "server_acceptance": "docs/acceptance/stage33-server.md",
+            "server_acceptance": "docs/reports/stage-34.md",
             "operator_guide": "docs/stage33-operator.fa.md",
-            "release_report": "docs/reports/stage-33.md",
+            "release_report": "docs/reports/stage-34.md",
         },
         "external_validation": {
             "stage32_target_install": "evidence_received",
-            "stage33_target_install": "pending_operator_run",
+            "stage33_target_install": "evidence_received",
+            "stage34_target_install": "pending_operator_run",
             "real_exchange_balance_comparison": "credentials_required",
             "telegram_real_account": "credentials_required",
             "ai_provider": "credentials_required",
         },
         "operator_checks_required": [
-            "install the immutable Stage33 package on the target host",
+            "install the immutable Stage34 package on the target host",
             "verify public HTTPS on mobile and desktop",
             "run backup plus isolated restore verification",
             "compare permitted exchange balances and fetched-at timestamps",

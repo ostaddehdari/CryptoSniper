@@ -1490,11 +1490,13 @@
       "pull_request": "https://github.com/ostaddehdari/CryptoSniper/pull/7"
     },
     "S34": {
-      "status": "partial",
+      "status": "code_complete_external_acceptance_partial",
       "completed_works": [
         "S34-W01",
         "S34-W02",
-        "S34-W03"
+        "S34-W03",
+        "S34-W04",
+        "S34-W05"
       ],
       "checks": [
         {
@@ -1524,16 +1526,35 @@
           "url": "https://github.com/ostaddehdari/CryptoSniper/actions/runs/42298174957",
           "tested_commit": "3dfd2cf0287fbf21128979bda7fe2152bd063660",
           "artifact_id": 13542787908
+        },
+        {
+          "name": "W04 versioned FA/EN signal corpus and review-only React flow",
+          "status": "passed_local",
+          "samples": 20,
+          "assertions_passed": 140,
+          "accuracy_percent": 100,
+          "react_tests_passed": 7
+        },
+        {
+          "name": "W05 provider-gated Market/Limit and management integration",
+          "status": "pending_exact_ci",
+          "react_tests_passed": 8,
+          "local_non_database_tests_passed": 6,
+          "failed_ci_run_id": 42302060163,
+          "failed_ci_reason": "format-only; corrected before final CI"
         }
       ],
       "commit_shas": [
-        "3dfd2cf0287fbf21128979bda7fe2152bd063660"
+        "3dfd2cf0287fbf21128979bda7fe2152bd063660",
+        "f86ab73ec1340d8e1766a9592403bb74714c36ef",
+        "2ab60efe25b01dd3f07342ff34c19bf51bde55f0"
       ],
       "blockers": [
-        "W04 and W05 are intentionally not started; one work is executed per user chat.",
+        "Exact PostgreSQL/Redis/worker/browser CI and immutable Stage34 release are pending.",
+        "Stage34 package is not yet installed on the target VPS.",
         "No real-provider credential acceptance or live-money authorization was performed."
       ],
-      "implementation": "W01 through W03 are code-complete: live header quotes, direct manual quote and Fix Loss sizing, plus automatic exchange naming, safe reconnection, durable actionable sync failures and account-level permission/fee/balance refresh. Stage34 remains partial."
+      "implementation": "All five S34 works are code-complete: live quotes, direct Entry and Fix Loss, resilient exchange sync, measurable review-only signal parsing, and provider-gated idempotent Spot Market/Limit integrated with explicit TP/SL/Trailing management. External CI, release, target install and live-provider authorization remain separately evidenced."
     }
   }
 }

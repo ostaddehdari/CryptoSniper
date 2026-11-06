@@ -150,3 +150,11 @@ jobs:
       contents: write
       actions: read
     uses: ./.github/workflows/release-stage33-react.yml
+
+  release-stage34:
+    needs: foundation
+    if: github.event_name == 'push' && github.ref == 'refs/heads/stage34-live-exchange' && contains(github.event.head_commit.message, 'S34-RELEASE')
+    permissions:
+      contents: write
+      actions: read
+    uses: ./.github/workflows/release-stage34-react.yml

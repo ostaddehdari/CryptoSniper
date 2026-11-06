@@ -14,9 +14,7 @@ def test_stage34_bilingual_corpus_is_reproducible_and_review_only():
 
 
 def test_stage34_single_line_persian_signal_extracts_execution_fields():
-    parsed = assess(
-        extract("BTCIRT خرید ورود 4500000000 هدف 4700000000 حد ضرر 4300000000")
-    )
+    parsed = assess(extract("BTCIRT خرید ورود 4500000000 هدف 4700000000 حد ضرر 4300000000"))
     assert parsed["pair"] == "BTC/IRT"
     assert parsed["side"] == "long"
     assert parsed["entry"] == "4500000000"

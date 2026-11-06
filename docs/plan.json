@@ -1648,7 +1648,7 @@
           "title": "تحلیل سیگنال قابل سنجش",
           "deliverables": "corpus فارسی/انگلیسی، استخراج ساختاریافته، confidence/completeness و مرور نتیجه مبهم.",
           "acceptance": "کیفیت نسخه‌دار گزارش و خروجی نامعتبر از سفارش واقعی جدا بماند.",
-          "status": "todo"
+          "status": "done"
         },
         {
           "id": "S34-W05",
@@ -1656,7 +1656,7 @@
           "title": "سفارش و مدیریت معامله صرافی",
           "deliverables": "Spot Market/Limit، idempotency، sync و adoption، TP/SL/Trailing و recovery.",
           "acceptance": "partial fill، unknown، concurrency و restart آزموده شوند؛ Live پیش‌فرض خاموش بماند.",
-          "status": "todo"
+          "status": "done"
         }
       ]
     }

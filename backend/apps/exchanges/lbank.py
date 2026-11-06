@@ -175,9 +175,9 @@ class LbankAdapter(SpotAdapterBase):
                 item.get("symbol", self._provider_symbol(fallback.get("symbol", "")))
             ).replace("_", ""),
             "side": raw_side.split("_", 1)[0],
-            "type": "market" if raw_side.endswith("_market") else fallback.get(
-                "order_type", "limit"
-            ),
+            "type": "market"
+            if raw_side.endswith("_market")
+            else fallback.get("order_type", "limit"),
             "quantity": item.get("amount", item.get("origQty", fallback.get("amount"))),
             "price": item.get("price", fallback.get("price")),
             "executedQty": item.get("deal_amount", item.get("accAmt", 0)),

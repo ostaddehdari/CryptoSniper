@@ -48,3 +48,12 @@ test('Stage34 exchange connections use automatic names and actionable sync state
   assert.match(source,/last_error_message/);
   assert.match(source,/pendingIds/);
 });
+test('Stage34 signal analysis exposes measurable fields and mandatory review',()=>{
+  const source=readFileSync(new URL('../src/main.jsx',import.meta.url),'utf8');
+  assert.match(source,/کامل‌بودن فیلدها/);
+  assert.match(source,/اعتماد استخراج/);
+  assert.match(source,/نه احتمال سود/);
+  assert.match(source,/تأیید مالک الزامی است/);
+  assert.match(source,/خروجی Parser یا AI مستقیماً سفارش واقعی نمی‌سازد/);
+  assert.match(source,/بازبینی و تکمیل در صندوق سیگنال/);
+});

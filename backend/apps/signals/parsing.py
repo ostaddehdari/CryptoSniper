@@ -26,6 +26,8 @@ def assess(parsed):
         warnings.append("متن به Futures/Perpetual اشاره دارد؛ تبدیل ضمنی به Margin ممنوع است.")
     if len(parsed["all_targets"]) > 3:
         warnings.append("اهداف مازاد فقط در اصل استخراج محفوظ‌اند؛ سه هدف نخست قابل اجرا هستند.")
+    if len(parsed.get("pairs", [])) > 1:
+        warnings.append("بیش از یک جفت‌ارز در متن وجود دارد؛ انتخاب دستی لازم است.")
     if parsed["entry"] and parsed["stop_loss"] and parsed["side"] and parsed["execution_targets"]:
         entry = Decimal(parsed["entry"])
         stop = Decimal(parsed["stop_loss"])
@@ -38,27 +40,38 @@ def assess(parsed):
             warnings.append("ترتیب Entry/SL/TP با جهت سیگنال ناسازگار است.")
         if len(targets) != len(set(targets)):
             warnings.append("TP تکراری است.")
-    coverage = sum(bool(parsed[key]) for key in ("pair", "side", "entry", "stop_loss"))
-    coverage += int(bool(parsed["all_targets"]))
-    confidence = max(0, (coverage * 20) - (10 * int(parsed["futures_mentioned"])))
+    required = {
+        "pair": bool(parsed.get("pair")),
+        "side": bool(parsed.get("side")),
+        "entry": bool(parsed.get("entry")),
+        "stop_loss": bool(parsed.get("stop_loss")),
+        "targets": bool(parsed.get("all_targets")),
+    }
+    completeness = sum(required.values()) * 20
+    ambiguity_penalty = 10 * int(bool(parsed.get("entry_range")))
+    ambiguity_penalty += 15 * int(len(parsed.get("pairs", [])) > 1)
+    ambiguity_penalty += 10 * int(
+        len(parsed.get("all_targets", [])) != len(set(parsed.get("all_targets", [])))
+    )
+    confidence = max(0, min(100, completeness - ambiguity_penalty))
+    non_blocking = {"اهداف مازاد فقط در اصل استخراج محفوظ‌اند؛ سه هدف نخست قابل اجرا هستند."}
     validation = {
-        "complete": not any(
-            message
-            for message in warnings
-            if message
-            not in {"اهداف مازاد فقط در اصل استخراج محفوظ‌اند؛ سه هدف نخست قابل اجرا هستند."}
-        ),
+        "complete": not any(message for message in warnings if message not in non_blocking),
         "blocked": bool(parsed["futures_mentioned"]),
         "issues": warnings,
+        "required_fields": required,
     }
     band = "high" if confidence >= 80 else "medium" if confidence >= 50 else "low"
     return {
         **parsed,
         "technical_confidence": confidence,
+        "completeness_percent": completeness,
         "confidence_band": band,
         "validation": validation,
         "warnings": warnings,
         "review_required": True,
+        "execution_safe": False,
+        "safety_reason": "owner_review_required",
         "entry_policy": "explicit_user_review_only",
         "trailing_defaults": {
             "trailing_sl": True,

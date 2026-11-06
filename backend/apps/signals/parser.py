@@ -5,25 +5,31 @@ from decimal import Decimal, InvalidOperation
 
 from .normalization import normalize
 
-PARSER_VERSION = "rules-v1"
-NUMBER = r"([0-9]+(?:[.,][0-9]+)?)"
+PARSER_VERSION = "rules-v2"
+NUMBER = r"((?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\.[0-9]+)?|\.[0-9]+)"
 PAIR = re.compile(r"(?<![A-Z0-9])(?:#)?([A-Z]{2,12})\s*[/_-]\s*([A-Z]{2,12})(?![A-Z0-9])", re.I)
-HASHTAG = re.compile(r"(?<!\w)#([A-Z]{3,15})\s*(?:USDT|USD)\b", re.I)
-SIDE_LONG = re.compile(r"\b(LONG|BUY)\b|\b(خرید|لانگ)\b", re.I)
-SIDE_SHORT = re.compile(r"\b(SHORT|SELL)\b|\b(فروش|شورت)\b", re.I)
+COMPACT_PAIR = re.compile(
+    r"(?<![A-Z0-9])(?:#|\$)?([A-Z0-9]{2,12})(USDT|USDC|USD|BTC|ETH|IRT|RLS)(?![A-Z0-9])",
+    re.I,
+)
+SIDE_LONG = re.compile(r"\b(LONG|BUY)\b|(?:خرید|لانگ|صعودی)", re.I)
+SIDE_SHORT = re.compile(r"\b(SHORT|SELL)\b|(?:فروش|شورت|نزولی)", re.I)
 FUTURES = re.compile(r"\b(FUTURES?|PERPETUAL|PERP)\b|\b(فیوچرز|دائمی)\b", re.I)
 ENTRY = re.compile(
-    r"\b(?:ENTRY(?:\s+ZONE|\s+PRICE)?|ENTER|BUY\s+ZONE)\b|(?:ورود|نقطه\s+ورود)", re.I
+    r"\b(?:ENTRY(?:\s+(?:ZONE|PRICE|POINT))?|ENTER|BUY\s+ZONE)\b|"
+    r"(?:ورودی|ورود|نقطه\s+ورود|محدوده\s+خرید|قیمت\s+ورود)",
+    re.I,
 )
-STOP = re.compile(r"\b(?:STOP\s*LOSS|STOPLOSS|SL)\b|(?:حد\s*ضرر|استاپ)", re.I)
+STOP = re.compile(r"\b(?:STOP\s*LOSS|STOPLOSS|S\s*/\s*L|SL)\b|(?:حد\s*ضرر|استاپ)", re.I)
 TARGET = re.compile(
-    r"\b(?:TARGETS?|TAKE\s*PROFIT|TP\s*[1-9]?)\b|(?:اهداف?|هدف\s*\d*|تارگت\s*\d*)", re.I
+    r"\b(?:TARGETS?|TAKE\s*PROFIT|T\s*/\s*P|TP(?:[1-9]\b|\s+[1-9](?=\s*[:=-]))?)\b|"
+    r"(?:اهداف|هدف(?:\s+[1-9](?=\s*[:=-]))?|تارگت(?:\s+[1-9](?=\s*[:=-]))?|سود(?:\s+[1-9](?=\s*[:=-]))?)",
+    re.I,
 )
 LEVERAGE = re.compile(
     r"(?:\bLEV(?:ERAGE)?\b|اهرم)\s*[:=]?\s*(?:X\s*)?([0-9]+(?:[.,][0-9]+)?)\s*X?", re.I
 )
-ROW_NUMBERS = re.compile(r"(?<![A-Z0-9])\d+(?:[.,]\d+)?(?![A-Z0-9])")
-LABEL_NUMBER = re.compile(r"^(?:\s*(?:TP|TARGET|هدف|تارگت)\s*\d+\s*[:=.)-]\s*)(.*)$", re.I)
+ROW_NUMBERS = re.compile(rf"(?<![A-Z0-9]){NUMBER}(?![A-Z0-9])")
 
 
 def _decimal(text):
@@ -36,12 +42,26 @@ def _decimal(text):
         return None
 
 
+def _labeled_segments(line):
+    matches = []
+    for kind, pattern in (("entry", ENTRY), ("sl", STOP), ("tp", TARGET)):
+        matches.extend((match.start(), match.end(), kind) for match in pattern.finditer(line))
+    matches.sort()
+    for index, (_, end, kind) in enumerate(matches):
+        next_start = matches[index + 1][0] if index + 1 < len(matches) else len(line)
+        yield kind, line[end:next_start]
+
+
 def _row_prices(line):
     # Strip hashtags/pairs and label ordinal such as TP1, then extract prices.
     stripped = PAIR.sub(" ", line)
-    stripped = re.sub(r"(?i)\b(?:TP|TARGET|هدف|تارگت)\s*\d+(?!\d)", " ", stripped)
+    stripped = re.sub(
+        r"(?i)\b(?:TP|TARGET)\s*[1-9](?=\s*[:=-])|(?:هدف|تارگت)\s+[1-9](?=\s*[:=-])",
+        " ",
+        stripped,
+    )
     stripped = re.sub(r"(?i)\b(?:LEV(?:ERAGE)?|اهرم)\s*[:=]?\s*\d+(?:\.\d+)?\s*X?", " ", stripped)
-    return [v for x in ROW_NUMBERS.findall(stripped) if (v := _decimal(x))]
+    return [v for match in ROW_NUMBERS.finditer(stripped) if (v := _decimal(match.group(1)))]
 
 
 def extract(raw: str) -> dict:
@@ -51,11 +71,10 @@ def extract(raw: str) -> dict:
         pair = f"{base.upper()}/{quote.upper()}"
         if pair not in pairs:
             pairs.append(pair)
-    if not pairs:
-        for base in HASHTAG.findall(cleaned):
-            pair = f"{base.upper()}/USDT"
-            if pair not in pairs:
-                pairs.append(pair)
+    for base, quote in COMPACT_PAIR.findall(PAIR.sub(" ", cleaned)):
+        pair = f"{base.upper()}/{quote.upper()}"
+        if pair not in pairs:
+            pairs.append(pair)
     long = bool(SIDE_LONG.search(cleaned))
     short = bool(SIDE_SHORT.search(cleaned))
     side = "long" if long and not short else "short" if short and not long else None
@@ -69,15 +88,17 @@ def extract(raw: str) -> dict:
         found_lev = LEVERAGE.search(line)
         if found_lev:
             leverage = _decimal(found_lev.group(1))
-        if ENTRY.search(line):
-            mode = "entry"
-            entry_values.extend(_row_prices(line))
-        elif STOP.search(line):
-            mode = "sl"
-            stops.extend(_row_prices(line))
-        elif TARGET.search(line):
-            mode = "tp"
-            targets.extend(_row_prices(line))
+        segments = list(_labeled_segments(line))
+        if segments:
+            for kind, segment in segments:
+                values = _row_prices(segment)
+                if kind == "entry":
+                    entry_values.extend(values)
+                elif kind == "sl":
+                    stops.extend(values)
+                else:
+                    targets.extend(values)
+            mode = segments[-1][0]
         elif mode == "tp" and re.match(r"^\s*(?:\d+[.)-]|[-•])\s+", line):
             targets.extend(_row_prices(line))
         elif mode == "entry" and re.match(r"^\s*(?:-|TO\b)", line, re.I):

@@ -23,9 +23,11 @@ from test_tradeplans_stage05 import setup_paper
 
 def test_stage32_labeled_smart_paste_quality_is_reproducible():
     report = parser_quality_report()
-    assert report["corpus_version"] == "stage32-v1"
-    assert report["samples"] >= 6
+    assert report["parser_version"] == "rules-v2"
+    assert report["corpus_version"] == "stage34-v2"
+    assert report["samples"] >= 20
     assert report["accuracy_percent"] == 100
+    assert report["owner_review_enforced"] is True
     assert report["meaning"] == "field_extraction_quality_not_profit_probability"
 
 

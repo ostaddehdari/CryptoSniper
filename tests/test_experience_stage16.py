@@ -1,4 +1,4 @@
-"""Stage16 final responsive shell, PWA and accessibility checks."""
+"""Responsive, PWA and accessibility checks against the Stage24 accepted shell."""
 
 from pathlib import Path
 
@@ -23,7 +23,9 @@ def test_login_and_primary_mobile_navigation(client, django_user_model):
 
     watchlist = client.get(reverse("watchlists"))
     assert watchlist.status_code == 200
-    assert b"mobile-primary-nav" in watchlist.content
+    assert b"data-cornix-shell" in watchlist.content
+    assert b'class="s24-nav"' in watchlist.content
+    assert reverse("app-shell").encode() + b"#/newtrade" in watchlist.content
 
 
 @pytest.mark.django_db
@@ -35,7 +37,8 @@ def test_manual_and_smart_paste_have_keyboard_safe_preserved_forms(client, djang
     for response in (manual, smart):
         assert response.status_code == 200
         assert b"data-preserve-form" in response.content
-        assert b"form-submit-bar" in response.content
+        assert b'class="s24-trade-form"' in response.content
+        assert b'<button class="s24-button primary' in response.content
         assert b"form-draft.js" in response.content
     assert b'inputmode="decimal"' in manual.content
     assert b"localStorage" not in smart.content
@@ -48,9 +51,9 @@ def test_trade_catalogue_and_detail_keep_vital_mobile_fields(client, django_user
     client.force_login(user)
     catalogue = client.get(reverse("paper-trades"))
     detail = client.get(reverse("paper-trade-detail", args=[trade.pk]))
-    assert b"trade-desktop-table" in catalogue.content
-    assert b"trade-card-grid" in catalogue.content
-    for value in (b"trade-facts", b"trade-timeline", b"Trailing", b"P/L"):
+    assert b'class="s24-table-scroll"' in catalogue.content
+    assert b'<table class="s24-table"' in catalogue.content
+    for value in (b"s24-detail-facts", b"s24-trade-detail", b"Trailing", b"P/L"):
         assert value in detail.content
     assert trade.market.get_market_type_display().encode() in detail.content
 
@@ -64,6 +67,8 @@ def test_settings_routes_are_linked_and_telegram_stays_deferred(client, django_u
     client.force_login(user)
     page = client.get(reverse("source-settings"))
     assert page.status_code == 200
+    profile = client.get(reverse("profile"))
+    assert profile.status_code == 200
     for route in (
         "profile",
         "sessions",
@@ -74,7 +79,8 @@ def test_settings_routes_are_linked_and_telegram_stays_deferred(client, django_u
         "reports",
         "audit-events",
     ):
-        assert reverse(route).encode() in page.content
+        assert reverse(route).encode() in page.content + profile.content
+    assert reverse("telegram-settings").encode() in page.content
     client.post(reverse("source-settings"), {"source_id": telegram.pk, "enabled": "on"})
     telegram.refresh_from_db()
     assert telegram.enabled is False

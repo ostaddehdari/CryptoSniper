@@ -1,5 +1,7 @@
 # برنامه اجرایی CryptoSniper
 
+> ادامه پس از بازسازی S24 در [نقشه مرکزی deployment-center](https://github.com/ostaddehdari/deployment-center/blob/main/projects/cryptosniper/roadmap.md) نگهداری می‌شود. معیار Paper و تصمیم‌های باز S25 در [سند پذیرش](decisions/stage-25-paper-acceptance.md) ثبت شده‌اند؛ جدول تاریخی زیر با شناسه‌های S01–S23 حفظ شده است.
+
 نسخه ۱٫۲٫۰ — ۲۳ اکتبر ۲۰۲۶. **۲۳ استیج، هر استیج ۵ ورک؛ مجموع ۱۱۵ ورک.**
 
 واحد اجرای درخواستی کاربر یک استیج کامل است. این سند برنامه اجرایی است؛ وضعیت پیاده‌سازی در `progress.json` ثبت می‌شود. استیج‌های ۱ و ۲ تکمیل شده‌اند و گزارش‌های تحویل در پوشه `reports` در دسترس‌اند.

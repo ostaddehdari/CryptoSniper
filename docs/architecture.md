@@ -60,4 +60,4 @@ Mode هر منبع Manual/Semi-Auto/Full-Auto است. Full-Auto پیش‌فرض 
 
 شبیه‌ساز، sandbox و live نتایج جدا دارند. نبود sandbox رسمی یا credentials باید شفاف باشد. هیچ معیار performance، اتصال واقعی یا استقرار روی هاست بدون شواهد انجام‌شده گزارش نشود. نسخه پایه در S20 با Manual/Smart Paste پذیرفته می‌شود؛ پذیرش Telethon و AI در آخر S21-W05 انجام می‌شود.
 
-قرارداد پذیرش Paper و تصمیم‌های باز مالک برای ادامه پس از S24 در [ثبت تصمیم S25](decisions/stage-25-paper-acceptance.md) آمده است. اعداد SLO، p95، ریسک و RPO/RTO تا تصویب صریح مقدار production ندارند.
+قرارداد پذیرش Paper و تصمیم‌های باز مالک برای ادامه پس از S24 در [ثبت تصمیم S25](decisions/stage-25-paper-acceptance.md) آمده است. ممیزی schema، مراحل backfill و rollback و تمرین بازیابی مستقل در [قرارداد مهاجرت S25](decisions/stage-25-schema-and-recovery.md) ثبت شده‌اند. اعداد SLO، p95، ریسک و RPO/RTO تا تصویب صریح مقدار production ندارند.

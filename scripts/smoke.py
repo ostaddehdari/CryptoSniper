@@ -173,7 +173,7 @@ def main():
                 page.get_by_role("heading", name="اتصال‌ها و حساب‌های صرافی").wait_for()
                 page.screenshot(path=str(artifacts / "exchanges-empty-desktop.png"), full_page=True)
                 page.get_by_role("link", name="افزودن اولین اتصال").click()
-                page.get_by_label("صرافی").select_option(label="شبیه‌ساز CryptoSniper")
+                page.locator("#id_exchange").select_option(label="شبیه‌ساز CryptoSniper")
                 page.get_by_label("نام این اتصال").fill("حساب تمرین مرورگر")
                 page.get_by_role("button", name="ذخیره و بررسی امن اتصال").click()
                 page.wait_for_url("**/exchanges/*/")

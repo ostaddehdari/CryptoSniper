@@ -1,7 +1,7 @@
 {% extends 'shell.html' %}{% block title %}گزارش عملکرد | CryptoSniper{% endblock %}{% block content %}
 <section class="s24-page">
   <div class="s24-section-head">
-    <div><h1>عملکرد و هزینه‌ها</h1><p>گزارش مبتنی بر Fill واقعی؛ سود، کارمزد و هزینه Margin بدون حدس.</p></div>
+    <div><h1>عملکرد و هزینه‌ها</h1><p>گزارش مبتنی بر Fill واقعی؛ سود، کارمزد و هزینه Margin بدون حدس. بازه‌ها بر پایهٔ زمان حساب: <b dir="ltr">{{ request.user.timezone }}</b></p></div>
     <div class="s24-actions"><a class="s24-button" href="{% url 'report-csv' %}?{{ export_query }}">خروجی CSV</a><a class="s24-button" href="{% url 'report-chart' %}?{{ export_query }}">تصویر SVG نمودار</a></div>
   </div>
 

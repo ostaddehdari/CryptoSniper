@@ -96,6 +96,11 @@
   .s24-tickers{flex:1}
   .s24-ticker{flex:1;min-width:0}
 }
+@media(min-width:761px) and (max-width:1180px){
+  .s24-topbar{height:auto;min-height:78px;display:grid;gap:8px;padding:10px 16px}
+  .s24-tabs{max-width:100%;overflow:auto}
+  .s24-topbar-right{min-width:0;max-width:100%}
+}
 @media(max-width:760px){
   .s24-topbar-right{display:grid;gap:8px}
   .s24-tickers{width:100%}

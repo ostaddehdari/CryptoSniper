@@ -10,6 +10,7 @@ __pycache__/
 staticfiles/
 media/
 .runtime/
+dist/
 *.log
 celerybeat-schedule*
 test-results/

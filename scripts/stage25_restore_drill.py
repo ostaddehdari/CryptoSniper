@@ -2,6 +2,7 @@
 
 import os
 import secrets
+import sys
 import tempfile
 from pathlib import Path
 
@@ -9,7 +10,10 @@ import django
 import psycopg
 from psycopg import sql
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.test")
+if os.environ.get("GITHUB_ACTIONS") != "true":
+    raise SystemExit("The restore drill only runs in ephemeral GitHub Actions CI.")
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
+os.environ["DJANGO_SETTINGS_MODULE"] = "config.settings.test"
 django.setup()
 
 from apps.accounts.models import AuditLog  # noqa: E402
@@ -21,6 +25,8 @@ TARGET = "cryptosniper_restore_stage25_ci"
 
 
 def main():
+    if settings.DATABASES["default"]["NAME"] != "cryptosniper_ci":
+        raise SystemExit("The restore drill requires the disposable CI database.")
     admin_url = os.environ["HOSTING_RESTORE_ADMIN_URL"]
     passphrase = secrets.token_urlsafe(32)
     marker = secrets.token_hex(16)

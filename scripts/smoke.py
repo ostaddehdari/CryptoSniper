@@ -493,7 +493,8 @@ def main():
                 page.set_viewport_size({"width": 390, "height": 844})
                 page.locator(".s24-sidebar").get_by_role("link", name="وضعیت سیستم").click()
                 page.wait_for_url("**/system/")
-                page.get_by_text("ذخیره نتایج", exact=True).wait_for()
+                page.get_by_role("heading", name="وضعیت سرویس‌ها").wait_for()
+                page.get_by_text("ماتریس آمادگی موتور", exact=True).wait_for()
                 page.screenshot(path=str(artifacts / "system-mobile.png"), full_page=True)
                 with page.expect_response(
                     lambda res: res.url == base + "/system/probe/" and res.request.method == "POST"

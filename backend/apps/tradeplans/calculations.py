@@ -37,10 +37,14 @@ def build_preview(data, now=None):
     """Data are Django-form-cleaned Decimals + owner-scoped account and market objects."""
     now = now or timezone.now()
     market, account = data["market"], data["account"]
+    if data.get("entry_range") is not None:
+        raise ValidationError("بازه ورود مبهم است؛ قیمت Entry یکتا را پس از بازبینی تعیین کنید.")
     if market.exchange_id != account.exchange_id:
         raise ValidationError("حساب صرافی و بازار هم‌خوان نیستند.")
     if not market.active or account.status not in {"connected", "restricted"}:
         raise ValidationError("بازار یا اتصال صرافی فعال نیست.")
+    if not market.synced_at or market.synced_at < now - timedelta(minutes=15):
+        raise ValidationError("اطلاعات بازار تازه نیست؛ پیش از تأیید دوباره همگام‌سازی کنید.")
     if account.permissions.get("can_read") is not True:
         raise ValidationError("دسترسی خواندن موجودی تأیید نشده است.")
     side = data["side"]
@@ -129,6 +133,8 @@ def build_preview(data, now=None):
         }
         for i, tp in enumerate(targets)
     ]
+    if sum(percentage, ZERO) != HUNDRED:
+        raise ValidationError("سهم هدف‌ها باید دقیقاً ۱۰۰٪ باشد.")
     risk_fraction = abs((sl - entry) / entry) * HUNDRED
     return {
         "schema": "cryptosniper.tradeplan.preview.v1",

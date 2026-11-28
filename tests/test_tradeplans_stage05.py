@@ -101,6 +101,44 @@ def test_client_idempotency_and_immutable_snapshot(client, django_user_model):
 
 
 @pytest.mark.django_db
+def test_target_allocation_and_approval_rechecks_market(django_user_model):
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    user = django_user_model.objects.create_user(username="s26-preview")
+    account, market = setup_paper(user)
+    for extra, expected in (
+        ({}, ["100"]),
+        ({"tp2": "72000"}, ["10", "90"]),
+        ({"tp2": "72000", "tp3": "74000"}, ["10", "10", "80"]),
+    ):
+        form = ManualTradeForm(user, payload(account, market, **extra))
+        assert form.is_valid(), form.errors
+        preview = build_preview(form.cleaned_data)
+        shares = [target["share_percent"] for target in preview["targets"]]
+        assert shares == expected
+        assert sum(map(Decimal, shares), Decimal(0)) == Decimal(100)
+        if len(expected) == 3:
+            plan, _ = create_draft(user, form.cleaned_data)
+    snapshot_before = dict(plan.preview)
+    market.synced_at = timezone.now() - timedelta(minutes=16)
+    market.save(update_fields=["synced_at"])
+    with pytest.raises(ValidationError):
+        approve_plan(user, plan.pk, plan.revision)
+    plan.refresh_from_db()
+    assert plan.status == "draft" and not plan.approved_snapshot
+    assert plan.preview == snapshot_before
+    market.synced_at = timezone.now()
+    market.save(update_fields=["synced_at"])
+    approved = approve_plan(user, plan.pk, plan.revision)
+    assert approved.approved_snapshot["targets"] == snapshot_before["targets"]
+    assert approved.approved_snapshot["execution_enabled"] is False
+    with pytest.raises(ValidationError):
+        build_preview({**form.cleaned_data, "entry_range": ["65000", "66000"]})
+
+
+@pytest.mark.django_db
 def test_manual_private_pages_and_csrf_and_rest(client, django_user_model):
     owner = django_user_model.objects.create_user(username="manual-api")
     stranger = django_user_model.objects.create_user(username="manual-other")

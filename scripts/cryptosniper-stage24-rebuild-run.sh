@@ -25,6 +25,7 @@ STAGE24_R5_SOURCE_COMMIT=5e7aa3f3ede973448035d75566a230636a61851e
 STAGE24_R6_SOURCE_COMMIT=292fadb628de3476edc2009708d63fe29145c61f
 STAGE24_R7_SOURCE_COMMIT=515920691b168139a21dee0014e5cf31e35f4ab0
 STAGE24_R8_SOURCE_COMMIT=3596a7f6c391b5203b5af02aa54a32f40bec078b
+HISTORICAL_STAGE34_SOURCE_COMMIT=7ce55a59b07519ba84a948058fd4ee84942ba414
 STAGE23_SOURCE_COMMIT=657071e06c6f08b67298835972a153f8f547bc81
 STAGE22_SOURCE_COMMIT=cfce4d3a19f0bc2df56aae15175b80255a940f51
 STAGE21_SOURCE_COMMIT=e315e1983bb916ed8867a721b583e9b2c55eb93a
@@ -115,7 +116,7 @@ if [[ ${1:-} == --check ]]; then CHECK_ONLY=true; shift; fi
 [[ $# -le 1 ]] || fail 'Usage: bash run.sh [--check] [package.zip]'
 ARCHIVE=${1:-/tmp/CryptoSniper-Stage25-v0.24.0rc2.zip}
 export SERVER_HOST URL_PREFIX WEB_PORT PG_PORT REDIS_PORT SOURCE_COMMIT
-export PREVIOUS_STAGE24_SOURCE_COMMIT STAGE24_R5_SOURCE_COMMIT STAGE24_R6_SOURCE_COMMIT STAGE24_R7_SOURCE_COMMIT STAGE24_R8_SOURCE_COMMIT STAGE23_SOURCE_COMMIT STAGE22_SOURCE_COMMIT STAGE22_ARCHIVE_SHA256 STAGE21_SOURCE_COMMIT STAGE21_ARCHIVE_SHA256 STAGE20_SOURCE_COMMIT STAGE20_ARCHIVE_SHA256 STAGE18_SOURCE_COMMIT STAGE18_ARCHIVE_SHA256 STAGE16_SOURCE_COMMIT STAGE16_ARCHIVE_SHA256 STAGE14_SOURCE_COMMIT STAGE14_ARCHIVE_SHA256 STAGE10_SOURCE_COMMIT STAGE10_ARCHIVE_SHA256 STAGE08_SOURCE_COMMIT STAGE08_ARCHIVE_SHA256 PREVIOUS_SOURCE_COMMIT STAGE06_SOURCE_COMMIT STAGE05_SOURCE_COMMIT STAGE04_SOURCE_COMMIT STAGE03_SOURCE_COMMIT STAGE01_SOURCE_COMMIT STAGE02_SOURCE_COMMIT PREVIOUS_ARCHIVE_SHA256 STAGE06_ARCHIVE_SHA256 STAGE05_ARCHIVE_SHA256 STAGE04_ARCHIVE_SHA256 STAGE03_ARCHIVE_SHA256 STAGE02_ARCHIVE_SHA256 STAGE01_ARCHIVE_SHA256 OLDER_STAGE03_ARCHIVE_SHA256 OFFICIAL_STAGE24_ARCHIVE_SHA256
+export PREVIOUS_STAGE24_SOURCE_COMMIT STAGE24_R5_SOURCE_COMMIT STAGE24_R6_SOURCE_COMMIT STAGE24_R7_SOURCE_COMMIT STAGE24_R8_SOURCE_COMMIT HISTORICAL_STAGE34_SOURCE_COMMIT STAGE23_SOURCE_COMMIT STAGE22_SOURCE_COMMIT STAGE22_ARCHIVE_SHA256 STAGE21_SOURCE_COMMIT STAGE21_ARCHIVE_SHA256 STAGE20_SOURCE_COMMIT STAGE20_ARCHIVE_SHA256 STAGE18_SOURCE_COMMIT STAGE18_ARCHIVE_SHA256 STAGE16_SOURCE_COMMIT STAGE16_ARCHIVE_SHA256 STAGE14_SOURCE_COMMIT STAGE14_ARCHIVE_SHA256 STAGE10_SOURCE_COMMIT STAGE10_ARCHIVE_SHA256 STAGE08_SOURCE_COMMIT STAGE08_ARCHIVE_SHA256 PREVIOUS_SOURCE_COMMIT STAGE06_SOURCE_COMMIT STAGE05_SOURCE_COMMIT STAGE04_SOURCE_COMMIT STAGE03_SOURCE_COMMIT STAGE01_SOURCE_COMMIT STAGE02_SOURCE_COMMIT PREVIOUS_ARCHIVE_SHA256 STAGE06_ARCHIVE_SHA256 STAGE05_ARCHIVE_SHA256 STAGE04_ARCHIVE_SHA256 STAGE03_ARCHIVE_SHA256 STAGE02_ARCHIVE_SHA256 STAGE01_ARCHIVE_SHA256 OLDER_STAGE03_ARCHIVE_SHA256 OFFICIAL_STAGE24_ARCHIVE_SHA256
 export APP_DIR APP_ROOT CONFIG_DIR STATE_DIR LOGIN_FILE
 
 step 'VERIFY PACKAGE AND SETTINGS'
@@ -246,7 +247,7 @@ from pathlib import Path
 SNIPPET = Path('/etc/nginx/snippets/cryptosniper-location.conf')
 INCLUDE = f'include {SNIPPET};'
 MARKER = '# Managed by CryptoSniper Stage24 installer'
-KNOWN_MARKERS = tuple(f'# Managed by CryptoSniper Stage{stage:02d} installer' for stage in range(1, 25))
+KNOWN_MARKERS = tuple(f'# Managed by CryptoSniper Stage{stage:02d} installer' for stage in range(1, 25)) + ('# Managed by CryptoSniper Stage34 installer',)
 plan_path = Path(sys.argv[2])
 
 def digest(text):
@@ -404,11 +405,39 @@ state = json.loads((Path(os.environ['CONFIG_DIR']) / 'install.json').read_text()
 expected = {key: os.environ[key] for key in ('SERVER_HOST', 'URL_PREFIX', 'WEB_PORT', 'PG_PORT', 'REDIS_PORT')}
 if any(state.get(key) != value for key, value in expected.items()):
     raise SystemExit('Existing installer configuration differs. No automatic upgrade/configuration replacement.')
-if state.get('SOURCE_COMMIT') not in {os.environ['STAGE01_SOURCE_COMMIT'], os.environ['STAGE02_SOURCE_COMMIT'], os.environ['STAGE03_SOURCE_COMMIT'], os.environ['STAGE04_SOURCE_COMMIT'], os.environ['STAGE05_SOURCE_COMMIT'], os.environ['STAGE06_SOURCE_COMMIT'], os.environ['STAGE08_SOURCE_COMMIT'], os.environ['PREVIOUS_SOURCE_COMMIT'], os.environ['STAGE10_SOURCE_COMMIT'], os.environ['STAGE14_SOURCE_COMMIT'], os.environ['STAGE16_SOURCE_COMMIT'], os.environ['STAGE18_SOURCE_COMMIT'], os.environ['STAGE20_SOURCE_COMMIT'], os.environ['STAGE21_SOURCE_COMMIT'], os.environ['STAGE22_SOURCE_COMMIT'], os.environ['PREVIOUS_STAGE24_SOURCE_COMMIT'], os.environ['STAGE24_R5_SOURCE_COMMIT'], os.environ['STAGE24_R6_SOURCE_COMMIT'], os.environ['STAGE24_R7_SOURCE_COMMIT'], os.environ['STAGE24_R8_SOURCE_COMMIT'], os.environ['STAGE23_SOURCE_COMMIT'], os.environ['SOURCE_COMMIT']}:
+if state.get('SOURCE_COMMIT') not in {os.environ['STAGE01_SOURCE_COMMIT'], os.environ['STAGE02_SOURCE_COMMIT'], os.environ['STAGE03_SOURCE_COMMIT'], os.environ['STAGE04_SOURCE_COMMIT'], os.environ['STAGE05_SOURCE_COMMIT'], os.environ['STAGE06_SOURCE_COMMIT'], os.environ['STAGE08_SOURCE_COMMIT'], os.environ['PREVIOUS_SOURCE_COMMIT'], os.environ['STAGE10_SOURCE_COMMIT'], os.environ['STAGE14_SOURCE_COMMIT'], os.environ['STAGE16_SOURCE_COMMIT'], os.environ['STAGE18_SOURCE_COMMIT'], os.environ['STAGE20_SOURCE_COMMIT'], os.environ['STAGE21_SOURCE_COMMIT'], os.environ['STAGE22_SOURCE_COMMIT'], os.environ['PREVIOUS_STAGE24_SOURCE_COMMIT'], os.environ['STAGE24_R5_SOURCE_COMMIT'], os.environ['STAGE24_R6_SOURCE_COMMIT'], os.environ['STAGE24_R7_SOURCE_COMMIT'], os.environ['STAGE24_R8_SOURCE_COMMIT'], os.environ['HISTORICAL_STAGE34_SOURCE_COMMIT'], os.environ['STAGE23_SOURCE_COMMIT'], os.environ['SOURCE_COMMIT']}:
     raise SystemExit('Existing installation source is not a supported managed Stage01-24 release.')
 print('Existing managed installation detected; private configuration, database and login will be preserved.')
 PY
     MANAGED=true
+    CURRENT_INSTALLED_SOURCE=$(python3 - <<'PY'
+import json, os
+from pathlib import Path
+print(json.loads((Path(os.environ['CONFIG_DIR']) / 'install.json').read_text())['SOURCE_COMMIT'])
+PY
+)
+    if [[ $CURRENT_INSTALLED_SOURCE == $HISTORICAL_STAGE34_SOURCE_COMMIT ]]; then
+        python3 - "$APP_DIR/.env" <<'PY'
+import sys
+from pathlib import Path
+path = Path(sys.argv[1])
+if not path.is_file() or path.is_symlink():
+    raise SystemExit('Historical Stage34 private environment is missing or unsafe.')
+flags = dict(line.split('=', 1) for line in path.read_text().splitlines() if '=' in line and not line.startswith('#'))
+if flags.get('LIVE_TRADING_ENABLED', '').lower() not in {'false', '0'}:
+    raise SystemExit('BLOCKED: LIVE_TRADING_ENABLED must be false before historical Stage34 transition.')
+if flags.get('LIVE_EXIT_MANAGEMENT_ENABLED', 'false').lower() not in {'false', '0'}:
+    raise SystemExit('BLOCKED: LIVE_EXIT_MANAGEMENT_ENABLED must be false before historical Stage34 transition.')
+print('PASS: production Live gates are off.')
+PY
+        CURRENT_PG_PORT=$(pg_conftool -s 16 cryptosniper show port)
+        [[ $CURRENT_PG_PORT =~ ^[0-9]+$ ]] || fail 'Historical Stage34 PostgreSQL port is invalid.'
+        ACTIVE_EXCHANGE_ACCOUNTS=$(runuser -u postgres -- psql -X -A -t -p "$CURRENT_PG_PORT" -d cryptosniper -v ON_ERROR_STOP=1 -c "SELECT count(*) FROM exchanges_userexchangeaccount WHERE trading_enabled")
+        UNSETTLED_LIVE_ORDERS=$(runuser -u postgres -- psql -X -A -t -p "$CURRENT_PG_PORT" -d cryptosniper -v ON_ERROR_STOP=1 -c "SELECT count(*) FROM exchanges_livespotorder WHERE state IN ('pending','submitting','open','partial','uncertain')")
+        UNFINISHED_POSITIONS=$(runuser -u postgres -- psql -X -A -t -p "$CURRENT_PG_PORT" -d cryptosniper -v ON_ERROR_STOP=1 -c "SELECT count(*) FROM operations_managedspotposition WHERE state NOT IN ('closed','cancelled','failed')")
+        [[ $ACTIVE_EXCHANGE_ACCOUNTS == 0 && $UNSETTLED_LIVE_ORDERS == 0 && $UNFINISHED_POSITIONS == 0 ]] || fail 'Historical Stage34 has enabled accounts or unfinished Live work; no upgrade.'
+        printf 'PASS: Stage34 transition has no enabled exchange accounts or unfinished local Live work.\n'
+    fi
 else
     [[ ! -e $APP_ROOT && ! -e $CONFIG_DIR && ! -e $STATE_DIR ]] || fail 'An unmanaged CryptoSniper directory exists; inspect it before installation.'
     ! id "$APP_USER" >/dev/null 2>&1 || fail 'An unmanaged cryptosniper user already exists.'

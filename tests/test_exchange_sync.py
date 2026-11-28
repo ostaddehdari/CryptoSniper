@@ -93,3 +93,32 @@ def test_add_simulator_ignores_supplied_secret_and_disable_is_immediate(
     account.refresh_from_db()
     assert account.status == "disabled"
     assert not account.trading_enabled
+
+
+@pytest.mark.django_db
+def test_live_sync_cannot_reenable_paused_trading(django_user_model):
+    from apps.operations.models import AccountControl
+    from django.test import override_settings
+
+    owner = django_user_model.objects.create_user(username="sync-live-pause")
+    account = create_simulator_account(owner)
+    account.environment = UserExchangeAccount.Environment.LIVE
+    account.save(update_fields=["environment", "updated_at"])
+    with override_settings(LIVE_TRADING_ENABLED=False):
+        sync_exchange_account(account)
+    account.refresh_from_db()
+    assert account.status == UserExchangeAccount.Status.CONNECTED
+    assert not account.trading_enabled
+
+    control = AccountControl.objects.create(account=account, paused=True, reason="stage25_cutover")
+    with override_settings(LIVE_TRADING_ENABLED=True):
+        sync_exchange_account(account)
+    account.refresh_from_db()
+    assert not account.trading_enabled
+
+    control.paused = False
+    control.save(update_fields=["paused", "updated_at"])
+    with override_settings(LIVE_TRADING_ENABLED=True):
+        sync_exchange_account(account)
+    account.refresh_from_db()
+    assert account.trading_enabled

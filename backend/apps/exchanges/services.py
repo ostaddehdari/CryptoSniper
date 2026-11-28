@@ -1,5 +1,6 @@
 import hashlib
 
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
@@ -55,7 +56,16 @@ def sync_exchange_account(account):
 
     now = timezone.now()
     locked.permissions = permission_payload(permission)
-    locked.trading_enabled = permission.safe_for_trading
+    # A background account refresh must never reopen an explicitly paused Live gate.
+    if locked.environment == UserExchangeAccount.Environment.LIVE:
+        from apps.operations.models import AccountControl
+
+        live_allowed = settings.LIVE_TRADING_ENABLED and not AccountControl.objects.filter(
+            account=locked, paused=True
+        ).exists()
+    else:
+        live_allowed = True
+    locked.trading_enabled = permission.safe_for_trading and live_allowed
     locked.status = (
         UserExchangeAccount.Status.CONNECTED
         if permission.safe_for_trading

@@ -8,7 +8,7 @@ import pytest
 from apps.exchanges.models import Exchange, ExchangeMarket, UserExchangeAccount
 from apps.exchanges.security import set_account_credentials
 from apps.exchanges.services import sync_exchange_account
-from apps.tradeplans.calculations import build_preview
+from apps.tradeplans.calculations import build_preview, text
 from apps.tradeplans.forms import ManualTradeForm
 from apps.tradeplans.models import TradePlan
 from apps.tradeplans.service import approve_plan, create_draft
@@ -47,6 +47,13 @@ def payload(account, market, **changes):
     }
     result.update(changes)
     return result
+
+
+def test_preview_decimal_text_is_canonical_without_rounding():
+    assert text(Decimal("70000.0000000000000000")) == "70000"
+    assert text(Decimal("123456789012345678901234567890.0000000000000000")) == (
+        "123456789012345678901234567890"
+    )
 
 
 @pytest.mark.django_db

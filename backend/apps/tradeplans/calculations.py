@@ -13,7 +13,9 @@ HUNDRED = Decimal("100")
 
 
 def text(value):
-    return format(Decimal(str(value)), "f")
+    # Form input and DecimalField reload must produce the same snapshot text.
+    number = format(Decimal(str(value)), "f")
+    return number.rstrip("0").rstrip(".") if "." in number else number
 
 
 def _market_multiple(price, step):

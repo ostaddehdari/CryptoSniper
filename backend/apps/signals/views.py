@@ -792,6 +792,12 @@ def api_action(request, pk):
     item = owned(request.user, pk)
     try:
         body = _json_body(request)
+        if (
+            body.get("action") == "approve"
+            and item.status == Signal.Status.APPROVED
+            and int(body.get("revision", -1)) == item.revision - 1
+        ):
+            return JsonResponse({"signal": _serialize(item), "replayed": True})
         signal = transition(
             request.user,
             item.pk,
@@ -802,3 +808,27 @@ def api_action(request, pk):
         return JsonResponse({"signal": _serialize(signal)})
     except (ValidationError, ValueError, TypeError) as error:
         return JsonResponse({"error": str(error)}, status=400)
+
+
+@session_api_required
+@never_cache
+@require_POST
+def api_bulk_lifecycle(request):
+    try:
+        body = _json_body(request)
+        ids = body.get("ids")
+        if (
+            body.get("action") not in {"trash", "restore"}
+            or not isinstance(ids, list)
+            or len(ids) > 100
+            or any(type(pk) is not int or pk <= 0 for pk in ids)
+        ):
+            raise ValidationError("عملیات گروهی یا شناسه سیگنال نامعتبر است.")
+        count = (
+            trash_signals(request.user, ids)
+            if body["action"] == "trash"
+            else restore_signals(request.user, ids)
+        )
+        return JsonResponse({"ok": True, "changed": count})
+    except ValidationError as error:
+        return JsonResponse({"error": error.messages}, status=400)

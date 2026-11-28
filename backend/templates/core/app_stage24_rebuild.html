@@ -95,9 +95,11 @@
           <input type="hidden" name="market" data-market-hidden required>
         </label>
         <div class="s24-form-row"><label>جهت<select name="side"><option value="long">Long</option><option value="short">Short</option></select></label><label>مبلغ ورود<input name="capital" type="number" min="1" step="1" required></label></div>
+        <label>روش ورود<select name="entry_mode"><option value="limit">Limit · قیمت مشخص</option><option value="market">Market · قیمت تازه برآوردی</option></select></label>
+        <p class="s24-muted" data-entry-mode-note>Limit: ابتدا پیش‌نویس ساخته می‌شود؛ هیچ سفارش واقعی ارسال نمی‌شود.</p>
         <label>Entry<input name="entry_price" inputmode="decimal" dir="ltr" required></label>
-        <div class="s24-form-row"><label>TP1<input name="tp1" inputmode="decimal" dir="ltr" required></label><label>TP2<input name="tp2" inputmode="decimal" dir="ltr"></label></div>
-        <div class="s24-form-row"><label>TP3<input name="tp3" inputmode="decimal" dir="ltr"></label><label>Stop Loss<input name="stop_loss" inputmode="decimal" dir="ltr" required></label></div>
+        <div class="s24-form-row"><label>TP1<input name="tp1" inputmode="decimal" dir="ltr" required><output class="s24-distance" data-distance="tp1">فاصله از ورود: —</output></label><label>TP2<input name="tp2" inputmode="decimal" dir="ltr"><output class="s24-distance" data-distance="tp2">فاصله از ورود: —</output></label></div>
+        <div class="s24-form-row"><label>TP3<input name="tp3" inputmode="decimal" dir="ltr"><output class="s24-distance" data-distance="tp3">فاصله از ورود: —</output></label><label>Stop Loss<input name="stop_loss" inputmode="decimal" dir="ltr" required></label></div>
         <div class="s24-form-row"><label class="s24-check"><input name="trailing_sl" type="checkbox" checked>Trailing SL</label><label class="s24-check"><input name="percentage_trailing" type="checkbox" checked>Trailing TP</label></div>
         <div class="s24-form-row"><label>شروع Trailing<select name="trailing_trigger"><option value="tp1">TP1</option><option value="tp2">TP2</option><option value="tp3">TP3</option></select></label><label>فاصله Trailing %<input name="trailing_distance" type="number" min="1" max="99" step="1" value="1"></label></div>
         <input type="hidden" name="source" value="manual"><input type="hidden" name="leverage" value="1">

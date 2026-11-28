@@ -110,3 +110,22 @@
   .s24-form-row{grid-template-columns:1fr}
   .s24-report-bar{grid-template-columns:1fr}
 }
+
+/* Stage 27: form feedback and keyboard access across desktop and narrow screens. */
+.s24-topbar-title{font-size:12px;font-weight:700;color:#40516b}
+.s24-distance{display:block;margin:-8px 2px 3px;color:#40516b;font-size:11px}
+.s24-trade-form [readonly]{background:#f4f7fc!important;color:#40516b}
+.s24-shell :is(a,button,input,select,textarea):focus-visible{
+  outline:3px solid #1752c6;outline-offset:3px;box-shadow:0 0 0 5px #1752c626
+}
+.s24-nav a,.s24-actions a,.s24-actions button{min-height:40px;display:inline-flex;align-items:center}
+.s24-actions{gap:7px}
+.s24-muted,.s24-panel-head small{color:#53637b}
+@media(max-width:760px){
+  .s24-nav{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .s24-nav a{overflow-wrap:anywhere}
+  .s24-topbar{position:static}
+  .s24-topbar-title{display:none}
+  .s24-table-scroll{max-width:100%}
+  .s24-actions .s24-button{justify-content:center}
+}

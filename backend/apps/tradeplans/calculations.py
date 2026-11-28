@@ -50,6 +50,9 @@ def build_preview(data, now=None):
     if account.permissions.get("can_read") is not True:
         raise ValidationError("دسترسی خواندن موجودی تأیید نشده است.")
     side = data["side"]
+    entry_mode = data.get("entry_mode") or "limit"
+    if entry_mode not in {"market", "limit"}:
+        raise ValidationError("روش ورود نامعتبر است.")
     if side not in {"long", "short"}:
         raise ValidationError("جهت معامله نامعتبر است.")
     if market.market_type == "spot" and side != "long":
@@ -57,6 +60,17 @@ def build_preview(data, now=None):
     if market.market_type == "margin" and not account.permissions.get("can_trade_margin"):
         raise ValidationError("مجوز Margin تأیید نشده است.")
     entry, sl = data["entry_price"], data["stop_loss"]
+    if entry_mode == "market":
+        from apps.marketdata.feeds import get_quote
+
+        quote = get_quote(market)
+        if not quote or quote.get("stale"):
+            raise ValidationError("قیمت تازه برای پیش‌نمایش Market در دسترس نیست.")
+        quoted_price = Decimal(str(quote["price"]))
+        if quoted_price <= ZERO or abs(entry - quoted_price) / quoted_price > Decimal("0.01"):
+            raise ValidationError(
+                "قیمت ورود Market با قیمت تازه بازار هم‌خوان نیست؛ دوباره تازه‌سازی کنید."
+            )
     targets = _targets(data)
     leverage = data["leverage"]
     capital = Decimal(str(data["capital"]))
@@ -149,6 +163,7 @@ def build_preview(data, now=None):
         "direction": side,
         "source": "manual",
         "entry_price": text(entry),
+        "entry_mode": entry_mode,
         "stop_loss": text(sl),
         "stop_distance_percent": text(risk_fraction),
         "targets": tp_info,

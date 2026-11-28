@@ -116,6 +116,7 @@ def approve_plan(owner, plan_id, expected_revision):
         "market": plan.market,
         "side": plan.side,
         "entry_price": plan.entry_price,
+        "entry_mode": plan.preview.get("entry_mode", "limit"),
         "stop_loss": plan.stop_loss,
         "tp1": plan.tp1,
         "tp2": plan.tp2,

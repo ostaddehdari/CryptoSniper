@@ -80,6 +80,8 @@ def queue_paper_trade(owner, plan_id, *, request_key):
     ):
         raise ValidationError("جهت، مجوز یا اهرم Margin Paper معتبر نیست.")
     snap = plan.approved_snapshot
+    if snap.get("entry_mode", "limit") == "market":
+        raise ValidationError("ورود Market فقط پیش‌نمایش است؛ اجرای Paper آن در این نسخه فعال نیست.")
     if snap.get("execution_enabled") is not False or snap.get("market_id") != market.pk:
         raise ValidationError("Snapshot معتبر نیست.")
     quantity = _d(snap.get("quantity"))

@@ -567,11 +567,41 @@
       if (label) label.textContent = payload.quote?.price && !payload.quote.stale ? `قیمت فعلی ${n(payload.quote.price)}` : "قیمت تازه در دسترس نیست";
       const last = payload.candles?.at(-1);
       const entry = qs('[data-newtrade-form] [name="entry_price"]');
-      if (last && entry && !entry.value) entry.value = last.close;
+      if (entry && qs('[data-newtrade-form] [name="entry_mode"]')?.value === "market") {
+        entry.value = payload.quote?.price && !payload.quote.stale ? payload.quote.price : "";
+      } else if (last && entry && !entry.value) entry.value = last.close;
+      updateNewTradeDistances();
     } catch (error) {
       qs("[data-newtrade-empty]").hidden = false;
       qs("[data-newtrade-empty]").textContent = error.message;
     }
+  }
+
+  function updateNewTradeDistances() {
+    const form = qs("[data-newtrade-form]");
+    const base = Number(form.elements.namedItem("entry_price")?.value);
+    const sign = form.elements.namedItem("side")?.value === "short" ? -1 : 1;
+    for (const name of ["tp1", "tp2", "tp3"]) {
+      const output = qs(`[data-distance="${name}"]`, form);
+      const price = Number(form.elements.namedItem(name)?.value);
+      if (!output) continue;
+      const distance = (price - base) / base * 100 * sign;
+      output.textContent = base > 0 && price > 0 && Number.isFinite(distance)
+        ? `فاصله از ورود: ${new Intl.NumberFormat("fa-IR", {maximumFractionDigits:3}).format(distance)}٪${distance <= 0 ? " · جهت هدف را بررسی کنید" : ""}`
+        : "فاصله از ورود: —";
+    }
+  }
+
+  function updateNewTradeMode() {
+    const form = qs("[data-newtrade-form]");
+    const isMarket = form.elements.namedItem("entry_mode")?.value === "market";
+    const entry = form.elements.namedItem("entry_price");
+    entry.readOnly = isMarket;
+    qs("[data-entry-mode-note]").textContent = isMarket
+      ? "Market: قیمت تازه تنها برای برآورد است؛ Paper Market و سفارش واقعی فعال نیست."
+      : "Limit: ابتدا پیش‌نویس ساخته می‌شود؛ هیچ سفارش واقعی ارسال نمی‌شود.";
+    if (isMarket) { entry.value = ""; loadNewTradeChart(); }
+    updateNewTradeDistances();
   }
 
   async function submitTrade(event) {
@@ -582,6 +612,7 @@
     const fd = new FormData(form);
     const body = {
       account: fd.get("account"), market: String(state.market.id), source: "manual",
+      entry_mode: fd.get("entry_mode") || "limit",
       side: fd.get("side"), entry_price: fd.get("entry_price"),
       tp1: fd.get("tp1"), tp2: fd.get("tp2") || "", tp3: fd.get("tp3") || "",
       stop_loss: fd.get("stop_loss"), capital: fd.get("capital"), leverage: "1",
@@ -666,6 +697,8 @@
     clearTimeout(marketTimer); marketTimer = setTimeout(() => searchMarkets(e.target.value), 180);
   });
   qs("[data-newtrade-form]")?.addEventListener("submit", submitTrade);
+  qs("[data-newtrade-form]")?.addEventListener("input", updateNewTradeDistances);
+  qs('[data-newtrade-form] [name="entry_mode"]')?.addEventListener("change", updateNewTradeMode);
   window.addEventListener("hashchange", route);
   window.addEventListener("resize", () => {
     if (state.route === "inbox" && state.selectedSignal) selectSignal(state.selectedSignal);

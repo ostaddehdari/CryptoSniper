@@ -32,12 +32,7 @@
 
   <main class="s24-workspace" id="main">
     <header class="s24-topbar">
-      <div class="s24-tabs">
-        <a href="{% url 'app-shell' %}#/overview">نمای کلی</a>
-        <a href="{% url 'app-shell' %}#/newtrade">معامله دستی</a>
-        <a href="{% url 'app-shell' %}#/inbox">تحلیل سیگنال</a>
-        <a href="{% url 'app-shell' %}#/trades">معاملات</a>
-      </div>
+      <span class="s24-topbar-title">مرکز کنترل معاملات</span>
       <div class="s24-topbar-right">
         {% block topbar_extra %}{% endblock %}
         <div class="s24-tickers">

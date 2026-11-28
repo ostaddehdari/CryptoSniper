@@ -509,7 +509,20 @@ def receive(request):
 @never_cache
 @require_http_methods(["GET", "POST"])
 def smart_paste(request):
-    form = ReceiveForm(request.POST if request.method == "POST" else None)
+    from apps.marketdata.search import eligible_markets
+
+    market = None
+    if request.method == "GET" and request.GET.get("market"):
+        try:
+            market_id = int(request.GET["market"])
+        except (TypeError, ValueError):
+            market_id = None
+        if market_id:
+            market = eligible_markets(request.user).filter(pk=market_id).first()
+    form = ReceiveForm(
+        request.POST if request.method == "POST" else None,
+        initial={"text": f"{market.symbol}\n"} if market else None,
+    )
     if request.method == "POST" and form.is_valid():
         source = get_default_source(request.user, SignalSource.Method.SMART_PASTE)
         try:
@@ -519,7 +532,11 @@ def smart_paste(request):
             return redirect("inbox-detail", pk=signal.pk)
         except ValidationError as error:
             form.add_error(None, error)
-    return render(request, "signals/smart_paste.html", {"nav": "inbox", "form": form})
+    return render(
+        request,
+        "signals/smart_paste.html",
+        {"nav": "inbox", "form": form, "prefill_market": market},
+    )
 
 
 @login_required

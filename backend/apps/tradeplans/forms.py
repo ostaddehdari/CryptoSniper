@@ -14,6 +14,12 @@ class ManualTradeForm(forms.Form):
     )
     market = forms.ModelChoiceField(label="ارز و جفت‌ارز", queryset=ExchangeMarket.objects.none())
     source = forms.ChoiceField(label="منبع", choices=[("manual", "ورود دستی")])
+    entry_mode = forms.ChoiceField(
+        label="روش ورود (پیش‌نمایش)",
+        choices=[("limit", "Limit · قیمت مشخص"), ("market", "Market · قیمت فعلی برآوردی")],
+        initial="limit",
+        required=False,
+    )
     side = forms.ChoiceField(
         label="جهت معامله", choices=[("long", "Long / خرید"), ("short", "Short / فروش")]
     )
@@ -88,6 +94,7 @@ class ManualTradeForm(forms.Form):
 
     def clean(self):
         data = super().clean()
+        data["entry_mode"] = data.get("entry_mode") or "limit"
         account, market = data.get("account"), data.get("market")
         if market:
             pair = f"{market.base_asset.symbol}/{market.quote_asset.symbol}".upper()

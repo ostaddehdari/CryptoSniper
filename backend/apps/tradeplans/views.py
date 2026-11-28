@@ -11,6 +11,8 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 
 from apps.accounts.models import TradingPreferences
 from apps.accounts.security import session_api_required
+from apps.exchanges.models import UserExchangeAccount
+from apps.marketdata.search import eligible_markets
 from apps.signals.models import Signal
 
 from .forms import ManualTradeForm
@@ -50,6 +52,7 @@ def new_plan(request):
     preferences, _ = TradingPreferences.objects.get_or_create(owner=request.user)
     initial = {
         "source": "manual",
+        "entry_mode": "limit",
         "entry_price": None,
         "capital": int(preferences.default_order_amount),
         "leverage": 1,
@@ -59,6 +62,29 @@ def new_plan(request):
         "trailing_distance": int(preferences.trailing_distance_percent),
     }
     signal_id = request.GET.get("signal")
+    market_id = request.GET.get("market")
+    if market_id and request.method == "GET" and not signal_id:
+        try:
+            market_id = int(market_id)
+        except (TypeError, ValueError):
+            market_id = None
+        # Never trust an incoming account ID; select only this owner's readable account.
+        selected = (
+            eligible_markets(request.user).filter(pk=market_id).first() if market_id else None
+        )
+        if selected:
+            account = (
+                UserExchangeAccount.objects.for_user(request.user)
+                .filter(
+                    exchange=selected.exchange,
+                    status__in=("connected", "restricted"),
+                    permissions__can_read=True,
+                )
+                .order_by("pk")
+                .first()
+            )
+            if account:
+                initial.update({"account": account.pk, "market": selected.pk})
     if signal_id and request.method == "GET":
         signal = get_object_or_404(
             Signal, pk=signal_id, owner=request.user, status=Signal.Status.APPROVED
@@ -113,6 +139,7 @@ def edit_plan(request, pk):
         "account": plan.exchange_account_id,
         "market": plan.market_id,
         "source": "manual",
+        "entry_mode": plan.preview.get("entry_mode", "limit"),
         "origin_signal": plan.origin_signal_id,
         "side": plan.side,
         "entry_price": plan.entry_price,

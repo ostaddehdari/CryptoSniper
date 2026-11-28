@@ -23,6 +23,7 @@
       <div class="s24-panel-head"><h2>ورود و خروج</h2><span class="s24-status">RISK & EXITS</span></div>
       <div class="s24-detail-facts">
         <div class="s24-fact"><span>Entry</span><strong>{{ snapshot.entry_price }}</strong></div>
+        <div class="s24-fact"><span>روش ورود</span><strong>{% if snapshot.entry_mode == 'market' %}Market · قیمت برآوردی{% else %}Limit · قیمت مشخص{% endif %}</strong></div>
         <div class="s24-fact"><span>Stop Loss</span><strong>{{ snapshot.stop_loss }}</strong></div>
         <div class="s24-fact"><span>فاصله SL</span><strong>{{ snapshot.stop_distance_percent }}٪</strong></div>
         <div class="s24-fact"><span>سیاست خروج</span><strong>{{ snapshot.exit_policy }}</strong></div>
@@ -43,7 +44,7 @@
   <div class="s24-panel s24-list-panel">
     <div class="s24-panel-head"><h2>اجرای آزمایشی Paper</h2><span class="s24-status">PAPER ONLY</span></div>
     <p class="s24-muted">فقط حساب Simulator و Spot Long با اهرم ۱؛ دستور واقعی به صرافی ارسال نمی‌شود.</p>
-    <form method="post" action="{% url 'paper-launch' plan.pk %}">{% csrf_token %}<input type="hidden" name="request_key" value="{{ paper_request_key }}"><button type="submit" class="s24-button primary">ثبت درخواست اجرای Paper با تأیید من</button></form>
+    {% if snapshot.entry_mode == 'market' %}<p class="s24-notice">اجرای Paper برای روش Market هنوز فعال نیست؛ این طرح فقط پیش‌نمایش است.</p>{% else %}<form method="post" action="{% url 'paper-launch' plan.pk %}">{% csrf_token %}<input type="hidden" name="request_key" value="{{ paper_request_key }}"><button type="submit" class="s24-button primary">ثبت درخواست اجرای Paper با تأیید من</button></form>{% endif %}
   </div>
   {% endif %}
 </section>

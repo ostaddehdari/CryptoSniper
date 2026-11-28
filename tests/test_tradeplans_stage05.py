@@ -193,5 +193,5 @@ def test_manual_page_does_not_persist_unsaved_history_draft(client, django_user_
     user = django_user_model.objects.create_user(username="manual-history")
     client.force_login(user)
     html = client.get(reverse("manual-new")).content.decode()
-    assert 'data-preserve-form' not in html
-    assert 'js/form-draft.js' not in html
+    assert "data-preserve-form" not in html
+    assert "js/form-draft.js" not in html

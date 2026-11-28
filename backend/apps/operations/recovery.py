@@ -149,7 +149,9 @@ def reconcile_trade(trade_id):
         fees += sum((f.fee for f in fills), Decimal(0))
         if order.filled_quantity != total:
             order.filled_quantity = total
-            order.state = "filled" if total == order.quantity else ("partial" if total else "uncertain")
+            order.state = (
+                "filled" if total == order.quantity else ("partial" if total else "uncertain")
+            )
             order.save(update_fields=("filled_quantity", "state", "updated_at"))
     exits = list(trade.exit_fills.all())
     remaining = entry_qty - sum((f.quantity for f in exits), Decimal(0))
@@ -204,7 +206,8 @@ def reconcile_account(account_id):
         from apps.exchanges.models import LiveSpotOrder
 
         for order_id in LiveSpotOrder.objects.filter(
-            account=account, state__in=(LiveSpotOrder.State.UNCERTAIN, LiveSpotOrder.State.SUBMITTING)
+            account=account,
+            state__in=(LiveSpotOrder.State.UNCERTAIN, LiveSpotOrder.State.SUBMITTING),
         ).values_list("pk", flat=True)[:100]:
             reconcile_live_spot_order(order_id)
         from .external import observe_external_account

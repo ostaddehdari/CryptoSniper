@@ -1,4 +1,5 @@
 """Stage27 Inbox owner-scoped lifecycle and approval replay."""
+
 import json
 
 import pytest
@@ -22,11 +23,24 @@ def test_inbox_bulk_owner_scope_restore_and_approve_replay(client, django_user_m
     assert client.post(url, body, content_type="application/json").json()["replayed"] is True
     assert not TradeEvent.objects.exists()
     bulk = reverse("api-inbox-bulk")
-    response = client.post(bulk, json.dumps({"action": "trash", "ids": [mine.pk, theirs.pk]}), content_type="application/json")
+    response = client.post(
+        bulk,
+        json.dumps({"action": "trash", "ids": [mine.pk, theirs.pk]}),
+        content_type="application/json",
+    )
     assert response.json()["changed"] == 1
     mine.refresh_from_db()
     theirs.refresh_from_db()
     assert mine.trashed_at and not theirs.trashed_at
-    assert [row["id"] for row in client.get(reverse("api-inbox") + "?trash=1").json()["items"]] == [mine.pk]
-    assert client.post(bulk, json.dumps({"action": "restore", "ids": [mine.pk]}), content_type="application/json").json()["changed"] == 1
+    assert [row["id"] for row in client.get(reverse("api-inbox") + "?trash=1").json()["items"]] == [
+        mine.pk
+    ]
+    assert (
+        client.post(
+            bulk,
+            json.dumps({"action": "restore", "ids": [mine.pk]}),
+            content_type="application/json",
+        ).json()["changed"]
+        == 1
+    )
     assert client.get(reverse("app-shell")).status_code == 200

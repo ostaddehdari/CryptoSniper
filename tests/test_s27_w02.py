@@ -1,4 +1,5 @@
 """Stage27 market chart markers and public-price freshness."""
+
 from datetime import timedelta
 from decimal import Decimal
 from unittest.mock import patch
@@ -58,15 +59,28 @@ def test_chart_levels_hit_markers_and_stale_quote_never_pretends_live(client, dj
         (t2, "69000", "71000", "70000"),
     ):
         HistoricalCandle.objects.create(
-            provider="binance_public", symbol=market.symbol, interval="5m",
-            open_time=moment, close_time=moment + timedelta(minutes=5),
-            open_price=close, high_price=hi, low_price=lo, close_price=close, volume="1",
+            provider="binance_public",
+            symbol=market.symbol,
+            interval="5m",
+            open_time=moment,
+            close_time=moment + timedelta(minutes=5),
+            open_price=close,
+            high_price=hi,
+            low_price=lo,
+            close_price=close,
+            volume="1",
         )
     client.force_login(owner)
     with (
-        patch("apps.marketdata.chart.get_quote", return_value={
-            "price": "999999", "source": "fake", "observed_at": t1.isoformat(), "stale": True,
-        }),
+        patch(
+            "apps.marketdata.chart.get_quote",
+            return_value={
+                "price": "999999",
+                "source": "fake",
+                "observed_at": t1.isoformat(),
+                "stale": True,
+            },
+        ),
         patch("apps.marketdata.chart.refresh_quote", return_value={"status": "unavailable"}),
     ):
         payload = client.get(

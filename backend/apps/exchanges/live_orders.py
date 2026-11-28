@@ -237,8 +237,8 @@ def reconcile_live_spot_order(order_id):
     A missing order in the open-order list is not proof that it was rejected:
     it may have filled or been cancelled while the worker was down.
     """
-    from apps.operations.recovery import raise_issue
     from apps.operations.models import RecoveryIssue
+    from apps.operations.recovery import raise_issue
 
     order = LiveSpotOrder.objects.select_related("account__exchange", "market").get(pk=order_id)
     if order.state not in {LiveSpotOrder.State.UNCERTAIN, LiveSpotOrder.State.SUBMITTING}:
@@ -254,7 +254,8 @@ def reconcile_live_spot_order(order_id):
             receipt = adapter.fetch_order(order.external_order_id)
         else:
             matches = [
-                row for row in adapter.fetch_open_orders()
+                row
+                for row in adapter.fetch_open_orders()
                 if row.client_order_id == order.client_order_id
             ]
             if len(matches) != 1:
@@ -280,8 +281,15 @@ def reconcile_live_spot_order(order_id):
         locked.average_price = receipt.average_price
         locked.state = mapping[receipt.status]
         locked.error_code = ""
-        locked.save(update_fields=(
-            "external_order_id", "filled_amount", "average_price", "state", "error_code", "updated_at"
-        ))
+        locked.save(
+            update_fields=(
+                "external_order_id",
+                "filled_amount",
+                "average_price",
+                "state",
+                "error_code",
+                "updated_at",
+            )
+        )
         RecoveryIssue.objects.filter(account=locked.account, key=key).update(resolved=True)
     return "recovered"

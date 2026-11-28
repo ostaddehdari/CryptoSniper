@@ -28,7 +28,7 @@ def test_op_six_targets_are_not_discarded():
     assert result["all_targets"] == ["1.30", "1.35", "1.40", "1.45", "1.50", "1.60"]
     assert result["extra_targets"] == ["1.45", "1.50", "1.60"]
     assert result["stop_loss"] == "1.10"
-    assert result["parser_version"] == "rules-v1"
+    assert result["parser_version"] == "rules-v2"
     assert assess(result)["trailing_defaults"]["percentage_distance"] == "1"
 
 
@@ -53,6 +53,47 @@ def test_fa_ar_noise_is_idempotent_and_raw_is_not_modified():
     assert text.startswith("🎯")
 
 
+@pytest.mark.parametrize(
+    "text,blocked",
+    [
+        ("BTC/USDT #ETHUSDT LONG\nEntry: 65000\nTP1: 70000\nSL: 60000", "pair"),
+        ("#BTCUSD #BTCUSDT LONG\nEntry: 65000\nTP1: 70000\nSL: 60000", "pair"),
+        ("BTC/USDT LONG SELL\nEntry: 65000\nTP1: 70000\nSL: 60000", "side"),
+        ("BTC/USDT LONG\nEntry: 65000\nTP1: 70000", "stop_loss"),
+        ("BTC/USDT LONG\nEntry: 65000\nTP1: 70000\nSL: 60000\nSL: 59000", "stop_loss"),
+        ("BTC/USDT LONG\nEntry: 1,25\nTP1: 1,30\nSL: 1,10", "entry"),
+    ],
+)
+def test_ambiguous_extraction_stays_review_only(text, blocked):
+    parsed = assess(extract(text))
+    assert parsed[blocked] is None
+    assert parsed["review_required"] is True
+    assert parsed["warnings"]
+    assert parsed["normalized"] == normalize(text)
+
+
+def test_url_noise_and_extended_targets_preserve_evidence():
+    text = (
+        "BTC/USDT LONG\nhttps://example.org/ETH/USDT/SELL\n"
+        "Entry: 65,000\nTargets:\n1) 70,000\n2) 71,000\n"
+        "TP10: 72,000\nTP11: 73,000\nSL: 60,000"
+    )
+    parsed = assess(extract(text))
+    assert parsed["pair"] == "BTC/USDT"
+    assert parsed["side"] == "long"
+    assert parsed["entry"] == "65000"
+    assert parsed["all_targets"] == ["70000", "71000", "72000", "73000"]
+    assert parsed["extra_targets"] == ["73000"]
+    assert parsed["review_required"] is True
+
+
+def test_three_entry_candidates_are_not_misrepresented_as_range():
+    parsed = assess(extract("BTC/USDT LONG\nEntry: 60 61 62\nTP1: 70\nSL: 50"))
+    assert parsed["entry"] is None and parsed["entry_range"] is None
+    assert parsed["entry_candidates"] == ["60", "61", "62"]
+    assert any("بیش از دو" in warning for warning in parsed["warnings"])
+
+
 @pytest.mark.django_db
 def test_smart_paste_review_never_auto_approves(django_user_model):
     user = django_user_model.objects.create_user(username="parse7")
@@ -66,6 +107,27 @@ def test_smart_paste_review_never_auto_approves(django_user_model):
     assert parsed.raw_signal.original_text == OP
     same = parse_for_review(user, signal.pk)
     assert same.revision == parsed.revision
+
+
+@pytest.mark.django_db
+def test_existing_review_reparses_after_parser_upgrade_without_trade(django_user_model):
+    user = django_user_model.objects.create_user(username="parse-upgrade")
+    source = get_default_source(user, "smart_paste")
+    signal, _, _ = receive_signal(
+        user, source, text="BTC/USDT #ETHUSDT LONG\nEntry: 65000\nTP1: 70000"
+    )
+    signal = parse_for_review(user, signal.pk)
+    revision = signal.revision
+    signal.parser_version = "rules-v1"
+    signal.save(update_fields=("parser_version",))
+    refreshed = parse_for_review(user, signal.pk)
+    assert refreshed.revision == revision + 1
+    assert refreshed.parser_version == "rules-v2"
+    assert refreshed.parsed_payload["pair"] is None
+    assert refreshed.parsed_payload["stop_loss"] is None
+    assert refreshed.entry_price is None
+    assert refreshed.status == "needs_review"
+    assert refreshed.raw_signal.original_text == "BTC/USDT #ETHUSDT LONG\nEntry: 65000\nTP1: 70000"
 
 
 @pytest.mark.django_db

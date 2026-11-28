@@ -22,6 +22,10 @@ def assess(parsed):
             warnings.append(message)
     if not parsed["all_targets"]:
         warnings.append("هدف سود معتبر یافت نشد.")
+    if len(parsed["stop_candidates"]) > 1:
+        warnings.append("چند حد ضرر در متن وجود دارد؛ انتخاب خودکار ممنوع است.")
+    if len(parsed["entry_candidates"]) > 2:
+        warnings.append("بیش از دو قیمت ورود وجود دارد؛ بازه ورود قابل حدس نیست.")
     if parsed["futures_mentioned"]:
         warnings.append("متن به Futures/Perpetual اشاره دارد؛ تبدیل ضمنی به Margin ممنوع است.")
     if len(parsed["all_targets"]) > 3:
@@ -69,7 +73,10 @@ def parse_for_review(owner, signal_id):
     if signal.status not in {"new", "parsed", "needs_review"}:
         raise ValidationError("سیگنال تأیید یا ردشده دوباره پردازش نمی‌شود.")
     raw = signal.raw_signal
-    if signal.parsed_payload.get("last_parsed_raw_revision") == raw.revision_number:
+    if (
+        signal.parsed_payload.get("last_parsed_raw_revision") == raw.revision_number
+        and signal.parser_version == PARSER_VERSION
+    ):
         return signal
     current = raw.revisions.order_by("-version").first()
     parsed = assess(extract(current.text if current else raw.original_text))

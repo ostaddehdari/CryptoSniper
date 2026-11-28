@@ -385,6 +385,23 @@ def main():
                 page.wait_for_url("**/inbox/*/")
                 page.get_by_role("heading", name="بررسی سیگنال", exact=False).wait_for()
                 page.screenshot(path=str(artifacts / "inbox-review-desktop.png"), full_page=True)
+                detail_url = page.url
+                page.goto(base + "/app/#/inbox")
+                page.locator("[data-signal-list] .s24-card").first.wait_for()
+                page.screenshot(path=str(artifacts / "s27-inbox-cards-desktop.png"), full_page=True)
+                page.locator('[data-signal-layout] [data-layout="table"]').click()
+                row = page.locator("[data-signal-list] tr[data-signal-id]").first
+                row.wait_for()
+                row.focus()
+                page.keyboard.press("Enter")
+                assert (
+                    page.locator("[data-signal-symbol]").inner_text() != "یک سیگنال را انتخاب کنید"
+                )
+                page.set_viewport_size({"width": 390, "height": 844})
+                assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+                page.screenshot(path=str(artifacts / "s27-inbox-table-mobile.png"), full_page=True)
+                page.set_viewport_size({"width": 1440, "height": 1000})
+                page.goto(detail_url)
                 page.locator('[name="account_id"]').select_option(str(account.pk))
                 page.locator('[name="market_id"]').select_option(
                     page.locator('[name="market_id"] option')

@@ -7,7 +7,7 @@ from django.db import transaction
 
 from apps.accounts.audit import record_audit
 
-from .models import Order, Trade, TradeEvent, TradeProtection, TradeTarget
+from .models import Order, PaperExitFill, Position, Trade, TradeEvent, TradeProtection, TradeTarget
 
 
 @transaction.atomic
@@ -37,6 +37,14 @@ def configure_trailing(
     if protection.percentage_active and not percentage_enabled:
         raise ValidationError("Percentage پس از فعال‌سازی بدون بستن معامله خاموش نمی‌شود.")
     if percentage_enabled and not protection.percentage_enabled:
+        if protection.coverage in {
+            TradeProtection.Coverage.STALE,
+            TradeProtection.Coverage.CANCELLING,
+            TradeProtection.Coverage.CLOSED,
+        }:
+            raise ValidationError(
+                "پوشش خروج نامعتبر است؛ ابتدا فید و لغوهای نامعلوم را تطبیق دهید."
+            )
         # TP exits in this Paper implementation are ledger intents, not native
         # orders. Fail closed if *any* external exit order is unexpectedly present.
         unexpected = Order.objects.filter(
@@ -47,6 +55,13 @@ def configure_trailing(
             raise ValidationError(
                 "سفارش خروج تأییدنشده است؛ بدون reconciliation حالت Percentage فعال نمی‌شود."
             )
+        position = Position.objects.select_for_update().get(trade=trade)
+        sold = sum(
+            PaperExitFill.objects.filter(trade=trade).values_list("quantity", flat=True),
+            Decimal("0"),
+        )
+        if position.quantity <= 0 or position.quantity + sold != trade.filled_quantity:
+            raise ValidationError("حجم باقی‌مانده با Fillهای خروج هم‌خوان نیست؛ ابتدا تطبیق کنید.")
         cancelled = TradeTarget.objects.filter(
             trade=trade,
             state__in=[
@@ -62,6 +77,9 @@ def configure_trailing(
                 "reason": "switch_to_percentage",
                 "native_orders": 0,
                 "reconciled": True,
+                "filled_quantity": str(trade.filled_quantity),
+                "sold_quantity": str(sold),
+                "remaining_quantity": str(position.quantity),
             },
         )
     elif protection.percentage_enabled and not percentage_enabled:
@@ -124,7 +142,7 @@ def reconcile_paper_cancellation(owner, trade_id, *, version):
         raise ValidationError("نسخه اشتباه است.")
     pending = Order.objects.filter(
         trade=trade, client_order_id__startswith=f"cs-paper-exit-{trade.pk}"
-    ).exclude(state__in=[Order.State.CANCELLED, Order.State.FILLED])
+    ).exclude(state=Order.State.CANCELLED)
     if pending.exists():
         raise ValidationError("لغو همه سفارش‌های خروج تأیید نشده است.")
     TradeTarget.objects.filter(

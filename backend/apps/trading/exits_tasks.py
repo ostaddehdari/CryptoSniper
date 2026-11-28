@@ -5,6 +5,7 @@ from datetime import timedelta
 
 from celery import shared_task
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from apps.exchanges.adapters import get_adapter
@@ -62,13 +63,27 @@ def _mark_stale(trade_id):
         .filter(trade=trade, paper_scenario=False)
         .first()
     )
-    if protection and protection.coverage == TradeProtection.Coverage.MONITORED:
+    if protection and protection.coverage in {
+        TradeProtection.Coverage.PENDING,
+        TradeProtection.Coverage.MONITORED,
+    }:
         protection.coverage = TradeProtection.Coverage.STALE
         protection.save(update_fields=("coverage", "updated_at"))
         TradeEvent.objects.create(
             trade=trade,
             event_type="PAPER_FEED_STALE",
             payload={"native_stop": False, "coverage": "no_native_protection"},
+        )
+        from apps.operations.recovery import raise_issue
+
+        raise_issue(
+            trade.account_id,
+            f"paper_feed:{trade.pk}",
+            "paper_feed_stale",
+            {
+                "trade_id": trade.pk,
+                "native_stop": False,
+            },
         )
 
 
@@ -79,9 +94,12 @@ def paper_feed_staleness():
         TradeProtection.objects.filter(
             trade__state__in=[Trade.State.OPEN, Trade.State.PARTIAL],
             paper_scenario=False,
-            coverage=TradeProtection.Coverage.MONITORED,
-            last_tick_at__lt=cutoff,
-        ).values_list("trade_id", flat=True)[:100]
+        )
+        .filter(
+            Q(coverage=TradeProtection.Coverage.MONITORED, last_tick_at__lt=cutoff)
+            | Q(coverage=TradeProtection.Coverage.PENDING, updated_at__lt=cutoff)
+        )
+        .values_list("trade_id", flat=True)[:100]
     )
     for trade_id in ids:
         _mark_stale(trade_id)

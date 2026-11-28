@@ -167,6 +167,11 @@ def process_paper_price(
     protection.last_tick_at = observed_at
     protection.coverage = TradeProtection.Coverage.MONITORED
     protection.version += 1
+    from apps.operations.models import RecoveryIssue
+
+    RecoveryIssue.objects.filter(
+        account_id=trade.account_id, key=f"paper_feed:{trade.pk}", resolved=False
+    ).update(resolved=True)
     fills = []
     # Percentage ON from start makes all targets activation/display markers only.
     # Trailing activation preempts staged sell, and never weakens the stop.

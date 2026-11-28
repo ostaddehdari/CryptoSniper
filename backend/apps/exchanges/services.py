@@ -60,9 +60,10 @@ def sync_exchange_account(account):
     if locked.environment == UserExchangeAccount.Environment.LIVE:
         from apps.operations.models import AccountControl
 
-        live_allowed = settings.LIVE_TRADING_ENABLED and not AccountControl.objects.filter(
-            account=locked, paused=True
-        ).exists()
+        live_allowed = (
+            settings.LIVE_TRADING_ENABLED
+            and not AccountControl.objects.filter(account=locked, paused=True).exists()
+        )
     else:
         live_allowed = True
     locked.trading_enabled = permission.safe_for_trading and live_allowed

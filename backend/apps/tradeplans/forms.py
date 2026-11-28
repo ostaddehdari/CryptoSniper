@@ -125,7 +125,9 @@ class ManualTradeForm(forms.Form):
         if entry is not None and stop is not None and data.get("side"):
             side = data["side"]
             if (side == "long" and stop >= entry) or (side == "short" and stop <= entry):
-                self.add_error("stop_loss", "حد ضرر باید در سمت مخالف جهت معامله نسبت به ورود باشد.")
+                self.add_error(
+                    "stop_loss", "حد ضرر باید در سمت مخالف جهت معامله نسبت به ورود باشد."
+                )
             ordered = [target for target in targets if target is not None]
             if any((target <= entry if side == "long" else target >= entry) for target in ordered):
                 self.add_error("tp1", "هدف‌ها باید در سمت سود نسبت به ورود باشند.")

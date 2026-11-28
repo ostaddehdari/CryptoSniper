@@ -2,11 +2,19 @@
   "use strict";
   const root = document.querySelector("[data-manual-context-url]");
   if (!root) return;
+  // Drop legacy unsaved values from this history entry before another user can see them.
+  const oldDraftKey = `form:${window.location.pathname}`;
+  if (window.history.state && Object.prototype.hasOwnProperty.call(window.history.state, oldDraftKey)) {
+    const safeState = {...window.history.state};
+    delete safeState[oldDraftKey];
+    window.history.replaceState(safeState, "");
+  }
   const account = root.querySelector("[name=account]");
   const market = root.querySelector("[name=market]");
   const search = root.querySelector("[data-market-search]");
   const results = root.querySelector("[data-market-results]");
   const hint = root.querySelector("[data-manual-hint]");
+  const entry = root.querySelector("[name=entry_price]");
   if (!account || !market) return;
 
   const options = [...market.options].filter(o => o.value).map(o => ({
@@ -66,14 +74,21 @@
       const response = await fetch(url, {headers: {"Accept":"application/json"}});
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "context_failed");
-      hint.textContent = `قیمت فعلی: ${data.price ?? "—"} · موجودی آزاد: ${data.free_balance ?? "—"} ${data.quote_asset ?? ""} · سقف اهرم: ${data.max_leverage ?? "—"}×`;
+      const price = data.quote && !data.price_stale ? data.quote.price : "ناموجود یا قدیمی";
+      const balance = data.balance?.free ?? "—";
+      hint.textContent = `قیمت فعلی: ${price} · موجودی آزاد: ${balance} ${data.balance?.asset ?? ""} · سقف اهرم: ${data.market?.max_leverage ?? "—"}×`;
     } catch (_) {
       hint.textContent = "دریافت اطلاعات بازار ناموفق بود؛ اتصال و همگام‌سازی حساب را بررسی کنید.";
     }
   }
 
-  account.addEventListener("change", () => { updateMarkets(); refresh(); });
+  account.addEventListener("change", () => {
+    if (entry) entry.value = "";
+    updateMarkets();
+    refresh();
+  });
   market.addEventListener("change", () => {
+    if (entry) entry.value = "";
     const selected = market.selectedOptions[0];
     if (search && selected?.value) search.value = selected.textContent.trim();
     refresh();

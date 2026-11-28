@@ -1,6 +1,8 @@
 import uuid
+from datetime import timedelta
 
 from django import forms
+from django.utils import timezone
 
 from apps.exchanges.models import ExchangeMarket, UserExchangeAccount
 from apps.signals.models import Signal
@@ -87,6 +89,20 @@ class ManualTradeForm(forms.Form):
     def clean(self):
         data = super().clean()
         account, market = data.get("account"), data.get("market")
+        if market:
+            pair = f"{market.base_asset.symbol}/{market.quote_asset.symbol}".upper()
+            if market.symbol.upper() != pair:
+                self.add_error("market", "جفت‌ارز با دارایی‌های پایه و مظنه بازار هم‌خوان نیست.")
+            if not market.synced_at or market.synced_at < timezone.now() - timedelta(minutes=15):
+                self.add_error("market", "اطلاعات بازار تازه نیست؛ حساب را همگام‌سازی کنید.")
+            step = market.price_step
+            if step is None or step <= 0:
+                self.add_error("market", "گام قیمت بازار مشخص نیست؛ حساب را همگام‌سازی کنید.")
+            else:
+                for name in ("entry_price", "tp1", "tp2", "tp3", "stop_loss"):
+                    price = data.get(name)
+                    if price is not None and price % step != 0:
+                        self.add_error(name, "قیمت با گام بازار صرافی سازگار نیست.")
         if account and market:
             if account.exchange_id != market.exchange_id:
                 self.add_error("market", "بازار باید متعلق به همان حساب صرافی باشد.")
@@ -104,7 +120,17 @@ class ManualTradeForm(forms.Form):
                 and (origin.exchange_account_id != account.pk or origin.market_id != market.pk)
             ):
                 self.add_error("origin_signal", "حساب و بازار باید با سیگنال تأییدشده برابر باشند.")
+        entry, stop = data.get("entry_price"), data.get("stop_loss")
         targets = (data.get("tp1"), data.get("tp2"), data.get("tp3"))
+        if entry is not None and stop is not None and data.get("side"):
+            side = data["side"]
+            if (side == "long" and stop >= entry) or (side == "short" and stop <= entry):
+                self.add_error("stop_loss", "حد ضرر باید در سمت مخالف جهت معامله نسبت به ورود باشد.")
+            ordered = [target for target in targets if target is not None]
+            if any((target <= entry if side == "long" else target >= entry) for target in ordered):
+                self.add_error("tp1", "هدف‌ها باید در سمت سود نسبت به ورود باشند.")
+            if ordered != sorted(set(ordered), reverse=side == "short"):
+                self.add_error("tp1", "هدف‌ها باید به ترتیب و بدون تکرار باشند.")
         if targets[2] and not targets[1]:
             self.add_error("tp3", "TP3 بدون TP2 معتبر نیست.")
         trigger = data.get("trailing_trigger") or "tp1"

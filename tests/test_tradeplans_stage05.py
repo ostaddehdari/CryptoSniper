@@ -137,13 +137,11 @@ def test_errors_cover_steps_targets_available_balance(client, django_user_model)
     user = django_user_model.objects.create_user(username="manual-validation")
     account, market = setup_paper(user)
     wrong_order = ManualTradeForm(user, payload(account, market, tp1="60000"))
-    assert wrong_order.is_valid()
-    with pytest.raises(ValidationError):
-        build_preview(wrong_order.cleaned_data)
+    assert not wrong_order.is_valid()
+    assert "tp1" in wrong_order.errors
     bad_tick = ManualTradeForm(user, payload(account, market, entry_price="65000.001"))
-    assert bad_tick.is_valid()
-    with pytest.raises(ValidationError):
-        build_preview(bad_tick.cleaned_data)
+    assert not bad_tick.is_valid()
+    assert "entry_price" in bad_tick.errors
     insufficient = ManualTradeForm(user, payload(account, market, capital="20000"))
     assert insufficient.is_valid()
     with pytest.raises(ValidationError):
@@ -158,3 +156,42 @@ def test_errors_cover_steps_targets_available_balance(client, django_user_model)
     response = client.post(reverse("manual-new"), payload(account, market))
     assert response.status_code == 302
     assert TradePlan.objects.filter(owner=user).count() == 1
+
+
+@pytest.mark.django_db
+def test_manual_rejects_stale_or_mismatched_market_without_creating_draft(
+    client, django_user_model
+):
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    user = django_user_model.objects.create_user(username="manual-fresh-market")
+    account, market = setup_paper(user)
+    client.force_login(user)
+    invalid = payload(account, market, stop_loss="70000")
+    response = client.post(
+        reverse("api-manual-create"), data=json.dumps(invalid), content_type="application/json"
+    )
+    assert response.status_code == 422
+    assert not TradePlan.objects.filter(owner=user).exists()
+    market.synced_at = timezone.now() - timedelta(minutes=16)
+    market.save(update_fields=["synced_at"])
+    stale = ManualTradeForm(user, payload(account, market))
+    assert not stale.is_valid()
+    assert "market" in stale.errors
+    market.synced_at = timezone.now()
+    market.symbol = "ETH/USDT"
+    market.save(update_fields=["synced_at", "symbol"])
+    mismatched = ManualTradeForm(user, payload(account, market))
+    assert not mismatched.is_valid()
+    assert "market" in mismatched.errors
+
+
+@pytest.mark.django_db
+def test_manual_page_does_not_persist_unsaved_history_draft(client, django_user_model):
+    user = django_user_model.objects.create_user(username="manual-history")
+    client.force_login(user)
+    html = client.get(reverse("manual-new")).content.decode()
+    assert 'data-preserve-form' not in html
+    assert 'js/form-draft.js' not in html

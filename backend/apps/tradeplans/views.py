@@ -205,12 +205,14 @@ def api_create(request):
             raise ValueError("invalid json")
         form = ManualTradeForm(request.user, body)
         if not form.is_valid():
-            return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
+            return JsonResponse({"errors": form.errors.get_json_data()}, status=422)
         plan, created = create_draft(request.user, form.cleaned_data)
         return JsonResponse(
             {"plan": _serialized(plan), "created": created}, status=201 if created else 200
         )
-    except (ValueError, ValidationError, IntegrityError) as e:
+    except ValidationError as e:
+        return JsonResponse({"error": str(e)}, status=422)
+    except (ValueError, IntegrityError) as e:
         return JsonResponse({"error": str(e)}, status=400)
 
 
@@ -251,5 +253,7 @@ def api_edit(request, pk):
             return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
         result = update_draft(plan, form.cleaned_data, revision)
         return JsonResponse({"plan": _serialized(result)})
-    except (ValueError, ValidationError) as error:
+    except ValidationError as error:
+        return JsonResponse({"error": str(error)}, status=422)
+    except ValueError as error:
         return JsonResponse({"error": str(error)}, status=400)

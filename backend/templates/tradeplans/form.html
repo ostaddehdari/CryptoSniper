@@ -5,7 +5,7 @@
   <div class="s24-grid s24-newtrade-grid">
     <article class="s24-panel" data-manual-context-url="{% url 'manual-context' %}">
       <div class="s24-panel-head"><strong>تعریف معامله</strong><span class="s24-status">PREVIEW FIRST</span></div>
-      <form method="post" class="s24-trade-form" autocomplete="off" id="manual-entry-form" data-preserve-form>{% csrf_token %}{{ form.client_token }}{{ form.origin_signal }}{% if plan %}<input type="hidden" name="revision" value="{{ plan.revision }}">{% endif %}
+      <form method="post" class="s24-trade-form" autocomplete="off" id="manual-entry-form">{% csrf_token %}{{ form.client_token }}{{ form.origin_signal }}{% if plan %}<input type="hidden" name="revision" value="{{ plan.revision }}">{% endif %}
         <div class="s24-form-row"><label>حساب صرافی<select name="account" id="id_account" required><option value="">انتخاب حساب</option>{% for item in accounts %}<option data-exchange="{{ item.exchange_id }}" value="{{ item.pk }}" {% if form.account.value|stringformat:'s' == item.pk|stringformat:'s' %}selected{% endif %}>{{ item.label }} — {{ item.exchange.name }}</option>{% endfor %}</select>{{ form.account.errors }}</label><label>بازار<input type="search" id="id_market_search" data-market-search autocomplete="off" placeholder="BTC/USDT"><div class="s24-search-results" data-market-results hidden></div><select name="market" id="id_market" data-market-select required><option value="">انتخاب بازار</option>{% for item in markets %}<option data-exchange="{{ item.exchange_id }}" value="{{ item.pk }}" {% if form.market.value|stringformat:'s' == item.pk|stringformat:'s' %}selected{% endif %}>{{ item.symbol }} · {{ item.get_market_type_display }} · {{ item.exchange.name }}</option>{% endfor %}</select>{{ form.market.errors }}</label></div>
         <div data-manual-hint class="s24-muted">قیمت و موجودی پس از انتخاب بازار نمایش داده می‌شوند.</div>
         {% for field in form %}{% if field.name != 'client_token' and field.name != 'origin_signal' and field.name != 'account' and field.name != 'market' %}<label class="{% if field.field.widget.input_type == 'checkbox' %}s24-check{% endif %}">{{ field.label }}{{ field }}{{ field.errors }}</label>{% endif %}{% endfor %}
@@ -15,5 +15,5 @@
     <aside class="s24-panel"><div class="s24-panel-head"><strong>قواعد معامله</strong><span class="s24-status">SAFE PREVIEW</span></div><div class="s24-trade-detail"><div class="s24-fact"><span>Spot</span><strong>فقط Long</strong></div><div class="s24-fact"><span>TP Split</span><strong>10% / 10% / 80%</strong></div><div class="s24-fact"><span>Trailing SL</span><strong>TP1 → Entry و توقف</strong></div><div class="s24-fact"><span>Trailing TP</span><strong>شروع از TP1/TP2/TP3</strong></div></div></aside>
   </div>
 </section>
-<script src="{% static 'js/manual-entry.js' %}" defer></script><script src="{% static 'js/form-draft.js' %}" defer></script>
+<script src="{% static 'js/manual-entry.js' %}" defer></script>
 {% endblock %}

@@ -37,8 +37,9 @@ def test_bulk_trash_is_soft_and_restorable(client, django_user_model):
     assert response.status_code == 302
     signal.refresh_from_db()
     assert signal.trashed_at is not None
-    assert str(signal.pk) not in client.get("/inbox/").content.decode()
-    assert str(signal.pk) in client.get("/inbox/?trash=1").content.decode()
+    checkbox = f'name="signal_ids" value="{signal.pk}"'
+    assert checkbox not in client.get("/inbox/").content.decode()
+    assert checkbox in client.get("/inbox/?trash=1").content.decode()
     client.post("/inbox/bulk/restore/", {"signal_ids": [signal.pk]})
     signal.refresh_from_db()
     assert signal.trashed_at is None

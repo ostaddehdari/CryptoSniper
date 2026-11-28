@@ -181,8 +181,11 @@ def test_manual_rejects_stale_or_mismatched_market_without_creating_draft(
     assert not stale.is_valid()
     assert "market" in stale.errors
     market.synced_at = timezone.now()
-    market.symbol = "ETH/USDT"
-    market.save(update_fields=["synced_at", "symbol"])
+    eth_market = ExchangeMarket.objects.get(
+        exchange=account.exchange, symbol="ETH/USDT", market_type="spot"
+    )
+    market.base_asset = eth_market.base_asset
+    market.save(update_fields=["synced_at", "base_asset"])
     mismatched = ManualTradeForm(user, payload(account, market))
     assert not mismatched.is_valid()
     assert "market" in mismatched.errors

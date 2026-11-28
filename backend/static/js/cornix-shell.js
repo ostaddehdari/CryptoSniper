@@ -8,6 +8,7 @@
   const usd = document.querySelector("[data-shell-usdt-usd]");
   const toman = document.querySelector("[data-shell-usdt-toman]");
   const clock = document.querySelector("[data-shell-live-time]");
+  const status = document.querySelector("[data-shell-price-status]");
   let inFlight = false;
   let lastFetch = 0;
 
@@ -38,8 +39,12 @@
       const payload = await response.json();
       if (usd) usd.textContent = fmt(payload.usdt_usd);
       if (toman) toman.textContent = fmt(payload.usdt_toman);
+      if (status) status.textContent = payload.stale ? "داده قدیمی" : "قیمت عمومی";
+      if (usd) usd.title = `${payload.sources?.usdt_usd || "منبع نامعلوم"} · ${payload.source_times?.usdt_usd || "زمان نامعلوم"}`;
+      if (toman) toman.title = `${payload.sources?.usdt_toman || "منبع نامعلوم"} · ${payload.source_times?.usdt_toman || "زمان نامعلوم"} · ${payload.units?.usdt_toman || "IRT"}`;
     } catch (_) {
       // Shell remains usable if public price references are temporarily unavailable.
+      if (status) status.textContent = "قیمت در دسترس نیست";
     } finally {
       inFlight = false;
     }

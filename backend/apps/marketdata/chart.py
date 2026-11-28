@@ -265,7 +265,7 @@ def api_chart(request):
 
     candle_payloads = [_candle_payload(row) for row in candles]
     provider_label = "Binance public candles"
-    if quote and quote.get("price"):
+    if quote and quote.get("price") and not quote.get("stale"):
         live_price = float(quote["price"])
         live_point = {
             "time": int(now.timestamp()),
@@ -289,6 +289,8 @@ def api_chart(request):
             provider_label = f"{source} live · history unavailable"
     elif market.exchange.adapter_code != "binance":
         provider_label = f"{market.exchange.code} · live quote unavailable"
+    if quote and quote.get("stale"):
+        provider_label = f"{market.exchange.code} · quote stale (display only)"
 
     overlay = None
     if request.GET.get("signal"):
@@ -308,6 +310,12 @@ def api_chart(request):
             "interval": interval,
             "provider": str(quote.get("source")) if quote else "binance_public_display_reference",
             "provider_label": provider_label,
+            "quote": {
+                "price": quote.get("price") if quote else None,
+                "observed_at": quote.get("observed_at") if quote else None,
+                "source": quote.get("source") if quote else None,
+                "stale": bool(quote.get("stale")) if quote else True,
+            },
             "candles": candle_payloads,
             "overlay": overlay,
             "as_of": now.isoformat(),

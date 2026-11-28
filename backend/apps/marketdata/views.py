@@ -27,40 +27,53 @@ HEADER_TICKER_STALE_SECONDS = 300
 def _header_ticker_value():
     cached = cache.get(HEADER_TICKER_CACHE_KEY)
     if cached:
-        return {**cached, "stale": False}
+        return cached
 
     stale = cache.get(HEADER_TICKER_CACHE_KEY + ":stale")
     payload = {
         "usdt_usd": None,
         "usdt_toman": None,
         "sources": {},
+        "source_times": {},
+        "units": {"usdt_usd": "USD", "usdt_toman": "IRT (تومان)"},
         "observed_at": timezone.now().isoformat(),
         "stale": False,
     }
+    now = timezone.now()
+
+    def fresh(ticker):
+        age = (now - ticker.observed_at).total_seconds()
+        return -5 <= age <= 90 and ticker.price.is_finite() and ticker.price > 0
+
     try:
         adapter = get_adapter("binance", credentials={}, environment="paper")
         ticker = adapter.fetch_ticker("USDT/USDC")
-        payload["usdt_usd"] = str(ticker.price)
-        payload["sources"]["usdt_usd"] = "binance_public"
+        if fresh(ticker):
+            payload["usdt_usd"] = str(ticker.price)
+            payload["sources"]["usdt_usd"] = "binance_public_usdt_usdc_reference"
+            payload["source_times"]["usdt_usd"] = ticker.observed_at.isoformat()
     except (AdapterError, ValueError, TypeError, KeyError):
         pass
 
     try:
         adapter = get_adapter("nobitex", credentials={}, environment="paper")
         ticker = adapter.fetch_ticker("USDT/IRT")
-        payload["usdt_toman"] = str(ticker.price)
-        payload["sources"]["usdt_toman"] = "nobitex_public"
+        if fresh(ticker):
+            payload["usdt_toman"] = str(ticker.price)
+            payload["sources"]["usdt_toman"] = "nobitex_public_usdt_irt"
+            payload["source_times"]["usdt_toman"] = ticker.observed_at.isoformat()
     except (AdapterError, ValueError, TypeError, KeyError):
         pass
 
-    if payload["usdt_usd"] is None and stale:
-        payload["usdt_usd"] = stale.get("usdt_usd")
-    if payload["usdt_toman"] is None and stale:
-        payload["usdt_toman"] = stale.get("usdt_toman")
+    for field in ("usdt_usd", "usdt_toman"):
+        if payload[field] is None:
+            payload["stale"] = True
+            if stale:
+                payload[field] = stale.get(field)
+                payload["sources"][field] = stale.get("sources", {}).get(field)
+                payload["source_times"][field] = stale.get("source_times", {}).get(field)
 
     if payload["usdt_usd"] is None and payload["usdt_toman"] is None:
-        if stale:
-            return {**stale, "stale": True}
         return payload
 
     cache.set(HEADER_TICKER_CACHE_KEY, payload, timeout=HEADER_TICKER_FRESH_SECONDS)

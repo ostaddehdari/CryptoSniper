@@ -243,9 +243,10 @@
 
     const markers = payload.overlay?.markers || [];
     const times = candles.map((c) => Number(c.time));
+    const intervalSeconds = {"1m":60,"5m":300,"15m":900,"1h":3600,"4h":14400,"1d":86400}[payload.interval] || 300;
     markers.forEach((marker) => {
       const mt = Number(marker.time);
-      if (!Number.isFinite(mt)) return;
+      if (!Number.isFinite(mt) || mt < times[0] || mt >= times[times.length - 1] + intervalSeconds) return;
       let idx = 0, dist = Infinity;
       times.forEach((time, i) => {
         const d = Math.abs(time - mt);
@@ -298,23 +299,29 @@
   }
 
   function signalCard(item) {
-    return `<article class="s24-card ${state.selectedSignal?.id === item.id ? "selected" : ""}" data-signal-id="${item.id}">
+    return `<article class="s24-card ${state.selectedSignal?.id === item.id ? "selected" : ""}" data-signal-id="${item.id}" role="button" tabindex="0" aria-label="نمایش جزئیات ${esc(item.symbol || "Signal #" + item.id)}">
       <div class="s24-card-head"><div><div class="s24-card-title">${esc(item.symbol || "Signal #" + item.id)} · ${esc(item.side || "—")}</div><div class="s24-card-sub">${esc(item.source_name || item.source_method)} · ${faDate(item.created_at)}</div></div><span class="s24-card-badge">${esc(item.status)}</span></div>
       ${miniSignal(item)}
-      <div class="s24-card-actions"><span class="s24-card-sub">Entry ${n(item.entry)}</span><button type="button" data-signal-archive="${item.id}">${item.archived_at ? "بازگردانی" : "بایگانی"}</button></div>
+      <div class="s24-card-actions"><label class="s24-signal-check"><input type="checkbox" data-signal-check="${item.id}" aria-label="انتخاب سیگنال ${item.id}"> انتخاب</label><span class="s24-card-sub">Entry ${n(item.entry)}</span>${state.signalView === "trash" ? "" : `<button type="button" data-signal-archive="${item.id}">${item.archived_at ? "بازگردانی" : "بایگانی"}</button>`}</div>
     </article>`;
   }
 
   function signalTable(items) {
     return `<div class="s24-table-scroll"><table class="s24-table"><thead><tr><th>بازار</th><th>جهت</th><th>Entry</th><th>TP</th><th>SL</th><th>وضعیت</th><th>زمان</th><th></th></tr></thead><tbody>
-      ${items.map((item) => `<tr data-signal-id="${item.id}"><td>${esc(item.symbol || "—")}</td><td>${esc(item.side || "—")}</td><td>${n(item.entry)}</td><td>${(item.targets || []).map(t => n(t.price)).join(" / ") || "—"}</td><td>${n(item.stop_loss)}</td><td>${esc(item.status)}</td><td>${faDate(item.created_at)}</td><td><button class="s24-button ghost" data-signal-archive="${item.id}">${item.archived_at ? "بازگردانی" : "بایگانی"}</button></td></tr>`).join("")}
+      ${items.map((item) => `<tr data-signal-id="${item.id}" tabindex="0"><td>${esc(item.symbol || "—")}</td><td>${esc(item.side || "—")}</td><td>${n(item.entry)}</td><td>${(item.targets || []).map(t => n(t.price)).join(" / ") || "—"}</td><td>${n(item.stop_loss)}</td><td>${esc(item.status)}</td><td>${faDate(item.created_at)}</td><td><label><input type="checkbox" data-signal-check="${item.id}" aria-label="انتخاب سیگنال ${item.id}"></label> ${state.signalView === "trash" ? "" : `<button class="s24-button ghost" data-signal-archive="${item.id}">${item.archived_at ? "بازگردانی" : "بایگانی"}</button>`}</td></tr>`).join("")}
     </tbody></table></div>`;
   }
 
   function bindSignalList() {
     qsa("[data-signal-id]", qs("[data-signal-list]")).forEach((node) => {
       node.addEventListener("click", (event) => {
-        if (event.target.closest("[data-signal-archive]")) return;
+        if (event.target.closest("[data-signal-archive], [data-signal-check]")) return;
+        const item = state.signals.find((x) => x.id === Number(node.dataset.signalId));
+        if (item) selectSignal(item);
+      });
+      node.addEventListener("keydown", (event) => {
+        if (event.target !== node || !["Enter", " "].includes(event.key)) return;
+        event.preventDefault();
         const item = state.signals.find((x) => x.id === Number(node.dataset.signalId));
         if (item) selectSignal(item);
       });
@@ -356,13 +363,14 @@
 
   async function loadSignals() {
     try {
-      const payload = await api(appPath(`/api/v1/inbox/?view=${state.signalView}`));
+      const query = state.signalView === "trash" ? "trash=1" : `view=${state.signalView}`;
+      const payload = await api(appPath(`/api/v1/inbox/?${query}`));
       state.signals = payload.items || [];
       if (state.selectedSignal && !state.signals.some(x => x.id === state.selectedSignal.id)) {
         state.selectedSignal = null;
       }
       renderSignals();
-      if (!state.selectedSignal && state.signals.length) selectSignal(state.signals[0]);
+      if (!state.selectedSignal && state.signals.length && state.signalView !== "trash") selectSignal(state.signals[0]);
     } catch (error) {
       qs("[data-signal-list]").innerHTML = `<div class="s24-empty-inline">${esc(error.message)}</div>`;
     }
@@ -390,6 +398,7 @@
   }
 
   async function selectSignal(item) {
+    if (state.signalView === "trash") return;
     state.selectedSignal = item;
     renderSignals();
     qs("[data-signal-symbol]").textContent = item.symbol || ("Signal #" + item.id);
@@ -553,7 +562,9 @@
         qs("[data-newtrade-chart]"), qs("[data-newtrade-empty]")
       );
       const provider = qs("[data-market-provider]");
-      if (provider) provider.textContent = payload.provider_label || payload.provider || "public market data";
+      if (provider) provider.textContent = (payload.provider_label || payload.provider || "داده عمومی بازار") + (payload.quote?.observed_at ? " · " + faDate(payload.quote.observed_at) : "");
+      const label = qs("[data-market-live-label]");
+      if (label) label.textContent = payload.quote?.price && !payload.quote.stale ? `قیمت فعلی ${n(payload.quote.price)}` : "قیمت تازه در دسترس نیست";
       const last = payload.candles?.at(-1);
       const entry = qs('[data-newtrade-form] [name="entry_price"]');
       if (last && entry && !entry.value) entry.value = last.close;
@@ -608,12 +619,31 @@
   qs("[data-signal-view]").addEventListener("click", (e) => {
     const button = e.target.closest("[data-view]"); if (!button) return;
     state.signalView = button.dataset.view; setActive(e.currentTarget, "view", state.signalView); state.selectedSignal = null; loadSignals();
+    qs("[data-signals-bulk]").textContent = state.signalView === "trash" ? "بازیابی انتخاب‌ها" : "انتقال انتخاب‌ها به سطل زباله";
+    if (state.signalView === "trash") {
+      qs("[data-signal-detail]").textContent = "سیگنال‌های سطل زباله را بازیابی کنید تا جزئیاتشان نمایش داده شود.";
+      qs("[data-signal-symbol]").textContent = "سطل زباله";
+      drawChart(qs("[data-signal-chart]"), {candles: []}, qs("[data-signal-chart-empty]"));
+    }
   });
   qs("[data-signal-layout]").addEventListener("click", (e) => {
     const button = e.target.closest("[data-layout]"); if (!button) return;
     state.signalLayout = button.dataset.layout; setActive(e.currentTarget, "layout", state.signalLayout); renderSignals();
   });
   qs("[data-signals-reload]").addEventListener("click", loadSignals);
+  qs("[data-signals-bulk]").addEventListener("click", async (event) => {
+    const button = event.currentTarget;
+    const ids = qsa("[data-signal-check]:checked", qs("[data-signal-list]")).map((el) => Number(el.dataset.signalCheck));
+    if (!ids.length) { toast("ابتدا سیگنال‌ها را انتخاب کنید."); return; }
+    button.disabled = true;
+    try {
+      const action = state.signalView === "trash" ? "restore" : "trash";
+      const result = await api(appPath("/api/v1/inbox/bulk/"), {method:"POST", body:JSON.stringify({action, ids})});
+      toast(`${result.changed} سیگنال ${action === "trash" ? "به سطل زباله منتقل شد" : "بازیابی شد"}.`);
+      state.selectedSignal = null; await loadSignals();
+    } catch (error) { toast(error.message, true); }
+    finally { button.disabled = false; }
+  });
   qs("[data-trade-view]").addEventListener("click", (e) => {
     const button = e.target.closest("[data-view]"); if (!button) return;
     state.tradeView = button.dataset.view; setActive(e.currentTarget, "view", state.tradeView); state.selectedTrade = null; loadTrades();

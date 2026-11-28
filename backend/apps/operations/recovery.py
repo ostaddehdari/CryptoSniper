@@ -79,16 +79,35 @@ def recover_outbox(outbox_id):
         return "unsupported"
     receipt = lookup(info.order)  # Authoritative Paper provider ledger, not engine state.
     if receipt:
-        consume_receipt(info.pk, receipt)
+        try:
+            result = consume_receipt(info.pk, receipt)
+        except ValidationError:
+            raise_issue(info.order.account_id, f"outbox:{info.pk}", "receipt_mismatch")
+            return "discrepancy"
         RecoveryIssue.objects.filter(account=info.order.account, key=f"outbox:{info.pk}").update(
             resolved=True
         )
+        if result["status"] == "already_claimed":
+            return "unchanged"
         TradeEvent.objects.create(trade=info.order.trade, event_type="RECOVERED_PROVIDER_RECEIPT")
         return "recovered"
     with transaction.atomic():
         trade = Trade.objects.select_for_update().get(pk=info.order.trade_id)
         order = Order.objects.select_for_update().get(pk=info.order_id)
         box = ExecutionOutbox.objects.select_for_update().get(pk=info.pk)
+        if box.state == "inflight":
+            # A worker may have died after submit. Absence in the simulator ledger
+            # is authoritative only after a bounded grace period.
+            if order.sent_at and order.sent_at > timezone.now() - timedelta(minutes=2):
+                return "inflight_grace"
+            box.state = "uncertain"
+            box.last_error_code = "worker_lost_after_submit"
+            box.save(update_fields=("state", "last_error_code", "updated_at"))
+            if not order.filled_quantity:
+                order.state = "uncertain"
+                order.save(update_fields=("state", "updated_at"))
+                trade.state = "uncertain"
+                trade.save(update_fields=("state", "updated_at"))
         if box.state not in {"uncertain", "error"}:
             return "unchanged"
         if box.dead_letter or box.attempts >= MAX_ATTEMPTS:
@@ -98,6 +117,7 @@ def recover_outbox(outbox_id):
         # Only simulator has authoritative absence + durable client-ID idempotency.
         # No live adapter is retried here.
         if order.filled_quantity:
+            raise_issue(order.account_id, f"outbox:{box.pk}", "partial_receipt_missing")
             return "partial_requires_reconciliation"
         box.state = "pending"
         box.fence += 1
@@ -127,9 +147,9 @@ def reconcile_trade(trade_id):
         entry_qty += total
         entry_cost += sum((f.quantity * f.price for f in fills), Decimal(0))
         fees += sum((f.fee for f in fills), Decimal(0))
-        if total and order.filled_quantity != total:
+        if order.filled_quantity != total:
             order.filled_quantity = total
-            order.state = "filled" if total == order.quantity else "partial"
+            order.state = "filled" if total == order.quantity else ("partial" if total else "uncertain")
             order.save(update_fields=("filled_quantity", "state", "updated_at"))
     exits = list(trade.exit_fills.all())
     remaining = entry_qty - sum((f.quantity for f in exits), Decimal(0))
@@ -180,6 +200,13 @@ def reconcile_account(account_id):
 
     account = UserExchangeAccount.objects.select_related("exchange").get(pk=account_id)
     if account.environment != "paper" or account.exchange.adapter_code != "simulator":
+        from apps.exchanges.live_orders import reconcile_live_spot_order
+        from apps.exchanges.models import LiveSpotOrder
+
+        for order_id in LiveSpotOrder.objects.filter(
+            account=account, state__in=(LiveSpotOrder.State.UNCERTAIN, LiveSpotOrder.State.SUBMITTING)
+        ).values_list("pk", flat=True)[:100]:
+            reconcile_live_spot_order(order_id)
         from .external import observe_external_account
 
         return observe_external_account(account)

@@ -229,3 +229,59 @@ def execute_live_spot_order(order_id):
         locked.error_code = ""
         locked.save()
     return {"status": locked.state, "external_order_id": locked.external_order_id}
+
+
+def reconcile_live_spot_order(order_id):
+    """Observe an uncertain order without ever submitting or cancelling it.
+
+    A missing order in the open-order list is not proof that it was rejected:
+    it may have filled or been cancelled while the worker was down.
+    """
+    from apps.operations.recovery import raise_issue
+    from apps.operations.models import RecoveryIssue
+
+    order = LiveSpotOrder.objects.select_related("account__exchange", "market").get(pk=order_id)
+    if order.state not in {LiveSpotOrder.State.UNCERTAIN, LiveSpotOrder.State.SUBMITTING}:
+        return "unchanged"
+    key = f"live-order:{order.pk}"
+    try:
+        adapter = get_adapter(
+            order.account.exchange.adapter_code,
+            credentials=get_account_credentials(order.account),
+            environment=order.account.environment,
+        )
+        if order.external_order_id:
+            receipt = adapter.fetch_order(order.external_order_id)
+        else:
+            matches = [
+                row for row in adapter.fetch_open_orders()
+                if row.client_order_id == order.client_order_id
+            ]
+            if len(matches) != 1:
+                raise_issue(order.account_id, key, "provider_outcome_unknown")
+                return "unknown"
+            receipt = matches[0]
+        _validate_receipt(order, receipt)
+    except (AdapterError, ValidationError, ValueError, TypeError):
+        raise_issue(order.account_id, key, "provider_receipt_unverified")
+        return "discrepancy"
+    mapping = {
+        OrderStatus.OPEN: LiveSpotOrder.State.OPEN,
+        OrderStatus.PARTIAL: LiveSpotOrder.State.PARTIAL,
+        OrderStatus.FILLED: LiveSpotOrder.State.FILLED,
+        OrderStatus.CANCELLED: LiveSpotOrder.State.CANCELLED,
+    }
+    with transaction.atomic():
+        locked = LiveSpotOrder.objects.select_for_update().get(pk=order_id)
+        if locked.state not in {LiveSpotOrder.State.UNCERTAIN, LiveSpotOrder.State.SUBMITTING}:
+            return "unchanged"
+        locked.external_order_id = receipt.order_id
+        locked.filled_amount = receipt.filled_amount
+        locked.average_price = receipt.average_price
+        locked.state = mapping[receipt.status]
+        locked.error_code = ""
+        locked.save(update_fields=(
+            "external_order_id", "filled_amount", "average_price", "state", "error_code", "updated_at"
+        ))
+        RecoveryIssue.objects.filter(account=locked.account, key=key).update(resolved=True)
+    return "recovered"

@@ -456,8 +456,18 @@ done
 
 step 'INSTALL SYSTEM DEPENDENCIES'
 export DEBIAN_FRONTEND=noninteractive
-apt-get update
-apt-get install -y --no-install-recommends python3.12 python3.12-venv postgresql-16 postgresql-client-16 redis-server redis-tools ca-certificates curl openssl
+required_packages=(python3.12 python3.12-venv postgresql-16 postgresql-client-16 redis-server redis-tools ca-certificates curl openssl)
+missing_packages=()
+for package in "${required_packages[@]}"; do
+    status=$(dpkg-query -W -f='${Status}' "$package" 2>/dev/null || true)
+    [[ $status == 'install ok installed' ]] || missing_packages+=("$package")
+done
+if $MANAGED && (( ${#missing_packages[@]} == 0 )); then
+    printf 'All required system packages are installed; leaving the shared apt sources untouched.\n'
+else
+    apt-get update
+    apt-get install -y --no-install-recommends "${required_packages[@]}"
+fi
 if ! $MANAGED; then
     useradd --system --user-group --home-dir "$APP_ROOT" --shell /usr/sbin/nologin "$APP_USER"
     install -d -m 750 -o root -g "$APP_USER" "$APP_ROOT" "$CONFIG_DIR"

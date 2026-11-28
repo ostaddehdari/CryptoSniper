@@ -12,7 +12,10 @@ from apps.tradeplans.forms import ManualTradeForm
 from apps.tradeplans.service import approve_plan, create_draft
 from apps.trading.execution import (
     cancel_unsubmitted,
+    claim_outbox,
+    consume_receipt,
     dispatch_paper,
+    mark_uncertain,
     record_fill,
 )
 from apps.trading.intent import queue_paper_trade
@@ -185,6 +188,14 @@ def test_browser_routes_are_owner_scoped_and_api_idempotent(client, django_user_
     trade_id = first.json()["trade"]["id"]
     second = client.post(endpoint, data=json.dumps(payload), content_type="application/json")
     assert second.status_code == 200 and not second.json()["created"]
+    another = ready_plan(owner, account, market, capital="60")
+    conflict = client.post(
+        endpoint,
+        data=json.dumps({"plan_id": another.pk, "request_key": key}),
+        content_type="application/json",
+    )
+    assert conflict.status_code == 409
+    assert Trade.objects.filter(owner=owner).count() == 1
     assert client.get(reverse("paper-trade-detail", args=[trade_id])).status_code == 200
     assert (
         client.get(reverse("api-paper-detail", args=[trade_id])).json()["trade"]["mode"] == "paper"
@@ -196,3 +207,39 @@ def test_browser_routes_are_owner_scoped_and_api_idempotent(client, django_user_
         client.post(endpoint, data=json.dumps(payload), content_type="application/json").status_code
         == 404
     )
+
+
+@pytest.mark.django_db
+def test_cumulative_paper_receipt_reconciles_partial_without_second_order(django_user_model):
+    from apps.operations import provider
+    from apps.operations.models import PaperProviderOrder
+
+    owner = django_user_model.objects.create_user(username="s26-partial")
+    account, market = paper_account(owner)
+    plan = ready_plan(owner, account, market)
+    trade, _ = queue_paper_trade(owner, plan.pk, request_key=uuid.uuid4())
+    order = trade.orders.get()
+    box = order.outbox
+    assert claim_outbox(box.pk) == order.pk
+    receipt = provider.submit(
+        Order.objects.select_related("account__exchange", "trade__market").get(pk=order.pk)
+    )
+    half = order.quantity / 2
+    record_fill(
+        order.pk,
+        exchange_fill_id="paper-early-partial",
+        quantity=half,
+        price=order.price,
+        fee=receipt.fee / 2,
+    )
+    mark_uncertain(box.pk, "response_lost_after_partial")
+    box.refresh_from_db()
+    order.refresh_from_db()
+    assert box.state == "uncertain" and order.state == "partial"
+    assert consume_receipt(box.pk, receipt)["status"] == "filled"
+    assert dispatch_paper(box.pk)["status"] == "already_claimed"
+    order.refresh_from_db()
+    assert order.filled_quantity == order.quantity
+    assert Position.objects.get(trade=trade).quantity == trade.quantity
+    assert PaperProviderOrder.objects.filter(account=account).count() == 1
+    assert OrderFill.objects.filter(order=order).count() == 2

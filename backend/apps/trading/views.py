@@ -19,7 +19,7 @@ from apps.tradeplans.models import TradePlan
 from .execution import cancel_unsubmitted
 from .exits_engine import process_paper_price
 from .exits_stop import adjust_stop
-from .intent import queue_paper_trade
+from .intent import IdempotencyConflict, queue_paper_trade
 from .models import Trade, TradeEvent, TradeProtection
 from .trailing_rules import configure_trailing
 
@@ -154,6 +154,8 @@ def api_trades(request):
         return JsonResponse(
             {"trade": _serialized(trade), "created": created}, status=201 if created else 200
         )
+    except IdempotencyConflict as error:
+        return JsonResponse({"error": str(error)}, status=409)
     except (KeyError, ValueError, TypeError, ValidationError, IntegrityError) as error:
         return JsonResponse({"error": str(error)}, status=400)
 

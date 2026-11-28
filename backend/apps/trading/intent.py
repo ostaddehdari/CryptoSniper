@@ -17,6 +17,10 @@ from apps.tradeplans.models import TradePlan
 from .models import CapitalReservation, ExecutionOutbox, Order, PaperRiskPolicy, Trade, TradeEvent
 
 
+class IdempotencyConflict(ValidationError):
+    """The same owner/operation key was already committed for a different intent."""
+
+
 def _d(value):
     try:
         val = Decimal(str(value))
@@ -37,9 +41,11 @@ def queue_paper_trade(owner, plan_id, *, request_key):
     """Plan owner, account lock, quote reservation, order/outbox are atomic."""
     if not isinstance(request_key, uuid.UUID):
         raise ValidationError("شناسه یکتای درخواست UUID معتبر نیست.")
-    plan = TradePlan.objects.select_related(
-        "exchange_account", "market", "market__quote_asset"
-    ).get(owner=owner, pk=plan_id, status=TradePlan.Status.READY)
+    plan = (
+        TradePlan.objects.select_for_update()
+        .select_related("exchange_account", "market", "market__quote_asset")
+        .get(owner=owner, pk=plan_id, status=TradePlan.Status.READY)
+    )
     account = (
         UserExchangeAccount.objects.select_for_update()
         .select_related("exchange")
@@ -53,7 +59,7 @@ def queue_paper_trade(owner, plan_id, *, request_key):
     previous = Trade.objects.filter(owner=owner, request_key=request_key).first()
     if previous:
         if previous.request_hash != digest or previous.plan_id != plan.pk:
-            raise ValidationError("کلید تکراری برای برنامه دیگری استفاده شده است.")
+            raise IdempotencyConflict("کلید تکراری برای برنامه یا Snapshot دیگری استفاده شده است.")
         return previous, False
     if control.paused:
         raise ValidationError("اجرای جدید این حساب متوقف است؛ مرکز عملیات را بررسی کنید.")

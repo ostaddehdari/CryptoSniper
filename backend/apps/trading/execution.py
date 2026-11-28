@@ -140,13 +140,20 @@ def mark_uncertain(outbox_id, code="unknown_outcome"):
     box = ExecutionOutbox.objects.select_for_update().get(pk=outbox_id)
     if box.state != ExecutionOutbox.State.INFLIGHT:
         return
-    if order.state in {Order.State.FILLED, Order.State.PARTIAL}:
+    if order.state == Order.State.FILLED:
         box.state = ExecutionOutbox.State.DONE
         box.save(update_fields=("state", "updated_at"))
         return
     box.state = ExecutionOutbox.State.UNCERTAIN
     box.last_error_code = code[:50]
     box.save(update_fields=("state", "last_error_code", "updated_at"))
+    if order.state == Order.State.PARTIAL:
+        # Keep the actual partial position while recovery looks up the provider
+        # receipt. A second submit is never permitted from uncertain state.
+        TradeEvent.objects.create(
+            trade=trade, event_type="PARTIAL_OUTCOME_UNKNOWN", payload={"reason_code": code[:50]}
+        )
+        return
     order.state = Order.State.UNCERTAIN
     order.save(update_fields=("state", "updated_at"))
     trade.state = Trade.State.UNCERTAIN
@@ -175,13 +182,19 @@ def consume_receipt(outbox_id, receipt, fence=None):
         raise ValidationError("Receipt با intent تطبیق ندارد.")
     order.external_order_id = receipt.external_order_id
     order.save(update_fields=("external_order_id", "updated_at"))
-    record_fill(
-        order.pk,
-        exchange_fill_id=f"paper:{order.client_order_id}:1",
-        quantity=receipt.quantity,
-        price=receipt.price,
-        fee=receipt.fee,
-    )
+    remaining = order.quantity - order.filled_quantity
+    if remaining < 0:
+        raise ValidationError("Fillهای ثبت‌شده از حجم سفارش بیشترند.")
+    if remaining:
+        # The durable simulator receipt is cumulative. Account for any already
+        # recorded partial fill without creating a second full-size fill.
+        record_fill(
+            order.pk,
+            exchange_fill_id=f"paper:{order.client_order_id}:1",
+            quantity=remaining,
+            price=receipt.price,
+            fee=receipt.fee * remaining / receipt.quantity,
+        )
     box.state = ExecutionOutbox.State.DONE
     box.last_error_code = ""
     box.save(update_fields=("state", "last_error_code", "updated_at"))
